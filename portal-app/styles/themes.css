@@ -1,0 +1,86 @@
+/* ============================================================
+   THEMES — rebinds the --theme-* tokens to a specific DEX ramp.
+   Setting body.theme-tx / .theme-bx / .theme-hx flips the entire
+   chrome (workspace pill, primary button, sidebar active state,
+   stepper colour, links, etc.) without touching any component.
+   This is the foundation of the runtime DEX theming.
+   ============================================================ */
+
+body.theme-tx {
+  --theme-20: var(--tx-20);
+  --theme-40: var(--tx-40);
+  --theme-50: var(--tx-50);
+  --theme-80: var(--tx-80);
+  --theme-90: var(--tx-90);
+  --theme-95: var(--tx-95);
+  --theme-98: var(--tx-98);
+}
+
+body.theme-bx {
+  --theme-20: var(--bx-20);
+  --theme-40: var(--bx-40);
+  --theme-50: var(--bx-40);     /* BuildEx 50 maps to its mid-stop */
+  --theme-80: var(--bx-80);
+  --theme-90: var(--bx-90);
+  --theme-95: var(--bx-95);
+  --theme-98: var(--bx-98);
+}
+
+body.theme-hx {
+  --theme-20: var(--hx-20);
+  --theme-40: var(--hx-40);
+  --theme-50: var(--hx-40);     /* HealthDex 50 maps to its mid-stop */
+  --theme-80: var(--hx-80);
+  --theme-90: var(--hx-90);
+  --theme-95: var(--hx-95);
+  --theme-98: var(--hx-98);
+}
+
+/* ============================================================
+   DARK MODE — flips the grey ramp + surface tokens.
+   The DEX brand ramps (tx/bx/hx) stay identical; only the
+   neutral surfaces and text colours invert. This is the
+   payoff of token-first architecture: ~30 lines flip the
+   entire app's colour scheme without touching a component.
+   ============================================================ */
+
+body.dark {
+  /* Surfaces — invert white → dark */
+  --surface:          #1f2229;
+  --surface-elevated: #252830;
+  --surface-sub:      #1a1d24;
+  --surface-canvas:   #14181e;
+  --surface-overlay:  rgba(0, 0, 0, 0.6);
+
+  /* Grey ramp — invert the scale */
+  --g-10: #f0f1f4;   /* was darkest, now lightest (text primary) */
+  --g-30: #d4d7dd;
+  --g-40: #b5b8bf;
+  --g-50: #a8acb8;
+  --g-70: #6c7280;
+  --g-80: #4a4f5b;
+  --g-90: #2e323c;
+  --g-95: #242830;
+  --g-98: #1a1d24;   /* was lightest, now darkest (canvas) */
+
+  /* Soften brand fills in dark — 95 (was lightest tint) becomes a darker variant */
+  --tx-95: #3a0f44;
+  --tx-98: #2a0b32;
+  --bx-95: #102c5c;
+  --bx-98: #0a1e44;
+  --hx-95: #053f37;
+  --hx-98: #042e29;
+
+  /* Semantic ramps softened for dark backgrounds */
+  --red-98:    #3a0f0a;
+  --red-95:    #4d1612;
+  --green-98:  #0a3a1f;
+  --green-95:  #115538;
+  --yellow-98: #3d2f08;
+  --yellow-95: #5a4a12;
+  --blue-98:   #0a1f3a;
+  --blue-95:   #112f5a;
+}
+
+/* Apply surface-canvas to body in dark mode */
+body.dark { background: var(--surface-canvas); color: var(--g-10); }

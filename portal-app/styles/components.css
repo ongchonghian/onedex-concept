@@ -1,0 +1,558 @@
+/* ============================================================
+   COMPONENTS — reusable UI primitives, decoupled from screens.
+   Each component class is named after its semantic role
+   (.btn-primary, .dex-chip, .toast) and uses tokens only.
+   Components used here are also instantiated dynamically by
+   scripts/components.js (renderInboxCard, renderChip, etc.).
+   ============================================================ */
+
+/* ---------- Buttons ---------- */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 6px 10px;
+  background: var(--theme-50);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--r-md);
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--easing);
+}
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-primary.neutral { background: var(--g-30); }
+.btn-primary i { font-size: 14px; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: var(--surface);
+  color: var(--theme-20);
+  border: 0.5px solid var(--theme-90);
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--easing);
+}
+.btn-secondary:hover { background: var(--theme-98); }
+.btn-secondary.neutral { color: var(--g-30); border-color: var(--g-90); }
+.btn-secondary.neutral:hover { background: var(--g-98); }
+
+.btn-cancel {
+  padding: 7px 14px;
+  background: var(--surface);
+  color: var(--g-10);
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-md);
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.btn-cancel:hover { background: var(--g-98); }
+
+.btn-deliberate {
+  padding: 7px 14px;
+  background: var(--surface);
+  color: var(--theme-20);
+  border: 0.5px solid var(--theme-90);
+  border-radius: var(--r-md);
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+
+.btn-ghost {
+  padding: 6px;
+  background: transparent;
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-md);
+  position: relative;
+  cursor: pointer;
+}
+.btn-ghost:hover { background: var(--g-98); }
+.btn-ghost i { font-size: 16px; color: var(--g-30); }
+.btn-ghost .badge-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  background: var(--red-50);
+  border-radius: 50%;
+}
+
+.btn-disabled {
+  padding: 7px 14px;
+  background: var(--g-95);
+  color: var(--g-70);
+  border: none;
+  border-radius: var(--r-md);
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-medium);
+  cursor: not-allowed;
+}
+.btn-disabled.on {
+  background: var(--theme-50);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+/* ---------- Avatar ---------- */
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--theme-95);
+  color: var(--theme-20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  flex-shrink: 0;
+}
+.avatar.neutral { background: var(--g-95); color: var(--g-30); }
+
+.cp-avatar {
+  width: 36px;
+  height: 36px;
+  background: var(--g-95);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--g-30);
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  flex-shrink: 0;
+}
+
+/* ---------- Filter chip ---------- */
+.chip {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--easing);
+}
+.chip:hover:not(.solid) { background: var(--g-90); }
+.chip.solid { background: var(--g-10); color: #ffffff; font-weight: var(--fw-medium); }
+.chip.muted { background: var(--g-95); color: var(--g-30); }
+.chip.tx { background: var(--tx-95); color: var(--tx-20); }
+.chip.bx { background: var(--bx-95); color: var(--bx-20); }
+.chip.hx { background: var(--hx-95); color: var(--hx-20); }
+.chip .dex-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+/* ---------- DEX chip — record-level identifier ---------- */
+.dex-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  flex-shrink: 0;
+  line-height: 1;
+}
+.dex-chip .dex-dot { width: 6px; height: 6px; border-radius: 50%; }
+.dex-chip.tx { background: var(--tx-95); color: var(--tx-20); }
+.dex-chip.tx .dex-dot { background: var(--tx-50); }
+.dex-chip.bx { background: var(--bx-95); color: var(--bx-20); }
+.dex-chip.bx .dex-dot { background: var(--bx-40); }
+.dex-chip.hx { background: var(--hx-95); color: var(--hx-20); }
+.dex-chip.hx .dex-dot { background: var(--hx-40); }
+
+/* ---------- DEX-user role chip (Admin / Participant / Super-admin) ---------- */
+/* Sits next to the workspace pill in the topbar so the operator always knows
+   which permissions they currently hold on the active DEX. Role can differ
+   per-DEX, so the chip refreshes on switchDex. Three colors signal the three
+   tiers without leaning on text alone: neutral grey for Participant (default
+   read-tier), theme-tinted for Admin (operational tier), purple for
+   Super-admin (governance tier). */
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px 4px 7px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  line-height: 1;
+  flex-shrink: 0;
+  background: var(--g-95);
+  color: var(--g-30);
+  border: 0.5px solid var(--g-90);
+}
+.role-chip i { font-size: 12px; line-height: 1; color: var(--g-50); }
+.role-chip-label { letter-spacing: 0.01em; }
+
+/* Admin — operational tier. Theme-tinted so it reads as "you can act here". */
+.role-chip[data-role="admin"] {
+  background: var(--theme-95);
+  color: var(--theme-20);
+  border-color: var(--theme-90);
+}
+.role-chip[data-role="admin"] i { color: var(--theme-30); }
+
+/* Participant — read + accept. Stays neutral grey (the default styling above). */
+
+/* Super-admin — governance tier. Purple regardless of DEX theme so the elevated
+   permission level is visually distinct from operational Admin. */
+.role-chip[data-role="super-admin"] {
+  background: rgba(166, 20, 185, 0.08);
+  color: #6b1280;
+  border-color: rgba(166, 20, 185, 0.18);
+}
+.role-chip[data-role="super-admin"] i { color: #a614b9; }
+
+/* Profile menu role row — duplicate of the topbar chip in a dense list-row layout. */
+.profile-role-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin: 4px 8px 6px;
+  background: var(--g-98);
+  border-radius: var(--r-md);
+  border: 0.5px solid var(--g-90);
+}
+.profile-role-row > i { font-size: 18px; color: var(--g-50); flex-shrink: 0; }
+.profile-role-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.profile-role-label { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--g-50); font-weight: var(--fw-medium); }
+.profile-role-value { font-size: 13px; color: var(--g-10); font-weight: var(--fw-medium); }
+.profile-role-link { font-size: 11px; color: var(--theme-20); cursor: pointer; text-decoration: underline; flex-shrink: 0; }
+
+/* ---------- Direction chip (incoming / outgoing data request) ---------- */
+/* Sits alongside .dex-chip on inbox cards to disambiguate the request direction
+   (per the consumer-initiated wizard work). Neutral grey for incoming, theme-tinted
+   for outgoing — outgoing is the new affordance and benefits from the extra visual
+   weight; incoming is the legacy default and stays subtle. */
+.dir-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  flex-shrink: 0;
+  line-height: 1;
+}
+.dir-chip i { font-size: 11px; line-height: 1; }
+.dir-chip.in { background: var(--g-95); color: var(--g-30); }
+.dir-chip.in i { color: var(--g-50); }
+.dir-chip.out { background: var(--theme-95); color: var(--theme-20); }
+.dir-chip.out i { color: var(--theme-30); }
+
+/* ---------- Ready / Invitation pills ---------- */
+.ready-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: var(--green-98);
+  color: var(--green-50);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  flex-shrink: 0;
+}
+.ready-pill i { font-size: 12px; }
+.ready-pill.invite { background: var(--yellow-98); color: var(--yellow-50); }
+
+/* ---------- Status pill (PENDING / ACTIVE / ENDED) ---------- */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+}
+.status-pill.active {
+  background: var(--green-98);
+  color: var(--green-50);
+  border: 0.5px solid var(--green-95);
+}
+.status-pill.active .dot { width: 6px; height: 6px; background: var(--green-50); border-radius: 50%; }
+
+/* ---------- Workspace switcher pill ---------- */
+.workspace-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 5px 10px 5px 8px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  background: var(--theme-95);
+  color: var(--theme-20);
+  border: 0.5px solid var(--theme-90);
+}
+.workspace-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--theme-50); }
+.workspace-pill.is-all { background: var(--surface); color: var(--g-10); border-color: var(--g-90); }
+.workspace-pill.is-all .dot-grid { display: inline-flex; flex-direction: column; gap: 1.5px; }
+.workspace-pill.is-all .dot-grid-row { display: inline-flex; gap: 1.5px; }
+.workspace-pill.is-all .dot-grid-cell { width: 5px; height: 5px; border-radius: 1px; background: var(--g-30); }
+.workspace-pill.is-all .dot-grid-cell.alt { background: var(--g-50); }
+
+/* ---------- Search pill (header) ---------- */
+.search-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 6px 10px;
+  background: var(--g-98);
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-md);
+  max-width: 240px;
+  flex: 1;
+  cursor: pointer;
+}
+.search-pill i { font-size: 14px; color: var(--g-50); }
+.search-pill span { font-size: var(--fs-meta); color: var(--g-70); }
+.search-pill kbd {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--g-70);
+  background: var(--g-95);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+
+/* ---------- Toast tray ---------- */
+.toast-tray {
+  position: fixed;
+  bottom: var(--sp-6);
+  right: var(--sp-6);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  pointer-events: none;
+}
+.toast {
+  background: var(--g-10);
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-meta);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 240px;
+  max-width: 380px;
+  box-shadow: 0 4px 12px rgba(20, 24, 30, 0.15);
+  animation: toast-in var(--motion-base) ease-out;
+  pointer-events: auto;
+}
+.toast i { font-size: 16px; color: var(--green-95); }
+.toast.warn i { color: var(--yellow-95); }
+.toast .x { margin-left: auto; cursor: pointer; opacity: 0.6; }
+.toast.fade { animation: toast-out var(--motion-slow) ease-in forwards; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateY(8px); }
+}
+
+/* ---------- Modal overlay ---------- */
+.overlay-veil {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 30, 0.45);
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-8);
+}
+.overlay-veil[hidden] { display: none; }
+.overlay-card {
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  box-shadow: var(--shadow-modal);
+}
+.overlay-card.lg { max-width: 560px; }
+.overlay-card.sm { max-width: 360px; }
+.overlay-head {
+  padding: 14px 18px;
+  border-bottom: 0.5px solid var(--g-90);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.overlay-head .ic {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.overlay-head .ic.tx { background: var(--theme-95); color: var(--theme-20); }
+.overlay-head .ic.warn { background: var(--yellow-98); color: var(--yellow-50); }
+.overlay-head .ic.green { background: var(--green-98); color: var(--green-50); }
+.overlay-head h4 { font-size: var(--fs-body); font-weight: var(--fw-medium); flex: 1; }
+.overlay-head .close { padding: 6px; background: transparent; border: none; cursor: pointer; }
+.overlay-head .close i { font-size: 18px; color: var(--g-50); }
+.overlay-body { padding: var(--sp-4) 18px; }
+.overlay-foot {
+  padding: var(--sp-3) 18px;
+  border-top: 0.5px solid var(--g-90);
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: flex-end;
+}
+
+/* ---------- Dropdown popover ----------
+   Positioned via JS (position: fixed) so a single instance
+   can be anchored to any "+ New Agreement" trigger across
+   the injected portal shells. */
+.dropdown-pop {
+  position: fixed;
+  z-index: var(--z-popover);
+  width: 340px;
+  background: var(--surface);
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-xl);
+  padding: 6px;
+  box-shadow: var(--shadow-popover);
+}
+.dropdown-pop[hidden] { display: none; }
+.dropdown-item {
+  display: flex;
+  gap: var(--sp-3);
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.dropdown-item:hover { background: var(--g-98); }
+.dropdown-item .icon-bubble {
+  width: 32px;
+  height: 32px;
+  background: var(--theme-95);
+  color: var(--theme-20);
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.dropdown-item .icon-bubble.neutral { background: var(--g-95); color: var(--g-30); }
+.dropdown-item .icon-bubble i { font-size: 18px; }
+.dropdown-item .label { font-size: 13px; font-weight: var(--fw-medium); color: var(--g-10); }
+.dropdown-item .desc { font-size: 11px; color: var(--g-50); margin-top: 2px; line-height: 1.4; }
+.dropdown-divider { height: 0.5px; background: var(--g-90); margin: 6px 8px; }
+
+/* ---------- Switcher popover ----------
+   Positioned via JS — single shared instance across all
+   injected portal shells. */
+.switcher-pop {
+  position: fixed;
+  z-index: var(--z-popover);
+  width: 320px;
+  background: var(--surface);
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-xl);
+  padding: 6px;
+  box-shadow: var(--shadow-popover);
+}
+.switcher-pop[hidden] { display: none; }
+.switcher-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  align-items: center;
+  cursor: pointer;
+}
+.switcher-item:hover { background: var(--g-98); }
+.switcher-item.active { background: var(--theme-95); }
+.switcher-item .ws-tile {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  flex-shrink: 0;
+}
+.switcher-item.tx .ws-tile { background: var(--tx-50); }
+.switcher-item.bx .ws-tile { background: var(--bx-40); }
+.switcher-item.hx .ws-tile { background: var(--hx-40); }
+.switcher-item.all .ws-tile { background: var(--g-95); }
+.switcher-item .label { font-size: 13px; font-weight: var(--fw-medium); color: var(--g-10); }
+.switcher-item.active .label { color: var(--theme-20); }
+.switcher-item .role { font-size: 11px; color: var(--g-50); margin-top: 1px; }
+.switcher-item.active .role { color: var(--theme-40); }
+
+/* ---------- Notification + profile popovers ---------- */
+.popover {
+  position: absolute;
+  top: 56px;
+  right: 28px;
+  z-index: var(--z-popover);
+  width: 360px;
+  background: var(--surface);
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-popover);
+}
+.popover[hidden] { display: none; }
+.popover-head { padding: 12px 14px; border-bottom: 0.5px solid var(--g-90); display: flex; align-items: center; }
+.popover-head h5 { font-size: 13px; font-weight: var(--fw-medium); flex: 1; }
+.popover-head a { font-size: 11px; color: var(--theme-20); cursor: pointer; }
+.popover-list { max-height: 320px; overflow-y: auto; }
+.popover-item { display: flex; gap: 10px; padding: 10px 14px; border-bottom: 0.5px solid var(--g-95); cursor: pointer; }
+.popover-item:last-child { border-bottom: none; }
+.popover-item:hover { background: var(--g-98); }
+.popover-item .pn-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+.popover-item .pn-dot.unread { background: var(--theme-50); }
+.popover-item .pn-dot.read { background: var(--g-90); }
+.popover-item .pn-body p { font-size: var(--fs-meta); color: var(--g-10); line-height: 1.4; }
+.popover-item .pn-body p strong { font-weight: var(--fw-medium); }
+.popover-item .pn-body .pn-time { font-size: 11px; color: var(--g-50); margin-top: 2px; }
+
+.profile-menu {
+  position: absolute;
+  top: 56px;
+  right: 28px;
+  z-index: var(--z-popover);
+  width: 240px;
+  background: var(--surface);
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-xl);
+  padding: 6px;
+  box-shadow: var(--shadow-popover);
+}
+.profile-menu[hidden] { display: none; }
+.profile-head { padding: 10px 12px; border-bottom: 0.5px solid var(--g-95); margin-bottom: 4px; }
+.profile-head .n { font-size: 13px; font-weight: var(--fw-medium); color: var(--g-10); }
+.profile-head .e { font-size: 11px; color: var(--g-50); }
+.profile-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--r-md); cursor: pointer; font-size: var(--fs-meta); color: var(--g-10); }
+.profile-item:hover { background: var(--g-98); }
+.profile-item i { font-size: 14px; color: var(--g-50); }
+.profile-item.danger { color: var(--red-50); }
+.profile-item.danger i { color: var(--red-50); }

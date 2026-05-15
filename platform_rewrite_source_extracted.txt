@@ -1,0 +1,3733 @@
+
+
+ Platform rewrite Initiative
+
+Platform rewrite Initiative
+
+This plan outlines the full-stack consolidation of the SGTraDex platform — merging admin-corev2 + pitstop-core into a single unified Go API service (expanded from be/admin-core), and admin-ui + pitstop-ui into one unified React portal (dex-monorepo/ui/apps/portal) — alongside DB consolidation, domain model evolution, and a v1→v2 strangler-fig migration so production is never broken.
+
+1. Transaction Layer Overloading (Latency & Risk)
+
+Coupling of Business Logic to the Critical Path: The pitstop-core handles both high-throughput message processing (MessageStore) and complex business/feature logic. Adding new features requires adding validations, state checks, or database joins directly into the transaction path, which inherently inflates end-to-end message latency.
+
+CPU Sensitivity: High-volume tables like MessageStore and AuditTrail are append-heavy and CPU-sensitive. Expanding these tables or adding synchronous feature triggers risks DB saturation, degrading the entire transaction layer's performance.
+
+2. Monorepo Entanglement (dex-monorepo)
+
+Tight Coupling: Features are heavily entangled rather than modular. If a specific capability (e.g., ETR flows or a specific data element feature) is not applicable to a given DEX or participant, it is extremely difficult to extract it or cleanly toggle it off.
+
+Blast Radius: Because features cannot be easily decoupled, bugs in unused or non-applicable features still pose a deployment and runtime risk to the entire codebase. Every deployment carries the weight of all features.
+
+3. Domain Model Fragmentation & Duplication
+
+Multiplicative Complexity: Implementing a single new feature often means writing logic for multiple fragmented models. For example, there are currently four separate representations for consent/sharing: Subscription (v1), SubscriptionV2, DataExchangeRelationship, and ServiceProviderRelationship.
+
+Dual-Database Sync Overhead: Core entities like Organization, DataElement, and User exist in both the Admin DB and the Pitstop DB. This requires fragile cross-service synchronization mechanisms, leading to eventual consistency issues, data drift, and added latency when features require up-to-date reads.
+
+4. Cross-Boundary Latency
+
+Account & Infrastructure Splits: The platform is split between admin-corev2 (Node.js/Lambda in the Central account) and pitstop-core (Node.js/ECS in the Pitstop account). Features that require data from both sides must make cross-account HTTPS calls, introducing network latency and complex IAM/networking overhead instead of fast, in-process database lookups.
+
+5. Fragmented Client Experiences
+
+Separate UIs: Having separate admin-ui and pitstop-ui apps means any new feature touching both participant and admin personas requires dual implementation, separate CI/CD pipelines, and duplicate component maintenance, severely slowing down feature velocity.
+
+6. Limitation on cross dex sharing
+
+Separate pitstop/admin database pairs: Having separate admin-ui and pitstop-ui databases mean that given current architecture, it is unsuitable for cross dex sharing
+
+Situation Summary
+
+ | 
+
+Dimension
+
+ | 
+
+Current State
+
+ | 
+
+Target State
+
+ | 
+
+Frontend
+
+ | 
+
+admin-ui (admin) + pitstop-ui (participant) — two separate apps
+
+ | 
+
+One portal at dex-monorepo/ui/apps/portal — role-aware, dex-aware, single URL
+
+ | 
+
+Backend APIs
+
+ | 
+
+admin-corev2 (Node.js/Lambda) + pitstop-core (Node.js/ECS)
+
+ | 
+
+Single Go service — be/admin-core expanded with all v2 domains; v1 = shim
+
+ | 
+
+AWS accounts
+
+ | 
+
+Central (admin) + Pitstop account
+
+ | 
+
+Single account (or consolidated VPC)
+
+ | 
+
+Databases
+
+ | 
+
+Admin DB (1 per dex, RDS) + Pitstop DB (1 per pitstop, RDS)
+
+ | 
+
+platform DB consolidated via AWS DMS (3 options — see Phase 2). MessageStore + pitstop AuditTrail frozen in place across all options.
+
+ | 
+
+Domain model
+
+ | 
+
+DEX / Pitstop / UseCase / DataElement / DER + SPR + Subscription
+
+ | 
+
+Same hierarchy, but orgs can span multiple DEXes and have multiple pitstops; consent flows generalised
+
+ | 
+
+API versioning
+
+ | 
+
+v1 only
+
+ | 
+
+v2 canonical (Go), v1 = thin compatibility shim inside the same Go service
+
+ | 
+
+Rollout
+
+ | 
+
+N/A
+
+ | 
+
+Strangler-fig — feature-by-feature traffic shift in prod
+
+Phase 0 — Discovery & Alignment (2–3 weeks)
+
+Goal: Lock down decisions, close unknowns, prevent mid-build surprises.
+
+[ ] Domain model workshop — with engineering, product, and business: define the new concepts (DEX flexibility, multi-pitstop per org, consent model changes). Produce a domain glossary.
+
+[ ] Data audit — enumerate all tables in Admin DB + Pitstop DB, classify each as: shared, admin-only, pitstop-only, to-be-merged, or to-be-retired.
+
+Key tables to resolve: DataExchangeRelationship, ServiceProviderRelationship, DeSpRelationshipBinding, Enrolment, Subscription (v1 + v2), Organization, EnterpriseSystem.
+
+Pitstop DB tables: MessageStore, AuditTrail, AttachmentStore + all event/config tables.
+
+[ ] API surface audit — map every /api/v1/ route in admin-corev2 and pitstop-core to its consuming client (admin-ui, pitstop-ui, external integrators, Lambda scheduled jobs).
+
+[ ] Dependency map — document cross-account HTTPS calls, Cognito dependencies, DynamoDB config tables, and Lambda scheduled tasks that touch each service.
+
+[ ] Team ownership assignment — decide which domains of the portal and API each team owns (options in Phase 1).
+
+[ ] Non-functional requirements — agree on SLAs, data-residency constraints, and rollback SLA for each phase.
+
+Deliverables: Domain glossary, table classification spreadsheet, API surface map, team RACI, NFR document.
+
+Phase 1 — Unified Portal & API Scaffold (3–4 weeks)
+
+Goal: Stand up the new portal app and Go API service skeletons inside dex-monorepo without breaking anything in production.
+
+1a. Frontend — ui/apps/portal
+
+The new app lives inside the existing Nx monorepo (dex-monorepo/ui) alongside the existing per-dex apps. It is the one and only portal for all users — admins, participants, super-admins — differentiated post-login by role and dex.
+
+dex-monorepo/ui/apps/portal/
+├── src/
+│ ├── app/
+│ │ ├── App.tsx # Root: providers, router, theme loader
+│ │ ├── Router.tsx # Unified route tree (admin + participant routes)
+│ │ └── guards/ # AuthGuard, RoleGuard, DexGuard
+│ ├── auth/
+│ │ ├── AuthContext.tsx # Auth state (token, user, role, isAdmin)
+│ │ ├── LoginPage.tsx # Single login page for all user types
+│ │ └── TfaPage.tsx
+│ ├── dex/
+│ │ ├── DexContext.tsx # Dex config, features, org info
+│ │ └── ThemeLoader.tsx # Dynamic CSS injection post-login
+│ ├── layout/
+│ │ ├── PortalLayout.tsx # Sidebar + header + content shell
+│ │ └── Sidebar.tsx # Role-aware nav (admin items vs participant items)
+│ └── modules/
+│ ├── admin/ # Pages migrated from admin-ui
+│ │ ├── participants/
+│ │ ├── approval-requests/
+│ │ ├── user-management/
+│ │ └── onboarding/
+│ └── participant/ # Pages migrated from pitstop-ui
+│ ├── shared-data/
+│ ├── received-data/
+│ ├── configuration/
+│ ├── dashboards/
+│ └── etr/
+
+Single login, role-aware experience:
+
+1. User logs in at /login → POST /api/v2/identity/auth/login
+2. Response: { token, user: { type, isAdmin, role[], orgId, dexId } }
+3. Portal loads dex theme CSS dynamically
+4. Sidebar renders admin nav OR participant nav based on user.isAdmin
+5. Route guards enforce access at the page level
+
+1b. Sub-application team ownership options (to decide in Phase 0)
+
+ | 
+
+Option
+
+ | 
+
+Description
+
+ | 
+
+Autonomy
+
+ | 
+
+Complexity
+
+ | 
+
+A — Domain modules in monorepo
+
+ | 
+
+Teams own modules/admin/* and modules/participant/*. Shared @libs/ components. One deployment.
+
+ | 
+
+Medium
+
+ | 
+
+Low
+
+ | 
+
+B — Microfrontend (Module Federation)
+
+ | 
+
+Each module is a separately deployed remote; portal shell is the host. Teams deploy independently.
+
+ | 
+
+High
+
+ | 
+
+High
+
+ | 
+
+C — Route-based split with separate Nx apps
+
+ | 
+
+Two Nx apps (portal-admin, portal-participant) sharing a @libs/ui-core package. CI builds and deploys separately.
+
+ | 
+
+High
+
+ | 
+
+Medium
+
+Recommendation: Start with Option A. Migrate to B/C only if team deployment cadence requires it.
+
+1c. Backend — expand be/admin-core
+
+be/admin-core is already a production Go service (Gin + GORM) with auth routes and the correct layered architecture (internal/dto, internal/store, internal/service, internal/model). It becomes the unified v2 API service by progressively adding new domains as separate files under its internal/service/ structure.
+
+be/admin-core/internal/
+├── dto/
+│ ├── login.go ← exists
+│ ├── org.go ← new
+│ ├── consent.go ← new
+│ ├── enrolment.go ← new
+│ ├── data_element.go ← new
+│ └── ...
+├── store/
+│ ├── interfaces.go ← extend with new store interfaces
+│ ├── admin_db.go ← extend to target consolidated DB
+│ ├── org.go ← new
+│ ├── consent.go ← new
+│ └── ...
+├── service/
+│ ├── login.go ← exists
+│ ├── router.go ← extend: mount /api/v2 + /api/v1 shim groups
+│ ├── org.go ← new
+│ ├── consent.go ← new
+│ ├── enrolment.go ← new
+│ ├── data_element.go ← new
+│ └── ...
+└── model/
+ ├── organization.go ← new (GORM struct mapping consolidated DB)
+ ├── consent_agreement.go ← new
+ └── ...
+
+Every new domain follows the existing convention documented in be/admin-core/CLAUDE.md:
+
+DTOs in internal/dto/
+
+Store interface in internal/store/interfaces.go
+
+Store implementation in internal/store/<domain>.go
+
+Service logic in internal/service/<domain>.go
+
+Route registration in router.go
+
+Tests in _test.go alongside the service file
+
+1d. Actions
+
+[ ] Scaffold ui/apps/portal using npx nx g @nx/react:app portal inside dex-monorepo/ui.
+
+[ ] Implement unified login, AuthContext, DexContext, ThemeLoader, PortalLayout, role-aware Sidebar.
+
+[ ] Stub all feature pages as "Coming Soon" placeholders — verify login→role→nav works.
+
+[ ] Add portal service to local-dev/docker-compose.yaml (port 3010).
+
+[ ] In be/admin-core: add /api/v2/ route group skeleton in router.go; add /api/v1/ shim group skeleton.
+
+[ ] Set up CI/CD pipeline targeting the new portal and admin-core service.
+
+[ ] All v1 code (admin-corev2, pitstop-core) remains live; new apps run in dev/QA only at this stage.
+
+Phase 2 — Database Consolidation (6–10 weeks)
+
+Goal: Consolidate the Admin DB and Pitstop DB into a single platform database using AWS DMS, while permanently preserving the high-volume pitstop tables (MessageStore, AuditTrail) in their original per-pitstop databases. A migration option must be selected and approved before DMS work begins (see §2b decision gate).
+
+2a. Principles that apply to all options
+
+MessageStore is never migrated. It holds the full transaction history per pitstop, is append-heavy, and any ALTER TABLE or bulk movement risks CPU saturation and downtime. The v2 API reads it from each pitstop's existing DB connection as-is. No column additions, no data movement.
+
+Pitstop AuditTrail is never migrated. Same reasoning: large, append-heavy, CPU-sensitive. v2 API reads via existing pitstop DB connection.
+
+No ALTER TABLE on either frozen table — not even adding a column. New fields needed by v2 go into new tables in platform DB.
+
+Admin-side AuditTrail is low-volume (org approvals, user changes) and is safe to migrate under all options.
+
+AWS DMS (full-load + CDC) is the tooling for all data movement — enables zero-downtime cutover via ongoing replication before write switch.
+
+Subscription v1 + SubscriptionV2: resolve Phase 3 consent_agreement design before finalising DMS tasks — avoids migrating a table that will be superseded immediately.
+
+Go GORM structs in be/admin-core/internal/model/ are the canonical model definitions for all migrated tables.
+
+2b. Migration options (decision gate — resolve in Phase 0)
+
+Option A — Admin DB → new database on existing Pitstop RDS instance
+
+Admin RDS ──DMS──► new platform DB (on Pitstop RDS instance)
+Pitstop RDS unchanged (MessageStore + AuditTrail stay here)
+
+ | 
+
+ | 
+
+ | 
+
+How
+
+ | 
+
+Create a new platform database on the existing Pitstop RDS instance. DMS migrates Admin DB tables only.
+
+ | 
+
+Pros
+
+ | 
+
+No new RDS instance; lowest cost; simpler networking (DMS replication instance in same VPC).
+
+ | 
+
+Cons
+
+ | 
+
+Admin and pitstop workloads share one RDS instance — a heavy pitstop query could affect the platform DB and vice versa. Requires capacity review before proceeding.
+
+ | 
+
+Best for
+
+ | 
+
+Lower-traffic environments or where pitstop RDS is under-utilised.
+
+Option B — Both Admin DB + select Pitstop tables → new standalone RDS instance
+
+Admin RDS ──DMS──►
+ new platform RDS instance (platform DB)
+Pitstop RDS ──DMS──► (non-frozen tables only)
+Pitstop RDS unchanged (MessageStore + AuditTrail stay here)
+
+ | 
+
+ | 
+
+ | 
+
+How
+
+ | 
+
+Provision a new RDS instance. DMS migrates Admin DB tables + selected non-frozen Pitstop tables (e.g. AttachmentStore, config tables) into it. High-volume tables remain on Pitstop RDS.
+
+ | 
+
+Pros
+
+ | 
+
+Clean separation — new platform DB has no shared resource contention with pitstop workloads. Easier to right-size independently.
+
+ | 
+
+Cons
+
+ | 
+
+Additional RDS instance cost. Two DMS source endpoints (Admin RDS + Pitstop RDS). Slightly more complex networking.
+
+ | 
+
+Best for
+
+ | 
+
+Production environments where resource isolation between admin and pitstop workloads is required.
+
+Option C — Greenfield: both Admin DB + Pitstop DB sync'd into a new RDS instance
+
+Admin RDS ──DMS──►
+ new platform RDS instance (platform DB)
+Pitstop RDS ──DMS──► (all non-frozen tables)
+Pitstop RDS MessageStore + AuditTrail stay here permanently
+
+ | 
+
+ | 
+
+ | 
+
+How
+
+ | 
+
+Provision a new RDS instance. DMS syncs all Admin DB tables AND all non-frozen Pitstop tables into it. The new DB is the single source of truth for everything except MessageStore and pitstop AuditTrail.
+
+ | 
+
+Pros
+
+ | 
+
+Cleanest end state — one authoritative DB with no legacy entanglement. v2 API has a single primary DB connection (plus read-only connections to pitstop DBs for frozen tables).
+
+ | 
+
+Cons
+
+ | 
+
+Highest migration scope; two concurrent DMS sync jobs (Admin → platform, Pitstop → platform). AttachmentStore and other pitstop tables require CDC from Pitstop RDS, which adds load. Longer timeline.
+
+ | 
+
+Best for
+
+ | 
+
+Teams that want the cleanest architecture and can absorb the extra migration effort. Recommended long-term target even if Option A or B is used first.
+
+2c. Comparison summary
+
+ | 
+
+ | 
+
+Option A
+
+ | 
+
+Option B
+
+ | 
+
+Option C
+
+ | 
+
+New RDS instance
+
+ | 
+
+No
+
+ | 
+
+Yes
+
+ | 
+
+Yes
+
+ | 
+
+DMS sources
+
+ | 
+
+1 (Admin RDS)
+
+ | 
+
+2 (Admin + Pitstop)
+
+ | 
+
+2 (Admin + Pitstop)
+
+ | 
+
+Resource isolation
+
+ | 
+
+No
+
+ | 
+
+Yes
+
+ | 
+
+Yes
+
+ | 
+
+Migration scope
+
+ | 
+
+Admin tables only
+
+ | 
+
+Admin + select Pitstop
+
+ | 
+
+Admin + all non-frozen Pitstop
+
+ | 
+
+Operational complexity
+
+ | 
+
+Low
+
+ | 
+
+Medium
+
+ | 
+
+High
+
+ | 
+
+End-state cleanliness
+
+ | 
+
+Medium
+
+ | 
+
+High
+
+ | 
+
+Highest
+
+ | 
+
+Estimated extra cost
+
+ | 
+
+Low
+
+ | 
+
+Medium
+
+ | 
+
+Medium
+
+Recommendation: Start with Option B for production (clean isolation, manageable scope). Treat Option C as the eventual target — migrate remaining pitstop tables into platform DB in a later phase once Option B is stable.
+
+2d. DMS execution steps (common to all options)
+
+Step 1 — Schema pre-creation
+ Create target tables via SQL DDL scripts (be/admin-core/migrations/).
+ Add dex_id columns and indices on empty tables — zero risk.
+
+Step 2 — DMS full-load (per table group, off-peak window)
+ Source: Admin RDS (and Pitstop RDS for Options B/C).
+ Target: platform DB.
+ Validate row counts + spot-check data after each task.
+
+Step 3 — DMS CDC (Change Data Capture)
+ Enable logical replication slot on source RDS(es).
+ DMS CDC keeps platform DB in sync while v1 services remain live.
+
+Step 4 — Read-switch (per table group)
+ Flip v2 API reads to platform DB one group at a time.
+ v1 services still read from their original DBs.
+ Shadow-read validation for ≥2 weeks before proceeding.
+
+Step 5 — Write cutover (per table group)
+ New writes go to platform DB only via v2 service layer.
+ v1 shim calls v2 services — no direct legacy DB writes.
+
+Step 6 — Source decommission
+ Stop CDC, decommission Admin RDS (Options A/B/C).
+ For Options B/C: decommission Pitstop RDS connections for migrated tables
+ (MessageStore + AuditTrail connections remain).
+
+2e. Table classification (applies to chosen option)
+
+ | 
+
+Source
+
+ | 
+
+Table
+
+ | 
+
+Options A/B/C action
+
+ | 
+
+Admin DB
+
+ | 
+
+Organization, User, Role, Permission, EnterpriseSystem
+
+ | 
+
+DMS → platform.shared_*
+
+ | 
+
+Admin DB
+
+ | 
+
+Enrolment, Subscription, SubscriptionV2
+
+ | 
+
+DMS → platform.shared_*, add dex_id
+
+ | 
+
+Admin DB
+
+ | 
+
+DataExchangeRelationship, ServiceProviderRelationship, DeSpRelationshipBinding
+
+ | 
+
+DMS → platform.shared_consent_* (Phase 3)
+
+ | 
+
+Admin DB
+
+ | 
+
+DataElement, DataElementVersion, UseCase
+
+ | 
+
+DMS → platform.shared_de_*
+
+ | 
+
+Admin DB
+
+ | 
+
+AuditTrail
+
+ | 
+
+DMS → platform.shared_audit_*
+
+ | 
+
+Admin DB
+
+ | 
+
+LicenseKey, Network, Stack
+
+ | 
+
+DMS → platform.adm_*
+
+ | 
+
+Pitstop DB
+
+ | 
+
+MessageStore
+
+ | 
+
+FROZEN — all options
+
+ | 
+
+Pitstop DB
+
+ | 
+
+AuditTrail
+
+ | 
+
+FROZEN — all options
+
+ | 
+
+Pitstop DB
+
+ | 
+
+AttachmentStore
+
+ | 
+
+Option A: stays in place; Options B/C: DMS → platform.ps_attachment_*
+
+ | 
+
+Pitstop DB
+
+ | 
+
+Config / setting tables
+
+ | 
+
+Option A: stays in place; Options B/C: DMS if small; else keep in Dynamo
+
+2f. Migration tooling
+
+AWS DMS for all data movement; configs tracked in infra-terragrunt.
+
+SQL DDL scripts in be/admin-core/migrations/ define target schema (timestamped, reversible).
+
+GORM AutoMigrate for local dev only; production uses explicit DDL + DMS.
+
+Phase 3 — Domain Model Evolution (4–6 weeks, parallel with Phase 2)
+
+Goal: Extend the DEX/Pitstop hierarchy for multi-dex orgs and multi-pitstop subscriptions without breaking existing records.
+
+3a. Org ↔ DEX multi-membership
+
+Current: one org belongs to one dex implicitly via EnterpriseSystem.dexId.
+
+Target: explicit org_dex_membership join table.
+
+CREATE TABLE org_dex_membership (
+ id UUID PRIMARY KEY,
+ org_id UUID REFERENCES shared_organization(org_id),
+ dex_id VARCHAR NOT NULL,
+ status VARCHAR NOT NULL DEFAULT 'ACTIVE',
+ created TIMESTAMP,
+ modified TIMESTAMP
+);
+
+3b. Multi-pitstop per org
+
+Current: EnterpriseSystem = one pitstop endpoint per org.
+
+Target: rename EnterpriseSystem → org_endpoint; add dex_id FK. An org can have multiple endpoints across DEXes.
+
+3c. Consent flow generalisation
+
+Current issues:
+
+DataExchangeRelationship (DER) and ServiceProviderRelationship (SPR) are near-identical tables joined by DeSpRelationshipBinding — unnecessary duplication.
+
+Subscription v1 and SubscriptionV2 represent the same concept with different schemas.
+
+Target: one consent_agreement table replaces DER + SPR + SubscriptionV2:
+
+CREATE TABLE consent_agreement (
+ id UUID PRIMARY KEY,
+ dex_id VARCHAR NOT NULL,
+ agreement_type VARCHAR NOT NULL, -- 'DIRECT', 'SERVICE_PROVIDER', 'PRINCIPAL'
+ initiator_org_id UUID NOT NULL,
+ counterparty_org_id UUID NOT NULL,
+ data_element_id VARCHAR,
+ use_case_id VARCHAR,
+ status VARCHAR NOT NULL DEFAULT 'PENDING',
+ flow VARCHAR, -- 'SEND', 'RECEIVE', or NULL for bilateral
+ contributor_org_id UUID, -- tripartite SP flows
+ pitstop_id VARCHAR,
+ created TIMESTAMP,
+ modified TIMESTAMP
+);
+
+DataExchangeRelationshipInvites + ServiceProviderRelationshipInvites → one consent_invite table (same agreement_type discriminator).
+
+3d. Backward compatibility
+
+v1 API responses for /subscriptions, /data-exchange-relationships, /service-provider-relationships continue to return the same shape by reading from consent_agreement via the v1 shim's query translators in Go.
+
+Old tables are kept read-only until v1 is retired.
+
+3e. Full schema analysis — redundancies and optimisation opportunities
+
+This section is based on a review of all tables in pitstopCreation.sql (pitstop-core) and the admin DB schema derived from create-admin-db.sh + all TypeORM models in admin-corev2/src/models/.
+
+Cross-DB redundancies (tables that exist in both DBs with overlapping purpose)
+
+ | 
+
+Table
+
+ | 
+
+Admin DB
+
+ | 
+
+Pitstop DB
+
+ | 
+
+Finding
+
+ | 
+
+DataElement
+
+ | 
+
+Full entity (schema, versions, templates, personas)
+
+ | 
+
+Slim mirror (dataElementId, elementName, elementSchema, type)
+
+ | 
+
+Pitstop mirror is a read cache. Consolidate into one canonical data_element table in the platform DB. Pitstop services read from it directly.
+
+ | 
+
+EnterpriseSystem
+
+ | 
+
+Full (KMS, S3, host, config, status)
+
+ | 
+
+Slim (systemId, systemName, orgId, endPointUrl only)
+
+ | 
+
+Pitstop mirror is a lookup stub. Consolidate into one org_endpoint table (renamed, see §3b).
+
+ | 
+
+Organization
+
+ | 
+
+Full (30+ columns, KMS, TradeTrust, billing, approval)
+
+ | 
+
+Slim (orgId, name, uen, orgType, iconUrl, domain, flags)
+
+ | 
+
+Pitstop mirror is a display cache. Consolidate into one organization table. Pitstop reads org fields it needs via FK.
+
+ | 
+
+Subscription
+
+ | 
+
+Two variants (Subscription v1 + SubscriptionV2)
+
+ | 
+
+Separate Subscription (simple: systemId, dataElementId, type, thirdPartyId)
+
+ | 
+
+Three variants of the same concept. All three collapse into one consent_agreement table (§3c).
+
+ | 
+
+EmailNotificationSetting
+
+ | 
+
+Full table with IsAdminNotification flag
+
+ | 
+
+Same table, same enum values but no IsAdminNotification column
+
+ | 
+
+Merge into one table with is_admin_notification column. Seed data is the same, maintained once.
+
+ | 
+
+AccessToken
+
+ | 
+
+Exists (userId, token, revoked, exp)
+
+ | 
+
+Exists (same schema)
+
+ | 
+
+Same table, one per-dex/per-pitstop instance. Consolidate with dex_id discriminator column.
+
+ | 
+
+User
+
+ | 
+
+Full (30+ columns, TNC, roles, password_hash, MFA)
+
+ | 
+
+Slim (id, email, org_id, dashboardIds, tncStatus, makerCheckerRole)
+
+ | 
+
+Pitstop has a display slice. Consolidate into one user table. Remove pitstop shadow.
+
+Admin DB — tables that can be retired or merged
+
+ | 
+
+Table
+
+ | 
+
+Verdict
+
+ | 
+
+Reason
+
+ | 
+
+Subscription (v1)
+
+ | 
+
+Retire → consent_agreement
+
+ | 
+
+Near-identical to SubscriptionV2; the only difference is v1 uses subscriber/prosumer terminology and has a useCaseId FK. Merge both into consent_agreement with agreement_type = 'SUBSCRIPTION'.
+
+ | 
+
+SubscriptionV2
+
+ | 
+
+Retire → consent_agreement
+
+ | 
+
+Already a rework of v1; superseded by §3c design.
+
+ | 
+
+DeSpRelationshipBinding
+
+ | 
+
+Retire
+
+ | 
+
+Join table bridging DER and SPR that only exists because DER and SPR are separate tables. Once merged into consent_agreement, this binding is unnecessary.
+
+ | 
+
+DataExchangeRelationshipInvites
+
+ | 
+
+Merge → consent_invite
+
+ | 
+
+Parallel to ServiceProviderRelationshipInvites (same fields, different name). One table with agreement_type discriminator.
+
+ | 
+
+ServiceProviderRelationshipInvites
+
+ | 
+
+Merge → consent_invite
+
+ | 
+
+Same as above.
+
+ | 
+
+Activity + ActivityCategory
+
+ | 
+
+Merge into AuditTrail
+
+ | 
+
+Activity tracks org-level events (approve, reject, revoke) with category FK. The admin AuditTrail already tracks similar events. Consolidate into audit_log with category column to avoid a second event-log pattern.
+
+ | 
+
+DataExchangeActivityLog
+
+ | 
+
+Merge into audit_log
+
+ | 
+
+Another event-log table tracking DER-related state changes. Same pattern as Activity.
+
+ | 
+
+Version
+
+ | 
+
+Retire
+
+ | 
+
+Seed data shows a single "Legacy construct" row. App version management should be handled outside the DB (e.g. config or deployment metadata).
+
+ | 
+
+WhatsNew
+
+ | 
+
+Evaluate
+
+ | 
+
+Used to show release notes per org. If the portal v2 has a changelog feature, consider moving to a CMS or config file; otherwise keep.
+
+ | 
+
+BillingDetail + SubscriptionPlan
+
+ | 
+
+Evaluate
+
+ | 
+
+Only seeded with one plan. If billing is not active, these are dead weight; if billing is planned, keep and extend.
+
+ | 
+
+Stack
+
+ | 
+
+Retire or fold into Network
+
+ | 
+
+Stack is a thin wrapper (no columns besides FK and name). Network already captures topology config.
+
+ | 
+
+AdminRequest
+
+ | 
+
+Review
+
+ | 
+
+Tracks requests from external orgs to join a DEX. May overlap with Enrolment. Verify if both are active before migrating.
+
+ | 
+
+OrganizationAutoApproval
+
+ | 
+
+Fold into Organization
+
+ | 
+
+Boolean flags per org for auto-approval behaviour. Can become auto_approval_enabled columns on the org table rather than a separate join.
+
+ | 
+
+OrgPackageSetting
+
+ | 
+
+Fold into Organization or DynamoDB config
+
+ | 
+
+Package sharing preferences. Slim table (4 columns); fold into org table or move to pitstop config in DynamoDB.
+
+ | 
+
+OrganizationNotifyErrorSetting
+
+ | 
+
+Fold into Organization
+
+ | 
+
+Same pattern — a one-to-one extension of org.
+
+ | 
+
+SavedAddress
+
+ | 
+
+Keep
+
+ | 
+
+ETR workflow address book — clearly scoped, no redundancy.
+
+ | 
+
+TermClause + TermTemplate
+
+ | 
+
+Keep
+
+ | 
+
+ETR consent clause templates — needed for TradeTrust flows.
+
+ | 
+
+TradeTrustKey
+
+ | 
+
+Keep
+
+ | 
+
+Key material per org for TradeTrust.
+
+ | 
+
+DataElementTracking
+
+ | 
+
+Keep
+
+ | 
+
+Migration status tracking per org/DE/pitstop pair — actively used for DSV.
+
+ | 
+
+ThirdPartyLookup
+
+ | 
+
+Evaluate vs pitstop ThirdParty
+
+ | 
+
+Admin ThirdPartyLookup and pitstop ThirdParty both map third-party service endpoints. Likely candidates for merge into one third_party table.
+
+Pitstop DB — tables unique to pitstop (no admin equivalent)
+
+ | 
+
+Table
+
+ | 
+
+Verdict
+
+ | 
+
+MessageStore
+
+ | 
+
+FROZEN — keep as-is in per-pitstop DB
+
+ | 
+
+MessageStoreChangeHistory
+
+ | 
+
+FROZEN — audit trail for message edits; keep alongside MessageStore
+
+ | 
+
+MessageCache
+
+ | 
+
+FROZEN — transient queue table; keep in per-pitstop DB
+
+ | 
+
+AuditTrail (pitstop)
+
+ | 
+
+FROZEN — keep as-is
+
+ | 
+
+ConfigCache
+
+ | 
+
+Keep in pitstop DB — runtime pitstop config cache; high-churn, not suitable for consolidated DB
+
+ | 
+
+KeyStore
+
+ | 
+
+Consider migration — encryption/signing keys per pitstop. Could move to AWS Secrets Manager entirely, making this table obsolete.
+
+ | 
+
+Eclip, EclipFolder, EclipMilestone, EclipActivity, EclipActivityLog, EclipDataElement, EclipPin, EclipTag, EclipTemplate
+
+ | 
+
+Keep in pitstop DB (Options A/B); migrate in Option C — ECLIP package workflow tables, tightly coupled to per-pitstop data
+
+ | 
+
+TransferableRecord, TransferableStore, TransferableAttachmentStore
+
+ | 
+
+Keep in pitstop DB (Options A/B); migrate in Option C — ETR workflow, per-pitstop scope
+
+ | 
+
+TransactionRequest, TransactionRequestLog, EventLog
+
+ | 
+
+Keep in pitstop DB — maker-checker and ETR audit chain; high-write, pitstop-scoped
+
+ | 
+
+AttachmentStore
+
+ | 
+
+Safe to migrate — metadata only; S3 URIs are portable
+
+ | 
+
+SourceSystemConfiguration, ParticipantSourceSystemConfiguration
+
+ | 
+
+Near-duplicate — ParticipantSourceSystemConfiguration adds orgId and maintenance window to SourceSystemConfiguration. Merge into one table with orgId nullable.
+
+ | 
+
+SourceTypeConfiguration
+
+ | 
+
+Evaluate — single-row config blob; could move to DynamoDB or Secrets Manager.
+
+ | 
+
+Contract
+
+ | 
+
+Keep in pitstop DB — TradeTrust smart contract address per org/network.
+
+ | 
+
+ETREnrolledDataElement
+
+ | 
+
+Keep in pitstop DB — links ETR-eligible DEs to systems; pitstop-scoped.
+
+ | 
+
+ThirdParty
+
+ | 
+
+Evaluate vs admin ThirdPartyLookup — see above; candidate for merge.
+
+ | 
+
+Subscription (pitstop, simple)
+
+ | 
+
+Retire → consent_agreement — same verdict as admin Subscription.
+
+ | 
+
+script_history
+
+ | 
+
+Retire — migration housekeeping table; replace with standard migration runner state.
+
+ | 
+
+Tag, EclipTag
+
+ | 
+
+Keep — user-tagging of ECLIP packages; pitstop-scoped.
+
+ | 
+
+PackageComments
+
+ | 
+
+Keep in pitstop DB — package comment threads; pitstop-scoped high-write.
+
+Summary: recommended v2 consolidated table map
+
+ | 
+
+v2 Table
+
+ | 
+
+Replaces
+
+ | 
+
+organization
+
+ | 
+
+Admin Organization + pitstop Organization (merged)
+
+ | 
+
+org_endpoint
+
+ | 
+
+Admin EnterpriseSystem + pitstop EnterpriseSystem (merged, renamed)
+
+ | 
+
+org_dex_membership
+
+ | 
+
+New (§3a)
+
+ | 
+
+user
+
+ | 
+
+Admin User + pitstop User (merged)
+
+ | 
+
+access_token
+
+ | 
+
+Admin + pitstop AccessToken (merged, add dex_id)
+
+ | 
+
+role, permission, role_permission, user_role
+
+ | 
+
+Admin only (no pitstop equivalent)
+
+ | 
+
+data_element
+
+ | 
+
+Admin DataElement + pitstop DataElement (merged)
+
+ | 
+
+data_element_version + data_element_version_comment
+
+ | 
+
+Admin only
+
+ | 
+
+data_element_tracking
+
+ | 
+
+Admin only
+
+ | 
+
+use_case, org_use_case, use_case_persona
+
+ | 
+
+Admin only
+
+ | 
+
+persona, org_persona, data_element_persona
+
+ | 
+
+Admin only
+
+ | 
+
+enrolment, enrolment_principal
+
+ | 
+
+Admin only
+
+ | 
+
+consent_agreement
+
+ | 
+
+Admin Subscription + SubscriptionV2 + DataExchangeRelationship + ServiceProviderRelationship
+
+ | 
+
+consent_invite
+
+ | 
+
+Admin DataExchangeRelationshipInvites + ServiceProviderRelationshipInvites
+
+ | 
+
+service_provider_system
+
+ | 
+
+Admin ServiceProviderSystem
+
+ | 
+
+subscription_principal
+
+ | 
+
+Admin SubscriptionPrincipal
+
+ | 
+
+audit_log
+
+ | 
+
+Admin AuditTrail + Activity + DataExchangeActivityLog (merged)
+
+ | 
+
+email_notification_setting
+
+ | 
+
+Admin + pitstop EmailNotificationSetting (merged, unified seed)
+
+ | 
+
+email_notification_user_setting
+
+ | 
+
+Admin + pitstop EmailNotificationUserSetting (merged)
+
+ | 
+
+notification, user_notification
+
+ | 
+
+Admin only
+
+ | 
+
+network, license_key
+
+ | 
+
+Admin only
+
+ | 
+
+principal, third_party_lookup
+
+ | 
+
+Admin only (evaluate merge with pitstop ThirdParty)
+
+ | 
+
+org_group, user_group
+
+ | 
+
+Admin only
+
+ | 
+
+tfa
+
+ | 
+
+Admin only
+
+ | 
+
+meter, raw_meter
+
+ | 
+
+Admin only (metering service)
+
+ | 
+
+term_clause, term_template, tradetrust_key, saved_address
+
+ | 
+
+Admin only (ETR)
+
+ | 
+
+contract
+
+ | 
+
+Pitstop only (TradeTrust)
+
+ | 
+
+etr_enrolled_data_element
+
+ | 
+
+Pitstop only
+
+ | 
+
+attachment_store
+
+ | 
+
+Pitstop (safe to migrate, metadata only)
+
+ | 
+
+source_system_configuration
+
+ | 
+
+Pitstop SourceSystemConfiguration + ParticipantSourceSystemConfiguration (merged)
+
+ | 
+
+Pitstop-only (stay in pitstop DB)
+
+ | 
+
+MessageStore, MessageStoreChangeHistory, MessageCache, AuditTrail (pitstop), ConfigCache, KeyStore, Eclip*, TransferableRecord, TransferableStore, TransactionRequest*, EventLog, PackageComments, Tag
+
+Phase 4 — v2 API Layer in Go (6–8 weeks, starts after Phase 1 scaffold)
+
+Goal: Build all v2 domains inside be/admin-core, retiring the Node.js admin-corev2 service. v1 becomes a shim in the same Go binary calling v2 service functions. The 51 route files in admin-corev2 are the full migration surface.
+
+4a. Migration strategy options
+
+Three approaches to ordering the work — choose one or blend them:
+
+Option A — Domain batch migration (recommended)
+
+Group routes by business domain and migrate one domain at a time. Each batch produces a shippable increment: v2 routes live, v1 shim live, old Node.js routes still active during transition.
+
+Batch 1 — Auth & Identity (already partially done in be/admin-core)
+ Routes: login, logout, renew-token, validate-token, forgot-password, reset-password,
+ user/*, role/*, permissions/*, tfa/*
+ Risk: Low — auth is already ported; user/role just CRUD.
+
+Batch 2 — Organisation & Enrolment
+ Routes: org/*, enrolments/*, admin-requests/*, orgPersona/*, my-info/*
+ Risk: Medium — org status flows and maker-checker logic; email notifications.
+
+Batch 3 — Data Elements & Schema Versioning
+ Routes: data-elements/*, data-element-versions/*, data-element-version-comments/*,
+ data-element-tracking/*, use-cases/*, usecasepersonas/*, personas/*,
+ source-type-config/*, source-system-configuration/*
+ Risk: Low-Medium — mostly CRUD + DSV feature flag.
+
+Batch 4 — Consent & Relationships
+ Routes: subscriptions/*, refreshSubscription/*, data-exchange-relation/*,
+ service-provider-relation/*, verificationFlow/*, orgUseCase/*,
+ principal/*, thirdpartylookup/*
+ Risk: High — these map to the new consent_agreement model (Phase 3 must be done first).
+
+Batch 5 — Pitstop / System Config
+ Routes: sys/*, system/*, orgsys/*, config/*, licenseKey/*, status/*,
+ network/*, feature/*, settings/*, org-de-auto-approval/*,
+ notification-groups/*, groups/*
+ Risk: Medium — pitstop registration and config flows.
+
+Batch 6 — ETR & TradeTrust
+ Routes: saved-address/*, tradetrustKey/*, termClause/*, termTemplate/*,
+ smart-contract/*, eclip-template/*
+ Risk: Medium — TradeTrust-specific flows; low traffic.
+
+Batch 7 — Notifications, Audit, Metering, Misc
+ Routes: notifications/*, notification-groups/*, audit/*, meter/*,
+ version/*, whats-new/*, tandc/*, master-data/*, email/*
+ Risk: Low — mostly read/append; version and whats-new to be retired.
+
+Option B — Traffic-volume-first migration
+
+Migrate the highest-traffic routes first to reduce Node.js load quickly, regardless of domain grouping. Use APM/CloudWatch data to rank. Useful if the team wants early wins on infra cost.
+
+Identify top 10 endpoints by request volume from CloudWatch.
+
+Port those first, shim the rest.
+
+Risk: creates scattered shim coverage early; harder to maintain.
+
+Option C — Caller-type split (internal vs external)
+
+Split routes by who calls them:
+
+Machine-to-machine (validateLicenseKey middleware) → port first (pitstop-core internal calls). These have machine clients that are easier to switch.
+
+Portal-facing (auth middleware) → port second, coordinated with Phase 5 frontend migration.
+
+Admin-only (authSuperSGTraDexAdmin) → port last; lowest volume, highest risk tolerance.
+
+Blends well with Option A as a secondary ordering criterion within each batch.
+
+4b. Within each batch: how to migrate without breaking existing functionality
+
+Step 1 — Write v2 service layer (internal/service/<domain>.go)
+ Implement business logic in Go against platform DB.
+ Unit test with mocks against store interfaces.
+
+Step 2 — Register v2 routes (/api/v2/<domain>/...)
+ Add to router.go. Deploy to QA. Run Playwright E2E against v2.
+
+Step 3 — Register v1 shim (/api/v1/<path>)
+ Shim calls v2 service function; transforms response to v1 shape.
+ Deploy to QA. Run existing admin-corev2 E2E test suite against shim.
+
+Step 4 — Dual-run in production
+ Node.js admin-corev2 still live. be/admin-core shim live.
+ Traffic split: route some callers (e.g. new portal) to v2 via feature flag;
+ legacy callers stay on Node.js v1 path.
+
+Step 5 — Cut over
+ Switch all callers to be/admin-core. Remove Node.js route for this domain.
+ Monitor for 1 week. If stable, delete Node.js code for domain.
+
+4c. v2 route structure (registered in router.go)
+
+/api/v2/
+ /identity/
+ /auth/ # login, logout, renew-token, validate-token (already in be/admin-core)
+ /users/ # CRUD, status, maker-checker role
+ /roles/ # CRUD, permission assignment
+ /permissions/ # list, assign
+ /tfa/ # TFA setup, verify
+ /orgs/
+ / # CRUD, status, enrolment, file upload
+ /:id/endpoints/ # pitstop (EnterpriseSystem) CRUD per org
+ /:id/groups/ # org groups
+ /:id/personas/ # org personas
+ /:id/use-cases/ # org use-case assignments
+ /auto-approval/ # auto-approval rules
+ /enrolments/ # enrolment create, approve, reject
+ /admin-requests/ # external org join requests
+ /data-elements/
+ / # DE registry CRUD
+ /:id/versions/ # DSV — list, create, promote
+ /:id/versions/:v/impact # impact analysis
+ /tracking/ # migration status per org/DE/pitstop
+ /source-config/ # SourceSystemConfiguration
+ /use-cases/ # use-case CRUD, personas
+ /consent/
+ /agreements/ # ConsentAgreement (replaces Subscription, DER, SPR)
+ /invites/ # ConsentInvite (replaces DER/SPR invites)
+ /verification/ # VerificationFlow
+ /principals/ # Principal, SubscriptionPrincipal
+ /refresh/ # refreshSubscription background job trigger
+ /config/
+ /dex/ # dex-level config
+ /pitstop/ # pitstop config (orgsys, config, sys)
+ /license-keys/ # licenseKey
+ /network/ # network topology
+ /feature-flags/ # feature flag toggle
+ /settings/ # global settings
+ /source-type/ # SourceTypeConfiguration
+ /notifications/
+ / # list, read, action
+ /settings/ # EmailNotificationSetting
+ /user-settings/ # EmailNotificationUserSetting
+ /groups/ # notification groups
+ /audit/ # audit log query
+ /metering/ # meter, raw-meter, master-data
+ /etr/
+ /saved-address/ # ETR address book
+ /tradetrust-keys/ # TradeTrust key management
+ /term-clauses/ # term clause templates
+ /term-templates/ # term templates
+ /smart-contracts/ # smart contract deploy
+ /eclip-templates/ # ECLIP templates
+ /admin/
+ /status/ # system status
+ /version/ # app version (to retire)
+ /whats-new/ # release notes (to migrate to CMS)
+ /tandc/ # terms and conditions
+ /my-info/ # SingPass MyInfo integration
+ /third-party/ # third-party lookup
+
+4d. Complete v1 → v2 route mapping
+
+All routes currently mounted at admin-corev2 under /api/v1/<path>:
+
+Auth & Identity
+
+ | 
+
+v1 path
+
+ | 
+
+Method
+
+ | 
+
+v2 canonical
+
+ | 
+
+Shim complexity
+
+ | 
+
+/login
+
+ | 
+
+POST
+
+ | 
+
+/v2/identity/auth/login
+
+ | 
+
+None — already in be/admin-core
+
+ | 
+
+/logout
+
+ | 
+
+POST
+
+ | 
+
+/v2/identity/auth/logout
+
+ | 
+
+None — already in be/admin-core
+
+ | 
+
+/renew-token
+
+ | 
+
+POST
+
+ | 
+
+/v2/identity/auth/renew-token
+
+ | 
+
+None — already in be/admin-core
+
+ | 
+
+/validate-token
+
+ | 
+
+GET
+
+ | 
+
+/v2/identity/auth/validate-token
+
+ | 
+
+None — already in be/admin-core
+
+ | 
+
+/forgot-password
+
+ | 
+
+POST
+
+ | 
+
+/v2/identity/auth/forgot-password
+
+ | 
+
+None — already in be/admin-core
+
+ | 
+
+/reset-password
+
+ | 
+
+POST
+
+ | 
+
+/v2/identity/auth/reset-password
+
+ | 
+
+None — already in be/admin-core
+
+ | 
+
+/user
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/identity/users
+
+ | 
+
+Low — CRUD reshape
+
+ | 
+
+/role
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/identity/roles
+
+ | 
+
+Low — CRUD reshape
+
+ | 
+
+/permissions
+
+ | 
+
+GET/POST
+
+ | 
+
+/v2/identity/permissions
+
+ | 
+
+Low
+
+ | 
+
+/tfa
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+/v2/identity/tfa
+
+ | 
+
+Low
+
+Organisation & Enrolment
+
+ | 
+
+v1 path
+
+ | 
+
+Method
+
+ | 
+
+v2 canonical
+
+ | 
+
+Shim complexity
+
+ | 
+
+/org
+
+ | 
+
+GET/POST
+
+ | 
+
+/v2/orgs
+
+ | 
+
+Medium — status enum reshape
+
+ | 
+
+/org/:id
+
+ | 
+
+GET/PUT
+
+ | 
+
+/v2/orgs/:id
+
+ | 
+
+Medium
+
+ | 
+
+/org/:id/status/:status
+
+ | 
+
+PUT
+
+ | 
+
+/v2/orgs/:id/status
+
+ | 
+
+Medium — field rename
+
+ | 
+
+/org/:id/status/:status/:adminRequestId
+
+ | 
+
+PUT
+
+ | 
+
+/v2/orgs/:id/status (body includes adminRequestId)
+
+ | 
+
+Medium
+
+ | 
+
+/org/enroll
+
+ | 
+
+POST
+
+ | 
+
+/v2/enrolments
+
+ | 
+
+Medium
+
+ | 
+
+/org/enroll/:adminRequestId
+
+ | 
+
+PUT
+
+ | 
+
+/v2/enrolments/:id
+
+ | 
+
+Low
+
+ | 
+
+/org/:id/files/upload/:type
+
+ | 
+
+POST
+
+ | 
+
+/v2/orgs/:id/files
+
+ | 
+
+Low
+
+ | 
+
+/org/:id/files/download/:type/:key
+
+ | 
+
+GET
+
+ | 
+
+/v2/orgs/:id/files/:key
+
+ | 
+
+Low
+
+ | 
+
+/org/:id/files/signedurl/:type/:ext
+
+ | 
+
+GET
+
+ | 
+
+/v2/orgs/:id/files/signed-url
+
+ | 
+
+Low
+
+ | 
+
+/org/:id/makerCheckerStatusUpdate
+
+ | 
+
+PUT
+
+ | 
+
+/v2/orgs/:id/maker-checker
+
+ | 
+
+Medium — email triggers
+
+ | 
+
+/org/:id/pendingMakerCheckerTransactions
+
+ | 
+
+GET
+
+ | 
+
+/v2/orgs/:id/maker-checker/pending
+
+ | 
+
+Low
+
+ | 
+
+/org/update-principal-sharing
+
+ | 
+
+PUT
+
+ | 
+
+/v2/orgs/:id/principal-sharing
+
+ | 
+
+Low
+
+ | 
+
+/org/ttKeys
+
+ | 
+
+POST/DELETE
+
+ | 
+
+/v2/orgs/tradetrust-keys
+
+ | 
+
+Low
+
+ | 
+
+/org/migrate-ttkey-to-kms
+
+ | 
+
+PUT
+
+ | 
+
+Internal tool — admin-only, no shim needed
+
+ | 
+
+Low
+
+ | 
+
+/admin-requests
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+/v2/admin-requests
+
+ | 
+
+Low
+
+ | 
+
+/enrolments
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+/v2/enrolments
+
+ | 
+
+Low
+
+ | 
+
+/orgPersona
+
+ | 
+
+GET/POST/DELETE
+
+ | 
+
+/v2/orgs/:id/personas
+
+ | 
+
+Low
+
+ | 
+
+/my-info
+
+ | 
+
+GET/POST
+
+ | 
+
+/v2/admin/my-info
+
+ | 
+
+Low (SingPass passthrough)
+
+ | 
+
+/org-de-auto-approval
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+/v2/orgs/auto-approval
+
+ | 
+
+Low
+
+ | 
+
+/groups
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/orgs/groups
+
+ | 
+
+Low
+
+Data Elements & Schema Versioning
+
+ | 
+
+v1 path
+
+ | 
+
+Method
+
+ | 
+
+v2 canonical
+
+ | 
+
+Shim complexity
+
+ | 
+
+/data-elements
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/data-elements
+
+ | 
+
+Low
+
+ | 
+
+/data-element-versions
+
+ | 
+
+GET/POST
+
+ | 
+
+/v2/data-elements/:id/versions
+
+ | 
+
+Low — path restructure
+
+ | 
+
+/data-element-versions/:id/:version
+
+ | 
+
+GET/PUT
+
+ | 
+
+/v2/data-elements/:id/versions/:v
+
+ | 
+
+Low
+
+ | 
+
+/data-element-versions/:id/:version/promote
+
+ | 
+
+POST
+
+ | 
+
+/v2/data-elements/:id/versions/:v/promote
+
+ | 
+
+Low
+
+ | 
+
+/data-element-versions/:id/:version/impact
+
+ | 
+
+GET
+
+ | 
+
+/v2/data-elements/:id/versions/:v/impact
+
+ | 
+
+Low
+
+ | 
+
+/data-element-versions/sync
+
+ | 
+
+POST
+
+ | 
+
+/v2/data-elements/versions/sync
+
+ | 
+
+Low
+
+ | 
+
+/data-element-version-comments
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/data-elements/:id/versions/:v/comments
+
+ | 
+
+Low
+
+ | 
+
+/data-element-tracking
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+/v2/data-elements/tracking
+
+ | 
+
+Low
+
+ | 
+
+/use-cases
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/use-cases
+
+ | 
+
+Low
+
+ | 
+
+/usecasepersonas
+
+ | 
+
+GET/POST/DELETE
+
+ | 
+
+/v2/use-cases/:id/personas
+
+ | 
+
+Low
+
+ | 
+
+/personas
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/identity/personas
+
+ | 
+
+Low
+
+ | 
+
+/source-type-config
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+/v2/config/source-type
+
+ | 
+
+Low
+
+ | 
+
+/source-system-configuration
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/config/pitstop/source-config
+
+ | 
+
+Low
+
+Consent & Relationships (highest shim complexity — Phase 3 prerequisite)
+
+ | 
+
+v1 path
+
+ | 
+
+Method
+
+ | 
+
+v2 canonical
+
+ | 
+
+Shim complexity
+
+ | 
+
+/subscriptions
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/consent/agreements?type=SUBSCRIPTION
+
+ | 
+
+High — field rename (subscriber→initiator, prosumer→counterparty), status map
+
+ | 
+
+/subscriptions/:id/refresh
+
+ | 
+
+POST
+
+ | 
+
+/v2/consent/agreements/:id/refresh
+
+ | 
+
+Medium
+
+ | 
+
+/refreshSubscription
+
+ | 
+
+POST
+
+ | 
+
+/v2/consent/refresh
+
+ | 
+
+Medium
+
+ | 
+
+/data-exchange-relation
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/consent/agreements?type=DIRECT
+
+ | 
+
+High — DER fields → consent_agreement columns
+
+ | 
+
+/data-exchange-relation/invites
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+/v2/consent/invites?type=DIRECT
+
+ | 
+
+High
+
+ | 
+
+/service-provider-relation
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/consent/agreements?type=SERVICE_PROVIDER
+
+ | 
+
+High — SPR fields + contributor org
+
+ | 
+
+/service-provider-relation/invites
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+/v2/consent/invites?type=SERVICE_PROVIDER
+
+ | 
+
+High
+
+ | 
+
+/verificationFlow
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+/v2/consent/verification
+
+ | 
+
+Medium
+
+ | 
+
+/orgUseCase
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/orgs/:id/use-cases
+
+ | 
+
+Low
+
+ | 
+
+/principal
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/consent/principals
+
+ | 
+
+Low
+
+ | 
+
+/thirdpartylookup
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/admin/third-party
+
+ | 
+
+Low
+
+Pitstop / System Config
+
+ | 
+
+v1 path
+
+ | 
+
+Method
+
+ | 
+
+v2 canonical
+
+ | 
+
+Shim complexity
+
+ | 
+
+/sys
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/orgs/:id/endpoints
+
+ | 
+
+Low — rename EnterpriseSystem → endpoint
+
+ | 
+
+/system
+
+ | 
+
+GET/POST
+
+ | 
+
+/v2/config/pitstop
+
+ | 
+
+Low
+
+ | 
+
+/orgsys
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+/v2/orgs/:id/endpoints/:endpointId
+
+ | 
+
+Low
+
+ | 
+
+/config
+
+ | 
+
+GET/PUT
+
+ | 
+
+/v2/config/dex
+
+ | 
+
+Low
+
+ | 
+
+/licenseKey
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/config/license-keys
+
+ | 
+
+Low
+
+ | 
+
+/status
+
+ | 
+
+GET
+
+ | 
+
+/v2/admin/status
+
+ | 
+
+Low
+
+ | 
+
+/network
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/config/network
+
+ | 
+
+Low
+
+ | 
+
+/feature
+
+ | 
+
+GET/PUT
+
+ | 
+
+/v2/config/feature-flags
+
+ | 
+
+Low
+
+ | 
+
+/settings
+
+ | 
+
+GET/PUT
+
+ | 
+
+/v2/config/settings
+
+ | 
+
+Low
+
+ | 
+
+/notification-groups
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/notifications/groups
+
+ | 
+
+Low
+
+ETR & TradeTrust
+
+ | 
+
+v1 path
+
+ | 
+
+Method
+
+ | 
+
+v2 canonical
+
+ | 
+
+Shim complexity
+
+ | 
+
+/saved-address
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/etr/saved-address
+
+ | 
+
+Low
+
+ | 
+
+/tradetrustKey
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/etr/tradetrust-keys
+
+ | 
+
+Low
+
+ | 
+
+/termClause
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/etr/term-clauses
+
+ | 
+
+Low
+
+ | 
+
+/termTemplate
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/etr/term-templates
+
+ | 
+
+Low
+
+ | 
+
+/smart-contract
+
+ | 
+
+POST
+
+ | 
+
+/v2/etr/smart-contracts
+
+ | 
+
+Low
+
+ | 
+
+/eclip-template
+
+ | 
+
+GET/POST/PUT/DELETE
+
+ | 
+
+/v2/etr/eclip-templates
+
+ | 
+
+Low
+
+Notifications, Audit, Metering, Misc
+
+ | 
+
+v1 path
+
+ | 
+
+Method
+
+ | 
+
+v2 canonical
+
+ | 
+
+Shim complexity
+
+ | 
+
+/notifications
+
+ | 
+
+GET/PUT
+
+ | 
+
+/v2/notifications
+
+ | 
+
+Low
+
+ | 
+
+/notifications/pitstop-activity
+
+ | 
+
+POST
+
+ | 
+
+/v2/notifications/pitstop-activity
+
+ | 
+
+Low (machine-to-machine)
+
+ | 
+
+/notifications/user-settings
+
+ | 
+
+GET/PUT/POST
+
+ | 
+
+/v2/notifications/user-settings
+
+ | 
+
+Low
+
+ | 
+
+/audit
+
+ | 
+
+GET
+
+ | 
+
+/v2/audit
+
+ | 
+
+Low
+
+ | 
+
+/meter
+
+ | 
+
+GET/POST
+
+ | 
+
+/v2/metering
+
+ | 
+
+Low
+
+ | 
+
+/master-data
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+/v2/metering/master-data
+
+ | 
+
+Low
+
+ | 
+
+/email
+
+ | 
+
+POST
+
+ | 
+
+/v2/notifications/email
+
+ | 
+
+Low
+
+ | 
+
+/version
+
+ | 
+
+GET/POST
+
+ | 
+
+Retire — move to deployment config
+
+ | 
+
+N/A
+
+ | 
+
+/whats-new
+
+ | 
+
+GET/POST/PUT
+
+ | 
+
+Evaluate — CMS or static config
+
+ | 
+
+Low if kept
+
+ | 
+
+/tandc
+
+ | 
+
+GET/POST
+
+ | 
+
+/v2/admin/tandc
+
+ | 
+
+Low
+
+ | 
+
+/my-info
+
+ | 
+
+GET/POST
+
+ | 
+
+/v2/admin/my-info
+
+ | 
+
+Low
+
+ | 
+
+/dex
+
+ | 
+
+GET
+
+ | 
+
+/v2/config/dex (merged)
+
+ | 
+
+Low
+
+Routes to retire (no v2 equivalent needed)
+
+ | 
+
+v1 path
+
+ | 
+
+Reason
+
+ | 
+
+/version
+
+ | 
+
+Single legacy row; version tracking → deployment metadata
+
+ | 
+
+/org/migrate-ttkey-to-kms
+
+ | 
+
+One-time migration tool; run it before retirement, then remove
+
+ | 
+
+/refreshSubscription
+
+ | 
+
+Background trigger — fold into consent domain or Kafka event
+
+4e. v1 shim pattern in Go
+
+// internal/service/router.go — shim registration (one group per batch)
+func (s *Service) registerV1ShimRoutes(engine *gin.Engine) {
+ v1 := engine.Group("/api/v1")
+ // Batch 1: auth — no shim, already canonical
+ // Batch 4: consent shims (highest complexity, registered last)
+ v1.GET("/subscriptions", s.shimListSubscriptions)
+ v1.POST("/data-exchange-relation", s.shimCreateDER)
+ v1.GET("/service-provider-relation", s.shimListSPR)
+ // ... one file per domain: shim_consent.go, shim_identity.go, etc.
+}
+
+// internal/service/shim_consent.go
+func (s *Service) shimListSubscriptions(c *gin.Context) {
+ agreements, err := s.listConsentAgreements(c, ConsentFilter{Type: "SUBSCRIPTION"})
+ if err != nil { /* ... */ }
+ c.JSON(200, toV1SubscriptionList(agreements)) // response translator
+}
+
+// Response translators live in internal/dto/shim/
+// e.g. internal/dto/shim/consent_v1.go
+func toV1SubscriptionList(in []model.ConsentAgreement) []dto.V1Subscription { ... }
+
+4f. API contract governance
+
+All v2 routes spec'd in dex-api-specs (OpenAPI YAML) before implementation begins for that batch.
+
+v1 shim routes are registered only when the v2 service function exists — no shim-first skeletons.
+
+v1 published EOL date: 12 months post v2 GA; communicate before Batch 1 is deployed.
+
+Breaking v2 changes require 30-day advance notice to external integrators.
+
+Go file layout per batch: internal/service/<domain>.go, internal/store/<domain>_store.go, internal/dto/<domain>.go, internal/model/<domain>.go, internal/dto/shim/<domain>_v1.go.
+
+Phase 5 — Frontend Feature Migration (4–6 weeks, after API v2 stabilises)
+
+Goal: Migrate all pages from admin-ui and pitstop-ui into ui/apps/portal, consuming v2 APIs.
+
+[ ] Migrate admin pages (admin-ui) → portal/src/modules/admin/.
+
+[ ] Migrate participant pages (pitstop-ui) → portal/src/modules/participant/.
+
+[ ] Replace all v1 API calls with v2 equivalents endpoint by endpoint.
+
+[ ] Convert JS → TypeScript, class components → hooks, Redux → Zustand/Context.
+
+[ ] Extract reusable components into ui/libs/src/components/ (@dex/core-components).
+
+[ ] Implement full session management, TFA flow, maker-checker, real-time notifications.
+
+[ ] Update qa-playwright E2E tests to cover portal flows.
+
+Phase 6 — Infrastructure Consolidation (4–6 weeks, can overlap Phase 5)
+
+Goal: Eliminate the Central/Pitstop AWS account split.
+
+[ ] Assess VPC peering vs. account merger. Single-account preferred to remove cross-account HTTPS overhead.
+
+[ ] Move admin ECS tasks into pitstop account (or new consolidated account).
+
+[ ] Merge Cognito user pools if multiple pools exist (evaluate risk per dex).
+
+[ ] Consolidate CloudFront distributions — one per environment, path-based routing to portal + API.
+
+[ ] Migrate infra-terragrunt to reflect new account/VPC topology.
+
+[ ] Update Secrets Manager references and IAM roles.
+
+Phase 7 — v1 Retirement & Cleanup (2–4 weeks, after v2 is GA in prod)
+
+[ ] Confirm all clients (portal, external partners) are fully on v2.
+
+[ ] Remove v1 shim route group from be/admin-core/router.go.
+
+[ ] Archive old DB tables (_archived_ prefix, keep 90 days, then drop).
+
+[ ] Decommission admin-corev2 and pitstop-core as standalone services.
+
+[ ] Archive admin-ui and pitstop-ui repos (read-only).
+
+Risks & Mitigations
+
+ | 
+
+Risk
+
+ | 
+
+Likelihood
+
+ | 
+
+Impact
+
+ | 
+
+Mitigation
+
+ | 
+
+Data loss during DMS migration
+
+ | 
+
+Medium
+
+ | 
+
+Critical
+
+ | 
+
+DMS full-load + CDC keeps source in sync; shadow read validation before write cutover
+
+ | 
+
+v1 shim in Go misses an edge case
+
+ | 
+
+High
+
+ | 
+
+High
+
+ | 
+
+Full E2E regression suite before each client migration
+
+ | 
+
+External integrators not migrating in time
+
+ | 
+
+Medium
+
+ | 
+
+High
+
+ | 
+
+Publish v1 EOL 12 months in advance; offer migration tooling
+
+ | 
+
+CPU spike from DB migration on Pitstop RDS
+
+ | 
+
+Low
+
+ | 
+
+High
+
+ | 
+
+MessageStore + pitstop AuditTrail are frozen (no migration, no ALTER TABLE); DMS tasks run in off-peak windows on Admin DB tables only
+
+ | 
+
+Go producer/consumer microservices interface changes
+
+ | 
+
+Medium
+
+ | 
+
+High
+
+ | 
+
+v2 API wraps Go services via internal calls; microservices untouched initially
+
+ | 
+
+Team boundary conflicts
+
+ | 
+
+Low
+
+ | 
+
+Medium
+
+ | 
+
+Define CODEOWNERS, module boundaries, PR review policy upfront
+
+ | 
+
+Consent model change breaks existing DER/SPR approvals
+
+ | 
+
+Medium
+
+ | 
+
+Critical
+
+ | 
+
+Keep old tables read-only; consent_agreement created fresh; migrate only after validation
+
+ | 
+
+DynamoDB config tables not consolidated
+
+ | 
+
+Low
+
+ | 
+
+Medium
+
+ | 
+
+Keep DynamoDB as-is for runtime config; fold into RDS only if it simplifies operations
+
+Stakeholder Coordination
+
+ | 
+
+Workstream
+
+ | 
+
+Owner
+
+ | 
+
+Involved teams
+
+ | 
+
+Domain model & consent redesign
+
+ | 
+
+Product + Engineering Lead
+
+ | 
+
+Business, UX, Engineering
+
+ | 
+
+Portal scaffold + Nx setup
+
+ | 
+
+Frontend team
+
+ | 
+
+UI/UX, QA
+
+ | 
+
+Go API expansion (be/admin-core)
+
+ | 
+
+Backend team
+
+ | 
+
+API team, integration partners
+
+ | 
+
+DB migration scripts
+
+ | 
+
+DB-owning team
+
+ | 
+
+Both engineering teams
+
+ | 
+
+v2 API design (OpenAPI first)
+
+ | 
+
+API team
+
+ | 
+
+Product, integration partners
+
+ | 
+
+Infra consolidation
+
+ | 
+
+DevOps/Cloud team
+
+ | 
+
+Security, Compliance
+
+ | 
+
+External partner communication
+
+ | 
+
+Product
+
+ | 
+
+BD, Partner success
+
+Indicative Timeline
+
+ | 
+
+Phase
+
+ | 
+
+Duration
+
+ | 
+
+Dependency
+
+ | 
+
+0 — Discovery
+
+ | 
+
+Weeks 1–3
+
+ | 
+
+—
+
+ | 
+
+1 — Portal & API scaffold
+
+ | 
+
+Weeks 3–6
+
+ | 
+
+Phase 0
+
+ | 
+
+2 — DB consolidation
+
+ | 
+
+Weeks 4–14
+
+ | 
+
+Phase 0 (table audit)
+
+ | 
+
+3 — Domain model
+
+ | 
+
+Weeks 4–10
+
+ | 
+
+Phase 0 (domain workshop)
+
+ | 
+
+4 — v2 API (Go)
+
+ | 
+
+Weeks 6–14
+
+ | 
+
+Phase 1 scaffold
+
+ | 
+
+5 — Frontend feature migration
+
+ | 
+
+Weeks 12–18
+
+ | 
+
+Phase 4 v2 API stable
+
+ | 
+
+6 — Infra consolidation
+
+ | 
+
+Weeks 14–20
+
+ | 
+
+Phase 4 API, Phase 2 DB
+
+ | 
+
+7 — v1 retirement
+
+ | 
+
+Weeks 20–24
+
+ | 
+
+All phases stable in prod
+
+Total estimated duration: ~6 months (strangler-fig means prod is never broken; each phase delivers independent value).
+
+Open Decisions (to resolve in Phase 0)
+
+Portal sub-module ownership model — Option A (domain modules) vs B (Module Federation) vs C (separate Nx apps). Recommendation: A.
+
+DB migration option — Option A (Admin → existing Pitstop RDS) vs Option B (Admin + select Pitstop → new RDS) vs Option C (greenfield new RDS). Recommendation: B for prod, evolve to C.
+
+AuditTrail merge strategy — one unified shared_audit_log with source discriminator, or keep separate + unified view?
+
+DynamoDB vs RDS for runtime config — keep Dynamo for pitstop-config, or fold into consolidated Postgres?
+
+Cognito pool consolidation — one pool per environment (all dexes) vs one per dex?
+
+v1 EOL date — confirm with external partners before committing.
+
+Go producer/consumer scope — producer, consumer, aggregator remain unchanged in Phases 1–4; define when they get updated to call v2 APIs.
+

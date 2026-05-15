@@ -1,0 +1,136 @@
+/* ============================================================
+   DESIGN TOKENS — single source of truth for the unified portal
+   Sourced from dex-monorepo/ui/libs/src/assets/scss/base/_colors.scss
+   and _typography.scss. Do NOT hardcode colours or spacing in
+   components, layout, or screens — always reference these tokens.
+   ============================================================ */
+
+:root {
+  /* ---------- DEX brand ramps ---------- */
+  /* TradeX (purple) */
+  --tx-20: #4e0058;
+  --tx-40: #840095;
+  --tx-50: #a614b9;
+  --tx-80: #f993ff;
+  --tx-90: #ffc9fd;
+  --tx-95: #ffe7fb;
+  --tx-98: #fff7fa;
+
+  /* BuildEx (blue) */
+  --bx-20: #00266d;
+  --bx-40: #0446c3;
+  --bx-50: #505d77;
+  --bx-80: #24b6ff;
+  --bx-90: #abdaff;
+  --bx-95: #e0f0ff;
+  --bx-98: #f6faff;
+
+  /* HealthDex (teal) */
+  --hx-20: #003c32;
+  --hx-40: #006d5d;
+  --hx-50: #008571;
+  --hx-80: #4aefda;
+  --hx-90: #8bf8e4;
+  --hx-95: #c5fff1;
+  --hx-98: #e6fff9;
+
+  /* ---------- Neutral grey ramp (chrome, text, borders) ---------- */
+  --g-10: #14181e;
+  --g-30: #363941;
+  --g-40: #484b53;
+  --g-50: #60636b;
+  --g-70: #90939c;
+  --g-80: #b0b3bc;
+  --g-90: #d7dae3;
+  --g-95: #ebeef7;
+  --g-98: #f9f9ff;
+
+  /* ---------- Semantic ramps ---------- */
+  --red-20:  #570d00;
+  --red-50:  #b4371b;
+  --red-95:  #ffe9e4;
+  --red-98:  #fff8f6;
+
+  --green-50: #0e7241;
+  --green-95: #b3ffc8;
+  --green-98: #e9ffeb;
+
+  --yellow-50: #7a6007;
+  --yellow-95: #ffecc3;
+  --yellow-98: #fff8f1;
+
+  --blue-50: #0061c1;
+  --blue-95: #e5ecff;
+  --blue-98: #f7f8ff;
+
+  /* ---------- Active theme tokens (rebound by themes.css) ---------- */
+  /* Defaults to TradeX; switched via body.theme-tx / .theme-bx / .theme-hx */
+  --theme-20: var(--tx-20);
+  --theme-40: var(--tx-40);
+  --theme-50: var(--tx-50);
+  --theme-80: var(--tx-80);
+  --theme-90: var(--tx-90);
+  --theme-95: var(--tx-95);
+  --theme-98: var(--tx-98);
+
+  /* ---------- Semantic surfaces (flip in dark mode via themes.css) ---------- */
+  --surface: #ffffff;              /* Cards, popovers, modals — was hardcoded #ffffff */
+  --surface-elevated: #ffffff;     /* Floating UI (dropdowns, switchers) */
+  --surface-sub: var(--g-98);      /* Sidebar bg, soft section bg */
+  --surface-canvas: var(--g-98);   /* Page-level background */
+  --surface-overlay: rgba(20, 24, 30, 0.45); /* Modal scrim */
+
+  /* ---------- Radii ---------- */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-xl: 12px;
+  --r-full: 9999px;
+
+  /* ---------- Elevation (used sparingly — flat by default) ---------- */
+  --shadow-1: 0 0 0 0.5px rgba(20, 24, 30, 0.08);
+  --shadow-popover: 0 8px 24px rgba(20, 24, 30, 0.12);
+  --shadow-modal: 0 12px 32px rgba(20, 24, 30, 0.2);
+
+  /* ---------- Typography (mirrors _typography.scss) ---------- */
+  --font-sans: 'Avenir', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --fs-display: 40px; --lh-display: 48px;
+  --fs-h1: 32px; --lh-h1: 40px;
+  --fs-h2: 24px; --lh-h2: 32px;
+  --fs-h3: 21px; --lh-h3: 28px;
+  --fs-h4: 18px; --lh-h4: 24px;
+  --fs-body: 14px; --lh-body: 20px;
+  --fs-meta: 12px; --lh-meta: 16px;
+  --fs-micro: 10px;
+
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-heavy: 800;
+
+  /* ---------- Spacing scale (8px multiple) ---------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  /* ---------- Z-index scale ---------- */
+  --z-popover: 60;
+  --z-side-panel: 800;
+  --z-modal: 900;
+  --z-search: 950;
+  --z-toast: 1000;
+  --z-banner: 995;
+
+  /* ---------- Motion ---------- */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 240ms;
+  --easing: cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -1,0 +1,2866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200, initial-scale=1">
+<title>Dex Portal — Prototype</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
+<style>
+:root {
+  --tx-20:#4e0058; --tx-40:#840095; --tx-50:#a614b9; --tx-80:#f993ff; --tx-90:#ffc9fd; --tx-95:#ffe7fb; --tx-98:#fff7fa;
+  --bx-20:#00266d; --bx-40:#0446c3; --bx-80:#24b6ff; --bx-90:#abdaff; --bx-95:#e0f0ff; --bx-98:#f6faff;
+  --hx-20:#003c32; --hx-40:#006d5d; --hx-80:#4aefda; --hx-90:#8bf8e4; --hx-95:#c5fff1; --hx-98:#e6fff9;
+  --g-10:#14181e; --g-30:#363941; --g-40:#484b53; --g-50:#60636b; --g-70:#90939c; --g-80:#b0b3bc; --g-90:#d7dae3; --g-95:#ebeef7; --g-98:#f9f9ff;
+  --red-50:#b4371b; --red-95:#ffe9e4; --red-98:#fff8f6;
+  --green-50:#0e7241; --green-95:#b3ffc8; --green-98:#e9ffeb;
+  --yellow-50:#7a6007; --yellow-95:#ffecc3; --yellow-98:#fff8f1;
+  --r-sm:4px; --r-md:6px; --r-lg:8px; --r-xl:12px;
+  --shadow-1: 0 0 0 0.5px rgba(20,24,30,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Avenir', system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--g-10); background: var(--g-98); font-size: 13px; line-height: 1.5; }
+button { font-family: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+.app { display: grid; grid-template-columns: 240px 1fr; height: 100vh; overflow: hidden; }
+
+aside.rail { background: #ffffff; border-right: 0.5px solid var(--g-90); overflow-y: auto; padding: 16px 0; }
+aside.rail .brand { display: flex; align-items: center; gap: 8px; padding: 0 16px 14px; border-bottom: 0.5px solid var(--g-90); }
+aside.rail .brand svg { flex-shrink: 0; }
+aside.rail .brand-text { font-size: 13px; font-weight: 500; }
+aside.rail .brand-sub { font-size: 11px; color: var(--g-50); }
+aside.rail .group { padding: 12px 0 4px; }
+aside.rail .group-label { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g-70); padding: 0 16px 6px; }
+aside.rail .nav-link { display: flex; align-items: center; gap: 8px; padding: 6px 16px; font-size: 12px; color: var(--g-30); cursor: pointer; border-left: 2px solid transparent; }
+aside.rail .nav-link:hover { background: var(--g-98); }
+aside.rail .nav-link.active { background: var(--tx-95); color: var(--tx-20); border-left-color: var(--tx-50); font-weight: 500; }
+aside.rail .nav-link i { font-size: 14px; color: var(--g-50); flex-shrink: 0; }
+aside.rail .nav-link.active i { color: var(--tx-50); }
+aside.rail .footer-note { padding: 16px; border-top: 0.5px solid var(--g-90); margin-top: 12px; font-size: 11px; color: var(--g-50); line-height: 1.5; }
+
+main.canvas { overflow-y: auto; padding: 24px 28px 60px; }
+.canvas-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.canvas-meta .meta-label { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g-50); }
+.canvas-meta h1 { font-size: 18px; font-weight: 500; color: var(--g-10); margin: 0; }
+.canvas-meta .adr-tag { padding: 2px 7px; background: var(--g-95); color: var(--g-30); border-radius: 4px; font-size: 11px; font-weight: 500; cursor: pointer; }
+.canvas-meta .adr-tag:hover { background: var(--g-90); }
+.canvas-tip { padding: 10px 14px; background: var(--yellow-98); border: 0.5px solid var(--yellow-95); border-left: 3px solid var(--yellow-50); border-radius: var(--r-md); margin-bottom: 18px; font-size: 12px; color: var(--g-30); display: flex; gap: 8px; align-items: flex-start; }
+.canvas-tip i { color: var(--yellow-50); flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+.canvas-tip strong { font-weight: 500; }
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+.portal-frame { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); overflow: hidden; box-shadow: var(--shadow-1); }
+.portal-frame .topbar { background: #ffffff; border-bottom: 0.5px solid var(--g-90); padding: 12px 14px; display: flex; align-items: center; gap: 12px; position: relative; }
+.workspace-pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px 5px 8px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; background: var(--tx-95); color: var(--tx-20); border: 0.5px solid var(--tx-90); }
+.workspace-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tx-50); }
+.workspace-pill.is-all { background: #ffffff; color: var(--g-10); border-color: var(--g-90); }
+.workspace-pill.is-all .dot-grid { display: inline-flex; flex-direction: column; gap: 1.5px; }
+.workspace-pill.is-all .dot-grid-row { display: inline-flex; gap: 1.5px; }
+.workspace-pill.is-all .dot-grid-cell { width: 5px; height: 5px; border-radius: 1px; background: var(--g-30); }
+.workspace-pill.is-all .dot-grid-cell.alt { background: var(--g-50); }
+.search-pill { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--g-98); border: 0.5px solid var(--g-90); border-radius: 6px; max-width: 240px; flex: 1; }
+.search-pill i { font-size: 14px; color: var(--g-50); }
+.search-pill span { font-size: 12px; color: var(--g-70); }
+.search-pill kbd { margin-left: auto; font-size: 10px; color: var(--g-70); background: var(--g-95); padding: 1px 5px; border-radius: 3px; font-family: ui-monospace, monospace; }
+.spacer { flex: 1; }
+.btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--tx-50); color: #ffffff; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; }
+.btn-primary i { font-size: 14px; }
+.btn-primary.neutral { background: var(--g-30); }
+.btn-secondary { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; background: #ffffff; color: var(--tx-20); border: 0.5px solid var(--tx-90); border-radius: 5px; font-size: 11px; font-weight: 500; }
+.btn-secondary.neutral { color: var(--g-30); border-color: var(--g-90); }
+.btn-ghost { padding: 6px; background: transparent; border: 0.5px solid var(--g-90); border-radius: 6px; position: relative; }
+.btn-ghost i { font-size: 16px; color: var(--g-30); }
+.btn-ghost .badge-dot { position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; background: var(--red-50); border-radius: 50%; }
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--tx-95); color: var(--tx-20); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; }
+.avatar.neutral { background: var(--g-95); color: var(--g-30); }
+
+.portal-frame .body { display: grid; grid-template-columns: 168px 1fr; min-height: 540px; }
+.portal-frame nav.sidebar { background: var(--g-98); border-right: 0.5px solid var(--g-90); padding: 14px 0; }
+.sidebar .sec-label { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g-70); margin: 0 14px 8px; }
+.sidebar .side-link { display: flex; align-items: center; gap: 8px; padding: 6px 14px; font-size: 12px; color: var(--g-10); cursor: pointer; border-left: 2px solid transparent; }
+.sidebar .side-link i { font-size: 14px; color: var(--g-50); flex-shrink: 0; }
+.sidebar .side-link.active { background: var(--tx-95); color: var(--tx-20); border-left-color: var(--tx-50); font-weight: 500; }
+.sidebar .side-link.active i { color: var(--tx-50); }
+.sidebar .side-link.neutral.active { background: var(--g-95); color: var(--g-10); border-left-color: var(--g-30); }
+.sidebar .side-link.neutral.active i { color: var(--g-30); }
+.sidebar .side-link .count-badge { margin-left: auto; background: var(--tx-50); color: #ffffff; font-size: 10px; padding: 1px 5px; border-radius: 8px; font-weight: 500; }
+.sidebar .side-link.neutral.active .count-badge { background: var(--g-30); }
+.sidebar .side-divider { height: 0.5px; background: var(--g-90); margin: 10px 14px; }
+.sidebar .dex-mini { display: flex; align-items: center; gap: 8px; padding: 4px 14px; font-size: 11px; color: var(--g-50); cursor: pointer; }
+.sidebar .dex-mini .dex-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sidebar .new-dot { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--red-50); }
+.sidebar .show-hidden { font-size: 11px; color: var(--g-70); margin: 16px 14px 0; cursor: pointer; }
+
+.portal-frame main.content { padding: 18px 22px 28px; min-width: 0; }
+.content h1 { font-size: 18px; font-weight: 500; color: var(--g-10); }
+.content .lede { font-size: 12px; color: var(--g-50); margin: 0 0 14px; }
+
+.filter-chips { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.chip { padding: 4px 10px; border-radius: 12px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; }
+.chip.solid { background: var(--g-10); color: #ffffff; font-weight: 500; }
+.chip.muted { background: var(--g-95); color: var(--g-30); }
+.chip.tx { background: var(--tx-95); color: var(--tx-20); }
+.chip.bx { background: var(--bx-95); color: var(--bx-20); }
+.chip.hx { background: var(--hx-95); color: var(--hx-20); }
+.chip .dex-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+.dex-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; flex-shrink: 0; line-height: 1; }
+.dex-chip .dex-dot { width: 6px; height: 6px; border-radius: 50%; }
+.dex-chip.tx { background: var(--tx-95); color: var(--tx-20); }
+.dex-chip.tx .dex-dot { background: var(--tx-50); }
+.dex-chip.bx { background: var(--bx-95); color: var(--bx-20); }
+.dex-chip.bx .dex-dot { background: var(--bx-40); }
+.dex-chip.hx { background: var(--hx-95); color: var(--hx-20); }
+.dex-chip.hx .dex-dot { background: var(--hx-40); }
+
+details.group-block { margin-bottom: 18px; }
+details.group-block summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; margin-bottom: 10px; }
+details.group-block summary::-webkit-details-marker { display: none; }
+details.group-block summary i.chev { font-size: 14px; color: var(--g-50); transition: transform 0.15s; }
+details.group-block[open] summary i.chev { transform: rotate(0deg); }
+details.group-block:not([open]) summary i.chev { transform: rotate(-90deg); }
+details.group-block summary .ttl { font-size: 13px; font-weight: 500; color: var(--g-10); }
+details.group-block summary .sub { font-size: 11px; color: var(--g-50); }
+
+.inbox-stack { display: flex; flex-direction: column; gap: 8px; }
+.inbox-card { display: flex; gap: 12px; padding: 12px 14px; background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-lg); align-items: center; cursor: pointer; transition: border-color 0.15s; }
+.inbox-card:hover { border-color: var(--g-80); }
+.inbox-card.team { background: var(--g-98); }
+.inbox-card.completion { background: var(--green-98); border-color: var(--green-95); }
+.inbox-card .body { flex: 1; min-width: 0; }
+.inbox-card .title { font-size: 13px; color: var(--g-10); font-weight: 500; }
+.inbox-card .meta { font-size: 11px; color: var(--g-50); margin-top: 2px; }
+.inbox-card.completion .title { color: var(--green-50); font-size: 12px; }
+.inbox-card.completion .meta { color: var(--green-50); opacity: 0.75; }
+
+.dropdown-pop { position: absolute; top: calc(100% + 6px); right: 14px; z-index: 50; width: 340px; background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); padding: 6px; box-shadow: 0 4px 12px rgba(20,24,30,0.05); }
+.dropdown-pop[hidden] { display: none; }
+.dropdown-item { display: flex; gap: 12px; padding: 10px 12px; border-radius: var(--r-md); cursor: pointer; }
+.dropdown-item:hover { background: var(--g-98); }
+.dropdown-item .icon-bubble { width: 32px; height: 32px; background: var(--tx-95); color: var(--tx-20); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.dropdown-item .icon-bubble.neutral { background: var(--g-95); color: var(--g-30); }
+.dropdown-item .icon-bubble i { font-size: 18px; }
+.dropdown-item .label { font-size: 13px; font-weight: 500; color: var(--g-10); }
+.dropdown-item .desc { font-size: 11px; color: var(--g-50); margin-top: 2px; line-height: 1.4; }
+.dropdown-divider { height: 0.5px; background: var(--g-90); margin: 6px 8px; }
+
+.switcher-pop { position: absolute; top: calc(100% + 6px); left: 14px; z-index: 50; width: 320px; background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); padding: 6px; box-shadow: 0 4px 12px rgba(20,24,30,0.05); }
+.switcher-pop[hidden] { display: none; }
+.switcher-item { display: flex; gap: 10px; padding: 10px 12px; border-radius: var(--r-md); align-items: center; cursor: pointer; }
+.switcher-item:hover { background: var(--g-98); }
+.switcher-item.active { background: var(--tx-95); }
+.switcher-item .ws-tile { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 11px; font-weight: 500; flex-shrink: 0; }
+.switcher-item.tx .ws-tile { background: var(--tx-50); }
+.switcher-item.bx .ws-tile { background: var(--bx-40); }
+.switcher-item.hx .ws-tile { background: var(--hx-40); }
+.switcher-item.all .ws-tile { background: var(--g-95); }
+.switcher-item .label { font-size: 13px; font-weight: 500; color: var(--g-10); }
+.switcher-item.active .label { color: var(--tx-20); }
+.switcher-item.tx.active .label { color: var(--tx-20); }
+.switcher-item .role { font-size: 11px; color: var(--g-50); margin-top: 1px; }
+.switcher-item.active .role { color: var(--tx-40); }
+
+.detail-frame { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); overflow: hidden; }
+.detail-header { padding: 14px 18px; border-bottom: 0.5px solid var(--g-90); }
+.detail-header .top-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.detail-header .agr-id { font-size: 11px; color: var(--g-70); font-family: ui-monospace, monospace; }
+.detail-header .view-as { margin-left: auto; font-size: 11px; color: var(--g-50); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.detail-header .title-row { display: flex; align-items: center; gap: 10px; }
+.detail-header h2 { font-size: 18px; font-weight: 500; color: var(--g-10); flex: 1; min-width: 0; }
+.status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.status-pill.active { background: var(--green-98); color: var(--green-50); border: 0.5px solid var(--green-95); }
+.status-pill.active .dot { width: 6px; height: 6px; background: var(--green-50); border-radius: 50%; }
+
+.detail-body { padding: 22px 18px 28px; display: flex; flex-direction: column; gap: 22px; }
+.section-label { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--g-50); margin: 0 0 12px; }
+
+.timeline { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; position: relative; }
+.timeline .step { padding-right: 8px; }
+.timeline .step.mid { padding: 0 8px; }
+.timeline .step.end { padding-left: 8px; }
+.timeline .step-row { display: flex; align-items: center; gap: 6px; }
+.timeline .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; position: relative; }
+.timeline .dot.done { background: var(--green-95); border: 2px solid var(--green-50); }
+.timeline .dot.curr { background: var(--green-50); }
+.timeline .dot.curr::before { content: ''; position: absolute; inset: -3px; border: 1px solid var(--green-95); border-radius: 50%; }
+.timeline .dot.future { background: var(--g-95); border: 0.5px solid var(--g-90); }
+.timeline .step-label { font-size: 12px; font-weight: 500; color: var(--g-10); }
+.timeline .step-label.muted { color: var(--g-50); font-weight: 400; }
+.timeline .step-time { font-size: 11px; color: var(--g-50); margin-top: 4px; margin-left: 20px; }
+
+.nudge { padding: 10px 12px; background: var(--yellow-98); border: 0.5px solid var(--yellow-95); border-radius: var(--r-md); display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.nudge i { font-size: 16px; color: var(--yellow-50); flex-shrink: 0; }
+.nudge p { font-size: 12px; color: var(--g-30); flex: 1; }
+
+.party-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.party-card { padding: 12px 14px; background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-md); }
+.party-card .role-label { font-size: 10px; color: var(--g-50); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.party-card .org-name { font-size: 13px; font-weight: 500; color: var(--g-10); }
+.party-card .uen { font-size: 11px; color: var(--g-50); margin-top: 2px; }
+
+.terms-table { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-md); }
+.terms-row { display: grid; grid-template-columns: 140px 1fr; padding: 10px 14px; border-bottom: 0.5px solid var(--g-90); }
+.terms-row:last-child { border-bottom: none; }
+.terms-row .k { font-size: 11px; color: var(--g-50); }
+.terms-row .v { font-size: 12px; color: var(--g-10); }
+
+.activity .ev { display: flex; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--g-90); }
+.activity .ev:last-child { border-bottom: none; }
+.activity .ev-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+.activity .ev-dot.tx { background: var(--tx-50); }
+.activity .ev-dot.bx { background: var(--bx-40); }
+.activity .ev-dot.hx { background: var(--hx-40); }
+.activity .ev-dot.green { background: var(--green-50); }
+.activity .ev-dot.muted { background: var(--g-95); border: 0.5px solid var(--g-90); }
+.activity .ev-body p { font-size: 12px; color: var(--g-10); }
+.activity .ev-body p strong { font-weight: 500; }
+.activity .ev-time { font-size: 11px; color: var(--g-50); margin-top: 2px; }
+
+.empty-hero { padding: 28px 24px; position: relative; }
+.empty-hero .new-here-pill { position: absolute; top: 18px; right: 18px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--yellow-98); color: var(--yellow-50); border: 0.5px solid var(--yellow-95); border-radius: 14px; font-size: 11px; font-weight: 500; cursor: pointer; }
+.empty-hero .new-here-pill .nb { background: var(--yellow-50); color: var(--yellow-98); border-radius: 8px; padding: 0 5px; font-size: 10px; }
+.empty-hero h1 { font-size: 22px; font-weight: 500; margin: 0 0 6px; color: var(--g-10); }
+.empty-hero .lede { font-size: 13px; color: var(--g-50); max-width: 440px; line-height: 1.5; }
+.empty-hero .lede strong { font-weight: 500; color: var(--g-10); }
+.empty-hero .help-link { font-size: 12px; color: var(--tx-20); text-decoration: underline; }
+
+.suggest-grid { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.suggest-card { display: block; padding: 18px; background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); cursor: pointer; }
+.suggest-card.primary { background: var(--tx-20); border: none; }
+.suggest-card .ic-pill { width: 36px; height: 36px; background: var(--tx-95); color: var(--tx-20); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+.suggest-card.primary .ic-pill { background: var(--tx-90); color: var(--tx-20); }
+.suggest-card .ic-pill i { font-size: 20px; }
+.suggest-card .ttl { font-size: 14px; font-weight: 500; color: var(--g-10); margin: 0 0 4px; }
+.suggest-card.primary .ttl { color: var(--tx-95); }
+.suggest-card .desc { font-size: 12px; color: var(--g-50); line-height: 1.5; }
+.suggest-card.primary .desc { color: var(--tx-90); }
+.suggest-card .more { font-size: 11px; color: var(--tx-20); margin-top: 12px; display: flex; align-items: center; gap: 4px; }
+.suggest-card.primary .more { color: var(--tx-95); }
+
+.picker-frame { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); overflow: hidden; }
+.picker-search { padding: 12px 16px; border-bottom: 0.5px solid var(--g-90); display: flex; align-items: center; gap: 8px; }
+.picker-search i { font-size: 16px; color: var(--g-50); }
+.picker-search input { flex: 1; border: none; background: transparent; font-size: 13px; font-family: inherit; padding: 4px 0; color: var(--g-10); outline: none; }
+.picker-search .meta { font-size: 11px; color: var(--g-50); }
+.picker-toolbar { padding: 10px 16px; border-bottom: 0.5px solid var(--g-90); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.toggle-row { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--g-50); cursor: pointer; }
+.toggle-row .toggle-track { width: 26px; height: 14px; background: var(--g-90); border-radius: 7px; position: relative; }
+.toggle-row .toggle-knob { position: absolute; top: 1px; left: 1px; width: 12px; height: 12px; background: #ffffff; border-radius: 50%; }
+
+.picker-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.picker-tree { border-right: 0.5px solid var(--g-90); padding: 8px 0; max-height: 380px; overflow-y: auto; }
+.picker-tree details { margin-bottom: 4px; }
+.picker-tree summary { display: flex; align-items: center; gap: 8px; padding: 8px 16px; cursor: pointer; list-style: none; font-size: 12px; font-weight: 500; color: var(--g-10); }
+.picker-tree summary::-webkit-details-marker { display: none; }
+.picker-tree summary i.chev { font-size: 14px; color: var(--g-50); }
+.picker-tree summary .ct { margin-left: auto; font-size: 11px; color: var(--g-50); font-weight: 400; }
+.picker-tree .leaf { display: flex; align-items: center; gap: 8px; padding: 6px 16px 6px 40px; background: transparent; border: none; text-align: left; cursor: pointer; font-size: 12px; color: var(--g-10); width: 100%; }
+.picker-tree .leaf:hover { background: var(--g-98); }
+.picker-tree .leaf.active { background: var(--tx-95); border-left: 2px solid var(--tx-50); padding-left: 38px; color: var(--tx-20); font-weight: 500; }
+.picker-tree .leaf.active i { color: var(--tx-50); }
+.picker-tree .leaf i { font-size: 13px; color: var(--g-50); }
+.picker-tree .leaf .group-pill { margin-left: auto; padding: 1px 6px; background: var(--g-95); color: var(--g-30); border-radius: 3px; font-size: 10px; font-weight: 500; }
+.picker-tree .leaf.active .group-pill { background: var(--tx-90); color: var(--tx-20); }
+.picker-tree .leaf .v-tag { color: var(--g-50); font-weight: 400; }
+
+.picker-detail { padding: 16px; background: var(--g-98); max-height: 380px; overflow-y: auto; }
+.picker-detail-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.picker-detail-head i { font-size: 18px; color: var(--tx-50); }
+.picker-detail-head .name { font-size: 14px; font-weight: 500; color: var(--g-10); }
+.snapshot-label { font-size: 10px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: var(--g-50); margin: 12px 0 8px; }
+.snapshot-list { display: flex; flex-direction: column; gap: 4px; }
+.snapshot-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-md); cursor: pointer; }
+.snapshot-row i { font-size: 16px; color: var(--tx-50); }
+.snapshot-row .nm { font-size: 12px; color: var(--g-10); flex: 1; }
+.snapshot-row .nm .v { color: var(--g-50); }
+.add-individual { display: flex; align-items: center; gap: 6px; padding: 8px 10px; background: transparent; border: 0.5px dashed var(--g-90); border-radius: var(--r-md); margin-top: 8px; width: 100%; color: var(--g-50); font-size: 12px; cursor: pointer; }
+.add-individual i { font-size: 14px; }
+.snapshot-info { font-size: 11px; color: var(--g-50); margin: 14px 0 0; padding: 8px 10px; background: var(--yellow-98); border-radius: var(--r-md); line-height: 1.5; }
+.snapshot-info i { font-size: 13px; vertical-align: -2px; margin-right: 4px; }
+
+.cp-list .cp-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: transparent; border: none; border-bottom: 0.5px solid var(--g-90); text-align: left; cursor: pointer; width: 100%; }
+.cp-list .cp-row:hover { background: var(--g-98); }
+.cp-list .cp-row:last-child { border-bottom: none; }
+.cp-avatar { width: 36px; height: 36px; background: var(--g-95); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--g-30); font-size: 12px; font-weight: 500; flex-shrink: 0; }
+.cp-body { flex: 1; min-width: 0; }
+.cp-name { font-size: 13px; font-weight: 500; color: var(--g-10); }
+.cp-meta { font-size: 11px; color: var(--g-50); margin-top: 1px; }
+.ready-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: var(--green-98); color: var(--green-50); border-radius: 4px; font-size: 11px; font-weight: 500; flex-shrink: 0; }
+.ready-pill i { font-size: 12px; }
+.ready-pill.invite { background: var(--yellow-98); color: var(--yellow-50); }
+.list-foot { font-size: 11px; color: var(--g-50); padding: 10px 16px; background: var(--g-98); border-top: 0.5px solid var(--g-90); display: flex; align-items: center; gap: 6px; }
+.list-foot i { font-size: 13px; }
+
+.warn-frame { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); padding: 16px 18px; }
+.warn-frame .step-tag { font-size: 11px; color: var(--g-50); margin-bottom: 2px; }
+.warn-frame h3 { font-size: 16px; font-weight: 500; color: var(--g-10); margin-bottom: 14px; }
+.selected-cp { display: flex; gap: 12px; align-items: center; padding: 10px 12px; background: var(--g-98); border: 0.5px solid var(--g-90); border-radius: var(--r-md); margin-bottom: 12px; }
+.warn-panel { background: var(--yellow-98); border: 0.5px solid var(--yellow-95); border-left: 3px solid var(--yellow-50); border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 14px; }
+.warn-panel .row { display: flex; gap: 10px; }
+.warn-panel i { font-size: 18px; color: var(--yellow-50); flex-shrink: 0; }
+.warn-panel .ttl { font-size: 13px; font-weight: 500; color: var(--g-10); margin: 0 0 6px; }
+.warn-panel .desc { font-size: 12px; color: var(--g-30); margin: 0 0 8px; line-height: 1.5; }
+.warn-panel .desc strong { font-weight: 500; }
+.warn-panel .audit { font-size: 11px; color: var(--g-50); }
+.warn-actions { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+.btn-cancel { padding: 7px 14px; background: #ffffff; color: var(--g-10); border: 0.5px solid var(--g-90); border-radius: var(--r-md); font-size: 12px; font-weight: 500; }
+.btn-deliberate { padding: 7px 14px; background: #ffffff; color: var(--tx-20); border: 0.5px solid var(--tx-90); border-radius: var(--r-md); font-size: 12px; font-weight: 500; }
+
+.bulk-modal-veil { background: rgba(20,24,30,0.45); border-radius: var(--r-xl); padding: 28px; display: flex; align-items: center; justify-content: center; min-height: 440px; margin-bottom: 18px; }
+.bulk-modal { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); width: 100%; max-width: 480px; overflow: hidden; }
+.bulk-head { padding: 16px 18px; border-bottom: 0.5px solid var(--g-90); display: flex; align-items: flex-start; gap: 12px; }
+.bulk-head .ic { width: 32px; height: 32px; background: var(--yellow-98); color: var(--yellow-50); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.bulk-head .ic i { font-size: 18px; }
+.bulk-head h4 { font-size: 14px; font-weight: 500; color: var(--g-10); margin: 0; }
+.bulk-head .sub { font-size: 12px; color: var(--g-50); margin: 4px 0 0; line-height: 1.5; }
+.bulk-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+.bulk-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--g-98); border-radius: var(--r-md); }
+.bulk-row.strict { background: var(--yellow-98); border: 0.5px solid var(--yellow-95); }
+.bulk-row .lbl { flex: 1; font-size: 12px; color: var(--g-10); }
+.bulk-row .lbl strong { color: var(--yellow-50); font-weight: 500; }
+.bulk-row a { font-size: 11px; text-decoration: underline; }
+.bulk-row a.tx { color: var(--tx-20); }
+.bulk-row a.bx { color: var(--bx-20); }
+.bulk-row .strict-note { font-size: 11px; color: var(--yellow-50); font-weight: 500; }
+.bulk-ack { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; margin: 8px 18px 14px; background: var(--tx-98); border: 0.5px solid var(--tx-90); border-radius: var(--r-md); cursor: pointer; }
+.bulk-ack input { margin-top: 2px; accent-color: var(--tx-50); }
+.bulk-ack span { font-size: 12px; color: var(--g-10); line-height: 1.5; }
+.bulk-foot { padding: 12px 18px; border-top: 0.5px solid var(--g-90); display: flex; gap: 8px; justify-content: flex-end; }
+.btn-disabled { padding: 7px 14px; background: var(--g-95); color: var(--g-70); border: none; border-radius: var(--r-md); font-size: 12px; font-weight: 500; cursor: not-allowed; }
+.btn-disabled.on { background: var(--tx-50); color: #ffffff; cursor: pointer; }
+
+.acting-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; background: var(--g-98); color: var(--g-50); border: 0.5px solid var(--g-90); border-radius: 12px; font-size: 10px; cursor: help; }
+.acting-pill i { font-size: 12px; }
+
+.migration-frame { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); overflow: hidden; }
+.migration-panel { padding: 16px 18px; background: var(--tx-98); border-left: 3px solid var(--tx-50); display: flex; align-items: flex-start; gap: 12px; }
+.migration-panel .ic { width: 32px; height: 32px; background: var(--tx-95); color: var(--tx-20); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.migration-panel .ic i { font-size: 18px; }
+.migration-panel .hd { display: flex; align-items: center; gap: 8px; }
+.migration-panel h4 { font-size: 14px; font-weight: 500; color: var(--g-10); margin: 0; }
+.migration-panel .one-time { padding: 2px 6px; background: var(--tx-95); color: var(--tx-20); border-radius: 3px; font-size: 10px; font-weight: 500; }
+.migration-panel .sub { font-size: 12px; color: var(--g-50); margin: 4px 0 14px; line-height: 1.5; }
+.migration-list { display: flex; flex-direction: column; gap: 8px; }
+.migration-li { display: flex; gap: 10px; align-items: flex-start; }
+.migration-li .b { width: 4px; height: 4px; background: var(--tx-50); border-radius: 50%; margin-top: 8px; flex-shrink: 0; }
+.migration-li p { font-size: 12px; color: var(--g-30); line-height: 1.6; }
+.migration-li p strong { font-weight: 500; color: var(--g-10); }
+.migration-li p strong.brand { color: var(--tx-20); }
+.migration-li p code { font-family: ui-monospace, monospace; background: var(--g-98); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+.migration-actions { display: flex; gap: 8px; margin-top: 16px; align-items: center; }
+.migration-actions .auto-dismiss { margin-left: auto; font-size: 11px; color: var(--g-50); }
+.migration-actions a.gl-link { font-size: 12px; color: var(--tx-20); display: inline-flex; align-items: center; gap: 4px; }
+.migration-actions a.gl-link i { font-size: 12px; }
+
+.drafts-banner { margin-top: 12px; padding: 12px 16px; background: var(--green-98); border: 0.5px solid var(--green-95); border-left: 3px solid var(--green-50); border-radius: var(--r-xl); display: flex; align-items: center; gap: 12px; }
+.drafts-banner > i { font-size: 20px; color: var(--green-50); flex-shrink: 0; }
+.drafts-banner .body { flex: 1; }
+.drafts-banner .body p.t { font-size: 13px; font-weight: 500; color: var(--green-50); }
+.drafts-banner .body p.s { font-size: 11px; color: var(--green-50); margin-top: 2px; opacity: 0.85; }
+.drafts-banner a { font-size: 12px; color: var(--green-50); text-decoration: underline; font-weight: 500; flex-shrink: 0; }
+
+.redirect-foot { margin-top: 16px; padding: 10px 14px; background: var(--g-98); border: 0.5px dashed var(--g-90); border-radius: var(--r-md); font-size: 11px; color: var(--g-50); line-height: 1.6; }
+.redirect-foot i { font-size: 13px; vertical-align: -2px; margin-right: 4px; }
+.redirect-foot em { font-style: italic; }
+
+.copy-variants { display: flex; flex-direction: column; gap: 12px; }
+.variant-card { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); padding: 14px 16px; }
+.variant-tag { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g-50); margin-bottom: 8px; }
+.variant-q { font-size: 14px; font-weight: 500; color: var(--g-10); margin-bottom: 10px; }
+.variant-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.variant-options.single { grid-template-columns: 1fr; }
+.variant-opt { display: flex; flex-direction: column; gap: 4px; padding: 12px; background: var(--g-98); border: 0.5px solid var(--g-90); border-radius: var(--r-md); cursor: pointer; }
+.variant-opt .opt-head { display: flex; align-items: center; gap: 8px; }
+.variant-opt .opt-head i { font-size: 16px; color: var(--g-50); }
+.variant-opt .opt-head span { font-size: 12px; font-weight: 500; color: var(--g-10); }
+.variant-opt .opt-desc { font-size: 11px; color: var(--g-50); }
+
+.foundation-card { background: var(--g-98); border-radius: var(--r-xl); padding: 18px; margin-bottom: 16px; }
+.foundation-card .h { font-size: 12px; color: var(--g-50); margin-bottom: 12px; }
+.chip-row-grid { display: grid; grid-template-columns: 80px 1fr; row-gap: 14px; column-gap: 16px; align-items: center; }
+.chip-row-grid .lbl { font-size: 12px; color: var(--g-50); }
+.chip-row { display: flex; gap: 10px; align-items: center; }
+.chip-sm, .chip-md, .chip-lg { display: inline-flex; align-items: center; border-radius: 4px; font-weight: 500; line-height: 1; }
+.chip-sm { gap: 4px; padding: 2px 6px; font-size: 11px; }
+.chip-md { gap: 5px; padding: 3px 8px; font-size: 12px; }
+.chip-lg { gap: 6px; padding: 4px 10px; font-size: 13px; border-radius: 6px; line-height: 1.1; }
+.chip-sm .d { width: 6px; height: 6px; border-radius: 50%; }
+.chip-md .d { width: 7px; height: 7px; border-radius: 50%; }
+.chip-lg .d { width: 8px; height: 8px; border-radius: 50%; }
+.chip-tx { background: var(--tx-95); color: var(--tx-20); } .chip-tx .d { background: var(--tx-50); }
+.chip-bx { background: var(--bx-95); color: var(--bx-20); } .chip-bx .d { background: var(--bx-40); }
+.chip-hx { background: var(--hx-95); color: var(--hx-20); } .chip-hx .d { background: var(--hx-40); }
+
+.dark-strip { background: var(--g-10); padding: 12px 14px; border-radius: var(--r-md); display: flex; gap: 10px; align-items: center; margin-top: 14px; }
+.chip-dark-tx { background: var(--tx-20); color: var(--tx-90); }
+.chip-dark-tx .d { background: var(--tx-80); }
+.chip-dark-bx { background: var(--bx-20); color: var(--bx-90); }
+.chip-dark-bx .d { background: var(--bx-80); }
+.chip-dark-hx { background: var(--hx-20); color: var(--hx-90); }
+.chip-dark-hx .d { background: var(--hx-80); }
+
+.brand-card { background: var(--g-98); border-radius: var(--r-xl); padding: 18px; display: flex; gap: 24px; align-items: center; }
+.brand-card .logo-wrap { display: flex; align-items: center; gap: 10px; }
+.brand-card .logo-wrap span { font-size: 18px; font-weight: 500; color: var(--g-10); letter-spacing: -0.01em; }
+.brand-card .divider { height: 24px; width: 0.5px; background: var(--g-90); }
+.brand-card .meta-k { font-size: 11px; color: var(--g-70); }
+.brand-card .meta-v { font-size: 13px; color: var(--g-10); margin-top: 2px; }
+.brand-card .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-left: 4px; }
+
+.ramps { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.ramp { padding: 10px 12px; border: 0.5px solid var(--g-90); border-radius: var(--r-md); background: #ffffff; }
+.ramp .name { font-size: 11px; color: var(--g-70); margin-bottom: 4px; }
+.ramp .swatches { display: flex; gap: 4px; }
+.ramp .swatches div { flex: 1; height: 20px; border-radius: 3px; }
+
+/* === Global overlays === */
+.toast-tray { position: fixed; bottom: 24px; right: 24px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { background: var(--g-10); color: #ffffff; padding: 10px 14px; border-radius: var(--r-md); font-size: 12px; display: flex; align-items: center; gap: 8px; min-width: 240px; max-width: 380px; box-shadow: 0 4px 12px rgba(20,24,30,0.15); animation: toast-in 0.18s ease-out; pointer-events: auto; }
+.toast i { font-size: 16px; color: var(--green-95); }
+.toast.warn i { color: var(--yellow-95); }
+.toast .x { margin-left: auto; cursor: pointer; opacity: 0.6; }
+.toast.fade { animation: toast-out 0.2s ease-in forwards; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(8px); } }
+
+.overlay-veil { position: fixed; inset: 0; background: rgba(20,24,30,0.45); z-index: 900; display: flex; align-items: center; justify-content: center; padding: 32px; }
+.overlay-veil[hidden] { display: none; }
+.overlay-card { background: #ffffff; border-radius: var(--r-xl); width: 100%; max-width: 480px; overflow: hidden; box-shadow: 0 12px 32px rgba(20,24,30,0.2); }
+.overlay-card.lg { max-width: 560px; }
+.overlay-card.sm { max-width: 360px; }
+.overlay-head { padding: 14px 18px; border-bottom: 0.5px solid var(--g-90); display: flex; align-items: center; gap: 12px; }
+.overlay-head .ic { width: 32px; height: 32px; border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.overlay-head .ic.tx { background: var(--tx-95); color: var(--tx-20); }
+.overlay-head .ic.warn { background: var(--yellow-98); color: var(--yellow-50); }
+.overlay-head .ic.green { background: var(--green-98); color: var(--green-50); }
+.overlay-head h4 { font-size: 14px; font-weight: 500; flex: 1; }
+.overlay-head .close { padding: 6px; background: transparent; border: none; cursor: pointer; }
+.overlay-head .close i { font-size: 18px; color: var(--g-50); }
+.overlay-body { padding: 16px 18px; }
+.overlay-foot { padding: 12px 18px; border-top: 0.5px solid var(--g-90); display: flex; gap: 8px; justify-content: flex-end; }
+
+.extend-row { display: flex; gap: 8px; margin: 10px 0 4px; flex-wrap: wrap; }
+.extend-chip { padding: 6px 12px; border: 0.5px solid var(--g-90); border-radius: var(--r-md); font-size: 12px; cursor: pointer; background: #ffffff; color: var(--g-10); }
+.extend-chip.active { background: var(--tx-95); border-color: var(--tx-90); color: var(--tx-20); font-weight: 500; }
+.extend-summary { background: var(--g-98); border-radius: var(--r-md); padding: 12px 14px; margin-top: 12px; }
+.extend-summary p { font-size: 12px; color: var(--g-30); margin: 0 0 4px; }
+.extend-summary p strong { font-weight: 500; color: var(--g-10); }
+
+/* === Search palette === */
+.search-overlay { position: fixed; inset: 0; background: rgba(20,24,30,0.35); z-index: 950; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; }
+.search-overlay[hidden] { display: none; }
+.search-pal { background: #ffffff; border-radius: var(--r-xl); width: 560px; max-width: calc(100vw - 48px); overflow: hidden; box-shadow: 0 20px 40px rgba(20,24,30,0.2); }
+.search-pal-input { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 0.5px solid var(--g-90); }
+.search-pal-input i { font-size: 18px; color: var(--g-50); }
+.search-pal-input input { flex: 1; border: none; outline: none; font-family: inherit; font-size: 14px; color: var(--g-10); }
+.search-pal-input kbd { font-size: 11px; color: var(--g-70); background: var(--g-95); padding: 2px 6px; border-radius: 3px; font-family: ui-monospace, monospace; }
+.search-pal-body { max-height: 360px; overflow-y: auto; padding: 8px 0; }
+.search-group-label { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g-70); padding: 8px 18px 4px; }
+.search-result { display: flex; align-items: center; gap: 12px; padding: 8px 18px; cursor: pointer; }
+.search-result:hover, .search-result.active { background: var(--tx-95); color: var(--tx-20); }
+.search-result i { font-size: 16px; color: var(--g-50); }
+.search-result.active i, .search-result:hover i { color: var(--tx-50); }
+.search-result .r-title { font-size: 13px; flex: 1; }
+.search-result .r-meta { font-size: 11px; color: var(--g-70); }
+
+/* === Notification popover === */
+.popover { position: absolute; top: 56px; right: 28px; z-index: 60; width: 360px; background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); box-shadow: 0 8px 24px rgba(20,24,30,0.12); }
+.popover[hidden] { display: none; }
+.popover-head { padding: 12px 14px; border-bottom: 0.5px solid var(--g-90); display: flex; align-items: center; }
+.popover-head h5 { font-size: 13px; font-weight: 500; flex: 1; }
+.popover-head a { font-size: 11px; color: var(--tx-20); cursor: pointer; }
+.popover-list { max-height: 320px; overflow-y: auto; }
+.popover-item { display: flex; gap: 10px; padding: 10px 14px; border-bottom: 0.5px solid var(--g-95); cursor: pointer; }
+.popover-item:last-child { border-bottom: none; }
+.popover-item:hover { background: var(--g-98); }
+.popover-item .pn-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+.popover-item .pn-dot.unread { background: var(--tx-50); }
+.popover-item .pn-dot.read { background: var(--g-90); }
+.popover-item .pn-body p { font-size: 12px; color: var(--g-10); line-height: 1.4; }
+.popover-item .pn-body p strong { font-weight: 500; }
+.popover-item .pn-body .pn-time { font-size: 11px; color: var(--g-50); margin-top: 2px; }
+
+/* === Profile menu === */
+.profile-menu { position: absolute; top: 56px; right: 28px; z-index: 60; width: 240px; background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); padding: 6px; box-shadow: 0 8px 24px rgba(20,24,30,0.12); }
+.profile-menu[hidden] { display: none; }
+.profile-head { padding: 10px 12px; border-bottom: 0.5px solid var(--g-95); margin-bottom: 4px; }
+.profile-head .n { font-size: 13px; font-weight: 500; color: var(--g-10); }
+.profile-head .e { font-size: 11px; color: var(--g-50); }
+.profile-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--r-md); cursor: pointer; font-size: 12px; color: var(--g-10); }
+.profile-item:hover { background: var(--g-98); }
+.profile-item i { font-size: 14px; color: var(--g-50); }
+.profile-item.danger { color: var(--red-50); }
+.profile-item.danger i { color: var(--red-50); }
+
+/* === Counterparty side panel on detail page === */
+.cp-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 420px; background: #ffffff; border-left: 0.5px solid var(--g-90); z-index: 800; box-shadow: -4px 0 16px rgba(20,24,30,0.08); display: flex; flex-direction: column; transform: translateX(420px); transition: transform 0.22s ease-out; }
+.cp-panel.open { transform: translateX(0); }
+.cp-panel-head { padding: 14px 18px; border-bottom: 0.5px solid var(--g-90); display: flex; align-items: center; gap: 10px; }
+.cp-panel-head h5 { font-size: 13px; font-weight: 500; flex: 1; }
+.cp-panel-head .close { padding: 4px; background: transparent; border: none; cursor: pointer; }
+.cp-panel-body { padding: 18px; overflow-y: auto; flex: 1; }
+.cp-panel-body .note { font-size: 11px; color: var(--g-50); background: var(--yellow-98); padding: 8px 10px; border-radius: var(--r-md); margin-bottom: 14px; }
+.cp-panel-body .mini-h { font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--g-50); margin: 14px 0 6px; }
+
+/* === Acknowledgement banner (post-warning) === */
+.ack-banner { background: var(--green-98); border: 0.5px solid var(--green-95); border-left: 3px solid var(--green-50); border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.ack-banner i { font-size: 16px; color: var(--green-50); }
+.ack-banner p { font-size: 12px; color: var(--green-50); flex: 1; }
+.ack-banner .x { cursor: pointer; opacity: 0.6; }
+
+/* === Themed workspace switching === */
+body.theme-bx .portal-frame .topbar .workspace-pill:not(.is-all) { background: var(--bx-95); color: var(--bx-20); border-color: var(--bx-90); }
+body.theme-bx .portal-frame .topbar .workspace-pill:not(.is-all) .dot { background: var(--bx-40); }
+body.theme-bx .portal-frame .topbar .btn-primary:not(.neutral) { background: var(--bx-40); }
+body.theme-bx .portal-frame .sidebar .side-link.active { background: var(--bx-95); color: var(--bx-20); border-left-color: var(--bx-40); }
+body.theme-bx .portal-frame .sidebar .side-link.active i { color: var(--bx-40); }
+body.theme-bx .portal-frame .sidebar .side-link.active .count-badge { background: var(--bx-40); }
+body.theme-bx .avatar:not(.neutral) { background: var(--bx-95); color: var(--bx-20); }
+body.theme-hx .portal-frame .topbar .workspace-pill:not(.is-all) { background: var(--hx-95); color: var(--hx-20); border-color: var(--hx-90); }
+body.theme-hx .portal-frame .topbar .workspace-pill:not(.is-all) .dot { background: var(--hx-40); }
+body.theme-hx .portal-frame .topbar .btn-primary:not(.neutral) { background: var(--hx-40); }
+body.theme-hx .portal-frame .sidebar .side-link.active { background: var(--hx-95); color: var(--hx-20); border-left-color: var(--hx-40); }
+body.theme-hx .portal-frame .sidebar .side-link.active i { color: var(--hx-40); }
+body.theme-hx .portal-frame .sidebar .side-link.active .count-badge { background: var(--hx-40); }
+body.theme-hx .avatar:not(.neutral) { background: var(--hx-95); color: var(--hx-20); }
+
+.theme-banner { padding: 10px 14px; background: var(--g-98); border: 0.5px dashed var(--g-90); border-radius: var(--r-md); font-size: 11px; color: var(--g-50); margin-bottom: 14px; display: none; }
+body.theme-bx .theme-banner.bx, body.theme-hx .theme-banner.hx { display: block; }
+
+/* ===== Wizard chrome ===== */
+.wizard-bar { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); padding: 14px 18px; margin-bottom: 14px; display: none; }
+body.in-wizard .wizard-bar { display: block; }
+.wizard-bar .top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.wizard-bar .top h2 { font-size: 16px; font-weight: 500; flex: 1; }
+.wizard-bar .top .cancel { font-size: 12px; color: var(--g-50); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.wizard-bar .top .cancel i { font-size: 14px; }
+.stepper { display: flex; align-items: center; gap: 0; }
+.stepper .step { display: flex; align-items: center; gap: 8px; flex: 1; }
+.stepper .step .num { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; }
+.stepper .step.done .num { background: var(--green-50); color: #ffffff; }
+.stepper .step.curr .num { background: var(--tx-50); color: #ffffff; box-shadow: 0 0 0 3px var(--tx-95); }
+.stepper .step.future .num { background: var(--g-95); color: var(--g-50); }
+.stepper .step .lbl { font-size: 11px; color: var(--g-50); }
+.stepper .step.curr .lbl { color: var(--tx-20); font-weight: 500; }
+.stepper .step.done .lbl { color: var(--g-30); }
+.stepper .step + .step::before { content: ''; flex: 0 0 16px; height: 1px; background: var(--g-90); margin-right: 8px; }
+.stepper .step.done + .step::before, .stepper .step + .step.done::before { background: var(--green-50); }
+body.theme-bx .stepper .step.curr .num { background: var(--bx-40); box-shadow: 0 0 0 3px var(--bx-95); }
+body.theme-bx .stepper .step.curr .lbl { color: var(--bx-20); }
+body.theme-hx .stepper .step.curr .num { background: var(--hx-40); box-shadow: 0 0 0 3px var(--hx-95); }
+body.theme-hx .stepper .step.curr .lbl { color: var(--hx-20); }
+
+.wizard-foot { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); padding: 12px 18px; margin-top: 14px; display: none; align-items: center; justify-content: space-between; }
+body.in-wizard .wizard-foot { display: flex; }
+.wizard-foot .left { display: flex; gap: 8px; }
+.wizard-foot .right { display: flex; gap: 8px; }
+.wizard-foot .pending-warn { font-size: 11px; color: var(--yellow-50); display: inline-flex; align-items: center; gap: 4px; }
+
+/* ===== Wizard generic screen ===== */
+.wiz-screen { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); padding: 22px 24px; }
+.wiz-screen h3 { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+.wiz-screen .sub-lede { font-size: 12px; color: var(--g-50); margin-bottom: 18px; line-height: 1.5; }
+
+/* ===== Terms form ===== */
+.terms-form { display: flex; flex-direction: column; gap: 18px; }
+.form-row { display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: flex-start; }
+.form-row .form-k { font-size: 12px; font-weight: 500; color: var(--g-10); padding-top: 6px; }
+.form-row .form-k .opt { font-weight: 400; color: var(--g-50); font-size: 11px; display: block; margin-top: 2px; }
+.form-row .form-v { display: flex; flex-direction: column; gap: 6px; }
+.form-row select, .form-row input[type=date], .form-row input[type=text] { padding: 7px 10px; border: 0.5px solid var(--g-90); border-radius: var(--r-md); font-family: inherit; font-size: 12px; color: var(--g-10); background: #ffffff; outline: none; }
+.form-row select:focus, .form-row input:focus { border-color: var(--tx-50); }
+.form-row .hint { font-size: 11px; color: var(--g-50); line-height: 1.5; }
+.duration-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.duration-chips .d-chip { padding: 6px 12px; border: 0.5px solid var(--g-90); border-radius: var(--r-md); font-size: 12px; cursor: pointer; background: #ffffff; }
+.duration-chips .d-chip.active { background: var(--tx-95); border-color: var(--tx-90); color: var(--tx-20); font-weight: 500; }
+.toggle-row-inline { display: flex; align-items: center; gap: 10px; }
+.toggle-row-inline .track-i { width: 32px; height: 18px; background: var(--g-90); border-radius: 9px; position: relative; cursor: pointer; transition: background 0.15s; }
+.toggle-row-inline .track-i.on { background: var(--tx-50); }
+.toggle-row-inline .knob-i { position: absolute; top: 1px; left: 1px; width: 16px; height: 16px; background: #ffffff; border-radius: 50%; transition: left 0.15s; }
+.toggle-row-inline .track-i.on .knob-i { left: 15px; }
+.toggle-row-inline .lbl { font-size: 12px; color: var(--g-10); }
+
+/* ===== Review summary ===== */
+.review-stack { display: flex; flex-direction: column; gap: 12px; }
+.review-card { background: var(--g-98); border-radius: var(--r-md); padding: 14px 16px; }
+.review-card .rc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.review-card .rc-head i { font-size: 16px; color: var(--g-50); }
+.review-card .rc-head .rc-title { font-size: 11px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: var(--g-50); flex: 1; }
+.review-card .rc-head a.edit { font-size: 11px; color: var(--tx-20); cursor: pointer; }
+.review-card .rc-body p { font-size: 13px; color: var(--g-10); margin-bottom: 2px; }
+.review-card .rc-body p.muted { font-size: 11px; color: var(--g-50); }
+
+.review-warn { background: var(--yellow-98); border: 0.5px solid var(--yellow-95); border-left: 3px solid var(--yellow-50); border-radius: var(--r-md); padding: 12px 14px; margin-top: 12px; display: flex; gap: 10px; }
+.review-warn i { font-size: 16px; color: var(--yellow-50); flex-shrink: 0; }
+.review-warn p { font-size: 12px; color: var(--g-30); line-height: 1.5; }
+
+/* ===== Success screen ===== */
+.success-frame { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); padding: 36px 28px; text-align: center; }
+.success-frame .check-ring { width: 56px; height: 56px; border-radius: 50%; background: var(--green-98); border: 2px solid var(--green-50); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.success-frame .check-ring i { font-size: 26px; color: var(--green-50); }
+.success-frame h2 { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+.success-frame .agr-line { font-size: 12px; color: var(--g-50); margin-bottom: 18px; }
+.success-frame .agr-line code { font-family: ui-monospace, monospace; background: var(--g-95); padding: 1px 6px; border-radius: 3px; }
+.success-frame .next-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 440px; margin: 0 auto; }
+.success-frame .next-card { padding: 14px; background: var(--g-98); border-radius: var(--r-md); cursor: pointer; text-align: left; }
+.success-frame .next-card:hover { background: var(--tx-98); }
+.success-frame .next-card i { font-size: 18px; color: var(--g-50); margin-bottom: 6px; display: block; }
+.success-frame .next-card .t { font-size: 13px; font-weight: 500; color: var(--g-10); margin-bottom: 2px; }
+.success-frame .next-card .d { font-size: 11px; color: var(--g-50); line-height: 1.4; }
+.success-frame .meta-info { margin-top: 20px; padding: 12px 14px; background: var(--g-98); border-radius: var(--r-md); font-size: 11px; color: var(--g-50); line-height: 1.6; text-align: left; }
+.success-frame .meta-info strong { font-weight: 500; color: var(--g-30); }
+
+/* ===== Approve-incoming flow ===== */
+.approve-frame { background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-xl); padding: 22px 24px; }
+.approve-frame .incoming-banner { background: var(--tx-98); border: 0.5px solid var(--tx-90); border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.approve-frame .incoming-banner i { font-size: 18px; color: var(--tx-50); }
+.approve-frame .incoming-banner p { font-size: 12px; color: var(--g-30); line-height: 1.5; }
+.approve-frame .incoming-banner p strong { font-weight: 500; }
+.approve-frame .decision { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 18px; }
+.approve-frame .decision-card { padding: 14px 16px; background: #ffffff; border: 0.5px solid var(--g-90); border-radius: var(--r-md); cursor: pointer; text-align: left; transition: border-color 0.12s; }
+.approve-frame .decision-card:hover { border-color: var(--g-80); }
+.approve-frame .decision-card.accept { border-color: var(--green-50); background: var(--green-98); }
+.approve-frame .decision-card.decline { border-color: var(--red-50); background: var(--red-98); }
+.approve-frame .decision-card .dc-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.approve-frame .decision-card .dc-head i { font-size: 18px; }
+.approve-frame .decision-card.accept .dc-head i { color: var(--green-50); }
+.approve-frame .decision-card.decline .dc-head i { color: var(--red-50); }
+.approve-frame .decision-card.changes .dc-head i { color: var(--yellow-50); }
+.approve-frame .decision-card .dc-head span { font-size: 13px; font-weight: 500; }
+.approve-frame .decision-card .dc-desc { font-size: 11px; color: var(--g-50); line-height: 1.5; }
+
+/* ===== Flow ribbon (mid-flow guidance at top of canvas) ===== */
+.flow-ribbon { background: var(--tx-98); border: 0.5px solid var(--tx-90); border-radius: var(--r-md); padding: 8px 14px; margin-bottom: 14px; display: none; align-items: center; gap: 10px; }
+body.in-flow .flow-ribbon { display: flex; }
+.flow-ribbon i { font-size: 14px; color: var(--tx-50); }
+.flow-ribbon p { flex: 1; font-size: 11px; color: var(--g-30); }
+.flow-ribbon p strong { font-weight: 500; color: var(--tx-20); }
+.flow-ribbon a.exit-flow { font-size: 11px; color: var(--g-50); cursor: pointer; text-decoration: underline; }
+
+/* ===== Rail flows section ===== */
+.flow-link { display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 11px; color: var(--g-30); cursor: pointer; }
+.flow-link:hover { background: var(--g-98); }
+.flow-link .flow-icon { width: 22px; height: 22px; border-radius: 50%; background: var(--tx-95); color: var(--tx-20); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.flow-link .flow-icon i { font-size: 12px; }
+.flow-link .flow-text { line-height: 1.3; }
+.flow-link .flow-text .flow-name { color: var(--g-10); font-weight: 500; }
+.flow-link .flow-text .flow-steps { font-size: 10px; color: var(--g-70); }
+
+/* ===== Renewed banner on detail ===== */
+.renewed-banner { background: var(--green-98); border: 0.5px solid var(--green-95); border-left: 3px solid var(--green-50); border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.renewed-banner i { font-size: 16px; color: var(--green-50); }
+.renewed-banner p { font-size: 12px; color: var(--green-50); flex: 1; }
+
+/* ===== Snackbar progress (data-flow simulation) ===== */
+.data-flow-sim { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 990; background: var(--g-10); color: #ffffff; padding: 12px 18px; border-radius: var(--r-lg); display: none; align-items: center; gap: 12px; min-width: 320px; box-shadow: 0 8px 24px rgba(20,24,30,0.2); }
+.data-flow-sim.active { display: flex; }
+.data-flow-sim .progress { flex: 1; height: 4px; background: var(--g-30); border-radius: 2px; overflow: hidden; }
+.data-flow-sim .progress .bar { height: 100%; background: var(--green-50); width: 0%; transition: width 0.3s linear; }
+.data-flow-sim p { font-size: 12px; }
+
+/* ===== Impersonation banner ===== */
+.imp-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 995; background: var(--yellow-50); color: #fff8f1; padding: 8px 18px; display: none; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(20,24,30,0.15); }
+.imp-banner.active { display: flex; }
+.imp-banner i.lead { font-size: 16px; }
+.imp-banner .imp-text { flex: 1; font-size: 12px; font-weight: 500; }
+.imp-banner .imp-time { font-family: ui-monospace, monospace; background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+.imp-banner .imp-end { padding: 4px 10px; background: rgba(255,255,255,0.95); color: var(--yellow-50); border: none; border-radius: var(--r-md); font-size: 11px; font-weight: 500; cursor: pointer; }
+.imp-banner .imp-end:hover { background: #fff; }
+body.impersonating { padding-top: 38px; }
+body.impersonating .toast-tray { bottom: 24px; }
+
+/* === Filter chip interactive === */
+.chip { cursor: pointer; transition: background 0.12s; }
+.chip:hover:not(.solid) { background: var(--g-90); }
+
+/* === Sidebar nav interactive === */
+.sidebar .side-link { transition: background 0.12s; }
+.sidebar .side-link:not(.active):hover { background: var(--g-95); }
+.sidebar .dex-mini { transition: background 0.12s; }
+.sidebar .dex-mini:hover { background: var(--g-95); }
+
+@media (max-width: 1100px) {
+  .app { grid-template-columns: 200px 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<aside class="rail">
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+      <rect x="2" y="2" width="7" height="7" rx="1.5" fill="#363941"/>
+      <rect x="13" y="2" width="7" height="7" rx="1.5" fill="#60636b"/>
+      <rect x="2" y="13" width="7" height="7" rx="1.5" fill="#60636b"/>
+      <rect x="13" y="13" width="7" height="7" rx="1.5" fill="#363941"/>
+    </svg>
+    <div>
+      <div class="brand-text">Dex Portal</div>
+      <div class="brand-sub">Concept prototype</div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">User flows</div>
+    <div class="flow-link" onclick="runFlow('first-agreement')">
+      <span class="flow-icon"><i class="ti ti-rocket"></i></span>
+      <span class="flow-text"><span class="flow-name">First-time user</span><br><span class="flow-steps">Create first Agreement · 5 steps</span></span>
+    </div>
+    <div class="flow-link" onclick="runFlow('extend')">
+      <span class="flow-icon"><i class="ti ti-clock-play"></i></span>
+      <span class="flow-text"><span class="flow-name">Extend before expiry</span><br><span class="flow-steps">Renewal flow · 3 steps</span></span>
+    </div>
+    <div class="flow-link" onclick="runFlow('approve')">
+      <span class="flow-icon"><i class="ti ti-check"></i></span>
+      <span class="flow-text"><span class="flow-name">Approve incoming</span><br><span class="flow-steps">Counterparty side · 3 steps</span></span>
+    </div>
+    <div class="flow-link" onclick="runFlow('cross-dex')">
+      <span class="flow-icon"><i class="ti ti-alert-triangle"></i></span>
+      <span class="flow-text"><span class="flow-name">Cross-DEX acknowledge</span><br><span class="flow-steps">Warning + audit · 4 steps</span></span>
+    </div>
+    <div class="flow-link" onclick="runFlow('migration')">
+      <span class="flow-icon"><i class="ti ti-history"></i></span>
+      <span class="flow-text"><span class="flow-name">Migration onboarding</span><br><span class="flow-steps">Legacy user · 3 steps</span></span>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Foundations</div>
+    <div class="nav-link" data-screen="found"><i class="ti ti-palette"></i>Chips &amp; brand</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Inbox</div>
+    <div class="nav-link active" data-screen="inbox-tx"><i class="ti ti-inbox"></i>/portal/tradex</div>
+    <div class="nav-link" data-screen="inbox-all"><i class="ti ti-grid-dots"></i>/portal/all</div>
+    <div class="nav-link" data-screen="empty"><i class="ti ti-sparkles"></i>Empty state (new user)</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Create flow</div>
+    <div class="nav-link" data-screen="dropdown"><i class="ti ti-plus"></i>+ New Agreement</div>
+    <div class="nav-link" data-screen="data-picker"><i class="ti ti-database"></i>Data element picker</div>
+    <div class="nav-link" data-screen="cp-picker"><i class="ti ti-users"></i>Counterparty picker</div>
+    <div class="nav-link" data-screen="sp-variants"><i class="ti ti-arrows-exchange"></i>SP wizard copy A/B/C</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Agreement</div>
+    <div class="nav-link" data-screen="detail"><i class="ti ti-file-text"></i>Detail page</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Cross-DEX</div>
+    <div class="nav-link" data-screen="warn-inline"><i class="ti ti-alert-triangle"></i>Inline panel (wizard)</div>
+    <div class="nav-link" data-screen="warn-bulk"><i class="ti ti-alert-octagon"></i>Bulk modal</div>
+    <div class="nav-link" data-screen="warn-chip"><i class="ti ti-info-circle"></i>Inline chip (/all)</div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Migration</div>
+    <div class="nav-link" data-screen="migration"><i class="ti ti-history"></i>What's changed</div>
+  </div>
+
+  <div class="footer-note">
+    Self-contained mock. Uses dex-repo tokens from <code style="background:var(--g-95);padding:1px 4px;border-radius:3px;font-family:ui-monospace,monospace;font-size:10px;">_colors.scss</code>. Clickable inter-screen links: workspace switcher → expanded · "+ New Agreement" → dropdown · inbox card → detail page · dropdown items → relevant wizard step.
+  </div>
+</aside>
+
+<main class="canvas">
+
+<!-- ===== Flow ribbon (visible during a guided flow) ===== -->
+<div class="flow-ribbon" id="flow-ribbon">
+  <i class="ti ti-route"></i>
+  <p id="flow-ribbon-text"><strong>First-time user flow:</strong> create your first Agreement on TradeX.</p>
+  <a class="exit-flow" onclick="exitFlow()">Exit flow</a>
+</div>
+
+<!-- ===== Wizard chrome (top) ===== -->
+<div class="wizard-bar" id="wizard-bar">
+  <div class="top">
+    <h2 id="wizard-title">Share data with a counterparty</h2>
+    <a class="cancel" onclick="wizardCancel()"><i class="ti ti-x"></i>Cancel</a>
+  </div>
+  <div class="stepper" id="wizard-stepper"></div>
+</div>
+
+<!-- ========== SCREEN: foundations ========== -->
+<section class="screen" data-screen="found">
+  <div class="canvas-meta">
+    <span class="meta-label">Step 0</span>
+    <h1>Foundation — DEX chips and platform mark</h1>
+    <span class="adr-tag">ADR 0005</span>
+    <span class="adr-tag">P6-R2</span>
+  </div>
+
+  <div class="foundation-card">
+    <p class="h">Chip sizes at 12 / 16 / 24px — TradeX, BuildEx, HealthDex</p>
+    <div class="chip-row-grid">
+      <span class="lbl">TradeX</span>
+      <div class="chip-row">
+        <span class="chip-sm chip-tx"><span class="d"></span>TradeX</span>
+        <span class="chip-md chip-tx"><span class="d"></span>TradeX</span>
+        <span class="chip-lg chip-tx"><span class="d"></span>TradeX</span>
+      </div>
+      <span class="lbl">BuildEx</span>
+      <div class="chip-row">
+        <span class="chip-sm chip-bx"><span class="d"></span>BuildEx</span>
+        <span class="chip-md chip-bx"><span class="d"></span>BuildEx</span>
+        <span class="chip-lg chip-bx"><span class="d"></span>BuildEx</span>
+      </div>
+      <span class="lbl">HealthDex</span>
+      <div class="chip-row">
+        <span class="chip-sm chip-hx"><span class="d"></span>HealthDex</span>
+        <span class="chip-md chip-hx"><span class="d"></span>HealthDex</span>
+        <span class="chip-lg chip-hx"><span class="d"></span>HealthDex</span>
+      </div>
+    </div>
+    <div class="dark-strip">
+      <span class="chip-md chip-dark-tx"><span class="d"></span>TradeX</span>
+      <span class="chip-md chip-dark-bx"><span class="d"></span>BuildEx</span>
+      <span class="chip-md chip-dark-hx"><span class="d"></span>HealthDex</span>
+    </div>
+  </div>
+
+  <div class="foundation-card">
+    <p class="h">Platform mark (neutral chrome at /portal/all)</p>
+    <div class="brand-card">
+      <div class="logo-wrap">
+        <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+          <rect x="3" y="3" width="9" height="9" rx="2" fill="#363941"/>
+          <rect x="16" y="3" width="9" height="9" rx="2" fill="#60636b"/>
+          <rect x="3" y="16" width="9" height="9" rx="2" fill="#60636b"/>
+          <rect x="16" y="16" width="9" height="9" rx="2" fill="#363941"/>
+        </svg>
+        <span>Dex</span>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <p class="meta-k">Accent</p>
+        <p class="meta-v">Charcoal <span class="swatch" style="background:#363941"></span></p>
+      </div>
+      <div>
+        <p class="meta-k">Sidebar tone</p>
+        <p class="meta-v">Mono glyphs</p>
+      </div>
+    </div>
+    <div class="ramps">
+      <div class="ramp"><p class="name">TRADEX</p><div class="swatches"><div style="background:#4e0058"></div><div style="background:#a614b9"></div><div style="background:#ffc9fd"></div><div style="background:#ffe7fb"></div></div></div>
+      <div class="ramp"><p class="name">BUILDEX</p><div class="swatches"><div style="background:#00266d"></div><div style="background:#0446c3"></div><div style="background:#abdaff"></div><div style="background:#e0f0ff"></div></div></div>
+      <div class="ramp"><p class="name">HEALTHDEX</p><div class="swatches"><div style="background:#003c32"></div><div style="background:#006d5d"></div><div style="background:#8bf8e4"></div><div style="background:#c5fff1"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN: inbox tradex ========== -->
+<section class="screen active" data-screen="inbox-tx">
+  <div class="canvas-meta">
+    <span class="meta-label">Step 1a</span>
+    <h1>P5 Inbox — /portal/tradex/inbox</h1>
+    <span class="adr-tag">ADR 0003</span>
+    <span class="adr-tag">ADR 0006</span>
+    <span class="adr-tag">P5-R1</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div><strong>Try it:</strong> click the <em>TradeX</em> pill in the header to open the workspace switcher. Click the <em>+ New Agreement</em> button to open the dropdown. Click any inbox card to land on the Agreement detail page.</div>
+  </div>
+
+  <div class="portal-frame">
+    <div class="topbar">
+      <button class="workspace-pill" onclick="toggleSwitcher(event)"><span class="dot"></span>TradeX<i class="ti ti-chevron-down" style="font-size:14px"></i></button>
+      <div class="search-pill" onclick="openSearch()" style="cursor:pointer"><i class="ti ti-search"></i><span>Search</span><kbd>⌘K</kbd></div>
+      <div class="spacer"></div>
+      <button class="btn-primary" data-create-btn onclick="toggleDropdown(event)"><i class="ti ti-plus"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px"></i></button>
+      <button class="btn-ghost" data-notif-btn aria-label="Notifications" onclick="openNotif(event)"><i class="ti ti-bell"></i><span class="badge-dot"></span></button>
+      <div class="avatar" data-profile-btn onclick="openProfile(event)" style="cursor:pointer">MO</div>
+
+      <div class="switcher-pop" hidden id="switcher-pop">
+        <div class="switcher-item tx active" onclick="switchDex('tx')"><span class="ws-tile">Tx</span><div><div class="label">TradeX</div><div class="role">Admin · 12 items waiting</div></div><i class="ti ti-check" style="margin-left:auto;color:var(--tx-50);font-size:14px"></i></div>
+        <div class="switcher-item bx" onclick="switchDex('bx')"><span class="ws-tile">Bx</span><div><div class="label">BuildEx</div><div class="role">Participant · 6 items waiting</div></div><span style="margin-left:auto;width:6px;height:6px;background:var(--red-50);border-radius:50%"></span></div>
+        <div class="switcher-item hx" onclick="switchDex('hx')"><span class="ws-tile">Hx</span><div><div class="label">HealthDex</div><div class="role">Super-admin · 3 items waiting</div></div></div>
+        <div class="dropdown-divider"></div>
+        <div class="switcher-item all" onclick="goto('inbox-all')"><span class="ws-tile"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="1" y="1" width="5" height="5" rx="1" fill="#363941"/><rect x="8" y="1" width="5" height="5" rx="1" fill="#60636b"/><rect x="1" y="8" width="5" height="5" rx="1" fill="#60636b"/><rect x="8" y="8" width="5" height="5" rx="1" fill="#363941"/></svg></span><div><div class="label">All DEXes</div><div class="role">21 items across 3 DEXes</div></div></div>
+        <div class="dropdown-divider"></div>
+        <div class="switcher-item" onclick="openJoin()"><i class="ti ti-plus" style="font-size:16px;color:var(--g-50);margin:0 3px"></i><div class="label" style="font-weight:400;color:var(--g-50)">Join another DEX</div></div>
+      </div>
+
+      <div class="dropdown-pop" hidden id="dropdown-pop">
+        <div class="dropdown-item" onclick="goto('data-picker')">
+          <div class="icon-bubble"><i class="ti ti-arrows-exchange"></i></div>
+          <div><div class="label">Share data with a counterparty</div><div class="desc">A direct exchange — you and one other org agree on terms.</div></div>
+        </div>
+        <div class="dropdown-item" onclick="goto('sp-variants')">
+          <div class="icon-bubble"><i class="ti ti-users-group"></i></div>
+          <div><div class="label">Appoint a service provider</div><div class="desc">Authorise another org to send or receive data on your behalf.</div></div>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" onclick="openTemplate()">
+          <div class="icon-bubble neutral"><i class="ti ti-template"></i></div>
+          <div><div class="label">Start from a template</div><div class="desc">4 available · pre-filled blueprint for repeat patterns.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="body">
+      <nav class="sidebar">
+        <p class="sec-label">Pinned</p>
+        <div class="side-link" onclick="toast('Filtering inbox to renewals due (mock)')"><i class="ti ti-pin"></i>Renewals due</div>
+        <div class="side-divider"></div>
+        <div class="side-link active"><i class="ti ti-inbox"></i>Inbox<span class="count-badge">12</span></div>
+        <div class="side-link"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+        <div class="side-link"><i class="ti ti-file-text"></i>Agreements</div>
+        <div class="side-link"><i class="ti ti-database"></i>Data elements</div>
+        <div class="side-divider"></div>
+        <div class="side-link"><i class="ti ti-users"></i>Participants</div>
+        <div class="side-link"><i class="ti ti-settings"></i>Configuration</div>
+        <p class="show-hidden" onclick="toast('Revealing 2 hidden sidebar items (mock)')">Show hidden (2)</p>
+      </nav>
+
+      <main class="content">
+        <h1>Inbox</h1>
+        <p class="lede">12 items waiting</p>
+
+        <div class="filter-chips">
+          <span class="chip solid">All · 12</span>
+          <span class="chip muted">Approvals · 4</span>
+          <span class="chip muted">Agreements · 5</span>
+          <span class="chip muted">Renewals · 2</span>
+          <span class="chip muted">Issues · 1</span>
+        </div>
+
+        <details class="group-block" open>
+          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">Mine</span><span class="sub">4 items</span></summary>
+          <div class="inbox-stack">
+            <div class="inbox-card" onclick="goto('detail')">
+              <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+              <div class="body"><div class="title">Maersk wants to receive Bills of Lading</div><div class="meta">Incoming Agreement · invited 2h ago · waiting on you</div></div>
+              <button class="btn-primary" style="padding:5px 10px;font-size:11px" onclick="event.stopPropagation(); openApprove()">Review</button>
+            </div>
+            <div class="inbox-card" onclick="goto('detail')">
+              <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+              <div class="body"><div class="title">Extend Agreement with Cosco before 30 Sep</div><div class="meta">Renewal · expires in 9 days · auto-extend disabled</div></div>
+              <button class="btn-secondary" onclick="event.stopPropagation(); openExtend('Cosco Shipping')">Extend 12mo</button>
+            </div>
+            <div class="inbox-card" onclick="goto('detail')">
+              <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+              <div class="body"><div class="title">Promote Bill of Lading v2.1 → Active</div><div class="meta">Data element · drafted by Sarah · review window closing today</div></div>
+              <button class="btn-secondary neutral" onclick="event.stopPropagation(); toast('Opening Bill of Lading v2.1 promotion review')">Open</button>
+            </div>
+          </div>
+        </details>
+
+        <details class="group-block" open>
+          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">My team's</span><span class="sub">8 items · anyone can claim</span></summary>
+          <div class="inbox-stack">
+            <div class="inbox-card team" onclick="goto('detail')">
+              <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+              <div class="body"><div class="title">PSA bunker delivery — 3 contributor enrolments pending</div><div class="meta">Approval · oldest 4h ago · 3 admins eligible</div></div>
+              <button class="btn-secondary" onclick="event.stopPropagation(); openClaim()">Claim</button>
+            </div>
+            <div class="inbox-card completion">
+              <i class="ti ti-check" style="font-size:16px;color:var(--green-50);flex-shrink:0"></i>
+              <div class="body"><div class="title">Alice approved CrimsonLogic appointment for ABC Logistics</div><div class="meta">Completed 2 min ago · disappears from inbox in 3 min</div></div>
+            </div>
+            <div class="inbox-card team" onclick="goto('detail')">
+              <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+              <div class="body"><div class="title">Review onboarding KYC for Pacific Container Lines</div><div class="meta">Approval · 1d ago · 3 admins eligible</div></div>
+              <button class="btn-secondary" onclick="event.stopPropagation(); openClaim()">Claim</button>
+            </div>
+          </div>
+        </details>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN: inbox all ========== -->
+<section class="screen" data-screen="inbox-all">
+  <div class="canvas-meta">
+    <span class="meta-label">Step 1b</span>
+    <h1>P5 Inbox — /portal/all</h1>
+    <span class="adr-tag">ADR 0005</span>
+    <span class="adr-tag">ADR 0016</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div><strong>Note the contrast vs Step 1a:</strong> neutral platform chrome at the shell level; DEX colour appears only on individual record chips. Workspace switcher reads "All DEXes" (mosaic glyph). Sidebar adds a "Your DEXes" mini-section. Filter chips now show per-DEX counts.</div>
+  </div>
+
+  <div class="portal-frame">
+    <div class="topbar">
+      <button class="workspace-pill is-all" onclick="goto('inbox-tx')" title="Switch to a specific DEX">
+        <span class="dot-grid"><span class="dot-grid-row"><span class="dot-grid-cell"></span><span class="dot-grid-cell alt"></span></span><span class="dot-grid-row"><span class="dot-grid-cell alt"></span><span class="dot-grid-cell"></span></span></span>
+        All DEXes<i class="ti ti-chevron-down" style="font-size:14px"></i>
+      </button>
+      <div class="search-pill" onclick="openSearch()" style="cursor:pointer"><i class="ti ti-search"></i><span>Search across DEXes</span><kbd>⌘K</kbd></div>
+      <div class="spacer"></div>
+      <button class="btn-primary neutral" onclick="toast('Pick a DEX to create on — switching to TradeX'); setTimeout(() => { goto('inbox-tx'); toggleDropdown({stopPropagation:()=>{}}); }, 400)"><i class="ti ti-plus"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px"></i></button>
+      <button class="btn-ghost" data-notif-btn aria-label="Notifications" onclick="openNotif(event)"><i class="ti ti-bell"></i><span class="badge-dot"></span></button>
+      <div class="avatar neutral" data-profile-btn onclick="openProfile(event)" style="cursor:pointer">MO</div>
+    </div>
+
+    <div class="body">
+      <nav class="sidebar">
+        <p class="sec-label">Pinned</p>
+        <div class="side-link"><i class="ti ti-pin"></i>Renewals due</div>
+        <div class="side-divider"></div>
+        <div class="side-link neutral active"><i class="ti ti-inbox"></i>Inbox<span class="count-badge">21</span></div>
+        <div class="side-link"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+        <div class="side-link"><i class="ti ti-file-text"></i>Agreements</div>
+        <div class="side-link"><i class="ti ti-database"></i>Data elements</div>
+        <div class="side-divider"></div>
+        <p class="sec-label" style="margin-top:8px">Your DEXes</p>
+        <div class="dex-mini"><span class="dex-dot" style="background:var(--tx-50)"></span>TradeX</div>
+        <div class="dex-mini"><span class="dex-dot" style="background:var(--bx-40)"></span>BuildEx<span class="new-dot"></span></div>
+        <div class="dex-mini"><span class="dex-dot" style="background:var(--hx-40)"></span>HealthDex</div>
+      </nav>
+
+      <main class="content">
+        <h1>Welcome, Marcus.</h1>
+        <p class="lede">Across TradeX, BuildEx and HealthDex · 21 items waiting</p>
+
+        <div class="filter-chips">
+          <span class="chip solid">All · 21</span>
+          <span class="chip tx"><span class="dex-dot" style="background:var(--tx-50)"></span>TradeX · 12</span>
+          <span class="chip bx"><span class="dex-dot" style="background:var(--bx-40)"></span>BuildEx · 6</span>
+          <span class="chip hx"><span class="dex-dot" style="background:var(--hx-40)"></span>HealthDex · 3</span>
+        </div>
+
+        <details class="group-block" open>
+          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">Mine</span><span class="sub">7 items across 3 DEXes</span></summary>
+          <div class="inbox-stack">
+            <div class="inbox-card" onclick="goto('detail')">
+              <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+              <div class="body"><div class="title">Maersk wants to receive Bills of Lading</div><div class="meta">Incoming Agreement · invited 2h ago</div></div>
+              <button class="btn-primary neutral" style="padding:5px 10px;font-size:11px" onclick="event.stopPropagation(); openApprove()">Review</button>
+            </div>
+            <div class="inbox-card" onclick="goto('warn-inline')">
+              <span class="dex-chip bx"><span class="dex-dot"></span>BuildEx</span>
+              <div class="body"><div class="title">Cross-DEX: PSA wants TradeX bunker data via BuildEx</div><div class="meta">Incoming Agreement · cross-DEX warning will fire</div></div>
+              <button class="btn-secondary" style="color:var(--bx-20);border-color:var(--bx-90)" onclick="event.stopPropagation(); goto('warn-inline')">Review</button>
+            </div>
+            <div class="inbox-card" onclick="toast('HealthDex compliance certificate renewal flow — residency-strict, governance review required','warn')">
+              <span class="dex-chip hx"><span class="dex-dot"></span>HealthDex</span>
+              <div class="body"><div class="title">Annual compliance certificate expires in 14d</div><div class="meta">Renewal · residency-strict · no grace period</div></div>
+              <button class="btn-secondary" style="color:var(--hx-20);border-color:var(--hx-90)" onclick="event.stopPropagation(); toast('Routed to governance review (residency-strict)','warn')">Renew</button>
+            </div>
+          </div>
+        </details>
+
+        <details class="group-block" open>
+          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">My team's</span><span class="sub">14 items · claim to move into Mine</span></summary>
+          <div class="inbox-stack">
+            <div class="inbox-card team" onclick="goto('warn-chip')">
+              <span class="dex-chip bx"><span class="dex-dot"></span>BuildEx</span>
+              <div class="body"><div class="title">5 contractor enrolments awaiting approval</div><div class="meta">Approval · oldest 3h ago · 4 admins eligible</div></div>
+              <button class="btn-secondary" style="color:var(--bx-20);border-color:var(--bx-90)" onclick="event.stopPropagation(); openClaim()">Claim</button>
+            </div>
+          </div>
+        </details>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN: empty state ========== -->
+<section class="screen" data-screen="empty">
+  <div class="canvas-meta">
+    <span class="meta-label">Onboarding · Q19</span>
+    <h1>Empty state — brand-new admin user, first 60 seconds</h1>
+    <span class="adr-tag">ADR 0015</span>
+    <span class="adr-tag">O-1</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div>No tour. No checklist. No overlay. The empty state IS the onboarding. Personalised heading, role-specific capability sentence, two suggested-action cards. Tip tab at top-right for ambient hints; auto-collapses after 7 days, disappears after 30.</div>
+  </div>
+
+  <div class="portal-frame">
+    <div class="topbar">
+      <button class="workspace-pill" onclick="goto('inbox-tx')" title="Go to TradeX inbox"><span class="dot"></span>TradeX<i class="ti ti-chevron-down" style="font-size:14px"></i></button>
+      <div class="spacer"></div>
+      <button class="btn-primary" onclick="goto('dropdown')"><i class="ti ti-plus"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px"></i></button>
+      <button class="btn-ghost" data-notif-btn onclick="openNotif(event)"><i class="ti ti-bell"></i></button>
+      <div class="avatar" data-profile-btn onclick="openProfile(event)" style="cursor:pointer">MO</div>
+    </div>
+    <div class="body">
+      <nav class="sidebar">
+        <div class="side-link active"><i class="ti ti-inbox"></i>Inbox</div>
+        <div class="side-link"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+        <div class="side-link"><i class="ti ti-file-text"></i>Agreements</div>
+        <div class="side-link"><i class="ti ti-database"></i>Data elements</div>
+        <div class="side-divider"></div>
+        <div class="side-link"><i class="ti ti-users"></i>Participants</div>
+        <div class="side-link"><i class="ti ti-settings"></i>Configuration</div>
+      </nav>
+      <main class="empty-hero">
+        <button class="new-here-pill" onclick="toast('Opening tips drawer: 4 things to know about the portal')"><i class="ti ti-bulb"></i>New here?<span class="nb">4</span></button>
+        <h1>Welcome, Marcus.</h1>
+        <p class="lede">As an <strong>Admin on TradeX</strong>, you can review participant approvals, manage data elements, and create Agreements on behalf of your org.</p>
+        <a class="help-link" onclick="openGlossary()" style="cursor:pointer">What else can I do here?</a>
+
+        <div class="suggest-grid">
+          <a class="suggest-card" onclick="goto('inbox-tx')">
+            <div class="ic-pill"><i class="ti ti-file-text"></i></div>
+            <p class="ttl">Review your org's Agreements</p>
+            <p class="desc">Cosco Shipping has 23 active Agreements on TradeX. Get the lay of the land.</p>
+            <p class="more">View Agreements <i class="ti ti-arrow-right"></i></p>
+          </a>
+          <a class="suggest-card primary" onclick="goto('dropdown')">
+            <div class="ic-pill"><i class="ti ti-plus"></i></div>
+            <p class="ttl">Create your first Agreement</p>
+            <p class="desc">Set up data sharing with a counterparty, or appoint a service provider to act for you.</p>
+            <p class="more">Start now <i class="ti ti-arrow-right"></i></p>
+          </a>
+        </div>
+
+        <p style="font-size:11px;color:var(--g-70);margin:20px 0 0;max-width:480px;line-height:1.6">When items arrive, they'll appear above, split into <strong style="font-weight:500;color:var(--g-10)">Mine</strong> (assigned or claimed by you) and <strong style="font-weight:500;color:var(--g-10)">My team's</strong> (anyone with admin role can claim).</p>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN: dropdown ========== -->
+<section class="screen" data-screen="dropdown">
+  <div class="canvas-meta">
+    <span class="meta-label">Step 2 · P3</span>
+    <h1>+ New Agreement dropdown (expanded)</h1>
+    <span class="adr-tag">ADR 0004</span>
+    <span class="adr-tag">ADR 0018</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div>The two entry points + conditional template item. Click <em>Share data with a counterparty</em> → data element picker. Click <em>Appoint a service provider</em> → SP wizard step 1.</div>
+  </div>
+
+  <div style="display:inline-block">
+    <div class="btn-primary"><i class="ti ti-plus"></i>New Agreement<i class="ti ti-chevron-up" style="font-size:12px"></i></div>
+  </div>
+  <div style="margin-top:6px;width:380px;background:#ffffff;border:0.5px solid var(--g-90);border-radius:var(--r-xl);padding:6px;box-shadow:0 4px 12px rgba(20,24,30,0.05)">
+    <div class="dropdown-item" onclick="goto('data-picker')">
+      <div class="icon-bubble"><i class="ti ti-arrows-exchange"></i></div>
+      <div><div class="label">Share data with a counterparty</div><div class="desc">A direct exchange — you and one other org agree on terms.</div></div>
+    </div>
+    <div class="dropdown-item" onclick="goto('sp-variants')">
+      <div class="icon-bubble"><i class="ti ti-users-group"></i></div>
+      <div><div class="label">Appoint a service provider</div><div class="desc">Authorise another org to send or receive data on your behalf.</div></div>
+    </div>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-item">
+      <div class="icon-bubble neutral"><i class="ti ti-template"></i></div>
+      <div><div class="label">Start from a template</div><div class="desc">4 available · pre-filled blueprint for repeat patterns.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN: data picker ========== -->
+<section class="screen" data-screen="data-picker">
+  <div class="canvas-meta">
+    <span class="meta-label">Wizard step</span>
+    <h1>Data element picker — browse + groups + search fallback</h1>
+    <span class="adr-tag">ADR 0013</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div>Browse-primary (Agreements are once-formed; speed-of-typing isn't the optimisation). Groups are first-class. Search collapses the tree when used. Selecting a group expands a snapshot preview — checkboxes let the user deselect, with snapshot semantics protecting existing Agreements from later group edits. After picking → <em>Counterparty picker</em>.</div>
+  </div>
+
+  <div class="picker-frame">
+    <div class="picker-search">
+      <i class="ti ti-search"></i>
+      <input type="text" placeholder="Search data elements on TradeX">
+      <span class="meta">189 elements · 12 groups</span>
+    </div>
+    <div class="picker-grid">
+      <div class="picker-tree">
+        <details open>
+          <summary><i class="ti ti-chevron-down chev"></i><i class="ti ti-folder"></i>Trade documents<span class="ct">14</span></summary>
+          <button class="leaf"><i class="ti ti-file-text"></i>Bill of Lading <span class="v-tag">v2.1</span></button>
+          <button class="leaf active"><i class="ti ti-stack"></i>Vessel arrival pack<span class="group-pill">group</span></button>
+          <button class="leaf"><i class="ti ti-file-text"></i>Cargo manifest <span class="v-tag">v3.0</span></button>
+          <button class="leaf"><i class="ti ti-file-text"></i>Certificate of origin <span class="v-tag">v1.4</span></button>
+          <button class="leaf"><i class="ti ti-stack"></i>Pre-shipment documents<span class="group-pill">group</span></button>
+        </details>
+        <details><summary><i class="ti ti-chevron-right chev"></i><i class="ti ti-folder"></i>Logistics &amp; tracking<span class="ct">38</span></summary></details>
+        <details><summary><i class="ti ti-chevron-right chev"></i><i class="ti ti-folder"></i>Bunker &amp; fuel<span class="ct">26</span></summary></details>
+        <details><summary><i class="ti ti-chevron-right chev"></i><i class="ti ti-folder"></i>Finance &amp; invoicing<span class="ct">21</span></summary></details>
+        <details><summary><i class="ti ti-chevron-right chev"></i><i class="ti ti-folder"></i>Customs &amp; regulatory<span class="ct">19</span></summary></details>
+      </div>
+      <div class="picker-detail">
+        <div class="picker-detail-head">
+          <i class="ti ti-stack"></i>
+          <span class="name">Vessel arrival pack</span>
+          <span class="group-pill" style="padding:1px 6px;background:var(--tx-90);color:var(--tx-20);border-radius:3px;font-size:10px;font-weight:500;margin-left:4px">group</span>
+        </div>
+        <p style="font-size:12px;color:var(--g-50);line-height:1.5">Coherent bundle of data elements that flow together when a vessel arrives. Curated by TradeX admins.</p>
+        <p class="snapshot-label">Snapshot · 4 elements (deselect any)</p>
+        <div class="snapshot-list">
+          <label class="snapshot-row"><i class="ti ti-square-check-filled"></i><span class="nm">ETA · <span class="v">v2.0</span></span></label>
+          <label class="snapshot-row"><i class="ti ti-square-check-filled"></i><span class="nm">Vessel particulars · <span class="v">v1.5</span></span></label>
+          <label class="snapshot-row"><i class="ti ti-square-check-filled"></i><span class="nm">Crew list · <span class="v">v1.2</span></span></label>
+          <label class="snapshot-row"><i class="ti ti-square-check-filled"></i><span class="nm">Cargo manifest · <span class="v">v3.0</span></span></label>
+        </div>
+        <button class="add-individual"><i class="ti ti-plus"></i>Add individual elements</button>
+        <p class="snapshot-info"><i class="ti ti-info-circle"></i>The snapshot is captured at Agreement creation. Future edits to this group won't affect Agreements created today.</p>
+        <button class="btn-primary" style="margin-top:14px;width:100%;justify-content:center" onclick="goto('cp-picker')">Continue to counterparty <i class="ti ti-arrow-right"></i></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN: cp picker ========== -->
+<section class="screen" data-screen="cp-picker">
+  <div class="canvas-meta">
+    <span class="meta-label">Wizard step</span>
+    <h1>Counterparty picker — hybrid with use-case-enrolment readiness</h1>
+    <span class="adr-tag">ADR 0014</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div>"Ready" badges = enrolled in the same use case as the picked data element; Agreement will activate cleanly. "Invitation required" = exists on TradeX but needs to be invited into the use case. Cross-DEX toggle defaults OFF. Click <em>Maersk</em> to fire the inline cross-DEX warning.</div>
+  </div>
+
+  <div class="picker-frame">
+    <div class="picker-search">
+      <i class="ti ti-search"></i>
+      <input type="text" placeholder="Search counterparties on TradeX (name, UEN, trading alias)">
+    </div>
+    <div class="picker-toolbar">
+      <span class="chip solid">Any type</span>
+      <span class="chip muted">Carrier</span>
+      <span class="chip muted">Shipper</span>
+      <span class="chip muted">Service provider</span>
+      <span class="chip tx" style="font-weight:500"><i class="ti ti-check" style="font-size:12px"></i>Ready for B/L sharing</span>
+      <label class="toggle-row" onclick="toggleCpDexFilter(event, this)"><span class="toggle-track" id="cp-toggle-track"><span class="toggle-knob" id="cp-toggle-knob"></span></span>Include other DEXes</label>
+    </div>
+
+    <details open>
+      <summary style="display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;list-style:none;font-size:11px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--g-50);background:var(--g-98)">
+        <i class="ti ti-chevron-down" style="font-size:14px"></i>
+        Counterparties your org has worked with (8)
+      </summary>
+      <div class="cp-list">
+        <button class="cp-row" onclick="goto('warn-inline')">
+          <div class="cp-avatar">Mk</div>
+          <div class="cp-body"><div class="cp-name">Maersk Logistics Pte Ltd</div><div class="cp-meta">Carrier · UEN 200512345R · 3 active Agreements with you</div></div>
+          <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+          <span class="ready-pill"><i class="ti ti-check"></i>Ready</span>
+        </button>
+        <button class="cp-row" onclick="toast('PSA selected · Agreement will activate cleanly (Ready)'); setTimeout(() => goto('detail'), 600)">
+          <div class="cp-avatar">PS</div>
+          <div class="cp-body"><div class="cp-name">PSA International</div><div class="cp-meta">Port operator · UEN 199702345K · 1 active Agreement with you</div></div>
+          <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+          <span class="ready-pill"><i class="ti ti-check"></i>Ready</span>
+        </button>
+        <button class="cp-row" onclick="toast('CrimsonLogic selected · invitation will be sent before activation','warn'); setTimeout(() => goto('detail'), 700)">
+          <div class="cp-avatar">CL</div>
+          <div class="cp-body"><div class="cp-name">CrimsonLogic Pte Ltd</div><div class="cp-meta">Service provider · UEN 198812345J · onboarded 6mo ago</div></div>
+          <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+          <span class="ready-pill invite"><i class="ti ti-mail"></i>Invitation required</span>
+        </button>
+        <button class="cp-row" onclick="toast('Cosco Shipping selected · Agreement will activate cleanly'); setTimeout(() => goto('detail'), 600)">
+          <div class="cp-avatar">CS</div>
+          <div class="cp-body"><div class="cp-name">Cosco Shipping Lines</div><div class="cp-meta">Carrier · UEN 200012345B · also known as COSCON</div></div>
+          <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+          <span class="ready-pill"><i class="ti ti-check"></i>Ready</span>
+        </button>
+        <button class="cp-row" onclick="goto('warn-inline')">
+          <div class="cp-avatar">AC</div>
+          <div class="cp-body"><div class="cp-name">Acme Construction Pte Ltd</div><div class="cp-meta">Contractor · UEN 201111223J · primary DEX is BuildEx</div></div>
+          <span class="dex-chip bx"><span class="dex-dot"></span>BuildEx</span>
+          <span class="ready-pill" style="background:var(--yellow-98);color:var(--yellow-50)"><i class="ti ti-alert-triangle"></i>Cross-DEX</span>
+        </button>
+      </div>
+    </details>
+    <p class="list-foot"><i class="ti ti-info-circle"></i>Ready = counterparty has enrolled in the same use case as your data element. Invitation required = exists on TradeX but needs to be invited.</p>
+  </div>
+</section>
+
+<!-- ========== SCREEN: sp variants ========== -->
+<section class="screen" data-screen="sp-variants">
+  <div class="canvas-meta">
+    <span class="meta-label">SP wizard · step 1</span>
+    <h1>Direction question — three candidate copy variants</h1>
+    <span class="adr-tag">ADR 0004</span>
+    <span class="adr-tag">P3-R2</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div>Test these 3 with 4–6 users in 30-min mock sessions (the P3-R2 cheapest test). Whichever variant ≥5 of 6 users pick correctly on first attempt becomes production. Contributor toggle sits as an advanced disclosure below this step regardless of variant.</div>
+  </div>
+
+  <div class="copy-variants">
+    <div class="variant-card">
+      <p class="variant-tag">Variant A · Active voice</p>
+      <p class="variant-q">What should this service provider do on your behalf?</p>
+      <div class="variant-options">
+        <label class="variant-opt"><span class="opt-head"><i class="ti ti-circle"></i><span>Send my data</span></span><span class="opt-desc">They forward it to a counterparty.</span></label>
+        <label class="variant-opt"><span class="opt-head"><i class="ti ti-circle"></i><span>Receive data for me</span></span><span class="opt-desc">They collect it from a counterparty.</span></label>
+      </div>
+    </div>
+    <div class="variant-card">
+      <p class="variant-tag">Variant B · Direction-first</p>
+      <p class="variant-q">Which direction will data flow?</p>
+      <div class="variant-options">
+        <label class="variant-opt"><span class="opt-head"><i class="ti ti-arrow-right"></i><span>Outbound</span></span><span class="opt-desc">From your org, via the SP, to a counterparty.</span></label>
+        <label class="variant-opt"><span class="opt-head"><i class="ti ti-arrow-left"></i><span>Inbound</span></span><span class="opt-desc">From a counterparty, via the SP, to your org.</span></label>
+      </div>
+    </div>
+    <div class="variant-card">
+      <p class="variant-tag">Variant C · Concrete example</p>
+      <p class="variant-q">Pick the scenario that matches your setup</p>
+      <div class="variant-options single">
+        <label class="variant-opt"><span class="opt-head"><i class="ti ti-circle"></i><span>"CrimsonLogic will send Bills of Lading to Maersk on our behalf"</span></span></label>
+        <label class="variant-opt"><span class="opt-head"><i class="ti ti-circle"></i><span>"CrimsonLogic will receive Bills of Lading from Maersk on our behalf"</span></span></label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN: detail ========== -->
+<section class="screen" data-screen="detail">
+  <div class="canvas-meta">
+    <span class="meta-label">Q23 · ADR 0019</span>
+    <h1>Agreement detail page — hero + scroll with sticky header</h1>
+    <span class="adr-tag">ADR 0007</span>
+    <span class="adr-tag">ADR 0009</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div>Single URL · single scroll · no hidden state. Right rail (≥1200px only) is omitted in this 1100px-friendly viewport. "View as counterparty" link in header opens a side panel rendering the read-only equivalent — lightweight P3-D.</div>
+  </div>
+
+  <div class="detail-frame">
+    <div class="detail-header">
+      <div class="top-row">
+        <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+        <span class="agr-id">AGR-2026-04829</span>
+        <a class="view-as" onclick="openCpPanel()"><i class="ti ti-eye"></i>View as counterparty</a>
+      </div>
+      <div class="title-row">
+        <h2>Share Bills of Lading with Maersk Logistics</h2>
+        <span class="status-pill active"><span class="dot"></span>Active</span>
+        <button class="btn-secondary" onclick="openExtend('Maersk Logistics')">Extend 12mo</button>
+        <button class="btn-ghost" onclick="toast('More actions: Revoke · Suspend · Export audit · Copy link')"><i class="ti ti-dots"></i></button>
+      </div>
+    </div>
+    <div class="detail-body">
+
+      <section>
+        <p class="section-label">Lifecycle</p>
+        <div class="timeline">
+          <div class="step"><div class="step-row"><span class="dot done"></span><span class="step-label">Pending</span></div><p class="step-time">14 Mar · invited by you</p></div>
+          <div class="step mid"><div class="step-row"><span class="dot curr"></span><span class="step-label">Active</span></div><p class="step-time">21 Mar · Maersk accepted</p></div>
+          <div class="step end"><div class="step-row"><span class="dot future"></span><span class="step-label muted">Ends</span></div><p class="step-time">30 Sep · expires</p></div>
+        </div>
+        <div class="nudge">
+          <i class="ti ti-clock"></i>
+          <p>Expires in 9 days. Extend before 30 Sep to avoid the 7-day grace window.</p>
+          <button class="btn-secondary" onclick="openExtend('Maersk Logistics')">Extend now</button>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-label">Parties</p>
+        <div class="party-grid">
+          <div class="party-card" style="cursor:pointer" onclick="toast('Opening Cosco Shipping org profile (mock)')"><p class="role-label">Sender · You</p><p class="org-name">Cosco Shipping (SG) Pte Ltd</p><p class="uen">UEN 199001234A</p></div>
+          <div class="party-card" style="cursor:pointer" onclick="openCpPanel()"><p class="role-label">Receiver · Counterparty</p><p class="org-name">Maersk Logistics Pte Ltd</p><p class="uen">Carrier · UEN 200512345R</p></div>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-label">What's covered</p>
+        <div class="party-card" style="padding:12px 14px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <i class="ti ti-file-text" style="font-size:18px;color:var(--g-50)"></i>
+            <div style="flex:1;min-width:0">
+              <p style="font-size:13px;font-weight:500;color:var(--g-10)">Bill of Lading <span style="font-weight:400;color:var(--g-50)">· v2.1</span></p>
+              <p style="font-size:11px;color:var(--g-50);margin-top:2px">Snapshot taken 14 Mar · 1 element · not in a group</p>
+            </div>
+            <span style="padding:2px 6px;background:var(--green-98);color:var(--green-50);border-radius:3px;font-size:10px;font-weight:500">Active</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-label">Terms</p>
+        <div class="terms-table">
+          <div class="terms-row"><span class="k">Effective from</span><span class="v">21 Mar 2026</span></div>
+          <div class="terms-row"><span class="k">Extended until</span><span class="v">30 Sep 2026 <span style="color:var(--g-50)">(1 extension)</span></span></div>
+          <div class="terms-row"><span class="k">Residency class</span><span class="v">Standard · cross-DEX OK with warning</span></div>
+          <div class="terms-row"><span class="k">Auto-renew</span><span class="v" style="color:var(--g-50)">Off — requires explicit extension</span></div>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-label">Activity</p>
+        <div class="activity">
+          <div class="ev"><span class="ev-dot tx"></span><div class="ev-body"><p><strong>Marcus Ong</strong> extended the Agreement by 6 months</p><p class="ev-time">2 days ago · 14:23 SGT</p></div></div>
+          <div class="ev"><span class="ev-dot bx"></span><div class="ev-body"><p><strong>Maersk Logistics</strong> began consuming the data feed</p><p class="ev-time">21 Mar · 09:15 SGT · automated</p></div></div>
+          <div class="ev"><span class="ev-dot green"></span><div class="ev-body"><p><strong>Sarah Lim (Maersk)</strong> accepted the Agreement</p><p class="ev-time">21 Mar · 09:12 SGT</p></div></div>
+          <div class="ev"><span class="ev-dot muted"></span><div class="ev-body"><p><strong>Marcus Ong</strong> created the Agreement and sent the invitation</p><p class="ev-time">14 Mar · 11:08 SGT</p></div></div>
+        </div>
+        <p style="font-size:11px;color:var(--g-50);margin:10px 0 0;text-align:center" id="audit-foot"><a onclick="expandAudit(event)" style="color:var(--g-50);text-decoration:underline;cursor:pointer">Show full audit log (24 entries)</a></p>
+      </section>
+
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN: warn inline ========== -->
+<section class="screen" data-screen="warn-inline">
+  <div class="canvas-meta">
+    <span class="meta-label">Cross-DEX · Trigger A</span>
+    <h1>Inline panel warning at counterparty-selection step</h1>
+    <span class="adr-tag">ADR 0012</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div>Fires inside the wizard. Cancel is default focus; "Continue anyway" is a deliberate click. Both choices are audit-logged. For residency-strict data classes, "Continue anyway" is replaced by "Request governance review."</div>
+  </div>
+
+  <div class="warn-frame">
+    <p class="step-tag">Step 3 of 5 · /portal/tradex/agreements/new</p>
+    <h3>Who's the counterparty?</h3>
+
+    <div class="selected-cp">
+      <div class="cp-avatar">Mk</div>
+      <div class="cp-body">
+        <div class="cp-name">Maersk Logistics Pte Ltd</div>
+        <div style="display:flex;gap:6px;margin-top:2px;align-items:center">
+          <span class="dex-chip bx" style="font-size:10px;padding:2px 6px"><span class="dex-dot"></span>BuildEx</span>
+          <span style="font-size:11px;color:var(--g-50)">Carrier · UEN 200512345R</span>
+        </div>
+      </div>
+      <i class="ti ti-check" style="font-size:16px;color:var(--green-50)"></i>
+    </div>
+
+    <div class="warn-panel">
+      <div class="row">
+        <i class="ti ti-alert-triangle"></i>
+        <div>
+          <p class="ttl">This Agreement crosses a DEX boundary</p>
+          <p class="desc">Maersk's primary DEX is <strong>BuildEx</strong>. You're creating this Agreement from <strong>TradeX</strong>. BuildEx residency rules apply to outgoing data, and governance approval may be required before activation.</p>
+          <p class="audit">Your acknowledgement of this warning will be audit-logged.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="warn-actions">
+      <button class="btn-cancel" onclick="toast('Cancelled · returning to counterparty picker','warn'); goto('cp-picker')">Cancel</button>
+      <button class="btn-deliberate" onclick="acknowledgeWarn()">Continue anyway</button>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN: warn bulk ========== -->
+<section class="screen" data-screen="warn-bulk">
+  <div class="canvas-meta">
+    <span class="meta-label">Cross-DEX · Trigger C</span>
+    <h1>Bulk pre-commit modal</h1>
+    <span class="adr-tag">ADR 0012</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div>Lists every affected DEX and its count. Mandatory acknowledgement checkbox before Continue activates. The residency-strict HealthDex row is highlighted and excluded from the batch.</div>
+  </div>
+
+  <div class="bulk-modal-veil">
+    <div class="bulk-modal">
+      <div class="bulk-head">
+        <div class="ic"><i class="ti ti-alert-triangle"></i></div>
+        <div>
+          <h4>Extending 14 Agreements across multiple DEXes</h4>
+          <p class="sub">This action spans three DEXes, each with potentially different residency rules and notification cadences. Review by DEX before continuing.</p>
+        </div>
+      </div>
+      <div class="bulk-body">
+        <div class="bulk-row"><span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span><span class="lbl">9 Agreements · standard residency</span><a class="tx">Review</a></div>
+        <div class="bulk-row"><span class="dex-chip bx"><span class="dex-dot"></span>BuildEx</span><span class="lbl">4 Agreements · standard residency</span><a class="bx">Review</a></div>
+        <div class="bulk-row strict"><span class="dex-chip hx"><span class="dex-dot"></span>HealthDex</span><span class="lbl">1 Agreement · <strong>residency-strict</strong></span><span class="strict-note">Will be excluded</span></div>
+      </div>
+      <label class="bulk-ack">
+        <input type="checkbox" onchange="toggleBulkAck(this)">
+        <span>I understand this action spans multiple DEXes. The HealthDex Agreement will not be extended in this batch — I'll handle it separately.</span>
+      </label>
+      <div class="bulk-foot">
+        <button class="btn-cancel" onclick="toast('Bulk extension cancelled','warn'); goto('inbox-tx')">Cancel</button>
+        <button class="btn-disabled" id="bulk-cta" disabled onclick="if(!this.disabled) bulkProceed()">Extend 13 Agreements</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN: warn chip ========== -->
+<section class="screen" data-screen="warn-chip">
+  <div class="canvas-meta">
+    <span class="meta-label">Cross-DEX · Trigger E</span>
+    <h1>Inline chip on inbox card at /portal/all</h1>
+    <span class="adr-tag">ADR 0012</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div>Routine action; chip is informational, not blocking. Audit log records the user acted from /all rather than the item's home DEX. Hover the chip for the explainer.</div>
+  </div>
+
+  <div style="background:#ffffff;border:0.5px solid var(--g-90);border-radius:var(--r-xl);padding:18px">
+    <div class="inbox-card" style="cursor:default">
+      <span class="dex-chip bx"><span class="dex-dot"></span>BuildEx</span>
+      <div class="body"><div class="title">Approve enrolment for Acme Construction</div><div class="meta">3h ago · 4 admins eligible</div></div>
+      <span class="acting-pill" onclick="toast('You acted on a BuildEx item from /all · audit log records this','warn')" title="You're at /portal/all but this item lives on BuildEx. The audit log will record you acted from /all. The chrome of this record's detail page will be BuildEx-themed."><i class="ti ti-info-circle"></i>Acting from /all</span>
+      <button class="btn-secondary" style="color:var(--bx-20);border-color:var(--bx-90)" onclick="toast('Enrolment approved · acted from /all · audit-logged'); goto('inbox-all')">Approve</button>
+    </div>
+    <p style="font-size:11px;color:var(--g-50);margin:12px 0 0;line-height:1.6">On click, the small chip expands into a tooltip: <em>"You're at /portal/all but this item lives on BuildEx. The audit log will record you acted from /all. The chrome of this record's detail page will be BuildEx-themed."</em></p>
+  </div>
+</section>
+
+<!-- ========== SCREEN: migration ========== -->
+<section class="screen" data-screen="migration">
+  <div class="canvas-meta">
+    <span class="meta-label">Migration · first login post-cutover</span>
+    <h1>"What's changed" inline panel + migrated drafts notice</h1>
+    <span class="adr-tag">ADR 0017</span>
+    <span class="adr-tag">O-3</span>
+    <span class="adr-tag">O-4</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer"></i>
+    <div>One-time inline panel. URL redirects + automated draft migration are the permanent infrastructure pieces behind this screen. Glossary link persists in footer permanently; profile-menu link disappears after 30 days.</div>
+  </div>
+
+  <div class="migration-frame">
+    <div class="migration-panel">
+      <div class="ic"><i class="ti ti-sparkles"></i></div>
+      <div style="flex:1;min-width:0">
+        <div class="hd">
+          <h4>The portal has been reorganised</h4>
+          <span class="one-time">One-time notice</span>
+        </div>
+        <p class="sub">Your existing work is intact. Here's what's different.</p>
+        <div class="migration-list">
+          <div class="migration-li"><span class="b"></span><p><strong>Subscriptions, DERs, SPRs, and Client Relations</strong> are now all called <strong class="brand">Agreements</strong>. Same records, one name.</p></div>
+          <div class="migration-li"><span class="b"></span><p><strong>URLs have moved</strong> to <code>/portal/&lt;dex&gt;/…</code>. Your old bookmarks redirect automatically.</p></div>
+          <div class="migration-li"><span class="b"></span><p>The <strong>dashboard</strong> has been replaced by an <strong class="brand">Inbox</strong> of items needing your attention.</p></div>
+          <div class="migration-li"><span class="b"></span><p><strong>Admin and Participant views</strong> are now one portal — your sidebar shows what you can access. No more switching apps.</p></div>
+          <div class="migration-li"><span class="b"></span><p><strong>DEX context lives in the URL.</strong> Use the workspace switcher at top-left to move between TradeX, BuildEx, and HealthDex.</p></div>
+        </div>
+        <div class="migration-actions">
+          <button class="btn-primary" onclick="dismissMigration(this)">Got it</button>
+          <a class="gl-link" onclick="openGlossary()" style="cursor:pointer">See full glossary <i class="ti ti-external-link"></i></a>
+          <span class="auto-dismiss">Auto-dismisses in 30 days</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="drafts-banner">
+    <i class="ti ti-folder-check"></i>
+    <div class="body">
+      <p class="t">3 drafts migrated from the old portal</p>
+      <p class="s">Your unsent Subscriptions and DERs are now in <strong style="font-weight:500">Agreements → Drafts</strong>. Nothing to do — they moved automatically.</p>
+    </div>
+    <a onclick="toast('Routing to Agreements → Drafts (mock)'); goto('inbox-tx')" style="cursor:pointer">View drafts</a>
+  </div>
+
+  <div class="redirect-foot"><i class="ti ti-arrow-bounce"></i>On the first 5 redirects a user hits from a legacy URL, a brief banner appears: <em>"This URL moved. You're now at /portal/tradex/approval-requests."</em> Dismissable. After 5, redirects are silent (muscle memory has settled).</div>
+</section>
+
+<!-- ===== SP-specific first step: direction + SP picker ===== -->
+
+<section class="screen" data-screen="wiz-sp-config">
+  <div class="canvas-meta">
+    <span class="meta-label">SP wizard · step 1 of 5</span>
+    <h1>Direction &amp; service provider</h1>
+  </div>
+  <div class="wiz-screen">
+    <h3>What should the service provider do on your behalf?</h3>
+    <p class="sub-lede">Pick the direction first — it determines who the data flows from and to. Then pick the SP.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+      <label class="variant-opt" id="sp-dir-send" style="background:var(--tx-95);border-color:var(--tx-90);cursor:pointer" onclick="pickSpDirection(this, 'send')">
+        <span class="opt-head"><i class="ti ti-circle-check" style="color:var(--tx-50)"></i><span>Send my data</span></span>
+        <span class="opt-desc">They forward it to a counterparty on my behalf.</span>
+      </label>
+      <label class="variant-opt" id="sp-dir-receive" style="cursor:pointer" onclick="pickSpDirection(this, 'receive')">
+        <span class="opt-head"><i class="ti ti-circle"></i><span>Receive data for me</span></span>
+        <span class="opt-desc">They collect it from a counterparty on my behalf.</span>
+      </label>
+    </div>
+
+    <p class="section-label">Pick the service provider</p>
+
+    <div style="background:#ffffff;border:0.5px solid var(--g-90);border-radius:var(--r-md);overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:0.5px solid var(--g-90);display:flex;align-items:center;gap:8px">
+        <i class="ti ti-search" style="font-size:14px;color:var(--g-50)"></i>
+        <input type="text" placeholder="Search service providers" style="flex:1;border:none;outline:none;font-family:inherit;font-size:12px;background:transparent">
+        <span style="font-size:11px;color:var(--g-50)">3 SPs your org has worked with</span>
+      </div>
+
+      <button class="cp-row" onclick="pickSp(this, 'CrimsonLogic Pte Ltd', 'Service provider · UEN 198812345J · used 4× by your org')">
+        <div class="cp-avatar">CL</div>
+        <div class="cp-body"><div class="cp-name">CrimsonLogic Pte Ltd</div><div class="cp-meta">Service provider · UEN 198812345J · 4 prior SP relationships with you</div></div>
+        <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+        <span class="ready-pill"><i class="ti ti-check"></i>Onboarded</span>
+      </button>
+      <button class="cp-row" onclick="pickSp(this, 'Logistics Bridge Asia', 'Service provider · UEN 200334567C')">
+        <div class="cp-avatar">LB</div>
+        <div class="cp-body"><div class="cp-name">Logistics Bridge Asia</div><div class="cp-meta">Service provider · UEN 200334567C · 1 prior relationship</div></div>
+        <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+        <span class="ready-pill"><i class="ti ti-check"></i>Onboarded</span>
+      </button>
+      <button class="cp-row" onclick="pickSp(this, 'OceanRoute Services', 'Service provider · UEN 199822334Z')">
+        <div class="cp-avatar">OR</div>
+        <div class="cp-body"><div class="cp-name">OceanRoute Services</div><div class="cp-meta">Service provider · UEN 199822334Z · new relationship</div></div>
+        <span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span>
+        <span class="ready-pill invite"><i class="ti ti-mail"></i>Invitation required</span>
+      </button>
+    </div>
+
+    <div style="margin-top:14px;padding:10px 12px;background:var(--g-98);border-radius:var(--r-md);font-size:11px;color:var(--g-50);line-height:1.5">
+      <i class="ti ti-info-circle" style="font-size:13px;vertical-align:-2px;margin-right:4px"></i>
+      The SP must already be onboarded on TradeX. If they're not in the list, invite them first via <strong style="font-weight:500">Participants → Invite</strong>.
+    </div>
+  </div>
+</section>
+
+<!-- ===== Wizard screens: Terms, Review, Success ===== -->
+
+<section class="screen" data-screen="wiz-terms">
+  <div class="canvas-meta">
+    <span class="meta-label">Wizard · step 3 of 5</span>
+    <h1>Set the terms</h1>
+  </div>
+  <div class="wiz-screen">
+    <h3>How long should this Agreement run?</h3>
+    <p class="sub-lede">Duration, residency class, and notification cadence. All editable from the detail page later.</p>
+
+    <div class="terms-form">
+      <div class="form-row">
+        <div class="form-k">Effective from<span class="opt">Defaults to today</span></div>
+        <div class="form-v">
+          <input type="date" id="t-effective" value="2026-05-14">
+          <span class="hint">Data flow begins as soon as the counterparty accepts.</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-k">Duration<span class="opt">Until renewal</span></div>
+        <div class="form-v">
+          <div class="duration-chips">
+            <button class="d-chip" onclick="pickDuration(this,3)">3 months</button>
+            <button class="d-chip" onclick="pickDuration(this,6)">6 months</button>
+            <button class="d-chip active" onclick="pickDuration(this,12)">12 months</button>
+            <button class="d-chip" onclick="pickDuration(this,24)">24 months</button>
+          </div>
+          <span class="hint">Ends on <strong id="t-enddate" style="font-weight:500;color:var(--g-30)">14 May 2027</strong>. Extension is by deliberate action — no auto-renewal.</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-k">Residency class</div>
+        <div class="form-v">
+          <select id="t-residency">
+            <option value="standard">Standard — cross-DEX OK with warning</option>
+            <option value="strict">Residency-strict — hard block on cross-DEX</option>
+          </select>
+          <span class="hint">For most B/L data, Standard is correct. Residency-strict is reserved for regulated classes (e.g. patient records on HealthDex).</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-k">Renewal notifications</div>
+        <div class="form-v">
+          <div class="toggle-row-inline">
+            <div class="track-i on" onclick="this.classList.toggle('on')"><div class="knob-i"></div></div>
+            <span class="lbl">Send reminders at 60 / 30 / 14 / 7 / 1 days before expiry</span>
+          </div>
+          <div class="toggle-row-inline">
+            <div class="track-i on" onclick="this.classList.toggle('on')"><div class="knob-i"></div></div>
+            <span class="lbl">Broadcast to all admins on this org (recommended)</span>
+          </div>
+          <div class="toggle-row-inline">
+            <div class="track-i" onclick="this.classList.toggle('on')"><div class="knob-i"></div></div>
+            <span class="lbl">Allow 7-day grace period after expiry</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-k">Custom note<span class="opt">Optional</span></div>
+        <div class="form-v">
+          <input type="text" placeholder="e.g. Per service agreement #2026-MARSK-014">
+          <span class="hint">Visible to both parties on the Agreement detail page.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="screen" data-screen="wiz-review">
+  <div class="canvas-meta">
+    <span class="meta-label">Wizard · step 4 of 5</span>
+    <h1>Review and confirm</h1>
+  </div>
+  <div class="wiz-screen">
+    <h3>One last look</h3>
+    <p class="sub-lede">After you confirm, the Agreement is created in PENDING state and the counterparty receives an invitation.</p>
+
+    <div class="review-stack">
+      <div class="review-card">
+        <div class="rc-head"><i class="ti ti-arrows-exchange"></i><span class="rc-title">Type</span></div>
+        <div class="rc-body"><p id="r-type">Direct Agreement</p><p class="muted">You and one counterparty agree on terms. No intermediary.</p></div>
+      </div>
+
+      <div class="review-card">
+        <div class="rc-head"><i class="ti ti-database"></i><span class="rc-title">What's covered</span><a class="edit" onclick="wizardJumpTo(1)">Edit</a></div>
+        <div class="rc-body"><p id="r-de">Vessel arrival pack</p><p class="muted" id="r-de-detail">Group · 4 elements: ETA, Vessel particulars, Crew list, Cargo manifest · snapshot captured at creation</p></div>
+      </div>
+
+      <div class="review-card">
+        <div class="rc-head"><i class="ti ti-users"></i><span class="rc-title">Counterparty</span><a class="edit" onclick="wizardJumpTo(2)">Edit</a></div>
+        <div class="rc-body"><p id="r-cp">Maersk Logistics Pte Ltd</p><p class="muted" id="r-cp-detail">Carrier · UEN 200512345R · TradeX · Ready for B/L sharing</p></div>
+      </div>
+
+      <div class="review-card">
+        <div class="rc-head"><i class="ti ti-calendar"></i><span class="rc-title">Terms</span><a class="edit" onclick="wizardJumpTo(3)">Edit</a></div>
+        <div class="rc-body"><p id="r-terms">12 months · Standard residency · auto-renewal off</p><p class="muted">Renewal cadence: reminders at 60 / 30 / 14 / 7 / 1 days. Broadcast to all admins.</p></div>
+      </div>
+    </div>
+
+    <div class="review-warn" id="r-warn" hidden>
+      <i class="ti ti-alert-triangle"></i>
+      <p><strong style="font-weight:500">Cross-DEX action.</strong> Maersk's primary DEX is BuildEx. BuildEx residency rules apply. Your acknowledgement will be audit-logged on confirmation.</p>
+    </div>
+  </div>
+</section>
+
+<section class="screen" data-screen="wiz-success">
+  <div class="canvas-meta">
+    <span class="meta-label">Wizard · step 5 of 5 · Created</span>
+    <h1>Agreement created</h1>
+  </div>
+  <div class="success-frame">
+    <div class="check-ring"><i class="ti ti-check"></i></div>
+    <h2>Your Agreement with <span id="s-cp">Maersk Logistics</span> is on its way</h2>
+    <p class="agr-line"><code id="s-agr-id">AGR-2026-05847</code> · PENDING · invitation sent</p>
+
+    <div class="next-grid">
+      <div class="next-card" onclick="goto('detail')">
+        <i class="ti ti-file-text"></i>
+        <p class="t">View the Agreement</p>
+        <p class="d">Open the detail page · track status as Maersk reviews.</p>
+      </div>
+      <div class="next-card" onclick="goto('inbox-tx'); exitFlow()">
+        <i class="ti ti-inbox"></i>
+        <p class="t">Back to inbox</p>
+        <p class="d">It'll appear in <strong>Mine</strong> until Maersk acts.</p>
+      </div>
+    </div>
+
+    <div class="meta-info">
+      <p><strong>What happens next:</strong> Maersk receives an email + inbox item. They have 30 days to accept, decline, or request changes. Reminders fire at 21 / 14 / 7 days. After acceptance, data flow begins within 5 minutes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Approve incoming flow ===== -->
+
+<section class="screen" data-screen="ap-review">
+  <div class="canvas-meta">
+    <span class="meta-label">Approve incoming · step 1 of 3</span>
+    <h1>Review incoming Agreement</h1>
+  </div>
+  <div class="approve-frame">
+    <div class="incoming-banner">
+      <i class="ti ti-bell-ringing"></i>
+      <p><strong>Maersk Logistics</strong> has invited your org to receive Bills of Lading from them. Invited 2 hours ago.</p>
+    </div>
+
+    <p class="section-label">Agreement summary</p>
+    <div class="review-stack">
+      <div class="review-card">
+        <div class="rc-head"><i class="ti ti-arrows-exchange"></i><span class="rc-title">Type</span></div>
+        <div class="rc-body"><p>Direct Agreement · you are the receiver</p></div>
+      </div>
+      <div class="review-card">
+        <div class="rc-head"><i class="ti ti-database"></i><span class="rc-title">What you'll receive</span></div>
+        <div class="rc-body"><p>Bill of Lading · v2.1</p><p class="muted">Sent automatically when Maersk uploads a new B/L. Average volume: ~140 documents/month.</p></div>
+      </div>
+      <div class="review-card">
+        <div class="rc-head"><i class="ti ti-users"></i><span class="rc-title">Sender</span></div>
+        <div class="rc-body"><p>Maersk Logistics Pte Ltd</p><p class="muted">Carrier · UEN 200512345R · TradeX · 3 prior Agreements with you (all Active)</p></div>
+      </div>
+      <div class="review-card">
+        <div class="rc-head"><i class="ti ti-calendar"></i><span class="rc-title">Terms</span></div>
+        <div class="rc-body"><p>12 months · Standard residency · grace period off</p><p class="muted">Effective immediately on acceptance. They'll send a renewal request 30 days before expiry.</p></div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:20px">
+      <button class="btn-cancel" onclick="exitFlow(); goto('inbox-tx')">Back to inbox</button>
+      <button class="btn-primary" onclick="goto('ap-decide')">Decide <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
+    </div>
+  </div>
+</section>
+
+<section class="screen" data-screen="ap-decide">
+  <div class="canvas-meta">
+    <span class="meta-label">Approve incoming · step 2 of 3</span>
+    <h1>Your decision</h1>
+  </div>
+  <div class="approve-frame">
+    <p style="font-size:13px; color:var(--g-30); margin-bottom:14px">Pick one. Maersk is notified immediately either way. Audit-logged.</p>
+
+    <div class="decision">
+      <div class="decision-card accept" onclick="startDataFlowSim(); setTimeout(() => goto('ap-success'), 2400)">
+        <div class="dc-head"><i class="ti ti-check"></i><span>Accept</span></div>
+        <p class="dc-desc">Agreement transitions to ACTIVE. Data flow begins within 5 minutes.</p>
+      </div>
+      <div class="decision-card changes" onclick="toast('Routed to changes-requested flow (mock)','warn')">
+        <div class="dc-head"><i class="ti ti-edit"></i><span>Request changes</span></div>
+        <p class="dc-desc">Open a back-and-forth thread with Maersk before accepting.</p>
+      </div>
+      <div class="decision-card decline" onclick="toast('Agreement declined · Maersk notified','warn'); exitFlow(); goto('inbox-tx')">
+        <div class="dc-head"><i class="ti ti-x"></i><span>Decline</span></div>
+        <p class="dc-desc">Maersk is notified with optional reason. Agreement ends with reason REJECTED.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="screen" data-screen="ap-success">
+  <div class="canvas-meta">
+    <span class="meta-label">Approve incoming · step 3 of 3 · Accepted</span>
+    <h1>Agreement accepted</h1>
+  </div>
+  <div class="success-frame">
+    <div class="check-ring"><i class="ti ti-check"></i></div>
+    <h2>Now active with Maersk Logistics</h2>
+    <p class="agr-line"><code>AGR-2026-04829</code> · ACTIVE · data flow starting</p>
+
+    <div class="next-grid">
+      <div class="next-card" onclick="goto('detail'); exitFlow()">
+        <i class="ti ti-file-text"></i>
+        <p class="t">View the Agreement</p>
+        <p class="d">See lifecycle, parties, terms, and audit trail.</p>
+      </div>
+      <div class="next-card" onclick="goto('inbox-tx'); exitFlow()">
+        <i class="ti ti-inbox"></i>
+        <p class="t">Back to inbox</p>
+        <p class="d">Maersk's invitation has been cleared from your queue.</p>
+      </div>
+    </div>
+
+    <div class="meta-info">
+      <p><strong>What's happening behind the scenes:</strong> First B/L message expected within 5 minutes. You'll see it in your "Received data" section. Renewal reminder fires 30 days before expiry.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Wizard chrome (bottom — prev/next) ===== -->
+<div class="wizard-foot" id="wizard-foot">
+  <div class="left">
+    <button class="btn-cancel" id="wizard-prev" onclick="wizardPrev()">← Back</button>
+  </div>
+  <div class="right">
+    <span class="pending-warn" id="wizard-warn" hidden><i class="ti ti-alert-triangle"></i> <span id="wizard-warn-text"></span></span>
+    <button class="btn-primary" id="wizard-next" onclick="wizardNext()">Continue <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- ===== Impersonation session banner ===== -->
+<div class="imp-banner" id="imp-banner">
+  <i class="ti ti-eye lead" aria-hidden="true"></i>
+  <span class="imp-text">Viewing as participant on TradeX · all actions tagged in the audit log under impersonation</span>
+  <span class="imp-time" id="imp-time">02:00</span>
+  <button class="imp-end" onclick="endImpersonation()">End session</button>
+</div>
+
+<!-- ===== Data-flow simulation snackbar (post-acceptance) ===== -->
+<div class="data-flow-sim" id="data-sim">
+  <i class="ti ti-radar" style="font-size:18px"></i>
+  <div style="flex:1">
+    <p id="data-sim-text">Maersk is receiving your first batch…</p>
+    <div class="progress" style="margin-top:6px"><div class="bar" id="data-sim-bar"></div></div>
+  </div>
+</div>
+
+<!-- ===== Global overlays ===== -->
+<div class="toast-tray" id="toast-tray"></div>
+
+<div class="overlay-veil" id="extend-modal" hidden>
+  <div class="overlay-card">
+    <div class="overlay-head">
+      <div class="ic tx"><i class="ti ti-clock-play"></i></div>
+      <h4>Extend Agreement with <span id="extend-cp">Maersk Logistics</span></h4>
+      <button class="close" onclick="closeOverlay('extend-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:8px">The Agreement currently expires on <strong style="color:var(--g-10);font-weight:500">30 Sep 2026</strong>. Pick a new end date — your previous extension was 6 months.</p>
+      <div class="extend-row">
+        <button class="extend-chip" onclick="pickExtend(this,3)">+3 months</button>
+        <button class="extend-chip" onclick="pickExtend(this,6)">+6 months</button>
+        <button class="extend-chip active" onclick="pickExtend(this,12)">+12 months</button>
+        <button class="extend-chip" onclick="pickExtend(this,24)">+24 months</button>
+      </div>
+      <div class="extend-summary">
+        <p>New end date: <strong id="extend-newdate">30 Sep 2027</strong></p>
+        <p style="margin-top:6px">Notification cadence resets: 60 / 30 / 14 / 7 / 1 days before expiry. Audit-logged.</p>
+      </div>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="closeOverlay('extend-modal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmExtend()">Extend by 12 months</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay-veil" id="claim-modal" hidden>
+  <div class="overlay-card sm">
+    <div class="overlay-head">
+      <div class="ic green"><i class="ti ti-hand-finger"></i></div>
+      <h4>Claim this item?</h4>
+      <button class="close" onclick="closeOverlay('claim-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="font-size:12px;color:var(--g-30);line-height:1.5">It will move from <strong style="font-weight:500">My team's</strong> into <strong style="font-weight:500">Mine</strong>, disappear from teammates' inboxes, and the audit log records you as the owner of the next action.</p>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="closeOverlay('claim-modal')">Not now</button>
+      <button class="btn-primary" onclick="confirmClaim()">Claim</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay-veil" id="join-modal" hidden>
+  <div class="overlay-card">
+    <div class="overlay-head">
+      <div class="ic tx"><i class="ti ti-plus"></i></div>
+      <h4>Join another DEX</h4>
+      <button class="close" onclick="closeOverlay('join-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:14px">Your org is already on TradeX, BuildEx, and HealthDex. New DEX options will appear here as they launch on the platform.</p>
+      <div style="padding:12px 14px;background:var(--g-98);border-radius:var(--r-md);font-size:12px;color:var(--g-30);line-height:1.5">
+        <i class="ti ti-info-circle" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--g-50)"></i>
+        Joining a new DEX uses your existing org record — KYC fields pre-fill, you only enter DEX-specific use cases.
+      </div>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="closeOverlay('join-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay-veil" id="approve-modal" hidden>
+  <div class="overlay-card sm">
+    <div class="overlay-head">
+      <div class="ic green"><i class="ti ti-check"></i></div>
+      <h4>Approve incoming Agreement</h4>
+      <button class="close" onclick="closeOverlay('approve-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="font-size:12px;color:var(--g-30);line-height:1.5">Maersk Logistics will start receiving Bills of Lading from Cosco Shipping. The Agreement transitions to <strong style="font-weight:500;color:var(--green-50)">Active</strong> and data flow begins within 5 minutes.</p>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="closeOverlay('approve-modal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmApprove()">Approve</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay-veil" id="template-modal" hidden>
+  <div class="overlay-card">
+    <div class="overlay-head">
+      <div class="ic tx"><i class="ti ti-template"></i></div>
+      <h4>Start from a template</h4>
+      <button class="close" onclick="closeOverlay('template-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body" style="padding:0">
+      <div style="padding:10px 18px;border-bottom:0.5px solid var(--g-90);font-size:11px;color:var(--g-50)">4 templates available for your org on TradeX</div>
+      <div class="cp-list">
+        <button class="cp-row" onclick="useTemplate('B/L sharing with carriers')">
+          <div class="cp-avatar"><i class="ti ti-template" style="font-size:16px"></i></div>
+          <div class="cp-body"><div class="cp-name">B/L sharing with carriers</div><div class="cp-meta">Direct · used 12× · v3</div></div>
+          <span class="ready-pill"><i class="ti ti-clock"></i>30 sec</span>
+        </button>
+        <button class="cp-row" onclick="useTemplate('Vessel arrival pack — bilateral')">
+          <div class="cp-avatar"><i class="ti ti-template" style="font-size:16px"></i></div>
+          <div class="cp-body"><div class="cp-name">Vessel arrival pack — bilateral</div><div class="cp-meta">Direct · group · used 7× · v2</div></div>
+          <span class="ready-pill"><i class="ti ti-clock"></i>30 sec</span>
+        </button>
+        <button class="cp-row" onclick="useTemplate('CrimsonLogic as SP — outbound')">
+          <div class="cp-avatar"><i class="ti ti-template" style="font-size:16px"></i></div>
+          <div class="cp-body"><div class="cp-name">CrimsonLogic as SP — outbound</div><div class="cp-meta">Service-provider · used 4× · v1</div></div>
+          <span class="ready-pill"><i class="ti ti-clock"></i>45 sec</span>
+        </button>
+        <button class="cp-row" onclick="useTemplate('Bunker contributor flow')">
+          <div class="cp-avatar"><i class="ti ti-template" style="font-size:16px"></i></div>
+          <div class="cp-body"><div class="cp-name">Bunker contributor flow</div><div class="cp-meta">Service-provider · contributor · used 3× · v1</div></div>
+          <span class="ready-pill"><i class="ti ti-clock"></i>60 sec</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay-veil" id="glossary-modal" hidden>
+  <div class="overlay-card lg">
+    <div class="overlay-head">
+      <div class="ic tx"><i class="ti ti-book"></i></div>
+      <h4>Glossary</h4>
+      <button class="close" onclick="closeOverlay('glossary-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body" style="max-height:480px;overflow-y:auto">
+      <p style="font-size:11px;color:var(--g-50);margin-bottom:14px">Canonical vocabulary for the unified portal. Auto-generated from CONTEXT.md at build time. Old → new mappings shown for migration users.</p>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">Agreement</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">A user-visible consent record. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> Subscription, DER, SPR, Client Relation.</p></div>
+        <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">Direct Agreement</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">An Agreement between two counterparties, no intermediary. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> DER.</p></div>
+        <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">Service-Provider Agreement</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">A party appoints a third party to send or receive on their behalf. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> SPR.</p></div>
+        <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">Inbox</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">The home view — items needing action. Split into Mine and My team's. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> Dashboard.</p></div>
+        <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">DEX</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">A regulated data-exchange domain. URL-anchored at /portal/&lt;dex&gt;. Aggregated view at /portal/all.</p></div>
+        <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">Agreement Template</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">Org-scoped, DEX-scoped, mutable blueprint surfaced after ≥3 similar Agreements.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-pal" onclick="event.stopPropagation()">
+    <div class="search-pal-input">
+      <i class="ti ti-search"></i>
+      <input type="text" id="search-input" placeholder="Search the portal…" autofocus>
+      <kbd>esc</kbd>
+    </div>
+    <div class="search-pal-body">
+      <p class="search-group-label">Suggested</p>
+      <div class="search-result active" onclick="searchGo('detail')"><i class="ti ti-file-text"></i><div class="r-title">Agreement with Maersk Logistics</div><div class="r-meta">AGR-2026-04829</div></div>
+      <div class="search-result" onclick="searchGo('inbox-tx')"><i class="ti ti-inbox"></i><div class="r-title">Inbox</div><div class="r-meta">12 items</div></div>
+      <div class="search-result" onclick="searchGo('inbox-all')"><i class="ti ti-grid-dots"></i><div class="r-title">All DEXes view</div><div class="r-meta">21 items across 3 DEXes</div></div>
+      <p class="search-group-label">Pages</p>
+      <div class="search-result" onclick="searchGo('data-picker')"><i class="ti ti-database"></i><div class="r-title">Create Agreement</div><div class="r-meta">Wizard · data element step</div></div>
+      <div class="search-result" onclick="searchGo('empty')"><i class="ti ti-sparkles"></i><div class="r-title">Empty-state inbox</div><div class="r-meta">New user mock</div></div>
+      <p class="search-group-label">Actions</p>
+      <div class="search-result" onclick="closeSearch(); toast('Renewals due — opening filtered view')"><i class="ti ti-clock"></i><div class="r-title">Renewals due</div><div class="r-meta">Pinned filter</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="popover" id="notif-popover" hidden>
+  <div class="popover-head">
+    <h5>Notifications</h5>
+    <a onclick="markAllRead()">Mark all read</a>
+  </div>
+  <div class="popover-list">
+    <div class="popover-item" onclick="closeNotif(); goto('detail')"><span class="pn-dot unread"></span><div class="pn-body"><p><strong>Sarah Lim (Maersk)</strong> accepted your Agreement</p><p class="pn-time">21 Mar · 09:12 SGT</p></div></div>
+    <div class="popover-item" onclick="closeNotif(); openExtend('Cosco Shipping')"><span class="pn-dot unread"></span><div class="pn-body"><p>Agreement with <strong>Cosco</strong> expires in 9 days</p><p class="pn-time">Today · 08:00 SGT</p></div></div>
+    <div class="popover-item" onclick="closeNotif(); goto('inbox-tx')"><span class="pn-dot read"></span><div class="pn-body"><p><strong>3 contributor enrolments</strong> awaiting your approval</p><p class="pn-time">Yesterday · 14:23 SGT</p></div></div>
+  </div>
+</div>
+
+<div class="profile-menu" id="profile-menu" hidden>
+  <div class="profile-head">
+    <div class="n">Marcus Ong</div>
+    <div class="e">marcus.ong@cosco.com.sg</div>
+  </div>
+  <div class="profile-item" onclick="closeProfile(); toast('Opened account settings (mock)')"><i class="ti ti-user"></i>Account settings</div>
+  <div class="profile-item" onclick="closeProfile(); openImpersonate()"><i class="ti ti-eye"></i>View as participant</div>
+  <div class="profile-item" onclick="closeProfile(); openGlossary()"><i class="ti ti-book"></i>Glossary</div>
+  <div class="profile-item" onclick="closeProfile(); toast('Theme preference saved (mock)')"><i class="ti ti-palette"></i>Theme preferences</div>
+  <div style="height:0.5px;background:var(--g-90);margin:4px 8px"></div>
+  <div class="profile-item danger" onclick="closeProfile(); toast('Signed out (mock)','warn')"><i class="ti ti-logout"></i>Sign out</div>
+</div>
+
+<div class="overlay-veil" id="impersonate-modal" hidden>
+  <div class="overlay-card">
+    <div class="overlay-head">
+      <div class="ic warn"><i class="ti ti-eye"></i></div>
+      <h4>View as participant on TradeX</h4>
+      <button class="close" onclick="closeOverlay('impersonate-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="font-size:12px;color:var(--g-30);line-height:1.5;margin-bottom:10px">You'll see exactly what a participant on TradeX sees. Any action you take will be tagged in the audit log as performed under impersonation.</p>
+      <div style="padding:10px 12px;background:var(--yellow-98);border:0.5px solid var(--yellow-95);border-radius:var(--r-md);font-size:11px;color:var(--g-30);line-height:1.5">
+        <i class="ti ti-shield-lock" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--yellow-50)"></i>
+        Auto-ends after 30 minutes. Surface banner persists for the duration.
+      </div>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="closeOverlay('impersonate-modal')">Cancel</button>
+      <button class="btn-primary" onclick="closeOverlay('impersonate-modal'); startImpersonation()">Start session</button>
+    </div>
+  </div>
+</div>
+
+<div class="cp-panel" id="cp-panel">
+  <div class="cp-panel-head">
+    <i class="ti ti-eye" style="color:var(--g-50)"></i>
+    <h5>How Maersk sees this Agreement</h5>
+    <button class="close" onclick="closeCpPanel()"><i class="ti ti-x" style="font-size:18px;color:var(--g-50)"></i></button>
+  </div>
+  <div class="cp-panel-body">
+    <div class="note"><i class="ti ti-info-circle" style="font-size:13px;vertical-align:-2px;margin-right:4px"></i>Read-only counterparty view. Both sides read from the same record — they can't drift.</div>
+
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <span class="dex-chip bx"><span class="dex-dot"></span>BuildEx</span>
+      <span style="font-size:11px;color:var(--g-70);font-family:ui-monospace,monospace">AGR-2026-04829</span>
+    </div>
+    <h2 style="font-size:16px;font-weight:500;color:var(--g-10);margin-bottom:6px">Receiving Bills of Lading from Cosco Shipping</h2>
+    <span class="status-pill active" style="display:inline-flex"><span class="dot"></span>Active</span>
+
+    <p class="mini-h">Counterparty (you)</p>
+    <p style="font-size:13px;font-weight:500;color:var(--g-10)">Cosco Shipping (SG) Pte Ltd</p>
+    <p style="font-size:11px;color:var(--g-50)">UEN 199001234A · sender</p>
+
+    <p class="mini-h">What you receive</p>
+    <p style="font-size:13px;color:var(--g-10)">Bill of Lading · v2.1</p>
+
+    <p class="mini-h">Effective</p>
+    <p style="font-size:13px;color:var(--g-10)">21 Mar 2026 → 30 Sep 2026</p>
+
+    <p class="mini-h">Your team's view</p>
+    <p style="font-size:12px;color:var(--g-50);line-height:1.6">Maersk's admins see this as an Agreement they accepted. They can revoke their acceptance at any time, subject to the 7-day grace period. They do not see Cosco's internal notes or extension history beyond what's shared.</p>
+  </div>
+</div>
+
+<script>
+/* ===== Navigation ===== */
+function goto(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.dataset.screen === name));
+  document.querySelectorAll('.nav-link').forEach(s => s.classList.toggle('active', s.dataset.screen === name));
+  document.querySelectorAll('.switcher-pop, .dropdown-pop').forEach(p => p.hidden = true);
+  closeAllPopovers();
+  document.querySelector('main.canvas').scrollTop = 0;
+  // Hide wizard foot on screens that have their own actions (interrupts within wizard)
+  const isWizardStep = wiz && wiz.active && wizardSteps.some(s => s.screen === name);
+  const isSuccess = name === 'wiz-success' || name === 'ap-success';
+  const foot = document.getElementById('wizard-foot');
+  if (foot) foot.style.display = (wiz && wiz.active && isWizardStep && !isSuccess) ? 'flex' : 'none';
+  // Hide wizard bar entirely on screens outside wizard scope (approve flow has its own chrome)
+  const apFlow = ['ap-review','ap-decide','ap-success'].includes(name);
+  const bar = document.getElementById('wizard-bar');
+  if (bar) bar.style.display = (wiz && wiz.active && !apFlow) ? 'block' : 'none';
+}
+document.querySelectorAll('.nav-link').forEach(el => el.addEventListener('click', () => goto(el.dataset.screen)));
+
+/* ===== Popovers (workspace switcher + create dropdown) ===== */
+function toggleSwitcher(e) {
+  e.stopPropagation();
+  const pop = document.getElementById('switcher-pop');
+  pop.hidden = !pop.hidden;
+  document.getElementById('dropdown-pop').hidden = true;
+}
+function toggleDropdown(e) {
+  e.stopPropagation();
+  const pop = document.getElementById('dropdown-pop');
+  pop.hidden = !pop.hidden;
+  document.getElementById('switcher-pop').hidden = true;
+}
+function closeAllPopovers() {
+  ['switcher-pop','dropdown-pop','notif-popover','profile-menu'].forEach(id => { const el = document.getElementById(id); if (el) el.hidden = true; });
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.switcher-pop') && !e.target.closest('.workspace-pill')) {
+    const p = document.getElementById('switcher-pop'); if (p) p.hidden = true;
+  }
+  if (!e.target.closest('.dropdown-pop') && !e.target.closest('[data-create-btn]')) {
+    const p = document.getElementById('dropdown-pop'); if (p) p.hidden = true;
+  }
+  if (!e.target.closest('#notif-popover') && !e.target.closest('[data-notif-btn]')) {
+    const p = document.getElementById('notif-popover'); if (p) p.hidden = true;
+  }
+  if (!e.target.closest('#profile-menu') && !e.target.closest('[data-profile-btn]')) {
+    const p = document.getElementById('profile-menu'); if (p) p.hidden = true;
+  }
+});
+
+/* ===== Toast ===== */
+function toast(message, kind) {
+  const tray = document.getElementById('toast-tray');
+  const t = document.createElement('div');
+  t.className = 'toast' + (kind === 'warn' ? ' warn' : '');
+  const icon = kind === 'warn' ? 'alert-triangle' : 'check';
+  t.innerHTML = '<i class="ti ti-' + icon + '"></i><span>' + message + '</span><i class="ti ti-x x" onclick="this.parentElement.remove()"></i>';
+  tray.appendChild(t);
+  setTimeout(() => { t.classList.add('fade'); setTimeout(() => t.remove(), 240); }, 3200);
+}
+
+/* ===== Overlays ===== */
+function openOverlay(id) { document.getElementById(id).hidden = false; closeAllPopovers(); }
+function closeOverlay(id) { document.getElementById(id).hidden = true; }
+function openExtend(cp) { if (cp) document.getElementById('extend-cp').textContent = cp; openOverlay('extend-modal'); }
+function openClaim() { openOverlay('claim-modal'); }
+function openApprove() { openOverlay('approve-modal'); }
+function openJoin() { openOverlay('join-modal'); }
+function openTemplate() { openOverlay('template-modal'); }
+function openImpersonate() { openOverlay('impersonate-modal'); }
+function openGlossary() { openOverlay('glossary-modal'); }
+
+let extendMonths = 12;
+function pickExtend(btn, m) {
+  document.querySelectorAll('#extend-modal .extend-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  extendMonths = m;
+  const newDateEl = document.getElementById('extend-newdate');
+  const map = { 3: '30 Dec 2026', 6: '30 Mar 2027', 12: '30 Sep 2027', 24: '30 Sep 2028' };
+  newDateEl.textContent = map[m];
+  document.querySelector('#extend-modal .overlay-foot .btn-primary').textContent = 'Extend by ' + m + ' months';
+}
+function confirmExtend() {
+  closeOverlay('extend-modal');
+  toast('Agreement extended by ' + extendMonths + ' months · audit-logged');
+  goto('detail');
+  // Inject a "renewed" banner at the top of detail-body
+  setTimeout(() => {
+    const body = document.querySelector('.screen[data-screen="detail"] .detail-body');
+    if (body && !body.querySelector('.renewed-banner')) {
+      const b = document.createElement('div');
+      b.className = 'renewed-banner';
+      b.innerHTML = '<i class="ti ti-clock-play"></i><p>Extended by ' + extendMonths + ' months · new end date 30 Sep 2027 · notification cadence reset (60 / 30 / 14 / 7 / 1 days)</p>';
+      body.insertBefore(b, body.firstChild);
+    }
+    // Update the "Extended until" terms row visually
+    const termsRows = document.querySelectorAll('.screen[data-screen="detail"] .terms-row');
+    termsRows.forEach(r => {
+      const k = r.querySelector('.k'); const v = r.querySelector('.v');
+      if (k && k.textContent === 'Extended until') {
+        v.innerHTML = '30 Sep 2027 <span style="color:var(--g-50)">(2 extensions)</span>';
+      }
+    });
+  }, 100);
+  if (flowActive === 'extend') exitFlow();
+}
+function confirmClaim() { closeOverlay('claim-modal'); toast('Claimed · moved to your Mine stack'); }
+function confirmApprove() {
+  closeOverlay('approve-modal');
+  toast('Agreement accepted · data flow starting');
+  goto('detail');
+  startDataFlowSim();
+}
+function useTemplate(name) {
+  closeOverlay('template-modal');
+  wiz.de = name.includes('Vessel') ? 'Vessel arrival pack' : (name.includes('B/L') ? 'Bill of Lading' : 'Bunker delivery confirmation');
+  wiz.deDetail = name.includes('Vessel') ? 'Group · 4 elements · from template' : 'Single element · from template';
+  startWizard('direct', { template: true });
+  toast('Pre-filled from "' + name + '" · review and confirm');
+}
+
+/* ===== Impersonation session (View as participant) ===== */
+let impSeconds = 0;
+let impInterval = null;
+function startImpersonation() {
+  impSeconds = 120; // 2 minutes for demo (would be 30:00 in real)
+  document.body.classList.add('impersonating');
+  document.getElementById('imp-banner').classList.add('active');
+  updateImpTime();
+  impInterval = setInterval(() => {
+    impSeconds--;
+    updateImpTime();
+    if (impSeconds <= 0) endImpersonation('timeout');
+  }, 1000);
+  toast('Impersonation started · acting as participant on TradeX','warn');
+}
+function updateImpTime() {
+  const m = Math.floor(impSeconds / 60);
+  const s = impSeconds % 60;
+  const txt = m + ':' + (s < 10 ? '0' : '') + s;
+  const el = document.getElementById('imp-time');
+  if (el) el.textContent = txt;
+}
+function endImpersonation(reason) {
+  if (impInterval) clearInterval(impInterval);
+  impInterval = null;
+  document.body.classList.remove('impersonating');
+  document.getElementById('imp-banner').classList.remove('active');
+  toast(reason === 'timeout' ? 'Impersonation session timed out · resumed as admin' : 'Impersonation ended · resumed as admin');
+}
+
+/* ===== Data-flow simulation ===== */
+function startDataFlowSim() {
+  const sim = document.getElementById('data-sim');
+  const bar = document.getElementById('data-sim-bar');
+  const txt = document.getElementById('data-sim-text');
+  sim.classList.add('active');
+  bar.style.width = '0%';
+  txt.textContent = 'Provisioning Agreement…';
+  setTimeout(() => { bar.style.width = '30%'; txt.textContent = 'Notifying Maersk…'; }, 600);
+  setTimeout(() => { bar.style.width = '65%'; txt.textContent = 'Opening data channel…'; }, 1400);
+  setTimeout(() => { bar.style.width = '100%'; txt.textContent = 'First batch in transit · Active'; }, 2200);
+  setTimeout(() => { sim.classList.remove('active'); }, 3600);
+}
+
+/* ===== Search palette ===== */
+function openSearch() { document.getElementById('search-overlay').hidden = false; setTimeout(() => document.getElementById('search-input').focus(), 50); }
+function closeSearch() { document.getElementById('search-overlay').hidden = true; }
+function searchGo(name) { closeSearch(); goto(name); }
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+  if (e.key === 'Escape') { closeSearch(); closeAllPopovers(); ['extend-modal','claim-modal','join-modal','approve-modal','template-modal','impersonate-modal','glossary-modal'].forEach(id => closeOverlay(id)); closeCpPanel(); }
+});
+document.getElementById('search-overlay').addEventListener('click', closeSearch);
+
+/* ===== Notification popover ===== */
+function openNotif(e) { e.stopPropagation(); const p = document.getElementById('notif-popover'); p.hidden = !p.hidden; closeProfile(); }
+function closeNotif() { document.getElementById('notif-popover').hidden = true; }
+function markAllRead() { document.querySelectorAll('#notif-popover .pn-dot').forEach(d => d.classList.replace('unread','read')); toast('All notifications marked read'); }
+
+/* ===== Profile menu ===== */
+function openProfile(e) { e.stopPropagation(); const p = document.getElementById('profile-menu'); p.hidden = !p.hidden; closeNotif(); }
+function closeProfile() { document.getElementById('profile-menu').hidden = true; }
+
+/* ===== Counterparty side panel ===== */
+function openCpPanel() { document.getElementById('cp-panel').classList.add('open'); }
+function closeCpPanel() { document.getElementById('cp-panel').classList.remove('open'); }
+
+/* ===== Bulk modal ===== */
+function toggleBulkAck(cb) {
+  const cta = document.getElementById('bulk-cta');
+  cta.disabled = !cb.checked;
+  cta.classList.toggle('on', cb.checked);
+}
+function bulkProceed() { toast('Extending 13 Agreements · HealthDex excluded'); goto('inbox-tx'); }
+
+/* ===== Workspace theme switching ===== */
+const inboxByDex = {
+  tx: {
+    name: 'TradeX',
+    count: 12, mineCount: 4, teamCount: 8,
+    chip: 'tx',
+    role: 'Admin',
+    mine: [
+      { title: 'Maersk wants to receive Bills of Lading', meta: 'Incoming Agreement · invited 2h ago · waiting on you', btn: 'Review', action: 'review' },
+      { title: 'Extend Agreement with Cosco before 30 Sep', meta: 'Renewal · expires in 9 days · auto-extend disabled', btn: 'Extend 12mo', action: 'extend' },
+      { title: 'Promote Bill of Lading v2.1 → Active', meta: 'Data element · drafted by Sarah · review window closing today', btn: 'Open', action: 'open' }
+    ],
+    team: [
+      { title: 'PSA bunker delivery — 3 contributor enrolments pending', meta: 'Approval · oldest 4h ago · 3 admins eligible', btn: 'Claim' },
+      { title: 'Alice approved CrimsonLogic appointment for ABC Logistics', meta: 'Completed 2 min ago · disappears from inbox in 3 min', completion: true },
+      { title: 'Review onboarding KYC for Pacific Container Lines', meta: 'Approval · 1d ago · 3 admins eligible', btn: 'Claim' }
+    ]
+  },
+  bx: {
+    name: 'BuildEx',
+    count: 6, mineCount: 2, teamCount: 4,
+    chip: 'bx',
+    role: 'Participant',
+    mine: [
+      { title: 'Acme Construction wants daily site progress reports', meta: 'Incoming Agreement · invited 1h ago · waiting on you', btn: 'Review', action: 'review' },
+      { title: 'Concrete pour QC sign-off from JTC due tomorrow', meta: 'Approval · contractor-side · expires in 18h', btn: 'Open', action: 'open' }
+    ],
+    team: [
+      { title: 'Builder safety incident reports — 2 awaiting upload', meta: 'Compliance · oldest 6h ago', btn: 'Claim' },
+      { title: 'Wei Lin approved subcontractor onboarding', meta: 'Completed 4 min ago', completion: true }
+    ]
+  },
+  hx: {
+    name: 'HealthDex',
+    count: 3, mineCount: 1, teamCount: 2,
+    chip: 'hx',
+    role: 'Super-admin',
+    mine: [
+      { title: 'Annual compliance certificate expires in 14 days', meta: 'Renewal · residency-strict · no grace period', btn: 'Renew', action: 'renew-strict' }
+    ],
+    team: [
+      { title: 'Patient registry data classification review', meta: 'Governance · residency-strict · 2 super-admins eligible', btn: 'Claim' },
+      { title: 'Lab partnership Agreement awaiting compliance sign-off', meta: 'Compliance review · with legal · 24h SLA', btn: 'Open' }
+    ]
+  }
+};
+
+function themeInboxContent(dex) {
+  const data = inboxByDex[dex] || inboxByDex.tx;
+  // Mutate inbox-tx screen contents to reflect the chosen DEX
+  const screen = document.querySelector('.screen[data-screen="inbox-tx"]');
+  if (!screen) return;
+  // Header title + lede
+  const h1 = screen.querySelector('main.content h1'); if (h1) h1.textContent = 'Inbox';
+  const lede = screen.querySelector('main.content .lede'); if (lede) lede.textContent = data.count + ' items waiting';
+  // Sidebar count badge
+  const inboxBadge = screen.querySelector('.sidebar .side-link.active .count-badge'); if (inboxBadge) inboxBadge.textContent = data.count;
+  // Filter chips
+  const chips = screen.querySelectorAll('.content .filter-chips .chip');
+  if (chips[0]) chips[0].textContent = 'All · ' + data.count;
+  // Rebuild Mine and Team stacks
+  const stacks = screen.querySelectorAll('details.group-block');
+  if (stacks.length >= 2) {
+    stacks[0].querySelector('summary .sub').textContent = data.mineCount + ' items';
+    stacks[1].querySelector('summary .sub').textContent = data.teamCount + ' items · anyone can claim';
+    const mineStack = stacks[0].querySelector('.inbox-stack');
+    const teamStack = stacks[1].querySelector('.inbox-stack');
+    if (mineStack) mineStack.innerHTML = data.mine.map(item => renderInboxCard(item, data.chip, 'mine')).join('');
+    if (teamStack) teamStack.innerHTML = data.team.map(item => renderInboxCard(item, data.chip, 'team')).join('');
+  }
+}
+
+function renderInboxCard(item, chip, group) {
+  const dexChip = '<span class="dex-chip ' + chip + '"><span class="dex-dot"></span>' + (chip === 'tx' ? 'TradeX' : chip === 'bx' ? 'BuildEx' : 'HealthDex') + '</span>';
+  if (item.completion) {
+    return '<div class="inbox-card completion"><i class="ti ti-check" style="font-size:16px;color:var(--green-50);flex-shrink:0" aria-hidden="true"></i><div class="body"><div class="title">' + item.title + '</div><div class="meta">' + item.meta + '</div></div></div>';
+  }
+  let buttonHtml = '';
+  if (item.btn) {
+    const actionAttr = item.action === 'review' ? "event.stopPropagation(); openApprove()" : item.action === 'extend' ? "event.stopPropagation(); openExtend('" + (item.title.split('with ')[1] || 'Counterparty').replace(/'/g,"\\'") + "')" : item.action === 'renew-strict' ? "event.stopPropagation(); toast('Routed to governance review (residency-strict)','warn')" : "event.stopPropagation(); openClaim()";
+    const cls = item.action === 'review' ? 'btn-primary' : 'btn-secondary';
+    buttonHtml = '<button class="' + cls + '" style="padding:5px 10px;font-size:11px" onclick="' + actionAttr + '">' + item.btn + '</button>';
+  }
+  const grpCls = group === 'team' ? ' team' : '';
+  return '<div class="inbox-card' + grpCls + '" onclick="goto(\'detail\')">' + dexChip + '<div class="body"><div class="title">' + item.title + '</div><div class="meta">' + item.meta + '</div></div>' + buttonHtml + '</div>';
+}
+
+function switchDex(dex) {
+  document.body.classList.remove('theme-tx','theme-bx','theme-hx');
+  const pop = document.getElementById('switcher-pop'); if (pop) pop.hidden = true;
+  if (dex === 'tx') { document.body.classList.add('theme-tx'); updateActiveSwitcher('tx'); updatePillText('TradeX','tx'); themeInboxContent('tx'); toast('Now viewing TradeX'); }
+  if (dex === 'bx') { document.body.classList.add('theme-bx'); updateActiveSwitcher('bx'); updatePillText('BuildEx','bx'); themeInboxContent('bx'); toast('Switched to BuildEx · BuildEx-themed chrome and items', 'warn'); }
+  if (dex === 'hx') { document.body.classList.add('theme-hx'); updateActiveSwitcher('hx'); updatePillText('HealthDex','hx'); themeInboxContent('hx'); toast('Switched to HealthDex · residency-strict items surfaced', 'warn'); }
+}
+function updateActiveSwitcher(dex) {
+  document.querySelectorAll('#switcher-pop .switcher-item').forEach(i => {
+    const isActive = i.classList.contains(dex);
+    i.classList.toggle('active', isActive);
+    const check = i.querySelector('.ti-check');
+    if (check) check.style.display = isActive ? '' : 'none';
+  });
+}
+function updatePillText(label, dex) {
+  const pill = document.querySelector('.screen[data-screen="inbox-tx"] .workspace-pill');
+  if (pill) {
+    const dot = pill.querySelector('.dot');
+    pill.innerHTML = '';
+    if (dot) pill.appendChild(dot);
+    pill.appendChild(document.createTextNode(label));
+    const chev = document.createElement('i'); chev.className = 'ti ti-chevron-down'; chev.style.fontSize = '14px'; pill.appendChild(chev);
+    pill.onclick = toggleSwitcher;
+  }
+}
+
+/* ===== Migration banner dismiss ===== */
+function dismissMigration(btn) {
+  const panel = btn.closest('.migration-panel'); if (panel) panel.style.display = 'none';
+  toast('Migration notice dismissed · glossary remains in footer');
+  if (flowActive === 'migration') {
+    setTimeout(() => { goto('inbox-tx'); toast('Welcome to the new portal — your Drafts are in the inbox'); exitFlow(); }, 800);
+  }
+}
+
+/* ===== Acknowledgement + warning flow ===== */
+function acknowledgeWarn() {
+  toast('Cross-DEX warning acknowledged · audit entry created');
+  if (wiz.active) {
+    // Wizard mode — advance to terms (step 3)
+    wiz.idx = 2;
+    renderStepper();
+    goto('wiz-terms');
+    syncWizardFoot();
+    return;
+  }
+  goto('detail');
+  setTimeout(() => {
+    const detail = document.querySelector('.screen[data-screen="detail"] .detail-body');
+    if (detail && !detail.querySelector('.ack-banner')) {
+      const banner = document.createElement('div');
+      banner.className = 'ack-banner';
+      banner.innerHTML = '<i class="ti ti-shield-check"></i><p>Cross-DEX acknowledgement recorded · audit entry created at ' + new Date().toLocaleTimeString() + '</p><i class="ti ti-x x" onclick="this.parentElement.remove()"></i>';
+      detail.insertBefore(banner, detail.firstChild);
+    }
+  }, 100);
+}
+
+/* ===== Filter chip toggling ===== */
+document.querySelectorAll('.filter-chips').forEach(group => {
+  group.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      group.querySelectorAll('.chip').forEach(c => { c.classList.remove('solid'); if (!c.classList.contains('tx') && !c.classList.contains('bx') && !c.classList.contains('hx')) c.classList.add('muted'); });
+      chip.classList.remove('muted');
+      chip.classList.add('solid');
+    });
+  });
+});
+
+/* ===== Variant card selection ===== */
+document.querySelectorAll('.variant-opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.variant-card');
+    card.querySelectorAll('.variant-opt').forEach(o => o.style.background = 'var(--g-98)');
+    opt.style.background = 'var(--tx-95)';
+    opt.style.borderColor = 'var(--tx-90)';
+    const icon = opt.querySelector('i.ti-circle, i.ti-circle-check, i.ti-arrow-right, i.ti-arrow-left');
+    if (icon && icon.classList.contains('ti-circle')) icon.classList.replace('ti-circle','ti-circle-check');
+  });
+});
+
+/* ===== Snapshot row toggle ===== */
+document.querySelectorAll('.snapshot-row').forEach(row => {
+  row.addEventListener('click', () => {
+    const icon = row.querySelector('i');
+    if (icon.classList.contains('ti-square-check-filled')) {
+      icon.classList.replace('ti-square-check-filled','ti-square');
+      row.style.opacity = '0.5';
+    } else {
+      icon.classList.replace('ti-square','ti-square-check-filled');
+      row.style.opacity = '1';
+    }
+  });
+});
+
+/* ===== Sidebar nav placeholders ===== */
+document.querySelectorAll('.portal-frame .sidebar .side-link').forEach(link => {
+  link.addEventListener('click', e => {
+    if (link.classList.contains('active')) return;
+    const label = link.textContent.trim().replace(/\d+$/, '').trim();
+    if (label === 'Inbox') goto('inbox-tx');
+    else if (label === 'Agreements') { toast('Routing to Agreements list (placeholder)'); }
+    else if (label === 'Data elements') { toast('Routing to Data elements registry (placeholder)'); }
+    else if (label === 'Participants') { toast('Routing to Participants (placeholder)'); }
+    else if (label === 'Configuration') { toast('Routing to Configuration (placeholder)'); }
+    else if (label === 'Dashboard') { toast('Routing to Dashboard (placeholder)'); }
+    else { toast('Routing to ' + label + ' (placeholder)'); }
+  });
+});
+
+/* ===== Cross-DEX dex-mini click in /all sidebar ===== */
+document.querySelectorAll('.dex-mini').forEach(link => {
+  link.addEventListener('click', () => {
+    const label = link.textContent.trim();
+    if (label.startsWith('TradeX')) { switchDex('tx'); goto('inbox-tx'); }
+    else if (label.startsWith('BuildEx')) { switchDex('bx'); goto('inbox-tx'); }
+    else if (label.startsWith('HealthDex')) { switchDex('hx'); goto('inbox-tx'); }
+  });
+});
+
+/* ===== Counterparty picker — cross-DEX toggle ===== */
+let cpCrossDex = false;
+function toggleCpDexFilter(e, el) {
+  e.preventDefault();
+  cpCrossDex = !cpCrossDex;
+  const track = document.getElementById('cp-toggle-track');
+  const knob = document.getElementById('cp-toggle-knob');
+  if (cpCrossDex) {
+    track.style.background = 'var(--tx-50)';
+    knob.style.left = '13px';
+    toast('Cross-DEX counterparties now visible · cross-DEX warning fires on selection','warn');
+  } else {
+    track.style.background = 'var(--g-90)';
+    knob.style.left = '1px';
+    toast('Cross-DEX counterparties hidden');
+  }
+}
+
+/* ===== Detail page — audit log expand ===== */
+function expandAudit(e) {
+  e.preventDefault();
+  const foot = document.getElementById('audit-foot');
+  if (!foot || foot.dataset.expanded) return;
+  foot.dataset.expanded = '1';
+  const activity = foot.previousElementSibling;
+  const extra = [
+    { dot:'tx', who:'Marcus Ong', what:'opened the Agreement detail page', time:'3 days ago · 11:42 SGT' },
+    { dot:'green', who:'System', what:'sent 30-day renewal reminder email to Marcus Ong', time:'5 days ago · 06:00 SGT' },
+    { dot:'tx', who:'Marcus Ong', what:'opened the Agreement detail page', time:'12 days ago · 09:18 SGT' },
+    { dot:'green', who:'System', what:'sent 60-day renewal reminder email', time:'15 days ago · 06:00 SGT' },
+    { dot:'bx', who:'Maersk Logistics', what:'received a batch of 142 Bills of Lading', time:'17 days ago · automated' },
+    { dot:'muted', who:'System', what:'first scheduled health-check on the Agreement', time:'21 Mar · 09:30 SGT' }
+  ];
+  extra.forEach(ev => {
+    const div = document.createElement('div');
+    div.className = 'ev';
+    div.innerHTML = '<span class="ev-dot ' + ev.dot + '"></span><div class="ev-body"><p><strong>' + ev.who + '</strong> ' + ev.what + '</p><p class="ev-time">' + ev.time + '</p></div>';
+    activity.appendChild(div);
+  });
+  foot.innerHTML = '<span style="color:var(--g-50);font-size:11px">Showing 10 of 24 entries · <a onclick="toast(\'Exporting full audit log as CSV (mock)\')" style="color:var(--g-50);text-decoration:underline;cursor:pointer">Export full audit log</a></span>';
+}
+
+/* ===== Wizard state machine ===== */
+const wizardStepsDirect = [
+  { screen: 'data-picker', label: 'Data element' },
+  { screen: 'cp-picker',   label: 'Counterparty' },
+  { screen: 'wiz-terms',   label: 'Terms' },
+  { screen: 'wiz-review',  label: 'Review' },
+  { screen: 'wiz-success', label: 'Done' }
+];
+const wizardStepsSP = [
+  { screen: 'wiz-sp-config', label: 'Direction & SP' },
+  { screen: 'data-picker',   label: 'Data element' },
+  { screen: 'cp-picker',     label: 'Counterparty' },
+  { screen: 'wiz-terms',     label: 'Terms' },
+  { screen: 'wiz-review',    label: 'Review' },
+  { screen: 'wiz-success',   label: 'Done' }
+];
+let wizardSteps = wizardStepsDirect;
+let wiz = { active: false, idx: 0, type: 'DIRECT', de: 'Vessel arrival pack', deDetail: 'Group · 4 elements: ETA, Vessel particulars, Crew list, Cargo manifest', cp: 'Maersk Logistics Pte Ltd', cpDetail: 'Carrier · UEN 200512345R · TradeX · Ready for B/L sharing', sp: null, spDetail: null, direction: 'send', crossDex: false, duration: 12, residency: 'standard' };
+
+function renderStepper() {
+  const el = document.getElementById('wizard-stepper');
+  el.innerHTML = wizardSteps.map((s, i) => {
+    const state = i < wiz.idx ? 'done' : i === wiz.idx ? 'curr' : 'future';
+    const num = state === 'done' ? '<i class="ti ti-check" style="font-size:13px"></i>' : (i + 1);
+    return '<div class="step ' + state + '"><span class="num">' + num + '</span><span class="lbl">' + s.label + '</span></div>';
+  }).join('');
+}
+
+function showWizardChrome(show) {
+  document.body.classList.toggle('in-wizard', show);
+  wiz.active = show;
+}
+
+function startWizard(type, opts) {
+  opts = opts || {};
+  wiz.active = true;
+  wiz.idx = opts.startAt || 0;
+  wiz.type = type === 'sp' ? 'SERVICE_PROVIDER' : 'DIRECT';
+  wizardSteps = wiz.type === 'SERVICE_PROVIDER' ? wizardStepsSP : wizardStepsDirect;
+  if (opts.template) wiz.idx = wizardSteps.length - 2; // jump to review for templates
+  showWizardChrome(true);
+  document.getElementById('wizard-title').textContent = type === 'sp' ? 'Appoint a service provider' : 'Share data with a counterparty';
+  renderStepper();
+  goto(wizardSteps[wiz.idx].screen);
+  syncWizardFoot();
+}
+
+function pickSpDirection(el, dir) {
+  wiz.direction = dir;
+  ['sp-dir-send','sp-dir-receive'].forEach(id => {
+    const node = document.getElementById(id);
+    if (!node) return;
+    if (node === el) {
+      node.style.background = 'var(--tx-95)';
+      node.style.borderColor = 'var(--tx-90)';
+      const i = node.querySelector('i'); if (i) { i.className = 'ti ti-circle-check'; i.style.color = 'var(--tx-50)'; }
+    } else {
+      node.style.background = 'var(--g-98)';
+      node.style.borderColor = 'var(--g-90)';
+      const i = node.querySelector('i'); if (i) { i.className = 'ti ti-circle'; i.style.color = 'var(--g-50)'; }
+    }
+  });
+}
+
+function pickSp(row, name, detail) {
+  wiz.sp = name;
+  wiz.spDetail = detail;
+  document.querySelectorAll('.screen[data-screen="wiz-sp-config"] .cp-row').forEach(r => r.style.background = '');
+  row.style.background = 'var(--tx-95)';
+  toast(name + ' selected · continue to data element');
+  setTimeout(() => wizardNext(), 500);
+}
+
+function wizardNext() {
+  const reviewIdx = wizardSteps.length - 2;
+  // If about to leave the terms step (one before review), refresh the review summary
+  if (wiz.idx === reviewIdx - 1) updateReviewSummary();
+  // If clicking from review, submit
+  if (wiz.idx === reviewIdx) { submitWizard(); return; }
+  if (wiz.idx >= wizardSteps.length - 1) return;
+  wiz.idx++;
+  renderStepper();
+  goto(wizardSteps[wiz.idx].screen);
+  syncWizardFoot();
+}
+
+function wizardPrev() {
+  if (wiz.idx === 0) { wizardCancel(); return; }
+  wiz.idx--;
+  renderStepper();
+  goto(wizardSteps[wiz.idx].screen);
+  syncWizardFoot();
+}
+
+function wizardJumpTo(idx) {
+  wiz.idx = idx;
+  renderStepper();
+  goto(wizardSteps[wiz.idx].screen);
+  syncWizardFoot();
+}
+
+function wizardCancel() {
+  if (!confirm('Discard this Agreement draft? Your selections will be lost.')) return;
+  showWizardChrome(false);
+  exitFlow();
+  goto('inbox-tx');
+  toast('Wizard cancelled · no Agreement created');
+}
+
+function syncWizardFoot() {
+  const next = document.getElementById('wizard-next');
+  const prev = document.getElementById('wizard-prev');
+  const warn = document.getElementById('wizard-warn');
+  const lastIdx = wizardSteps.length - 1;        // success
+  const reviewIdx = wizardSteps.length - 2;      // review
+  const nextLabel = wiz.idx === reviewIdx
+    ? 'Create Agreement'
+    : wiz.idx === lastIdx
+      ? 'Done'
+      : 'Continue to ' + wizardSteps[wiz.idx + 1].label.toLowerCase();
+  next.innerHTML = nextLabel + (wiz.idx < reviewIdx ? ' <i class="ti ti-arrow-right" style="font-size:12px"></i>' : '');
+  prev.textContent = wiz.idx === 0 ? 'Cancel' : '← Back';
+  document.getElementById('wizard-foot').style.display = wiz.idx === lastIdx ? 'none' : 'flex';
+  warn.hidden = !(wiz.idx === reviewIdx && wiz.crossDex);
+  document.getElementById('wizard-warn-text').textContent = wiz.crossDex ? 'Cross-DEX — your acknowledgement will be audit-logged' : '';
+}
+
+function updateReviewSummary() {
+  if (wiz.type === 'DIRECT') {
+    document.getElementById('r-type').textContent = 'Direct Agreement';
+    document.getElementById('r-type').nextElementSibling.textContent = 'You and one counterparty agree on terms. No intermediary.';
+  } else {
+    const dirLabel = wiz.direction === 'send' ? 'Sending on your behalf' : 'Receiving on your behalf';
+    document.getElementById('r-type').textContent = 'Service-Provider Agreement · ' + dirLabel;
+    document.getElementById('r-type').nextElementSibling.textContent = (wiz.sp || 'Service provider') + (wiz.spDetail ? ' · ' + wiz.spDetail : '');
+  }
+  document.getElementById('r-de').textContent = wiz.de;
+  document.getElementById('r-de-detail').textContent = wiz.deDetail;
+  document.getElementById('r-cp').textContent = wiz.cp;
+  document.getElementById('r-cp-detail').textContent = wiz.cpDetail;
+  document.getElementById('r-terms').textContent = wiz.duration + ' months · ' + (wiz.residency === 'strict' ? 'Residency-strict' : 'Standard residency') + ' · auto-renewal off';
+  document.getElementById('r-warn').hidden = !wiz.crossDex;
+}
+
+function submitWizard() {
+  // Generate a mock Agreement ID
+  const id = 'AGR-2026-' + String(5800 + Math.floor(Math.random() * 200)).padStart(4, '0');
+  document.getElementById('s-agr-id').textContent = id;
+  document.getElementById('s-cp').textContent = wiz.cp.split(' ').slice(0, 2).join(' ');
+  wiz.idx = wizardSteps.length - 1;
+  renderStepper();
+  goto('wiz-success');
+  syncWizardFoot();
+  setTimeout(() => toast(id + ' created · invitation sent to ' + wiz.cp), 200);
+}
+
+/* Terms form */
+function pickDuration(btn, m) {
+  document.querySelectorAll('.duration-chips .d-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  wiz.duration = m;
+  const today = new Date('2026-05-14');
+  const end = new Date(today);
+  end.setMonth(end.getMonth() + m);
+  const opts = { day: 'numeric', month: 'short', year: 'numeric' };
+  document.getElementById('t-enddate').textContent = end.toLocaleDateString('en-GB', opts);
+}
+
+/* ===== Flow runner (guided journeys) ===== */
+let flowActive = null;
+function setFlow(name, text) {
+  flowActive = name;
+  document.body.classList.add('in-flow');
+  document.getElementById('flow-ribbon-text').innerHTML = text;
+}
+function exitFlow() {
+  flowActive = null;
+  document.body.classList.remove('in-flow');
+  document.body.classList.remove('in-wizard');
+  wiz.active = false;
+}
+function runFlow(name) {
+  switch (name) {
+    case 'first-agreement':
+      setFlow(name, '<strong>First-time user:</strong> you\'re a new admin on TradeX with no Agreements. The empty state will guide you to your first.');
+      goto('empty');
+      setTimeout(() => toast('Click "Create your first Agreement" to begin the wizard'), 500);
+      break;
+    case 'extend':
+      setFlow(name, '<strong>Renewal flow:</strong> the Agreement with Cosco expires in 9 days. Extend before grace begins.');
+      goto('inbox-tx');
+      setTimeout(() => toast('Click "Extend 12mo" on the Cosco card to start'), 500);
+      break;
+    case 'approve':
+      setFlow(name, '<strong>Approve incoming:</strong> Maersk wants to receive Bills of Lading from your org. You decide.');
+      goto('ap-review');
+      break;
+    case 'cross-dex':
+      setFlow(name, '<strong>Cross-DEX acknowledge:</strong> create an Agreement with <code style="background:rgba(166,20,185,0.1);padding:1px 4px;border-radius:3px">Maersk</code> (BuildEx-primary) — the warning will fire on counterparty pick.');
+      startWizard('direct');
+      setTimeout(() => toast('Pick any data element to continue · Maersk is on BuildEx so the warning will fire at step 2'), 600);
+      break;
+    case 'migration':
+      setFlow(name, '<strong>Migration onboarding:</strong> you used admin-ui yesterday. Here\'s what changed today.');
+      goto('migration');
+      break;
+  }
+}
+
+/* ===== Hook entry points into the wizard ===== */
+// Empty state's primary CTA → start wizard (flow ribbon may already be shown)
+document.querySelectorAll('.suggest-card.primary').forEach(el => {
+  el.onclick = function() { startWizard('direct'); };
+});
+
+// Override "Share data" dropdown item to start wizard
+document.querySelectorAll('.dropdown-item').forEach(item => {
+  const label = item.querySelector('.label');
+  if (label && label.textContent.includes('Share data')) {
+    item.onclick = function() { closeAllPopovers(); startWizard('direct'); };
+  }
+  if (label && label.textContent.includes('Appoint')) {
+    item.onclick = function() { closeAllPopovers(); startWizard('sp'); };
+  }
+});
+
+// Override data-picker's "Continue to counterparty" to use wizardNext when in wizard
+document.querySelectorAll('.screen[data-screen="data-picker"] .picker-detail .btn-primary').forEach(btn => {
+  btn.onclick = function() {
+    if (wiz.active) wizardNext();
+    else goto('cp-picker');
+  };
+});
+
+// Data picker leaves — visual selection + update wiz.de if in wizard
+document.querySelectorAll('.screen[data-screen="data-picker"] .leaf').forEach(leaf => {
+  leaf.onclick = function() {
+    document.querySelectorAll('.screen[data-screen="data-picker"] .leaf').forEach(l => l.classList.remove('active'));
+    leaf.classList.add('active');
+    const name = leaf.textContent.replace(/\s+\d+$/, '').replace(/v\d+\.\d+/, '').replace('group', '').trim();
+    const isGroup = !!leaf.querySelector('.group-pill');
+    if (wiz.active) {
+      wiz.de = name;
+      wiz.deDetail = isGroup ? 'Group · curated by TradeX admins · snapshot captured at creation' : 'Single element · current Active version';
+      // Update right pane head
+      const head = document.querySelector('.screen[data-screen="data-picker"] .picker-detail-head .name');
+      if (head) head.textContent = name;
+    }
+  };
+});
+
+// Override cp-picker rows when in wizard — pick, route cross-DEX to warning, else advance
+document.querySelectorAll('.screen[data-screen="cp-picker"] .cp-row').forEach(row => {
+  const originalClick = row.onclick;
+  row.onclick = function() {
+    if (wiz.active) {
+      const name = row.querySelector('.cp-name').textContent;
+      const meta = row.querySelector('.cp-meta').textContent;
+      const dexChip = row.querySelector('.dex-chip');
+      const dexLabel = dexChip ? dexChip.textContent.trim() : 'TradeX';
+      wiz.cp = name;
+      wiz.cpDetail = meta + ' · ' + dexLabel;
+      wiz.crossDex = !dexLabel.includes('TradeX');
+      if (wiz.crossDex) {
+        // Detour to warn-inline; on Continue, acknowledgeWarn advances the wizard
+        toast(name + ' is on ' + dexLabel + ' — cross-DEX warning incoming','warn');
+        setTimeout(() => goto('warn-inline'), 250);
+      } else {
+        wizardNext();
+      }
+    } else if (originalClick) {
+      originalClick.call(row);
+    }
+  };
+});
+
+// Pre-render stepper for first paint
+renderStepper();
+
+/* ===== Initial state ===== */
+document.body.classList.add('theme-tx');
+</script>
+
+</body>
+</html>

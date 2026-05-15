@@ -1,0 +1,334 @@
+/* ============================================================
+   WIZARD — multi-step Agreement creation wizard.
+   Two tracks: WIZARD_STEPS_DIRECT (5 steps) and WIZARD_STEPS_SP
+   (6 steps). The active track is `wizardSteps`. State lives in
+   `wiz`. Chrome (top stepper bar, bottom prev/next bar) is
+   hidden by default — shown when body.in-wizard is set.
+   ============================================================ */
+
+function renderStepper() {
+  const el = document.getElementById('wizard-stepper');
+  if (!el) return;
+  el.innerHTML = wizardSteps.map((s, i) => {
+    const state = i < wiz.idx ? 'done' : i === wiz.idx ? 'curr' : 'future';
+    const num = state === 'done' ? '<i class="ti ti-check" style="font-size:13px"></i>' : (i + 1);
+    return `<div class="step ${state}"><span class="num">${num}</span><span class="lbl">${s.label}</span></div>`;
+  }).join('');
+}
+
+function showWizardChrome(show) {
+  document.body.classList.toggle('in-wizard', show);
+  wiz.active = show;
+}
+
+function startWizard(type, opts = {}) {
+  wiz.active = true;
+  wiz.idx = opts.startAt || 0;
+  wiz.type = type === 'sp' ? 'SERVICE_PROVIDER' : 'DIRECT';
+  // Direction is the contributor-vs-consumer axis. Defaults to 'send' (the operator
+  // is the contributor — they have the data). 'receive' inverts the framing — the
+  // operator is the consumer, asking a counterparty to share data with them. Both
+  // sides land in the same 5-step direct wizard; copy flips screen-by-screen.
+  wiz.direction = opts.direction || 'send';
+  wiz.viaPackSplit = false; // fresh wizard run — clear any stale pack-split memory
+  wizardSteps = wiz.type === 'SERVICE_PROVIDER' ? WIZARD_STEPS_SP : WIZARD_STEPS_DIRECT;
+  if (opts.template) wiz.idx = wizardSteps.length - 2; // jump to review
+
+  showWizardChrome(true);
+  document.getElementById('wizard-title').textContent =
+    type === 'sp'              ? 'Appoint a service provider' :
+    wiz.direction === 'receive' ? 'Request data from a counterparty' :
+                                  'Share data with a counterparty';
+  applyDirectionCopy(); // flip canvas-meta + tip + button copy per direction
+  renderStepper();
+  goto(wizardSteps[wiz.idx].screen);
+  syncWizardFoot();
+}
+
+/* Direction-aware in-screen copy. Called from startWizard and whenever the user
+ * changes direction (e.g. via the SP wizard's direction toggle). Mutates the
+ * canvas-meta heading + canvas-tip body on data-picker / cp-picker, and the
+ * sub-lede on wiz-terms. Outside the wizard the original "send"-framed copy is
+ * what the concept-demo rail expects, so a 'send' default restores it. */
+function applyDirectionCopy() {
+  const sending = wiz.direction !== 'receive';
+
+  // Data picker — what the operator is choosing
+  const dpMeta = document.querySelector('.screen[data-screen="data-picker"] .canvas-meta h1');
+  if (dpMeta) dpMeta.textContent = sending
+    ? 'Data element picker — what are you sharing?'
+    : 'Data element picker — what do you want to receive?';
+  const dpTip = document.querySelector('.screen[data-screen="data-picker"] .canvas-tip div');
+  if (dpTip) dpTip.innerHTML = sending
+    ? 'Pick the element you want to send. Multi-element <strong>packs</strong> can split across counterparties (per ADR 0027).'
+    : 'Pick the element you want to receive. Multi-element <strong>packs</strong> let you request several elements from different counterparties in one go (per ADR 0027).';
+
+  // Counterparty picker — who's on the other end
+  const cpMeta = document.querySelector('.screen[data-screen="cp-picker"] .canvas-meta h1');
+  if (cpMeta) cpMeta.textContent = sending
+    ? 'Counterparty picker — who receives it?'
+    : 'Counterparty picker — who provides it?';
+
+  // Pack fork heading — same vs split target makes sense in both directions, but the framing changes
+  const pfH = document.querySelector('.screen[data-screen="pack-fork"] .canvas-meta h1');
+  if (pfH) pfH.textContent = sending
+    ? 'Same counterparty or split across counterparties?'
+    : 'Same provider or request from different providers?';
+
+  // Pack split mapping heading
+  const psH = document.querySelector('.screen[data-screen="pack-split-mapping"] .canvas-meta h1');
+  if (psH) psH.textContent = sending
+    ? 'Assign each element to its counterparty'
+    : 'Assign each element to its provider';
+}
+
+function wizardNext() {
+  const reviewIdx = wizardSteps.length - 2;
+  if (wiz.idx === reviewIdx - 1) updateReviewSummary();
+  if (wiz.idx === reviewIdx) { submitWizard(); return; }
+  if (wiz.idx >= wizardSteps.length - 1) return;
+
+  // Pack fork interception (ADR 0027): when advancing from data-picker with a Data element pack
+  // selected, divert into the pack-fork screen so the operator can choose Same vs Split
+  // counterparties. wiz.idx stays at data-picker; pack-fork's own buttons resume the flow:
+  //   · Same  → wizardNext() again (this branch falls through to cp-picker)
+  //   · Split → goto('pack-split-mapping') → wizardJumpTo(wiz-terms)
+  const currentScreen = wizardSteps[wiz.idx] && wizardSteps[wiz.idx].screen;
+  if (currentScreen === 'data-picker' && wiz.isPack) {
+    const visibleScreen = document.querySelector('.screen.active')?.dataset.screen;
+    if (visibleScreen !== 'pack-fork') {
+      goto('pack-fork');
+      syncWizardFoot();
+      return;
+    }
+  }
+
+  wiz.idx++;
+  renderStepper();
+  goto(wizardSteps[wiz.idx].screen);
+  syncWizardFoot();
+}
+
+function wizardPrev() {
+  // Pack-split path memory (ADR 0027): if the operator reached wiz-terms via the
+  // Split path on pack-fork, Back should return to pack-split-mapping rather than
+  // decrementing the canonical step (which would land on cp-picker — a screen the
+  // operator never visited on this branch).
+  const currentScreen = wizardSteps[wiz.idx] && wizardSteps[wiz.idx].screen;
+  if (currentScreen === 'wiz-terms' && wiz.viaPackSplit) {
+    wiz.idx = wizardSteps.findIndex(s => s.screen === 'data-picker');
+    renderStepper();
+    goto('pack-split-mapping');
+    syncWizardFoot();
+    return;
+  }
+
+  if (wiz.idx === 0) { wizardCancel(); return; }
+  wiz.idx--;
+  renderStepper();
+  goto(wizardSteps[wiz.idx].screen);
+  syncWizardFoot();
+}
+
+function wizardJumpTo(idx) {
+  wiz.idx = idx;
+  renderStepper();
+  goto(wizardSteps[wiz.idx].screen);
+  syncWizardFoot();
+}
+
+function wizardCancel() {
+  if (!confirm('Discard this Agreement draft? Your selections will be lost.')) return;
+  showWizardChrome(false);
+  exitFlow();
+  goto('inbox-tx');
+  toast('Wizard cancelled · no Agreement created');
+}
+
+function syncWizardFoot() {
+  const next = document.getElementById('wizard-next');
+  const prev = document.getElementById('wizard-prev');
+  const warn = document.getElementById('wizard-warn');
+  const foot = document.getElementById('wizard-foot');
+  const lastIdx = wizardSteps.length - 1;
+  const reviewIdx = wizardSteps.length - 2;
+
+  // Pack wizard branches (ADR 0027): the wizard-foot does not own forward navigation here —
+  //  · pack-fork: user must pick a card (Same / Split)
+  //  · pack-split-mapping: forward is the in-screen "Continue to terms" button
+  const currentScreen = document.querySelector('.screen.active')?.dataset.screen;
+  const onPackFork = currentScreen === 'pack-fork';
+  const onPackSplit = currentScreen === 'pack-split-mapping';
+
+  if (onPackFork || onPackSplit) {
+    foot.style.display = 'none';
+    return;
+  }
+
+  const nextLabel = wiz.idx === reviewIdx
+    ? (wiz.viaPackSplit ? 'Create pack + 4 Agreements' : 'Create Agreement')
+    : wiz.idx === lastIdx
+      ? 'Done'
+      : 'Continue to ' + wizardSteps[wiz.idx + 1].label.toLowerCase();
+  next.innerHTML = nextLabel + (wiz.idx < reviewIdx ? ' <i class="ti ti-arrow-right" style="font-size:12px"></i>' : '');
+  prev.textContent = wiz.idx === 0 ? 'Cancel' : '← Back';
+  foot.style.display = wiz.idx === lastIdx ? 'none' : 'flex';
+  warn.hidden = !(wiz.idx === reviewIdx && wiz.crossDex);
+  document.getElementById('wizard-warn-text').textContent = wiz.crossDex
+    ? 'Cross-DEX — your acknowledgement will be audit-logged'
+    : '';
+}
+
+function updateReviewSummary() {
+  // Pack-split path uses a different review shape (ADR 0027) — swap the cards before
+  // populating fields so the single-counterparty card isn't visible alongside the pack
+  // distribution table.
+  const cpCard = document.getElementById('r-cp-card');
+  const packCard = document.getElementById('r-pack-card');
+  const heading = document.getElementById('r-heading');
+  const lede = document.getElementById('r-lede');
+  if (cpCard && packCard) {
+    cpCard.hidden = !!wiz.viaPackSplit;
+    packCard.hidden = !wiz.viaPackSplit;
+  }
+  if (heading) heading.textContent = wiz.viaPackSplit
+    ? (wiz.direction === 'receive' ? 'Review the request pack before dispatch' : 'Review the pack before dispatch')
+    : 'One last look';
+  if (lede) lede.textContent = wiz.viaPackSplit
+    ? (wiz.direction === 'receive'
+        ? 'Confirming creates 1 Agreement pack + 4 member Agreements. Each provider receives a separate request; the pack tracks aggregate status as they accept.'
+        : 'Confirming creates 1 Agreement pack + 4 member Agreements in one transaction. Each counterparty receives a separate invitation; the pack tracks aggregate status.')
+    : (wiz.direction === 'receive'
+        ? 'After you confirm, the request is sent in PENDING state. The counterparty decides whether to share.'
+        : 'After you confirm, the Agreement is created in PENDING state and the counterparty receives an invitation.');
+
+  const receiving = wiz.direction === 'receive';
+  if (wiz.viaPackSplit) {
+    document.getElementById('r-type').textContent = receiving
+      ? 'Agreement pack (multi-provider request)'
+      : 'Agreement pack (multi-counterparty)';
+    document.getElementById('r-type-detail').textContent = receiving
+      ? '1 pack · 4 member Agreements · you receive 4 elements from 4 providers (ADR 0027)'
+      : '1 pack · 4 member Agreements · 1:1 counterparty per member (ADR 0027)';
+  } else if (wiz.type === 'DIRECT') {
+    document.getElementById('r-type').textContent = receiving
+      ? 'Direct Agreement · Request'
+      : 'Direct Agreement';
+    document.getElementById('r-type-detail').textContent = receiving
+      ? 'You and one counterparty agree on terms. They send the data; you receive it.'
+      : 'You and one counterparty agree on terms. No intermediary.';
+  } else {
+    const dirLabel = wiz.direction === 'send' ? 'Sending on your behalf' : 'Receiving on your behalf';
+    document.getElementById('r-type').textContent = 'Service-Provider Agreement · ' + dirLabel;
+    document.getElementById('r-type-detail').textContent =
+      (wiz.sp || 'Service provider') + (wiz.spDetail ? ' · ' + wiz.spDetail : '');
+  }
+  document.getElementById('r-de').textContent = wiz.de;
+  document.getElementById('r-de-detail').textContent = wiz.deDetail;
+  // Flip the Counterparty card title for the consumer-side framing
+  const cpTitle = document.querySelector('#r-cp-card .rc-title');
+  if (cpTitle) cpTitle.textContent = receiving ? 'Provider' : 'Counterparty';
+  if (!wiz.viaPackSplit) {
+    document.getElementById('r-cp').textContent = wiz.cp;
+    document.getElementById('r-cp-detail').textContent = wiz.cpDetail;
+  }
+  document.getElementById('r-terms').textContent = wiz.duration + ' months · '
+    + (wiz.residency === 'strict' ? 'Residency-strict' : 'Standard residency')
+    + ' · auto-renewal off';
+  document.getElementById('r-warn').hidden = !wiz.crossDex;
+}
+
+function submitWizard() {
+  const packCard = document.getElementById('s-pack-members');
+  const h1 = document.getElementById('s-h1');
+  const stepLabel = document.getElementById('s-step-label');
+  const headline = document.getElementById('s-headline');
+  const agrLine = document.getElementById('s-agr-line');
+  const viewTitle = document.getElementById('s-view-title');
+  const viewDesc = document.getElementById('s-view-desc');
+  const viewCard = document.getElementById('s-view-card');
+  const inboxDesc = document.getElementById('s-inbox-desc');
+  const metaText = document.getElementById('s-meta-text');
+
+  if (wiz.viaPackSplit) {
+    // Pack-aware success (ADR 0027): show the pack ID, 4 member Agreement IDs,
+    // and route the primary action to the Pack detail page.
+    const packId = 'PACK-2026-' + String(820 + Math.floor(Math.random() * 80)).padStart(4, '0');
+    if (stepLabel) stepLabel.textContent = 'Wizard · step 5 of 5 · Pack created';
+    if (h1) h1.textContent = 'Agreement pack created';
+    if (headline) headline.innerHTML = 'Your <strong style="font-weight:500">Vessel arrival pack</strong> is on its way to 4 counterparties';
+    if (agrLine) agrLine.innerHTML = '<code>' + packId + '</code> · PENDING · 4 invitations dispatched';
+    if (packCard) packCard.hidden = false;
+    if (viewTitle) viewTitle.textContent = 'View the pack';
+    if (viewDesc) viewDesc.textContent = 'Open the Pack detail page · aggregate status + per-member acceptance.';
+    if (viewCard) viewCard.onclick = () => goto('pack-detail');
+    if (inboxDesc) inboxDesc.innerHTML = 'All 4 member Agreements appear in <strong>Mine</strong> until each counterparty accepts.';
+    if (metaText) metaText.innerHTML = '<strong>What happens next:</strong> Each counterparty has 30 days to accept its member Agreement. The pack aggregates status — you\'ll see "2 of 4 accepted" as confirmations land. Data flow per element begins within 5 minutes of that element\'s acceptance.';
+    setTimeout(() => toast(packId + ' created · 4 invitations sent (PSA, Maersk, ICA, Hin Leong)'), 200);
+  } else {
+    const id = 'AGR-2026-' + String(5800 + Math.floor(Math.random() * 200)).padStart(4, '0');
+    const cpShort = wiz.cp.split(' ').slice(0, 2).join(' ');
+    const receiving = wiz.direction === 'receive';
+    if (packCard) packCard.hidden = true;
+    if (stepLabel) stepLabel.textContent = receiving ? 'Wizard · step 5 of 5 · Request sent' : 'Wizard · step 5 of 5 · Created';
+    if (h1) h1.textContent = receiving ? 'Request sent' : 'Agreement created';
+    if (headline) headline.innerHTML = receiving
+      ? 'Your request to <span id="s-cp">' + cpShort + '</span> is on its way'
+      : 'Your Agreement with <span id="s-cp">' + cpShort + '</span> is on its way';
+    if (agrLine) agrLine.innerHTML = '<code id="s-agr-id">' + id + '</code> · PENDING · ' + (receiving ? 'request sent' : 'invitation sent');
+    if (viewTitle) viewTitle.textContent = receiving ? 'View the request' : 'View the Agreement';
+    if (viewDesc) viewDesc.textContent = receiving
+      ? 'Open the detail page · track status as ' + cpShort + ' decides whether to share.'
+      : 'Open the detail page · track status as ' + cpShort + ' reviews.';
+    if (viewCard) viewCard.onclick = () => goto('detail');
+    if (inboxDesc) inboxDesc.innerHTML = 'It\'ll appear in <strong>Mine</strong> until ' + cpShort + ' acts.';
+    if (metaText) metaText.innerHTML = receiving
+      ? '<strong>What happens next:</strong> ' + cpShort + ' has 30 days to accept your request. Reminders fire at 21 / 14 / 7 days. After acceptance, data flow begins within 5 minutes.'
+      : '<strong>What happens next:</strong> ' + cpShort + ' has 30 days to accept. Reminders fire at 21 / 14 / 7 days. After acceptance, data flow begins within 5 minutes.';
+    setTimeout(() => toast(id + ' created · ' + (receiving ? 'request' : 'invitation') + ' sent to ' + wiz.cp), 200);
+  }
+
+  wiz.idx = wizardSteps.length - 1;
+  renderStepper();
+  goto('wiz-success');
+  syncWizardFoot();
+}
+
+function pickDuration(btn, m) {
+  document.querySelectorAll('.duration-chips .d-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  wiz.duration = m;
+  const today = new Date('2026-05-14');
+  const end = new Date(today);
+  end.setMonth(end.getMonth() + m);
+  const opts = { day: 'numeric', month: 'short', year: 'numeric' };
+  document.getElementById('t-enddate').textContent = end.toLocaleDateString('en-GB', opts);
+}
+
+function pickSpDirection(el, dir) {
+  wiz.direction = dir;
+  ['sp-dir-send', 'sp-dir-receive'].forEach(id => {
+    const node = document.getElementById(id);
+    if (!node) return;
+    if (node === el) {
+      node.style.background = 'var(--theme-95)';
+      node.style.borderColor = 'var(--theme-90)';
+      const icon = node.querySelector('i');
+      if (icon) { icon.className = 'ti ti-circle-check'; icon.style.color = 'var(--theme-50)'; }
+    } else {
+      node.style.background = 'var(--g-98)';
+      node.style.borderColor = 'var(--g-90)';
+      const icon = node.querySelector('i');
+      if (icon) { icon.className = 'ti ti-circle'; icon.style.color = 'var(--g-50)'; }
+    }
+  });
+}
+
+function pickSp(row, name, detail) {
+  wiz.sp = name;
+  wiz.spDetail = detail;
+  document.querySelectorAll('.screen[data-screen="wiz-sp-config"] .cp-row').forEach(r => r.style.background = '');
+  row.style.background = 'var(--theme-95)';
+  toast(name + ' selected · continue to data element');
+  setTimeout(() => wizardNext(), 500);
+}

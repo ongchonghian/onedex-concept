@@ -1,0 +1,289 @@
+/* ============================================================
+   LAYOUT — app shell, rail, canvas, portal frame, sidebar.
+   Composes components; doesn't define new visual primitives.
+   ============================================================ */
+
+/* ---------- App shell ---------- */
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+@media (max-width: 1100px) {
+  .app { grid-template-columns: 200px 1fr; }
+}
+
+/* ---------- Screen-picker rail (left) ---------- */
+aside.rail {
+  background: #ffffff;
+  border-right: 0.5px solid var(--g-90);
+  overflow-y: auto;
+  padding: var(--sp-4) 0;
+}
+aside.rail .brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-4) 14px;
+  border-bottom: 0.5px solid var(--g-90);
+}
+aside.rail .brand svg { flex-shrink: 0; }
+aside.rail .brand-text { font-size: 13px; font-weight: var(--fw-medium); }
+aside.rail .brand-sub { font-size: 11px; color: var(--g-50); }
+aside.rail .group { padding: var(--sp-3) 0 var(--sp-1); }
+aside.rail .group-label {
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--g-70);
+  padding: 0 var(--sp-4) 6px;
+}
+aside.rail .nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px var(--sp-4);
+  font-size: var(--fs-meta);
+  color: var(--g-30);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+}
+aside.rail .nav-link:hover { background: var(--g-98); }
+aside.rail .nav-link.active {
+  background: var(--theme-95);
+  color: var(--theme-20);
+  border-left-color: var(--theme-50);
+  font-weight: var(--fw-medium);
+}
+aside.rail .nav-link i { font-size: 14px; color: var(--g-50); flex-shrink: 0; }
+aside.rail .nav-link.active i { color: var(--theme-50); }
+
+aside.rail .flow-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  font-size: 11px;
+  color: var(--g-30);
+  cursor: pointer;
+}
+aside.rail .flow-link:hover { background: var(--g-98); }
+aside.rail .flow-link .flow-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--theme-95);
+  color: var(--theme-20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+aside.rail .flow-link .flow-icon i { font-size: 12px; }
+aside.rail .flow-link .flow-text { line-height: 1.3; }
+aside.rail .flow-link .flow-name { color: var(--g-10); font-weight: var(--fw-medium); }
+aside.rail .flow-link .flow-steps { font-size: 10px; color: var(--g-70); }
+
+aside.rail .footer-note {
+  padding: var(--sp-4);
+  border-top: 0.5px solid var(--g-90);
+  margin-top: var(--sp-3);
+  font-size: 11px;
+  color: var(--g-50);
+  line-height: 1.5;
+}
+aside.rail .footer-note code {
+  background: var(--g-95);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+/* ---------- Canvas (main scroll area) ---------- */
+main.canvas { overflow-y: auto; padding: var(--sp-6) 28px 60px; }
+.canvas-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+.canvas-meta .meta-label {
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--g-50);
+}
+.canvas-meta h1 { font-size: var(--fs-h4); font-weight: var(--fw-medium); color: var(--g-10); margin: 0; }
+.canvas-meta .adr-tag {
+  padding: 2px 7px;
+  background: var(--g-95);
+  color: var(--g-30);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.canvas-meta .adr-tag:hover { background: var(--g-90); }
+
+.canvas-tip {
+  padding: 10px 14px;
+  background: var(--yellow-98);
+  border: 0.5px solid var(--yellow-95);
+  border-left: 3px solid var(--yellow-50);
+  border-radius: var(--r-md);
+  margin-bottom: 18px;
+  font-size: var(--fs-meta);
+  color: var(--g-30);
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+}
+.canvas-tip i { color: var(--yellow-50); flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+.canvas-tip strong { font-weight: var(--fw-medium); }
+
+/* ---------- Screen base (active-only display) ---------- */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ---------- Portal frame (chrome + body) ---------- */
+.portal-frame {
+  background: #ffffff;
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+}
+
+.portal-frame .topbar {
+  background: #ffffff;
+  border-bottom: 0.5px solid var(--g-90);
+  padding: var(--sp-3) 14px;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  position: relative;
+}
+.portal-frame .topbar .spacer { flex: 1; }
+
+/* Use direct-child selector — the class name "body" is also used inside
+   inbox-card components (for title + meta). Without ">", that inner div
+   was inheriting the 168px+1fr grid and a 540px min-height, making cards
+   appear as huge empty rectangles. */
+.portal-frame > .body { display: grid; grid-template-columns: 168px 1fr; min-height: 540px; }
+
+/* ---------- Sidebar (within portal-frame) ---------- */
+.portal-frame nav.sidebar {
+  background: var(--g-98);
+  border-right: 0.5px solid var(--g-90);
+  padding: 14px 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Settings sits in the sidebar footer — pushed to bottom via flex spacing.
+   Demoted weight per behavioral-design pass: low-frequency item; doesn't fight Inbox for attention. */
+.sidebar .side-footer { margin-top: auto; padding-bottom: 4px; }
+.sidebar .side-footer .side-divider { margin-top: 0; }
+.sidebar .sec-label {
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--g-70);
+  margin: 0 14px var(--sp-2);
+}
+.sidebar .side-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px 14px;
+  font-size: var(--fs-meta);
+  color: var(--g-10);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background var(--motion-fast) var(--easing);
+}
+.sidebar .side-link:not(.active):hover { background: var(--g-95); }
+.sidebar .side-link i { font-size: 14px; color: var(--g-50); flex-shrink: 0; }
+.sidebar .side-link.active {
+  background: var(--theme-95);
+  color: var(--theme-20);
+  border-left-color: var(--theme-50);
+  font-weight: var(--fw-medium);
+}
+.sidebar .side-link.active i { color: var(--theme-50); }
+.sidebar .side-link.neutral.active {
+  background: var(--g-95);
+  color: var(--g-10);
+  border-left-color: var(--g-30);
+}
+.sidebar .side-link.neutral.active i { color: var(--g-30); }
+.sidebar .side-link .count-badge {
+  margin-left: auto;
+  background: var(--theme-50);
+  color: #ffffff;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: var(--sp-2);
+  font-weight: var(--fw-medium);
+}
+.sidebar .side-link.neutral.active .count-badge { background: var(--g-30); }
+.sidebar .side-divider { height: 0.5px; background: var(--g-90); margin: 10px 14px; }
+
+.sidebar .dex-mini {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) 14px;
+  font-size: 11px;
+  color: var(--g-50);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--easing);
+}
+.sidebar .dex-mini:hover { background: var(--g-95); }
+.sidebar .dex-mini .dex-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sidebar .new-dot { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--red-50); }
+.sidebar .show-hidden {
+  font-size: 11px;
+  color: var(--g-70);
+  margin: var(--sp-4) 14px 0;
+  cursor: pointer;
+}
+
+/* ---------- Main content within portal-frame ---------- */
+.portal-frame main.content { padding: 18px 22px 28px; min-width: 0; }
+.content h1 { font-size: var(--fs-h4); font-weight: var(--fw-medium); color: var(--g-10); }
+.content .lede { font-size: var(--fs-meta); color: var(--g-50); margin: 0 0 14px; }
+
+/* ---------- Filter chip row ---------- */
+.filter-chips { display: flex; gap: 6px; margin-bottom: var(--sp-4); flex-wrap: wrap; }
+
+/* ---------- Group block (Mine / My team's) ---------- */
+details.group-block { margin-bottom: 18px; }
+details.group-block summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  list-style: none;
+  margin-bottom: 10px;
+}
+details.group-block summary::-webkit-details-marker { display: none; }
+details.group-block summary i.chev { font-size: 14px; color: var(--g-50); transition: transform var(--motion-fast) var(--easing); }
+details.group-block:not([open]) summary i.chev { transform: rotate(-90deg); }
+details.group-block summary .ttl { font-size: 13px; font-weight: var(--fw-medium); color: var(--g-10); }
+details.group-block summary .sub { font-size: 11px; color: var(--g-50); }
+
+/* ---------- Section label (within screens) ---------- */
+.section-label {
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--g-50);
+  margin: 0 0 var(--sp-3);
+}
