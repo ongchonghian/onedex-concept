@@ -2181,25 +2181,66 @@ function buildPortalTopbarHtml() {
   `;
 }
 
-/* Single-source role lookup used by the topbar chip + profile menu + sidebar footer. */
+/* Single-source role lookup used by the topbar chip + profile menu + sidebar footer.
+ * Returns the active DEX's role name (e.g. 'Admin User', 'Operation User'). */
 function currentDexUserRole() {
-  const dex = document.body.classList.contains('theme-bx') ? 'bx'
-            : document.body.classList.contains('theme-hx') ? 'hx'
-            : 'tx';
-  return (INBOX_BY_DEX[dex] && INBOX_BY_DEX[dex].role) || 'Admin';
+  const dex = currentDexCode();
+  return (INBOX_BY_DEX[dex] && INBOX_BY_DEX[dex].role) || 'Admin User';
 }
 
-/* Re-flow the role chip(s) when the user switches DEX. Called from switchDex. */
+function currentDexCode() {
+  return document.body.classList.contains('theme-bx') ? 'bx'
+       : document.body.classList.contains('theme-hx') ? 'hx'
+       : 'tx';
+}
+
+function currentDexConfig() {
+  return INBOX_BY_DEX[currentDexCode()] || INBOX_BY_DEX.tx;
+}
+
+/* Capability lookup — returns the boolean for a named capability on the current DEX role.
+ * Use as `if (hasCapability('canCreateAgreement')) { ... }`. */
+function hasCapability(name) {
+  const role = currentDexUserRole();
+  const caps = ROLE_CAPABILITIES[role];
+  return !!(caps && caps[name]);
+}
+
+/* Re-flow the role chip(s) when the user switches DEX. Called from switchDex.
+ * Also drives capability-gated UI: the +New Agreement button vanishes for roles
+ * that can't create Agreements (Operation User, Tech User per admin-corev2/constants.ts). */
 function refreshRoleChips() {
   const role = currentDexUserRole();
-  const slug = role.toLowerCase().replace(/[^a-z]/g, '-');
+  const cfg = currentDexConfig();
+  const slug = role.toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, '-');
   document.querySelectorAll('.role-chip').forEach(chip => {
     chip.dataset.role = slug;
     const lbl = chip.querySelector('.role-chip-label');
     if (lbl) lbl.textContent = role;
   });
   const profileRole = document.getElementById('profile-role-value');
-  if (profileRole) profileRole.textContent = role;
+  if (profileRole) {
+    profileRole.textContent = role + ' · ' + (cfg.orgName || 'your org') + ' on ' + (cfg.name || 'this DEX');
+  }
+  refreshCapabilityGates();
+}
+
+/* Hide / show capability-gated affordances based on the active role.
+ * Sources for the gate rules: admin-ui/src/components/Navigation/index.js + admin-corev2/src/constants.ts.
+ *   - canCreateAgreement → +New Agreement button (topbar) + dropdown entry points
+ *   - opsOnly            → switches the UI into a stripped-down view (Operation User per
+ *                          admin-ui/src/middlewares/is-non-ops-user/index.js)
+ */
+function refreshCapabilityGates() {
+  const canCreate = hasCapability('canCreateAgreement');
+  document.querySelectorAll('[data-create-btn]').forEach(btn => {
+    btn.style.display = canCreate ? '' : 'none';
+  });
+  // Banner on the inbox when role is ops-only, so the operator understands why
+  // the create affordances are gone (mirrors the legacy redirect behaviour).
+  document.querySelectorAll('.ops-only-banner').forEach(el => {
+    el.hidden = !ROLE_CAPABILITIES[currentDexUserRole()]?.opsOnly;
+  });
 }
 
 function buildPortalSidebarHtml(activeLabel) {
@@ -2486,4 +2527,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // First paint
   renderStepper();
   document.body.classList.add('theme-tx');
+  // Apply role-driven UI gates on initial paint (defaults to TradeX → Admin User).
+  // switchDex() re-runs these on subsequent DEX switches.
+  if (typeof refreshRoleChips === 'function') refreshRoleChips();
 });

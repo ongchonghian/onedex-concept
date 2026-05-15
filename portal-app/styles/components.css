@@ -195,24 +195,71 @@
 .role-chip i { font-size: 12px; line-height: 1; color: var(--g-50); }
 .role-chip-label { letter-spacing: 0.01em; }
 
-/* Admin — operational tier. Theme-tinted so it reads as "you can act here". */
-.role-chip[data-role="admin"] {
+/* Operational org-tier roles — theme-tinted so they read as "you can act here on this DEX". */
+.role-chip[data-role="admin-user"],
+.role-chip[data-role="etr-user"] {
   background: var(--theme-95);
   color: var(--theme-20);
   border-color: var(--theme-90);
 }
-.role-chip[data-role="admin"] i { color: var(--theme-30); }
+.role-chip[data-role="admin-user"] i,
+.role-chip[data-role="etr-user"] i { color: var(--theme-30); }
 
-/* Participant — read + accept. Stays neutral grey (the default styling above). */
+/* Read-only / runtime-only org-tier roles — stay neutral grey to signal limited scope. */
+.role-chip[data-role="operation-user"],
+.role-chip[data-role="tech-user"] {
+  background: var(--g-95);
+  color: var(--g-30);
+  border-color: var(--g-90);
+}
+.role-chip[data-role="operation-user"] i,
+.role-chip[data-role="tech-user"] i { color: var(--g-50); }
 
-/* Super-admin — governance tier. Purple regardless of DEX theme so the elevated
-   permission level is visually distinct from operational Admin. */
-.role-chip[data-role="super-admin"] {
+/* Governance tier — purple, regardless of DEX theme so elevated authority reads
+   distinctly from operational Admin User. Used for both org-tier Super Admin and
+   platform-tier Super SGTradex Admin / SGTradex Admin. */
+.role-chip[data-role="super-admin"],
+.role-chip[data-role="super-sgtradex-admin"],
+.role-chip[data-role="sgtradex-admin"] {
   background: rgba(166, 20, 185, 0.08);
   color: #6b1280;
   border-color: rgba(166, 20, 185, 0.18);
 }
-.role-chip[data-role="super-admin"] i { color: #a614b9; }
+.role-chip[data-role="super-admin"] i,
+.role-chip[data-role="super-sgtradex-admin"] i,
+.role-chip[data-role="sgtradex-admin"] i { color: #a614b9; }
+
+/* Platform-tier roles get an extra glyph weight to signal cross-org reach. */
+.role-chip[data-role="super-sgtradex-admin"]::after,
+.role-chip[data-role="sgtradex-admin"]::after {
+  content: 'platform';
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(166, 20, 185, 0.15);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+}
+
+/* Ops-only banner — appears in the inbox when the active role is Operation User
+   (or any role with opsOnly=true). Explains why the operator can't see create
+   affordances, mirrors the legacy is-non-ops-user middleware behaviour. */
+.ops-only-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 12px 0;
+  background: var(--g-98);
+  border: 0.5px solid var(--g-90);
+  border-left: 3px solid var(--g-50);
+  border-radius: var(--r-md);
+}
+.ops-only-banner > i { font-size: 20px; color: var(--g-50); flex-shrink: 0; margin-top: 1px; }
+.ops-only-title { font-size: 13px; color: var(--g-10); font-weight: var(--fw-medium); margin-bottom: 4px; }
+.ops-only-title strong { color: var(--g-10); }
+.ops-only-body { font-size: 11px; color: var(--g-50); line-height: 1.55; }
 
 /* Profile menu role row — duplicate of the topbar chip in a dense list-row layout. */
 .profile-role-row {

@@ -172,7 +172,7 @@
   <div class="portal-frame">
     <div class="topbar">
       <button class="workspace-pill" onclick="toggleSwitcher(event)"><span class="dot"></span>TradeX<i class="ti ti-chevron-down" style="font-size:14px"></i></button>
-      <span class="role-chip" data-role="admin" title="Your permission level on this DEX. Admin can manage Agreements; Participant has read + accept rights; Super-admin can take governance actions."><i class="ti ti-id-badge-2"></i><span class="role-chip-label">Admin</span></span>
+      <span class="role-chip" data-role="admin-user" title="Your role on this DEX (per dex-repo admin-corev2 Role enum). Admin User can create Agreements + manage relationships; cannot manage users. Per-DEX scope — you may hold a different role on BuildEx / HealthDex."><i class="ti ti-id-badge-2"></i><span class="role-chip-label">Admin User</span></span>
       <div class="search-pill" onclick="openSearch()"><i class="ti ti-search"></i><span>Search</span><kbd>⌘K</kbd></div>
       <div class="spacer"></div>
       <button class="btn-primary" data-create-btn onclick="toggleDropdown(event)"><i class="ti ti-plus"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px"></i></button>
@@ -205,18 +205,24 @@
 
       <main class="content">
         <h1>Inbox</h1>
-        <p class="lede">13 items waiting</p>
+        <p class="lede">12 items waiting</p>
+        <div class="ops-only-banner" hidden>
+          <i class="ti ti-shield-lock"></i>
+          <div>
+            <p class="ops-only-title">You're signed in as an <strong>Operation User</strong></p>
+            <p class="ops-only-body">Your role is scoped to Pitstop runtime + data operations on this DEX. Creating new Agreements, managing users, and configuring relationships are reserved for Admin User or Super Admin roles. Ask your Super Admin to elevate your role if needed.</p>
+          </div>
+        </div>
         <div class="filter-chips">
-          <span class="chip solid">All · 13</span><span class="chip muted">Approvals · 4</span><span class="chip muted">Agreements · 6</span><span class="chip muted">Renewals · 2</span><span class="chip muted">Issues · 1</span>
+          <span class="chip solid">All · 12</span><span class="chip muted">Approvals · 4</span><span class="chip muted">Agreements · 5</span><span class="chip muted">Renewals · 2</span><span class="chip muted">Issues · 1</span>
         </div>
 
         <details class="group-block" open>
-          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">Mine</span><span class="sub">5 items</span></summary>
+          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">Mine</span><span class="sub">4 items</span></summary>
           <div class="inbox-stack">
             <div class="inbox-card" onclick="goto('detail')"><span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span><span class="dir-chip in" title="Incoming data request — they want you to share with them"><i class="ti ti-download"></i>Incoming request</span><div class="body"><div class="title">Maersk wants to receive Bills of Lading from you</div><div class="meta">Invited 2h ago · waiting on you to accept or decline</div></div><button class="btn-primary" style="padding:5px 10px;font-size:11px" onclick="event.stopPropagation(); openApprove()">Review</button></div>
             <div class="inbox-card" onclick="goto('detail')"><span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span><span class="dir-chip out" title="Outgoing data request — you asked them; awaiting their decision"><i class="ti ti-upload"></i>Outgoing request</span><div class="body"><div class="title">Your ETA request to PSA — awaiting their decision</div><div class="meta">Sent 4h ago · 30-day window · pending PSA accept · auto-reminder at day 21</div></div><button class="btn-secondary neutral" onclick="event.stopPropagation(); toast('Opening outgoing request detail')">Open</button></div>
             <div class="inbox-card" onclick="goto('detail')"><span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span><div class="body"><div class="title">Extend Agreement with Cosco before 30 Sep</div><div class="meta">Renewal · expires in 9 days · auto-extend disabled</div></div><button class="btn-secondary" onclick="event.stopPropagation(); openExtend('Cosco Shipping')">Extend 12mo</button></div>
-            <div class="inbox-card" onclick="goto('detail')"><span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span><div class="body"><div class="title">Promote Bill of Lading v2.1 → Active</div><div class="meta">Data element · drafted by Sarah · review window closing today</div></div><button class="btn-secondary neutral" onclick="event.stopPropagation(); toast('Opening Bill of Lading v2.1 promotion review')">Open</button></div>
           </div>
         </details>
 
@@ -270,11 +276,11 @@
       </nav>
       <main class="content">
         <h1>Welcome, Marcus.</h1>
-        <p class="lede">Across TradeX, BuildEx and HealthDex · 22 items waiting</p>
+        <p class="lede">Across TradeX, BuildEx and HealthDex · 19 items waiting</p>
         <div class="filter-chips">
-          <span class="chip solid">All · 22</span>
-          <span class="chip tx"><span class="dex-dot" style="background:var(--tx-50)"></span>TradeX · 13</span>
-          <span class="chip bx"><span class="dex-dot" style="background:var(--bx-40)"></span>BuildEx · 6</span>
+          <span class="chip solid">All · 19</span>
+          <span class="chip tx"><span class="dex-dot" style="background:var(--tx-50)"></span>TradeX · 12</span>
+          <span class="chip bx"><span class="dex-dot" style="background:var(--bx-40)"></span>BuildEx · 4</span>
           <span class="chip hx"><span class="dex-dot" style="background:var(--hx-40)"></span>HealthDex · 3</span>
         </div>
         <details class="group-block" open>
@@ -2640,9 +2646,9 @@
 
         <div class="settings-section">
           <h3>Roles by DEX</h3>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span></span><span class="s-v">Admin · 12 items waiting · joined 14 Mar 2024</span><span class="s-action"></span></div>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip bx"><span class="dex-dot"></span>BuildEx</span></span><span class="s-v">Participant · 6 items waiting · joined 22 Aug 2025</span><span class="s-action"></span></div>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip hx"><span class="dex-dot"></span>HealthDex</span></span><span class="s-v">Super-admin · 3 items waiting · joined 09 Jan 2026</span><span class="s-action"></span></div>
+          <div class="settings-row"><span class="s-k"><span class="dex-chip tx"><span class="dex-dot"></span>TradeX</span></span><span class="s-v">Admin User · can create Agreements + manage relationships · joined 14 Mar 2024</span><span class="s-action"></span></div>
+          <div class="settings-row"><span class="s-k"><span class="dex-chip bx"><span class="dex-dot"></span>BuildEx</span></span><span class="s-v">Operation User · Pitstop runtime + data ops only · joined 22 Aug 2025</span><span class="s-action"></span></div>
+          <div class="settings-row"><span class="s-k"><span class="dex-chip hx"><span class="dex-dot"></span>HealthDex</span></span><span class="s-v">Super Admin · governance + user management within Cosco · joined 09 Jan 2026</span><span class="s-action"></span></div>
         </div>
       </div>
 
@@ -2721,9 +2727,9 @@
 
 <!-- ===== Shared popovers (positioned via JS, work across all injected shells) ===== -->
 <div class="switcher-pop" hidden id="switcher-pop" role="menu" aria-label="Workspace switcher">
-  <div class="switcher-item tx active" role="menuitem" onclick="switchDex('tx')"><span class="ws-tile">Tx</span><div><div class="label">TradeX</div><div class="role">Admin · 12 items waiting</div></div><i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:14px"></i></div>
-  <div class="switcher-item bx" role="menuitem" onclick="switchDex('bx')"><span class="ws-tile">Bx</span><div><div class="label">BuildEx</div><div class="role">Participant · 6 items waiting</div></div><span style="margin-left:auto;width:6px;height:6px;background:var(--red-50);border-radius:50%"></span></div>
-  <div class="switcher-item hx" role="menuitem" onclick="switchDex('hx')"><span class="ws-tile">Hx</span><div><div class="label">HealthDex</div><div class="role">Super-admin · 3 items waiting</div></div></div>
+  <div class="switcher-item tx active" role="menuitem" onclick="switchDex('tx')"><span class="ws-tile">Tx</span><div><div class="label">TradeX</div><div class="role">Admin User · 12 items waiting</div></div><i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:14px"></i></div>
+  <div class="switcher-item bx" role="menuitem" onclick="switchDex('bx')"><span class="ws-tile">Bx</span><div><div class="label">BuildEx</div><div class="role">Operation User · 4 items waiting</div></div><span style="margin-left:auto;width:6px;height:6px;background:var(--red-50);border-radius:50%"></span></div>
+  <div class="switcher-item hx" role="menuitem" onclick="switchDex('hx')"><span class="ws-tile">Hx</span><div><div class="label">HealthDex</div><div class="role">Super Admin · 3 items waiting</div></div></div>
   <div class="dropdown-divider"></div>
   <div class="switcher-item all" role="menuitem" onclick="goto('inbox-all')"><span class="ws-tile"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="1" y="1" width="5" height="5" rx="1" fill="#363941"/><rect x="8" y="1" width="5" height="5" rx="1" fill="#60636b"/><rect x="1" y="8" width="5" height="5" rx="1" fill="#60636b"/><rect x="8" y="8" width="5" height="5" rx="1" fill="#363941"/></svg></span><div><div class="label">All DEXes</div><div class="role">21 items across 3 DEXes</div></div></div>
   <div class="dropdown-divider"></div>
