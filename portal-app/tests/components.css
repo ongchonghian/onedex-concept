@@ -1145,61 +1145,6 @@ body.persona-platform-admin .avatar[data-profile-btn] {
 /* Push utilities (glossary) to the far right */
 .prototype-rail .pr-utils { margin-left: auto; }
 
-.demo-tools-trigger {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 1200;
-  border: 1px solid var(--g-85);
-  background: var(--surface, #fff);
-  color: var(--g-10);
-  border-radius: 999px;
-  padding: 10px 14px;
-  font: inherit;
-  box-shadow: var(--shadow-popover);
-}
-
-.demo-tools-drawer {
-  position: fixed;
-  right: 20px;
-  bottom: 72px;
-  width: min(420px, calc(100vw - 32px));
-  max-height: min(70vh, 760px);
-  overflow: auto;
-  padding: 14px;
-  border: 1px solid var(--g-90);
-  border-radius: 16px;
-  background: var(--surface, #fff);
-  box-shadow: var(--shadow-modal);
-  display: none;
-  z-index: 1199;
-}
-
-body.demo-tools-open .demo-tools-drawer {
-  display: block;
-}
-
-.demo-tools-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.demo-tools-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.demo-tools-body .prototype-rail {
-  position: static;
-  border: 0;
-  padding: 0;
-  background: transparent;
-}
-
 /* Mobile reflow — drop sticky positioning at narrow widths so the rail
    doesn't dominate. Sections wrap onto multiple lines. */
 @media (max-width: 768px) {

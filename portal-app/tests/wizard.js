@@ -21,50 +21,6 @@ function showWizardChrome(show) {
   wiz.active = show;
 }
 
-function ensureWizardDraft() {
-  if (wiz.draftId) return wiz.draftId;
-  const activeUser = typeof activeUserId === 'function' ? activeUserId() : 'marcus';
-  const activeOrgId = USERS[activeUser].primaryOrgId;
-  const draft = createAgreementDraft({
-    operatorId: activeUser,
-    orgId: activeOrgId,
-    dexId: currentDexCode(),
-    type: wiz.type || 'DIRECT',
-    direction: wiz.direction || 'send'
-  });
-  wiz.draftId = draft.draftId;
-  return wiz.draftId;
-}
-
-function persistWizardDraftFromState() {
-  if (!wiz.active) return;
-  const draftId = ensureWizardDraft();
-  updateAgreementDraft(draftId, {
-    type: wiz.type,
-    direction: wiz.direction,
-    dataElement: { name: wiz.de, detail: wiz.deDetail },
-    counterparty: { name: wiz.cp, detail: wiz.cpDetail },
-    terms: {
-      durationMonths: wiz.duration,
-      residency: wiz.residency,
-      crossDex: !!wiz.crossDex
-    }
-  });
-}
-
-function hydrateWizardFromDraft(draft) {
-  wiz.draftId = draft.draftId;
-  wiz.type = draft.type;
-  wiz.direction = draft.direction;
-  wiz.de = draft.dataElement.name;
-  wiz.deDetail = draft.dataElement.detail;
-  wiz.cp = draft.counterparty.name;
-  wiz.cpDetail = draft.counterparty.detail;
-  wiz.duration = draft.terms.durationMonths;
-  wiz.residency = draft.terms.residency;
-  wiz.crossDex = !!draft.terms.crossDex;
-}
-
 function startWizard(type, opts = {}) {
   wiz.active = true;
   wiz.idx = opts.startAt || 0;
@@ -79,8 +35,6 @@ function startWizard(type, opts = {}) {
   if (opts.template) wiz.idx = wizardSteps.length - 2; // jump to review
 
   showWizardChrome(true);
-  ensureWizardDraft();
-  persistWizardDraftFromState();
   document.getElementById('wizard-title').textContent =
     type === 'sp'              ? 'Appoint a service provider' :
     wiz.direction === 'receive' ? 'Request data from a counterparty' :
@@ -329,33 +283,26 @@ function submitWizard() {
     if (metaText) metaText.innerHTML = '<strong>What happens next:</strong> Each counterparty has 30 days to accept its member Agreement. The pack aggregates status — you\'ll see "2 of 4 accepted" as confirmations land. Data flow per element begins within 5 minutes of that element\'s acceptance.';
     setTimeout(() => toast(packId + ' created · 4 invitations sent (PSA, Maersk, ICA, Hin Leong)'), 200);
   } else {
-    persistWizardDraftFromState();
-    const submittedDraftId = wiz.draftId;
-    const result = submitAgreementDraft(submittedDraftId);
-    const agreement = getAgreementById(result.agreementId);
-    setSelectedAgreementId(result.agreementId);
-    wiz.draftId = null;
-
-    const cpShort = agreement.counterpartyOrgName.split(' ').slice(0, 2).join(' ');
+    const id = 'AGR-2026-' + String(5800 + Math.floor(Math.random() * 200)).padStart(4, '0');
+    const cpShort = wiz.cp.split(' ').slice(0, 2).join(' ');
+    const receiving = wiz.direction === 'receive';
     if (packCard) packCard.hidden = true;
-    if (stepLabel) stepLabel.textContent = 'Wizard · step 5 of 5 · Created';
-    if (h1) h1.textContent = 'Agreement created';
-    if (headline) headline.innerHTML = 'Your Agreement with <span id="s-cp">' + cpShort + '</span> is on its way';
-    if (agrLine) agrLine.innerHTML = '<code id="s-agr-id">' + agreement.agreementId + '</code> · PENDING · invitation sent';
-    if (viewTitle) viewTitle.textContent = 'View the Agreement';
-    if (viewDesc) viewDesc.textContent = 'Open the detail page · track status as ' + cpShort + ' reviews.';
-    if (viewCard) {
-      viewCard.onclick = () => {
-        setSelectedAgreementId(agreement.agreementId);
-        goto('detail');
-        if (typeof renderAgreementDetailFromWorkspace === 'function') {
-          renderAgreementDetailFromWorkspace();
-        }
-      };
-    }
+    if (stepLabel) stepLabel.textContent = receiving ? 'Wizard · step 5 of 5 · Request sent' : 'Wizard · step 5 of 5 · Created';
+    if (h1) h1.textContent = receiving ? 'Request sent' : 'Agreement created';
+    if (headline) headline.innerHTML = receiving
+      ? 'Your request to <span id="s-cp">' + cpShort + '</span> is on its way'
+      : 'Your Agreement with <span id="s-cp">' + cpShort + '</span> is on its way';
+    if (agrLine) agrLine.innerHTML = '<code id="s-agr-id">' + id + '</code> · PENDING · ' + (receiving ? 'request sent' : 'invitation sent');
+    if (viewTitle) viewTitle.textContent = receiving ? 'View the request' : 'View the Agreement';
+    if (viewDesc) viewDesc.textContent = receiving
+      ? 'Open the detail page · track status as ' + cpShort + ' decides whether to share.'
+      : 'Open the detail page · track status as ' + cpShort + ' reviews.';
+    if (viewCard) viewCard.onclick = () => goto('detail');
     if (inboxDesc) inboxDesc.innerHTML = 'It\'ll appear in <strong>Mine</strong> until ' + cpShort + ' acts.';
-    if (metaText) metaText.innerHTML = '<strong>What happens next:</strong> ' + cpShort + ' has 30 days to accept. Reminders fire at 21 / 14 / 7 days. After acceptance, data flow begins within 5 minutes.';
-    setTimeout(() => toast(agreement.agreementId + ' created · invitation sent to ' + agreement.counterpartyOrgName), 200);
+    if (metaText) metaText.innerHTML = receiving
+      ? '<strong>What happens next:</strong> ' + cpShort + ' has 30 days to accept your request. Reminders fire at 21 / 14 / 7 days. After acceptance, data flow begins within 5 minutes.'
+      : '<strong>What happens next:</strong> ' + cpShort + ' has 30 days to accept. Reminders fire at 21 / 14 / 7 days. After acceptance, data flow begins within 5 minutes.';
+    setTimeout(() => toast(id + ' created · ' + (receiving ? 'request' : 'invitation') + ' sent to ' + wiz.cp), 200);
   }
 
   wiz.idx = wizardSteps.length - 1;
@@ -368,7 +315,6 @@ function pickDuration(btn, m) {
   document.querySelectorAll('.duration-chips .d-chip').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
   wiz.duration = m;
-  persistWizardDraftFromState();
   const today = new Date('2026-05-14');
   const end = new Date(today);
   end.setMonth(end.getMonth() + m);
@@ -403,5 +349,3 @@ function pickSp(row, name, detail) {
   toast(name + ' selected · continue to data element');
   setTimeout(() => wizardNext(), 500);
 }
-
-window.wiz = wiz;

@@ -482,3 +482,58 @@ When you give the word, I can push these to Jira/Confluence in one go using the 
 - [CTD-8313 — Data Exchange phase 3](https://afa-cdi.atlassian.net/browse/CTD-8313)
 - [DEX-15 — Platform Rewrite](https://afa-cdi.atlassian.net/browse/DEX-15)
 - All Confluence + Jira links referenced inline above.
+
+---
+
+## 9. Multi-Pitstop Stories (ADR 0028 / PRD docs/prds/2026-05-16-multi-pitstop-routing-prd.md)
+
+The multi-Pitstop work spans **Phase 3** (schema + migration) and **Phase 5** (frontend portal cutover). Each Story below references the PRD as its design contract and ADR 0028 as the architectural rule. **None of these Stories add columns to `consent_agreement`** — that prohibition is ADR 0028's primary negative declaration.
+
+**Suggested labels:** `platform-rewrite`, `multi-pitstop`, `adr-0028`
+
+### Phase 3 additions — schema + migration + role-model extension
+
+| ID | Story | Acceptance criteria |
+|---|---|---|
+| PR-3.30 | Create `pitstop_element_scope` table | DDL keyed on `(org_id, dex_id, pitstop_id, data_element_id, direction)`, multi-valued. Direction is `produces | consumes`. FKs to `organization`, `org_dex_membership`, `org_endpoint` (post-PR-3.2 rename). Migration script reversible. Per PRD §Implementation Decisions / ADR 0028 §What permits ¶1. |
+| PR-3.31 | Extend role model for per-Pitstop roles | New columns or join table for `(user_id, dex_id, pitstop_id NULLABLE, role)` tuples. NULL `pitstop_id` denotes cross-Pitstop (Org Admin, Auditor, Admin User). Add roles `Pitstop Admin`, `Operator (per-Pitstop)`, `Reader (per-Pitstop)`. Per PRD §Implementation Decisions / CONTEXT.md *Pitstop access*. |
+| PR-3.32 | One-time migration: seed `pitstop_element_scope` from union of `DataElementTracking` ∪ DynamoDB pitstop-config | Idempotent script — running twice produces same result. Emits pre-apply report grouped by Org (count of seeded rows per direction). HITL gate at prod application. No activity-threshold filter — every Pitstop that ever transacted an element is seeded; admins prune via Settings page. Per ADR 0028 §Consequences ¶6, DX-R16. |
+| PR-3.33 | Add `producer_pitstop_id` + `consumer_pitstop_id` columns to consolidated Message table | Both nullable for backfill; `producer_pitstop_id` resolved at compose-time on operator's side, `consumer_pitstop_id` resolved at accept-time on counterparty's side. Indices on both for trace queries. Migration backfills existing `DataElementTracking` mappings where unambiguous. |
+| PR-3.34 | Audit log: extend Message events to record `acting_as_pitstop` | Existing `composed_by` and `acting_as_org` fields stay; new `acting_as_pitstop` field added. Audit triple becomes `(composed_by, acting_as_org, acting_as_pitstop)`. Backward-compatible with NULL for pre-cutover events. Per ADR 0028 §Consequences ¶3. |
+| PR-3.35 | CI lint: forbid Pitstop columns on `consent_agreement` | Lint rule that fails the build if a migration script adds `pitstop_id` / `producer_pitstop_id` / `consumer_pitstop_id` / similar to the `consent_agreement` table. Test with a deliberately-bad migration that should fail CI. Enforces ADR 0028 §What forbids ¶1. |
+| PR-3.36 | Soft-retirement flag on `org_endpoint` (renamed `EnterpriseSystem`) | Add `retired_at` timestamp + `retired_by` user FK. Resolver queries filter `retired_at IS NULL` for eligibility intersections. Per ADR 0028 §What permits ¶5 / CONTEXT.md *Pitstop retirement*. |
+
+### Phase 5 additions — frontend portal surfaces
+
+| ID | Story | Acceptance criteria |
+|---|---|---|
+| PR-5.21 | Settings → Pitstops page | New tab in Settings. Lists Org's Pitstops grouped by DEX (Active + Retired sections). Drill-in detail with Users / Element scope / Activity tabs. Retire confirmation modal. Provision-new CTA links to infrastructure intake form (not portal-handled). Read-mostly for non-admins; per-Pitstop edit for Pitstop Admin / Org Admin. Per PRD §Implementation Decisions / Q9 of the grill. |
+| PR-5.22 | Agreement wizard: scope-set capture micro-step (own-side) | New wizard step `wiz-scope-capture` between data-picker and cp-picker. Fires only when (a) operator's Org has ≥2 Pitstops in this DEX AND (b) picked element has no established scope for the relevant direction. Multi-select checkboxes (minimum 1). Persists to `pitstop_element_scope`. Single-Pitstop Orgs never see the step. Per PRD §Implementation Decisions / Q3 of the grill. |
+| PR-5.23 | Agreement accept flow: scope-set capture micro-step (counterparty side) | Mirror of PR-5.22 on the counterparty's accept flow. Same component, same persistence shape. Per Q7 of the grill. |
+| PR-5.24 | Composer: *Pitstop chip* ("Send from") chip | New header chip sibling to existing *Acting as {Owner}* chip. Surfaces when resolver intersection has ≥2 eligible Pitstops; auto-fills when intersection is exactly 1; blocks Composer with admin handoff when 0. Pre-fills with operator's most-recently-used (per-`(operator × element × direction)` localStorage memory). One-click dropdown override; overrides audit-logged. Audit triple `(user, acting_as_org, acting_as_pitstop)`. Per PRD §Implementation Decisions / CONTEXT.md *Pitstop chip* ("Send from") / Q4 of the grill. |
+| PR-5.25 | Composer: symmetric joint-state warning at form-open | Probe runs at Composer form-open against counterparty's `pitstop_element_scope`; if empty for this element + opposite-direction, renders a banner *before* payload-fill. Copy is symmetric joint-state language only — never names a specific counterparty Pitstop, never describes a change, never carries a timestamp. Save-as-draft + Nudge actions. **Phase-2 dependent** (consolidated scope tables). Per ADR 0028 §What permits ¶6, DX-R17. |
+| PR-5.26 | Messages list + Agreement detail Messages tab: per-row Pitstop chip | Each Message row carries a small Pitstop chip showing the operator's *own* dispatching Pitstop (`producer_pitstop_id`). For Messages dispatched via a now-retired Pitstop, chip annotates *retired since {date}* with dimmed style. Counterparty's Pitstop never appears at row level. Per ADR 0028 §What permits ¶7 / audit §4.1. |
+| PR-5.27 | View Delivery Trace: Pitstop pair summary + per-hop annotations | Trace panel's header summary shows producer + consumer Pitstop pair (with Org-side labels). Each pitstop hop annotates which Pitstop processed it. This is the ONLY surface where the counterparty's specific Pitstop appears — diagnostic-only, post-facto. Per ADR 0028 §What permits ¶7. |
+| PR-5.28 | Owner-badge tooltip disambiguation for Failed Messages | Tooltip on `Failed · their action` distinguishes *"their Pitstop rejected the payload"* (validation / acceptance failure) vs *"their Org has no eligible Pitstop currently"* (config-level failure). Each invites a different remediation. Per ADR 0028 §Existing ADRs touched / ADR 0021 amendment. |
+| PR-5.29 | Cross-Pitstop access via route guards | Existing `AuthGuard` / `RoleGuard` / `DexGuard` extended to honour per-Pitstop role tuples from PR-3.31. No new `PitstopGuard` introduced — pitstop access folds into the role model per ADR 0028's "Don't add a fourth route guard" decision. Per PRD §Out of Scope (DX-R14 mitigation). |
+| PR-5.30 | Inbox aggregation respects Pitstop access | The aggregated working view (Mine / My team's) reads the user's union of (user × pitstop × role) tuples. Per-row Pitstop chip on inbox cards; optional Pitstop filter. No "Currently working in" mode-switch in chrome (explicitly rejected per Q2 of the grill). |
+
+### Cross-cutting
+
+| ID | Story | Acceptance criteria |
+|---|---|---|
+| PR-X.10 | CONTEXT.md amendments codifying the five new canonical terms | Pitstop, Pitstop chip ("Send from"), Pitstop access, Pitstop element scope, Pitstop retirement. Already captured in design-concepts; production CONTEXT.md (or equivalent eng glossary) inherits. |
+| PR-X.11 | Update existing ADR cross-references | ADRs 0004, 0014, 0019, 0021, 0022, 0024, 0027 carry "amended by ADR 0028" cross-refs. Already captured in ADR 0028 §Existing ADRs touched. |
+
+### Dependencies
+
+- PR-3.30 blocks PR-5.21, PR-5.22, PR-5.24, PR-5.27.
+- PR-3.31 blocks PR-5.21, PR-5.29.
+- PR-3.32 (migration) blocks PR-5.21 (Settings page renders seeded scope).
+- PR-3.35 (CI lint) is independent; ship early to protect against accretion.
+- PR-5.25 (joint-state warning) requires Phase-2 consolidated DB to land first.
+- PR-5.27 requires PR-3.4 (added Message Pitstop columns).
+
+### Risk register additions
+
+Per ADR 0028 §New risks: **DX-R15** (per-operator memory inconsistency), **DX-R16** (stale scope seed from migration), **DX-R17** (Phase-2 dependency on joint-state warning), **DX-R18** (federation latency for cross-pitstop dispatch). All four carry through to the production implementation; the prototype demonstrates the design intent and the affordances that let operators mitigate.

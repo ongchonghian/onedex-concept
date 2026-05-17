@@ -73,6 +73,11 @@
   --theme-95: var(--tx-95);
   --theme-98: var(--tx-98);
 
+  /* RGB triplet of --theme-20 for use inside rgba() — lets components tint
+     shadows/halos with the active DEX colour at any opacity. Rebound per
+     theme in themes.css. Default = TradeX 20 (#4e0058). */
+  --theme-tint-rgb: 78, 0, 88;
+
   /* ---------- Semantic surfaces (flip in dark mode via themes.css) ---------- */
   --surface: #ffffff;              /* Cards, popovers, modals — was hardcoded #ffffff */
   --surface-elevated: #ffffff;     /* Floating UI (dropdowns, switchers) */
@@ -87,38 +92,90 @@
   --r-xl: 12px;
   --r-full: 9999px;
 
-  /* ---------- Elevation (used sparingly — flat by default) ---------- */
+  /* ---------- Elevation — flat-by-default, layered shadows on emphasis.
+     Cards default to --shadow-card-rest (a hairline ring + 1px drop).
+     Hover/elevated states upgrade to --shadow-card-hover (two-layer).
+     Theme-tinted variants used for "new portal" / "ask" emphasis cards. */
   --shadow-1: 0 0 0 0.5px rgba(20, 24, 30, 0.08);
   --shadow-popover: 0 8px 24px rgba(20, 24, 30, 0.12);
   --shadow-modal: 0 12px 32px rgba(20, 24, 30, 0.2);
+
+  --shadow-card-rest:
+    0 1px 2px rgba(20, 24, 30, 0.04),
+    0 0 0 0.5px rgba(20, 24, 30, 0.06);
+  --shadow-card-hover:
+    0 4px 12px rgba(20, 24, 30, 0.05),
+    0 1px 2px rgba(20, 24, 30, 0.04);
+  --shadow-card-emphasis-rest:
+    0 1px 2px rgba(var(--theme-tint-rgb), 0.05),
+    0 0 0 0.5px rgba(var(--theme-tint-rgb), 0.18);
+  --shadow-card-emphasis-hover:
+    0 4px 14px rgba(var(--theme-tint-rgb), 0.10),
+    0 1px 2px rgba(20, 24, 30, 0.04);
+  --shadow-pill-emphasis: 0 1px 2px rgba(var(--theme-tint-rgb), 0.22);
+  --shadow-pill-emphasis-strong: 0 2px 4px rgba(var(--theme-tint-rgb), 0.28);
+
+  /* Hero-tier elevation — used by featured stat + "new portal" mental card.
+     Three-layer stack per visual-layered-shadows: hairline ring, tight drop,
+     wide ambient. Asymmetry vs --shadow-card-rest creates Von Restorff focus. */
+  --shadow-card-hero:
+    0 0 0 0.5px rgba(20, 24, 30, 0.08),
+    0 1px 2px rgba(20, 24, 30, 0.05),
+    0 18px 36px -12px rgba(20, 24, 30, 0.10);
+  --shadow-card-hero-theme:
+    0 0 0 1px var(--theme-50),
+    0 1px 2px rgba(var(--theme-tint-rgb), 0.06),
+    0 18px 36px -12px rgba(var(--theme-tint-rgb), 0.18);
+
+  /* ---------- Borders ---------- */
+  --border-subtle: rgba(20, 24, 30, 0.10);     /* adapts to any background */
+  --border-hairline: 0.5px solid var(--g-90);  /* for compatibility */
 
   /* ---------- Typography (mirrors _typography.scss) ---------- */
   --font-sans: 'Avenir', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
-  --fs-display: 40px; --lh-display: 48px;
-  --fs-h1: 32px; --lh-h1: 40px;
-  --fs-h2: 24px; --lh-h2: 32px;
-  --fs-h3: 21px; --lh-h3: 28px;
-  --fs-h4: 18px; --lh-h4: 24px;
-  --fs-body: 14px; --lh-body: 20px;
-  --fs-meta: 12px; --lh-meta: 16px;
+  --fs-display-lg: 44px; --lh-display-lg: 48px;   /* landing-page hero */
+  --fs-display: 40px;    --lh-display: 48px;
+  --fs-h1: 32px;         --lh-h1: 40px;
+  --fs-h2-lg: 28px;      --lh-h2-lg: 34px;        /* section heads on landing */
+  --fs-h2: 24px;         --lh-h2: 32px;
+  --fs-h3: 21px;         --lh-h3: 28px;
+  --fs-h4: 18px;         --lh-h4: 24px;
+  --fs-h5: 16px;         --lh-h5: 22px;
+  --fs-h6: 15px;         --lh-h6: 21px;
+  --fs-body: 14px;       --lh-body: 20px;
+  --fs-sm: 13px;         --lh-sm: 19px;           /* dense body / step text */
+  --fs-meta: 12px;       --lh-meta: 16px;
+  --fs-meta-plus: 11.5px;                          /* between meta and micro */
+  --fs-micro-plus: 11px;                           /* uppercase eyebrows */
   --fs-micro: 10px;
+  --fs-micro-2: 10.5px;                            /* deci-src eyebrow */
 
   --fw-light: 300;
   --fw-regular: 400;
   --fw-medium: 500;
   --fw-heavy: 800;
 
-  /* ---------- Spacing scale (8px multiple) ---------- */
+  /* ---------- Spacing scale (4px base, 8px primary, extended for landing) ---------- */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
   --sp-4: 16px;
   --sp-5: 20px;
   --sp-6: 24px;
+  --sp-7: 28px;
   --sp-8: 32px;
+  --sp-9: 36px;
   --sp-10: 40px;
+  --sp-11: 44px;
+  --sp-12: 48px;
+  --sp-13: 52px;
+  --sp-14: 56px;
+  --sp-15: 60px;
+  --sp-16: 64px;
+  --sp-18: 72px;
+  --sp-20: 80px;
 
   /* ---------- Z-index scale ---------- */
   --z-popover: 60;
@@ -133,4 +190,24 @@
   --motion-base: 180ms;
   --motion-slow: 240ms;
   --easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---------- Layout widths ----------
+     Three tokens, one principle: a surface's max-width depends on the *kind* of
+     work the operator does there. Form-shaped surfaces benefit from a bounded
+     reading column (research caps comfortable line length at ~75 characters);
+     list/table surfaces want full canvas width so density and column count
+     scale with the viewport; single-record surfaces with a sticky right rail
+     need a middle width that leaves room for the rail.
+
+     Rule (also in CONTEXT.md → Layout widths):
+       --w-form   → Composer, Wizard steps, Settings panes — focused work
+       --w-record → Agreement detail's main column — single record + meta rail
+       --w-list   → Messages, Agreements, Inbox, Participants — scan many
+
+     Bumped from 920px → 1100px in May 2026 after wide-monitor feedback. Still
+     inside the 65–75-character readability window for 14–16px body type;
+     gains ~180px breathing room without hurting form scannability. */
+  --w-form: 1100px;
+  --w-record: 1080px;
+  --w-list: 100%;
 }

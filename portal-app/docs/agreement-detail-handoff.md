@@ -327,3 +327,37 @@ Pre-launch QA must verify these scenarios:
 13. **Reduced motion:** verify skeleton is static and side panel snaps in/out
 14. **Sticky header:** scroll the body; verify header stays at top with subtle border
 15. **Jump-to (≥1200px):** click each jump-to link; verify scroll + focus moves + current indicator updates
+
+---
+
+## 10. Multi-Pitstop states (ADR 0028)
+
+The Agreement detail page is **deliberately Pitstop-free at the contract surface** — per ADR 0028, multi-Pitstop is an operational concern, not a contractual one. The page never names a Pitstop in the parties cards, the lifecycle timeline, the terms table, or the audit log header. Pitstop-level facts appear only on operational/diagnostic surfaces, contained as follows:
+
+### 10.1 "View as counterparty" stays unified (no Pitstop chooser)
+
+When the counterparty's Org is multi-Pitstop, the side panel renders the **same unified contractual view** as today. There is no Pitstop chooser at the panel level — adding one would expose the counterparty's Pitstop topology at the contract surface, violating the asymmetry rule (see ADR 0028 §What forbids ¶3). Per-Pitstop operational detail surfaces only on the **Messages tab inside** (row-level Pitstop chips) and on each **Message's View Delivery Trace**.
+
+### 10.2 Messages tab inside the Agreement detail — Pitstop chip on rows
+
+Each row in the Agreement's Messages tab carries a small Pitstop chip showing the operator's *own* dispatching Pitstop for that Message. The chip is the same component used on the global Messages list. The counterparty's Pitstop is never shown on rows.
+
+For Messages dispatched via a now-retired Pitstop, the chip annotates *retired since {date}* with a dimmed style — preserving the audit trail per ADR 0028 §Pitstop retirement.
+
+### 10.3 Activity (audit log) records `acting_as_pitstop` on Message events
+
+Every Message event in the audit log records the audit triple `(composed_by_user, acting_as_org, acting_as_pitstop)`. The Pitstop name appears in the activity item's metadata; clicking the activity row deep-links to that Message's detail page where the View Delivery Trace shows the full Pitstop pair (producer + consumer, resolved at message-time).
+
+### 10.4 State-switcher additions
+
+The Agreement detail page's state-switcher (§1) gains no new states from the multi-Pitstop work — the existing states (loading / pending-mine / pending-theirs / active / active+ack / active+renewed / suspended / revoked / expired / error / denied) cover the contractual lifecycle. Multi-Pitstop demonstrations live on the **Composer** state-switcher (scenarios A–F per PRD §Testing Decisions) and the **Messages list** Pitstop-chip injection.
+
+### 10.5 What this means for engineering
+
+- No new state on `consent_agreement`.
+- No Pitstop column on the parties cards.
+- No new API call from the Agreement-detail endpoint for Pitstop data.
+- The Messages tab inside the detail page calls the existing Messages endpoint; rows render the Pitstop chip from the `producer_pitstop_id` field on each Message record.
+- The Activity audit log includes `acting_as_pitstop` on Message-related events; renderer adds it as a metadata chip on the activity row.
+
+See PRD `docs/prds/2026-05-16-multi-pitstop-routing-prd.md` for the full multi-Pitstop scope and ADR `docs/adr/0028-routing-is-not-an-agreement-property.md` for the negative architectural rule.

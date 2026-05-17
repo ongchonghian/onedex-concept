@@ -1713,14 +1713,6 @@ body.impersonating { padding-top: 38px; }
 .state-switcher button.active { background: var(--theme-95); color: var(--theme-20); border-color: var(--theme-90); font-weight: var(--fw-medium); }
 .state-switcher button:focus-visible { outline: 2px solid var(--theme-50); outline-offset: 1px; }
 
-[data-demo-only] {
-  display: none;
-}
-
-body.demo-tools-open [data-demo-only] {
-  display: inline-flex;
-}
-
 /* Detail layout — split into left content + optional right rail */
 .detail-screen-wrap {
   display: grid;

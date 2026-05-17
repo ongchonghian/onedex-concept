@@ -14,6 +14,8 @@ body.theme-tx {
   --theme-90: var(--tx-90);
   --theme-95: var(--tx-95);
   --theme-98: var(--tx-98);
+  /* TradeX 20 = #4e0058 */
+  --theme-tint-rgb: 78, 0, 88;
 }
 
 body.theme-bx {
@@ -24,6 +26,8 @@ body.theme-bx {
   --theme-90: var(--bx-90);
   --theme-95: var(--bx-95);
   --theme-98: var(--bx-98);
+  /* BuildEx 20 = #00266d */
+  --theme-tint-rgb: 0, 38, 109;
 }
 
 body.theme-hx {
@@ -34,6 +38,8 @@ body.theme-hx {
   --theme-90: var(--hx-90);
   --theme-95: var(--hx-95);
   --theme-98: var(--hx-98);
+  /* HealthDex 20 = #003c32 */
+  --theme-tint-rgb: 0, 60, 50;
 }
 
 /* ============================================================

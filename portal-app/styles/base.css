@@ -13,6 +13,15 @@ html, body {
   font-size: var(--fs-body);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent faux-bold/italic synthesis when a weight isn't loaded.
+     If Avenir-Medium isn't present we'd rather fall back to the system
+     font's real Medium than browser-synthesised Regular-with-pixels-added. */
+  font-synthesis: none;
+  /* Use size-adaptive glyphs on variable / optical-sized fonts. */
+  font-optical-sizing: auto;
+  /* Keep contextual alternates on for natural punctuation pairing. */
+  font-feature-settings: 'calt' on;
 }
 
 button { font-family: inherit; cursor: pointer; }

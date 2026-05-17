@@ -25,7 +25,9 @@ The party whose data flows under an Agreement, distinct from any **Service Provi
 _Avoid_: data origin (ambiguous with "Contributor"), party-of-record, source-org, Provider (legacy pitstop-ui vocabulary — semantically overloaded)
 
 **Acting as (on the Composer)**:
-The workflow whereby an operator whose org holds the **Service Provider** role on an Agreement composes a Message under it on the named **data owner's** behalf. The Composer header shows an `Acting as {OwnerOrg}` chip; the audit trail records both `composed_by` (the user account) and `acting_as_org` (the data owner's org). When the operator's SP relationship spans only one owner, the chip is pre-filled; when it spans multiple, a dropdown appears. This matches the legacy pitstop-ui's `on_behalf_of` payload-field semantics with cleaner vocabulary. See [ADR 0024](./docs/adr/0024-agreement-anchored-message-composer.md) (forthcoming).
+The workflow whereby an operator whose org holds the **Service Provider** role on an Agreement composes a Message under it on the named **data owner's** behalf. The Composer header shows an `Acting as {OwnerOrg}` chip; the audit trail records `composed_by` (the user account) and `acting_as_org` (the data owner's org). When the operator's SP relationship spans only one owner, the chip is pre-filled; when it spans multiple, a dropdown appears.
+
+When the operator's Org is multi-Pitstop, a second chip (the **Pitstop chip** with user-facing label _Send from {Pitstop}_ — see entry below) appears alongside, with independent resolver and independent per-operator memory. The two chips never collapse and never share grammar: one answers *whose data, contractually* (Acting as) and the other answers *which Pitstop, operationally* (Send from) — separating contract from operations is load-bearing, and an endpoint isn't a role. The audit becomes a triple `(composed_by_user, acting_as_org, acting_as_pitstop)` — the column name `acting_as_pitstop` is parallel to `acting_as_org` for schema reasons; the user never sees that column name. Pitstop eligibility uses the **dispatching Org's** own scope set, not the data owner's — each side captures its own scope on its own Pitstops. This matches the legacy pitstop-ui's `on_behalf_of` payload-field semantics with cleaner vocabulary. See [ADR 0024](./docs/adr/0024-agreement-anchored-message-composer.md) (forthcoming).
 _Avoid_: impersonate (impersonation is for participant-view inside same org; Acting as is cross-org delegation), on behalf of (the legacy field name; the user-facing label is "Acting as"), masquerade
 
 **Flow direction**:
@@ -146,6 +148,7 @@ _Avoid_: Subscriber, prosumer, peer, partner
 - A **Direct Agreement** involves the user and one **Counterparty**.
 - A **Service-Provider Agreement** involves the user, one **Counterparty**, and one **Service Provider**.
 - An **Agreement** is created via one of two affordances: "Share data with a counterparty" (lands as `agreement_type='DIRECT'`) or "Appoint a service provider to act on my behalf" (lands as `agreement_type='SERVICE_PROVIDER'`). Both affordances feed the same wizard and produce records in the same table.
+- An **Org** has zero or more **Pitstops** per **DEX**; a **Pitstop** belongs to exactly one **Org** and exactly one **DEX**. **Agreements** do not name **Pitstops** — routing is an operational concern resolved at message-time from each side's own Pitstop configuration. See the audit at `docs/audits/2026-05-16-multi-pitstop-routing-audit.md`.
 
 ## Example dialogue
 
@@ -158,6 +161,52 @@ _Avoid_: Subscriber, prosumer, peer, partner
 A regulated data-exchange domain (SGTraDex, BuildEx, HealthDex). An org may hold memberships in multiple DEXes via `org_dex_membership`. The current DEX in the portal is anchored in the URL path — see [ADR 0001](./docs/adr/0001-url-anchored-dex-context.md).
 _Avoid_: Dex (mixed casing), data exchange, marketplace
 
+**Pitstop**:
+A named operational seat owned by an Org within a DEX, with users and element scope attached. The Org names the seat to reflect their own operational structure — a team, a branch, a division, a region, or any combination they choose. The platform makes no assumption about why pitstops exist or how an Org slices its operations; it exposes the seat as a primitive and lets the Org compose their own model. Each Pitstop maps 1:1 to a deployed `pitstop-core` instance (the technical reality — own keys, own S3 bucket, own AuditTrail, own MessageStore), but operators interact with it as a seat, not as a deployment. Backed in the admin DB by `EnterpriseSystem` rows under an Organization. Operators see an **aggregated view** across every Pitstop they have access to — there is no "currently working in" mode-switch in the chrome. Pitstop is row-level metadata everywhere except the Composer, which must choose exactly one (see _Pitstop chip_).
+_Avoid_: endpoint (technical), system (overloaded with `EnterpriseSystem`), node (no graph here), workspace (Slack-coloured), zone (no spatial meaning), deployment (in user-facing copy — that's the infrastructure fact, not the user concept), routing zone, current seat / current pitstop (deliberately rejected — no mode-switch).
+
+**Pitstop chip** (user-facing label: "Send from"):
+The Composer's explicit-choice mechanism for choosing which of the operator's accessible Pitstops dispatches a Message. **The user-facing label is _Send from {Pitstop}_** (flow-aware variants for production: _Request from_ for PULL, _Stage from_ for STORE — the prototype defaults to _Send from_). The chip sits next to the existing _Acting as {OwnerOrg}_ banner when an SP composes on a data owner's behalf, but its semantic is distinct: _Acting as_ is identity delegation (the operator embodies the data owner's contractual role), whereas the Pitstop chip is endpoint selection (which of the operator's own deployed Pitstops dispatches). A Pitstop is a place, not a role — forcing it into "Acting as" grammar misrepresents the relationship.
+
+The chip surfaces in the Composer header only when the resolver finds ≥2 eligible Pitstops in the intersection of (operator's accessible Pitstops) ∩ (Org's scope set for this element + direction). When the intersection is exactly one, the chip is pre-filled and not interactive; when zero, the Composer blocks with a routing-setup CTA.
+
+The chip's default pre-fills with the **operator's most-recently-used Pitstop for this element + direction**; on first compose for that element, the chip starts unselected and Submit is disabled until pick. Per-operator memory, not Org-wide preference — different operators in the same Org naturally converge on the choice that matches their work pattern. **Per-message override is always available** via a one-click dropdown; overrides are audit-logged. When the most-recent choice is no longer eligible (admin removed scope, operator lost access), the chip clears with an explanatory tooltip and is treated as a fresh first-time choice.
+
+The audit triple on every Message is `(composed_by_user, acting_as_org, acting_as_pitstop)` — the **column names** stay parallel for schema reasons even though the user-facing label diverges; `acting_as_pitstop` here is a technical column-name artifact, not the operator-perceived term.
+_Avoid_: Acting as Pitstop (forced parallelism with Acting as Org — a Pitstop is an endpoint, not a role); Via (overloaded with "intermediary"); Through; Dispatch endpoint (engineering-only); default Pitstop (the chip is per-operator memory, not an Org default).
+
+**Pitstop retirement** (soft retire):
+The operational lifecycle event when an Org decommissions a Pitstop. Pitstops are **soft-retired** — the row stays in the admin DB, marked with a retirement timestamp and the retiring operator; scope rows and user assignments are preserved for audit, not deleted. Retired Pitstops are filtered out of the resolver's eligibility intersection so they no longer appear in Composer chip choices, scope-set pickers, or future routing. Historical Messages dispatched via a retired Pitstop continue to reference it (the View Delivery Trace shows the Pitstop name with a *retired since {date}* annotation). If retiring a Pitstop leaves an element's scope set empty for the Org, future compositions fail with the same "no eligible Pitstop" path used at Agreement creation — the resolver's fallback is automatic and contract-preserving (in-flight Agreements remain Active; only routing degrades). Un-retire is supported (clear the flag) but rare; no special UI in v1. Soft retirement in the admin DB is distinct from `pitstop-core` deployment decommissioning, which is an infrastructure event coordinated outside the portal.
+_Avoid_: Delete Pitstop, deactivate (sounds like a per-session pause), archive (we use archive for Messages with different semantics), tombstone.
+
+**Pitstop access**:
+The tiered access model that determines which Pitstops a user can see, compose from, or administer. Two roles are **cross-Pitstop** (apply to every Pitstop in the Org's DEX membership): `Org Admin` (configures new Pitstops, assigns users, manages scope) and `Auditor` (read-only view across all Pitstops with audit-log access). Three roles are **per-Pitstop** (must be explicitly assigned to each): `Pitstop Admin` (manages users + scope for one Pitstop), `Operator` (sees + composes), `Reader` (sees only). When the Org provisions a new Pitstop, cross-Pitstop role holders gain access automatically; per-Pitstop role holders gain access only via explicit assignment. The aggregated working view is the union across all of a user's (user × pitstop × role) tuples — affordances render per-row based on the relevant role (e.g., compose buttons appear on rows whose Pitstop the user has Operator on). Provisioning a new Pitstop is itself gated to Org Admin and requires infrastructure provisioning beyond the portal.
+_Avoid_: Permission (overloaded), Pitstop membership (sounds organisational), DexGuard (engineering-internal term — see ADR 0001 for the route-guard mechanism), workspace member.
+
+**Pitstop element scope**:
+A set of (Pitstop, data element, direction) tuples that determine which of an Org's Pitstops can produce or consume a given data element. The set is **multi-valued** — an Org may scope the same element to multiple Pitstops (for failover, regional split, load-balancing, or migration windows). Scope is **captured inline during Agreement creation** — the wizard asks the question only on the first signing of an element by a multi-pitstop Org, presents the Org's Pitstops as checkboxes (minimum one), and the answer becomes the Org's **established scope set** for that element. Single-pitstop Orgs never see the question. Subsequent Agreements for the same element reuse the established scope set silently. The Pitstop settings page provides edit-after-the-fact access (add/remove Pitstops to/from the scope set, retire scope, pre-configure new elements) but is the secondary configuration surface, not the primary. Backed by a table keyed on `(org_id, dex_id, pitstop_id, data_element_id, direction)`.
+_Avoid_: Pitstop routing (overloaded), Element binding (we use that on Agreement), Pitstop config (too generic), Pitstop assignment (sounds singular).
+
+**USER_ORG_AFFILIATION**:
+The N:M relationship between a **user** and an **Org** — the contract by which a human operates an org's seat in the platform. Each affiliation row carries `status` (`active` | `alumni` | `pending`), `startDate`, optional `endDate`, and the role-bearing fields dispatched by the org's tier: **`dexRoles`** (a `{ dexId → roleName }` map) for participant-tier affiliations, **`platformRole`** (a single string) for platform-tier affiliations. A user with multiple active affiliations has multiple role maps; the **`primaryOrgId`** on `USERS` is the rendering anchor when several apply. The seed is sparse today — every existing user has exactly one active affiliation — but the shape lets us model PCL-applicant-style pending users, alumni records, and (future) consultants without re-shaping the schema. See [ADR 0029](./docs/adr/0029-user-org-affiliation-as-n-to-m-with-embedded-dex-roles.md).
+_Avoid_: User-org link (too generic), employment (this isn't HR), membership (overloaded with ORG_DEX_MEMBERSHIP — different concept).
+
+**ORG_DEX_MEMBERSHIP**:
+The explicit `(orgId, dexId)` join recording an Org's enrolment in a DEX. Carries `joinedDate` and `status` (`active` | `pending` | `on-hold` | `lapsed`). Distinct from USER_ORG_AFFILIATION (which is between humans and orgs) and from any per-Pitstop scope (ADR 0028). Previously implicit — derived from "does any user under this Org have a USER_ROLES entry on this DEX" — now first-class. The `on-hold` value is deliberately renamed from `suspended` to avoid glossary collision with the existing **Suspended** flag on Agreements. The `lapsed` value records membership that has ended cleanly; records are preserved for audit (distinct from a never-existed state). See [ADR 0029](./docs/adr/0029-user-org-affiliation-as-n-to-m-with-embedded-dex-roles.md).
+_Avoid_: DEX enrolment (informal — used in the original brainstorm prompt; the canonical schema term is org-DEX membership), DEX participation (vague), DEX subscription (collides with the retired Subscription term).
+
+**primaryOrgId** (on USER) / **primaryDexId** (on ORG):
+The rendering anchors for chrome when multiple affiliations or DEX memberships exist. `USERS[u].primaryOrgId` picks the affiliation whose org name appears in the workspace pill at sign-in; `ORGS[o].primaryDexId` picks the DEX an Org is considered "home" on (load-bearing for ADR 0012's cross-DEX warning machinery — *primary DEX is BuildEx* is now a queryable fact, not a hardcoded substring). Single-valued; mutable but rarely changed. Platform-tier orgs (SGTradex) have no `primaryDexId` — the platform spans all DEXes.
+_Avoid_: defaultOrgId / defaultDexId (default has UI-state connotations; primary is identity-level), homeOrgId (informal).
+
+**Resolved seat**:
+The result of `resolveSeat(userId, dexId)`: a `{ tier, orgId, role }` tuple, or `null` when the user has no seat on the requested DEX. The chrome's canonical read path for "what does this user do here." Returns `null` (the new representable state) when the user's active affiliation grants no role on the URL DEX — the chrome's role chip hides, the router auto-redirects per [ADR 0030](./docs/adr/0030-demo-persona-resolution-via-persona-pill-and-url-dex.md). Replaces the legacy `PERSONAS[currentPersona].role` read pattern, which assumed universal-access via the now-retired `dexRoles['*']` wildcard.
+_Avoid_: User role on DEX (the chip label, not the resolved tuple), permission tuple (overloaded), session role (sounds transient).
+
+**Active user**:
+The human currently on stage in the demo, derived from `(persona category, URL DEX, scenario)`. Distinguished from `currentPersona` (which is now category-only: `participant` | `platform-admin` | `sp-operator`). Surfaces in the workspace pill sub-label and the rail caption — e.g., the rail caption suffix *"Scenario C · Marcus (Cosco · TradeX)"* names the active user explicitly so demo controllers and audiences never have to wonder who's on screen. See [ADR 0030](./docs/adr/0030-demo-persona-resolution-via-persona-pill-and-url-dex.md).
+_Avoid_: Logged-in user (production framing; the prototype uses *active user* deliberately to evoke the on-stage analogy), current operator (ambiguous with "current Pitstop operator"), persona (now category-only, never user-identity).
+
 **Aggregated view**:
 The portal view that spans all of the current user's DEX memberships. Mounted at `/portal/all/...`. Inbox-first home for multi-DEX users defaults here. Rendered with **neutral platform chrome** (no DEX brand at chrome level); per-DEX colour appears only on individual record chips. See [ADR 0005](./docs/adr/0005-neutral-chrome-at-portal-all.md).
 _Avoid_: cross-dex view, global view, "all-dex" (use exact case "all" in URL only)
@@ -167,12 +216,16 @@ The shell elements rendered at `/portal/all` — header logo, primary accent, de
 _Avoid_: neutral theme (use "platform chrome"), all-view theme
 
 **View as participant** / **View as counterparty**:
-A deliberate, audited impersonation affordance available to admins who want to see what a participant (same DEX) or counterparty (across orgs) sees of a specific record. Logged; any actions taken during the session are tagged as performed under impersonation. **Scoped to Agreement detail pages only** — does NOT appear on Message detail per ADR 0020 (replaced there by **View delivery trace**, a diagnostic affordance without impersonation). See [ADR 0002](./docs/adr/0002-permission-scoped-routes-no-mode-segment.md), [ADR 0020](./docs/adr/0020-unified-messages-surface.md).
-_Avoid_: participant mode, switch to participant, role toggle
+A deliberate, audited impersonation affordance available to admins who want to see what a participant (same DEX) or counterparty (across orgs) sees of a specific record. Logged; any actions taken during the session are tagged as performed under impersonation. **Scoped to Agreement detail pages only** — does NOT appear on Message detail per ADR 0020 (replaced there by **View delivery trace**, a diagnostic affordance without impersonation). When the counterparty's Org is multi-Pitstop, the panel renders the counterparty's **unified contractual view** — there is no Pitstop chooser at the panel level. Per-Pitstop operational detail surfaces only on individual Message rows' Pitstop chips and on each Message's View Delivery Trace; never at the Agreement level. This preserves the asymmetry rule — Pitstop topology is operational, not contractual, and not exposed cross-org at the contract surface. See [ADR 0002](./docs/adr/0002-permission-scoped-routes-no-mode-segment.md), [ADR 0020](./docs/adr/0020-unified-messages-surface.md).
+_Avoid_: participant mode, switch to participant, role toggle, view as counterparty's pitstop (we don't expose this affordance — see above)
 
 **View delivery trace**:
 The diagnostic affordance on a Message detail page that surfaces per-pitstop AuditTrail data — hop timestamps, encryption events, ack handshakes, and the precise failure point on Failed Messages. Audit-friendly read-only view; no impersonation, no cross-org session. Sources data from the per-pitstop AuditTrail mentioned in the platform_rewrite_initiative source doc (MessageStore stays frozen). See [ADR 0020](./docs/adr/0020-unified-messages-surface.md).
 _Avoid_: pipeline view, debug view, message journey
+
+**Event identity vs contractual identity**:
+The dispatch rule for whether a counterparty mention surfaces as a **named user** or as an **org name**. Event identity ("at 14:23, X accepted this Agreement") surfaces a named user — activity logs, Message ack chips, View-as-counterparty panel. Contractual identity ("this Agreement is between you and X") surfaces an org — Acting-as banner, Agreement counterparty card, inbox cards. Directory surfaces (Participants card, Agreement counterparty card) stay org-led with an optional thin **"Primary contact: …"** supplementary line. The rule keeps surfaces consistent as new chrome is added — without it, the same fact tends to drift across attributing-everything-to-users on some screens and attributing-everything-to-orgs on others. See [ADR 0031](./docs/adr/0031-counterparty-attribution-dispatch-rule.md).
+_Avoid_: actor identity (overloaded with audit-log "actor"), user-level vs org-level (loses the contractual/event distinction), attribution (the rule has more shape than just "who to attribute").
 
 **Inbox**:
 The default home view of the portal: a stack of items requiring action by the current user or their team. Split into **Mine** (items I'm assigned to or have claimed) and **My team's** (items others on my team could also act on). See [ADR 0003](./docs/adr/0003-inbox-with-claim-semantics.md).
@@ -190,12 +243,67 @@ _Avoid_: pending list, todo list
 The ~5-minute window after a user acts on an inbox item, during which the item remains visible in teammates' "My team's" view with a "completed by <user>" label. Closes the loop so teammates see what happened, rather than the item silently vanishing.
 _Avoid_: recently completed, action history (the audit log is the full history; completion echo is the inbox's short-term lingering)
 
+**Layout widths**:
+The prototype uses three width buckets to match the *kind* of work each surface hosts. Choose by the operator's job at that surface, not by the screen's name:
+
+| Bucket | Token | Use for | Rationale |
+|---|---|---|---|
+| Form-shaped (focused work) | `--w-form` (1100px, centred) | Composer, Wizard steps, Settings panes, scope-capture screen | Bounded reading column keeps form fields inside the 65–75-character readability window; Submit lives near the eye, not at the screen edge |
+| Single-record (record + meta) | `--w-record` (1080px, centred) | Agreement detail's main column when paired with the sticky right rail (≥1200px) per ADR 0019 | Leaves room for the right rail; the detail-frame keeps its own layout but constrained columns ride this width |
+| List / scan-many | `--w-list` (100%) | Messages list, Agreements list, Inbox, Participants, Data elements | Tables earn their width — denser columns and more rows visible on wide monitors |
+
+**Decision rule:** *if an operator is filling something out or reading one record's terms → `--w-form` or `--w-record`; if scanning many records → `--w-list`.* When in doubt, prefer `--w-form` for new surfaces.
+
+Tokens are defined in `portal-app/styles/tokens.css` (Layout widths section). Width was bumped from the legacy 920px to 1100px in May 2026 after wide-monitor feedback — still inside the readability window, ~180px more breathing room.
+_Avoid_: hard-coded `max-width: 920px` (legacy — migrate to `--w-form`); fluid `clamp()` widths (predictability cost > breathing-room benefit); per-screen overrides without a token.
+
+## Reusable components — single source of truth
+
+The prototype has grown across many iterations and now carries a real risk of "drift": a component getting reinvented locally instead of extending the canonical builder. To keep the surface coherent, every reusable component has exactly one canonical builder/renderer. Any visual or structural change to that component MUST flow through the builder — never via parallel hardcoded markup or a sibling function. If the prototype needs a new variant, extend the canonical builder with an option flag (e.g., `buildPortalSidebarHtml(active, { noBadges: true })`) rather than forking it.
+
+| Component | Canonical builder/renderer | Drift-prevention hook |
+|---|---|---|
+| In-app sidebar | `buildPortalSidebarHtml(activeLabel, opts)` in `portal-app/scripts/app.js` | `rebuildAllShells()` rebuilds SHELL_CONFIG screens + static-skip screens (`empty`, `inbox-tx`). Items declared in `SIDEBAR_ITEMS`; role gating via `capability` / `hideForRoles` on each item. |
+| In-app topbar | `buildPortalTopbarHtml()` in the same file | Same `rebuildAllShells()` pass. |
+| Persona chrome (workspace pill, avatar, profile menu) | `applyPersonaChrome()` + `syncProfilePersonaSwitchRow()` | Walks every `.workspace-pill` / `.avatar[data-profile-btn]` in the DOM — no per-screen markup. |
+| Role chip (DEX permission level) | `refreshRoleChips()` | Walks every `.role-chip`. |
+| Capability-gated affordances (+ New Agreement button, ops-only banner) | `refreshCapabilityGates()` | Walks every `[data-create-btn]` and `.ops-only-banner`. |
+| Pitstop "Send from" chip on the Composer | `renderComposerActingAsPitstopChip()` in `pitstop.js` | Registered via `mpSceneListeners`. |
+| Joint-state Composer banner | `renderJointStateBanner()` in `pitstop.js` | Same listener fan-out. |
+| Wizard scope-capture step | `renderScopeCaptureStep()` in `pitstop.js` | Same listener fan-out. |
+| Messages-list Pitstop chips | `renderMessagesPitstopChips()` in `pitstop.js` | Same listener fan-out. |
+| Settings → Pitstops list | `renderSettingsPitstops()` in `pitstop.js` | Same listener fan-out. |
+| State-switcher scenario caption | `applyMpScenario()` (caption fan-out at end) | Walks every `[data-mp-scenario-caption]`. |
+| Scenario / persona / glossary rail | `index.html` `.prototype-rail` (markup) + `applyMpScenario` / `switchPersona` (handlers) | Single instance — outside any per-screen scope. Scenario state transitions are gated by **Scenario validity** (see entry below) — `applyMpScenario` rejects invalid (screen, persona) tuples without mutating state. |
+| List-frame wrapping (Drafts, Participants, Messages, Agreements) | `.list-frame` class in `components.css` | Visual contract — same padding / border / max-width across all list screens. |
+
+**Surfaces that are deliberately NOT rebuilt** (and why — document any new exceptions here):
+
+- `inbox-all` screen shell — carries a deliberately different shell (cross-DEX aggregated view with the "All DEXes" workspace pill, no role-chip, no Create button). Left static so its specialness doesn't get accidentally normalised away.
+
+**Retired components** (do not resurrect without ADR):
+
+- `SIDEBAR_ITEMS_PLATFORM` (retired 2026-05-17) — earlier iterations carried a separate platform-admin sidebar IA with Operations / Network / Data dictionary sections. It drifted from the canonical `SIDEBAR_ITEMS` and confused reviewers. Sarah (SGTradex Admin) now falls back to the unified Work / Exchange / Directory IA — items she cannot use auto-hide via the standard `capability` / `hideForRoles` gates. Her identity chrome (workspace pill = "SGTradex Platform", purple-tinted avatar, DEX-switcher trimmed to "All DEXes") still differs — see `applyPersonaChrome()` and `.workspace-pill.is-platform`.
+
+**Discipline checklist before adding any new shared component:**
+
+1. Does a canonical builder already exist? If so, extend it (option flag, new item declaration, capability gate).
+2. If a genuinely new builder is needed, register it in the table above.
+3. Wire it into the appropriate fan-out (`rebuildAllShells`, `mpSceneListeners`, persona-chrome walker, etc.).
+4. Never hardcode a second instance of the component anywhere else.
+
+**Scenario validity** (prototype-scaffold discipline):
+The predicate that determines whether a multi-Pitstop scenario (A–F per ADR 0028) can apply in the current `(screen, persona)` context. Each scenario entry in `MP_SCENARIOS` (`state.js`) carries its own validity set: `screens: ['compose', 'detail', …]` (the screens that host reactive renderers for the scenario) and `personas: ['participant', …]` (the persona's seat the scenario assumes). Enforced inside `applyMpScenario()` (`pitstop.js`) — calls with an out-of-set `(screen, persona)` tuple no-op, leave `activeMpScenario` and `PITSTOP_ELEMENT_SCOPE` untouched, and surface a toast naming what's required. The prototype rail reads the same predicate to decide pill rendering: **hidden** when persona is out (structural — the operator's seat can never run it), **disabled with tooltip** when screen is out (transient — operator can navigate to a valid screen first). Replaces the earlier global `MP_SCENARIO_VISIBLE_SCREENS` set and absorbs the legacy `expectedPersona` field's gating role; both are retired the same day this lands.
+_Avoid_: visibility (use only for the rail-UI side effect — the predicate is validity); eligibility (deliberately rejected — validity carries the operation-is-well-formed weight, eligibility understates the renderer-coupling); expectedPersona (legacy field name — replaced by `personas`); applicability (considered and rejected).
+
 ## Flagged ambiguities
 
 - "Subscription" historically meant both a use-case enrolment and a v1 sharing record. **Resolved:** the sharing record is now an **Agreement**; the use-case act is still called **Enrolment**.
 - "Tripartite" was used as a category noun in earlier drafts of the brainstorm. **Resolved:** it's structural, not a category — describes the shape of a **Service-Provider Agreement**, not a thing the user creates.
 - "DEX" vs "Dex" casing. **Resolved:** "DEX" in prose and identifiers; "dex" lowercased in URL slugs only (`/portal/tradex/...`).
 - "Admin mode" / "participant mode" / "role toggle". **Resolved:** there is no portal-level mode. Routes are permission-scoped per DEX. The only legitimate impersonation is **View as participant**, which is audited.
+- "Company" vs "Org." The May-17 plan filename uses *company* (`2026-05-17-app-like-rbac-company-rail-cleanup.md`) and some grilling-session prompts have referred to *company*. **Resolved:** the canonical noun is **Org**. The May-17 plan filename is grandfathered — no rename — but any new artefact (CONTEXT.md, ADRs, code identifiers, screen copy) uses *Org*.
+- "DEX enrolled" / "dex_enrolled." Informal phrasing from grilling-session prompts that conflates two distinct concepts. **Resolved:** the canonical term is **ORG_DEX_MEMBERSHIP** (the explicit `(orgId, dexId)` row recording an Org's enrolment); the user-side enrolment in a *use case* within a DEX remains **Enrolment** (a separate concept, deferred from v1 schema modelling).
 
 ---
 

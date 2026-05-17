@@ -32,18 +32,6 @@ CSS and JS files are numbered (in code comments) by load order. `<link>` and `<s
 
 ---
 
-## Local-first workspace runtime
-
-The refactored prototype now runs against a shared browser-local workspace stored in `localStorage["dex-portal-workspace"]`.
-
-- `workspace-storage.js` owns raw persistence
-- `workspace-bootstrap.js` owns reset and scene/fixture seeding
-- `workspace.js` owns live draft/agreement/inbox mutations
-
-Normal app surfaces read from the workspace. The old prototype rail remains available only through the `Demo tools` drawer, which can reset or reseed the workspace for review sessions.
-
----
-
 ## Design tokens
 
 All visual values are CSS custom properties on `:root`, declared in **`styles/tokens.css`**. Components reference tokens — never hard-code colours, spacing, or font sizes.

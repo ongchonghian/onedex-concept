@@ -60,9 +60,6 @@ function switchDex(dex, opts) {
   document.body.classList.add(`theme-${dex}`);
   updateActiveSwitcher(dex);
   updatePillText(config.label, dex);
-  if (!opts.skipWorkspaceMeta && typeof patchWorkspaceMeta === 'function') {
-    patchWorkspaceMeta({ activeDexId: dex });
-  }
   themeInboxContent(dex);
   // Keep any active flow ribbon copy aligned with the new DEX (e.g. "First-time user:
   // you're a new admin on BuildEx ..." after switching from TradeX). No-op if no flow active.
@@ -73,7 +70,7 @@ function switchDex(dex, opts) {
   // User's permission level can differ per DEX (Admin on TradeX, Operation User on BuildEx,
   // Super-admin on HealthDex) — re-render the role chip in the topbar + profile menu.
   if (typeof refreshRoleChips === 'function') refreshRoleChips();
-  if (!opts.silent) toast(config.toast, config.kind);
+  toast(config.toast, config.kind);
 }
 
 function updateActiveSwitcher(dex) {
@@ -112,40 +109,6 @@ function themeInboxContent(dex) {
   // Platform-admin persona overrides the per-DEX inbox with cross-org platform work
   // (KYC reviews, DE promotions, org onboarding). Source: PLATFORM_INBOX in state.js.
   const platformMode = typeof currentPersona !== 'undefined' && currentPersona === 'platform-admin';
-  let workspaceData = null;
-
-  if (!platformMode && typeof listInboxItemsForUserAndDex === 'function') {
-    const activeUser = typeof activeUserId === 'function' ? activeUserId() : 'marcus';
-    const items = listInboxItemsForUserAndDex(activeUser, dex);
-    if (items.length) {
-      const mine = items
-        .filter((item) => item.bucket === 'mine' && item.status === 'open')
-        .map((item) => ({
-          title: item.title,
-          meta: item.meta,
-          btn: 'Open',
-          action: 'open'
-        }));
-      const team = items
-        .filter((item) => item.bucket === 'team' && item.status === 'open')
-        .map((item) => ({
-          title: item.title,
-          meta: item.meta,
-          btn: 'Claim',
-          action: 'claim'
-        }));
-
-      workspaceData = {
-        name: ({ tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dex] || 'TradeX'),
-        chip: dex,
-        count: mine.length + team.length,
-        mineCount: mine.length,
-        teamCount: team.length,
-        mine,
-        team
-      };
-    }
-  }
 
   // Per Phase 5b of the rail-as-scene plan: scene-seeded inboxes override
   // INBOX_BY_DEX for non-platform personas. The lookup checks SCENE_SEEDS
@@ -161,7 +124,7 @@ function themeInboxContent(dex) {
 
   const data = platformMode
     ? Object.assign({}, PLATFORM_INBOX, { name: 'SGTradex Platform', chip: 'tx' /* visual fallback */ })
-    : (workspaceData || sceneInbox || INBOX_BY_DEX[dex] || INBOX_BY_DEX.tx);
+    : (sceneInbox || INBOX_BY_DEX[dex] || INBOX_BY_DEX.tx);
 
   // Role-gated visibility for platform-tier inbox items. Each PLATFORM_INBOX entry
   // may declare `requires: 'Super SGTradex Admin'` (or similar) — that item only
