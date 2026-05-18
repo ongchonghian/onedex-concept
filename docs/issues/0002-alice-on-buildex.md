@@ -1,11 +1,11 @@
-# Alice on BuildEx with off-DEX redirect minimum gate
+# Alice on SGBuildex with off-DEX redirect minimum gate
 
 **Labels:** `needs-triage`, `HITL`
 **ADRs:** [0029](../adr/0029-user-org-affiliation-as-n-to-m-with-embedded-dex-roles.md), [0030](../adr/0030-demo-persona-resolution-via-persona-pill-and-url-dex.md)
 
 ## What to build
 
-First visible cut of the new identity model. Seed Alice Ho (Cosco · BX `Operation User`), add the `cosco-bx` ORG_DEX_MEMBERSHIP row, and strip Marcus's `bx` entry from his affiliation's `dexRoles` map. Navigating to `/portal/bx` with `participant` persona now resolves to Alice instead of Marcus. The chrome reacts: workspace pill shows the Alice sub-label, the avatar cross-fades 200ms on active-user change, the rail caption suffixes with *"Alice (Cosco · BuildEx)"*, the role chip says *"Operation User"*.
+First visible cut of the new identity model. Seed Alice Ho (Cosco · BX `Operation User`), add the `cosco-bx` ORG_DEX_MEMBERSHIP row, and strip Marcus's `bx` entry from his affiliation's `dexRoles` map. Navigating to `/portal/bx` with `participant` persona now resolves to Alice instead of Marcus. The chrome reacts: workspace pill shows the Alice sub-label, the avatar cross-fades 200ms on active-user change, the rail caption suffixes with *"Alice (Cosco · SGBuildex)"*, the role chip says *"Operation User"*.
 
 The existing BX team-inbox seed line *"Wei Lin approved subcontractor onboarding"* is reattributed to Alice in the same pass — removing the cross-tier contradiction surfaced during the grilling session before Wei Lin's canonical platform-tier home lands in [Issue 0004](./0004-wei-lin-canonicalised-platform-tier.md).
 
@@ -21,7 +21,7 @@ HITL because this is the first visible chrome flip — the design choices (sub-l
 - [ ] `/portal/bx` with participant persona renders Alice as active user
 - [ ] Workspace pill renders Cosco Shipping + "Alice" sub-label + colleague chevron
 - [ ] Avatar transitions via 200ms cross-fade on active-user change
-- [ ] Rail caption suffix reads *"Alice (Cosco · BuildEx)"* on BX scenarios
+- [ ] Rail caption suffix reads *"Alice (Cosco · SGBuildex)"* on BX scenarios
 - [ ] Role chip on BX reads *"Operation User"*
 - [ ] Marcus navigating to `/portal/bx` auto-redirects to `/portal/tx`
 - [ ] BX team-inbox seed line *"Wei Lin approved subcontractor onboarding"* reattributed to Alice

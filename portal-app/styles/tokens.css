@@ -7,7 +7,7 @@
 
 :root {
   /* ---------- DEX brand ramps ---------- */
-  /* TradeX (purple) */
+  /* SGTradex (purple) */
   --tx-20: #4e0058;
   --tx-40: #840095;
   --tx-50: #a614b9;
@@ -16,7 +16,7 @@
   --tx-95: #ffe7fb;
   --tx-98: #fff7fa;
 
-  /* BuildEx (blue) */
+  /* SGBuildex (blue) */
   --bx-20: #00266d;
   --bx-40: #0446c3;
   --bx-50: #505d77;
@@ -25,7 +25,7 @@
   --bx-95: #e0f0ff;
   --bx-98: #f6faff;
 
-  /* HealthDex (teal) */
+  /* SGHealthdex (teal) */
   --hx-20: #003c32;
   --hx-40: #006d5d;
   --hx-50: #008571;
@@ -64,7 +64,7 @@
   --blue-98: #f7f8ff;
 
   /* ---------- Active theme tokens (rebound by themes.css) ---------- */
-  /* Defaults to TradeX; switched via body.theme-tx / .theme-bx / .theme-hx */
+  /* Defaults to SGTradex; switched via body.theme-tx / .theme-bx / .theme-hx */
   --theme-20: var(--tx-20);
   --theme-40: var(--tx-40);
   --theme-50: var(--tx-50);
@@ -75,7 +75,7 @@
 
   /* RGB triplet of --theme-20 for use inside rgba() — lets components tint
      shadows/halos with the active DEX colour at any opacity. Rebound per
-     theme in themes.css. Default = TradeX 20 (#4e0058). */
+     theme in themes.css. Default = SGTradex 20 (#4e0058). */
   --theme-tint-rgb: 78, 0, 88;
 
   /* ---------- Semantic surfaces (flip in dark mode via themes.css) ---------- */

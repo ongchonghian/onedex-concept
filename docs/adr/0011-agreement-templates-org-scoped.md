@@ -5,7 +5,7 @@ Templates that speed up Agreement creation are owned by an **org** (not a user, 
 ## Scope and ownership
 
 - `owner_org_id` + `created_by_user_id` columns. Any admin on the org+DEX can edit and use; only the creator (or a super-admin) can delete.
-- DEX-scoped: a template on TradeDex is not usable on BuildEx (different data elements, different counterparty pools, potentially different terms).
+- DEX-scoped: a template on SGTradex is not usable on SGBuildex (different data elements, different counterparty pools, potentially different terms).
 - Counterparty is *optional* in the template. Most templates are counterparty-agnostic; the counterparty is the variable, everything else is the template.
 - Versioning: each edit creates a new template version. Existing Agreements created from older versions are not retroactively affected.
 

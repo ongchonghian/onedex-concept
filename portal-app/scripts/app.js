@@ -103,9 +103,14 @@ function goto(name) {
   // (syncSidebarActive only acts on injected shells; native shells use their own static markup.)
   if (typeof syncSidebarActive === 'function') syncSidebarActive(name);
 
-  // Initial render for message-detail: default to PUSH (failed · mine)
+  // Initial render for message-detail: prefer the workspace-selected
+  // record (ADR 0021 two-layer model — flow comes from the record),
+  // falling back to PUSH (failed · mine) for direct cold-loads.
   if (name === 'message-detail' && typeof setMessageFlow === 'function') {
-    setMessageFlow('push');
+    const rendered = typeof renderMessageDetailFromWorkspace === 'function'
+      ? renderMessageDetailFromWorkspace()
+      : false;
+    if (!rendered) setMessageFlow('push');
   }
 
   // Initial render for the composer: apply the current scenario (defaults to 'push-high-stakes' on first open)
@@ -113,18 +118,10 @@ function goto(name) {
     setComposerScenario(composerState.scenario || 'push-high-stakes');
   }
 
-  // Seed-rendering: applyScene() already runs renderScreenFromSeed(name) at
-  // step 7 (before this goto), so rail-initiated transitions arrive with the
-  // DOM correct. Plain in-app sidebar nav (NOT via the prototype rail) does
-  // NOT go through applyScene — but the destination still needs to reflect
-  // the active (user × dex × scenario) tuple. Concretely: when Alice is the
-  // resolved user on /portal/bx and the operator clicks "Messages" in the
-  // sidebar, the tbody must render BX seed content, not the static TX HTML.
-  //
-  // renderScreenFromSeed is null-safe — it returns early when no seed exists
-  // for (currentScene, screen), leaving the static markup intact. So this
-  // call is harmless for screens or scene tuples without authored seeds.
-  if (typeof renderScreenFromSeed === 'function') renderScreenFromSeed(name);
+  /* Phase 6 — scene-driven rendering is retired. Every screen has a
+     workspace-backed renderer below; the previous renderScreenFromSeed(name)
+     dispatch is no longer needed. Renderers below are null-safe and only
+     fire when the matching workspace function exists. */
   if (name === 'drafts' && typeof renderDraftsFromWorkspace === 'function') {
     renderDraftsFromWorkspace();
   }
@@ -134,10 +131,27 @@ function goto(name) {
   if (name === 'detail' && typeof renderAgreementDetailFromWorkspace === 'function') {
     renderAgreementDetailFromWorkspace();
   }
+  if (name === 'messages' && typeof renderMessagesFromWorkspace === 'function') {
+    renderMessagesFromWorkspace();
+  }
+  /* Inbox screens (per-DEX: inbox-tx / inbox-bx / inbox-hx; cross-DEX
+     overview: inbox-all). Each one rebuilds its own card stack from
+     workspace.inboxItems filtered to the active user + DEX, so a freshly-
+     submitted Agreement's "awaiting review" row shows up live instead of
+     being shadowed by the static fixture markup. */
+  if (/^inbox(-tx|-bx|-hx|-all)?$/.test(name) && typeof renderInboxFromWorkspace === 'function') {
+    renderInboxFromWorkspace(name);
+  }
+  if (name === 'participants' && typeof renderParticipantsFromWorkspace === 'function') {
+    renderParticipantsFromWorkspace();
+  }
+  if (name === 'pack-detail' && typeof renderPackDetailFromWorkspace === 'function') {
+    renderPackDetailFromWorkspace();
+  }
 
   // Per-DEX data-element picker — the wizard's data-picker step is a static
-  // HTML tree of TradeX elements. When the operator enters the wizard while
-  // on BuildEx or HealthDex, rebuild the tree from DATA_ELEMENTS_BY_DEX so
+  // HTML tree of SGTradex elements. When the operator enters the wizard while
+  // on SGBuildex or SGHealthdex, rebuild the tree from DATA_ELEMENTS_BY_DEX so
   // the picker offers Subcontractor Onboarding / BCA Compliance / Manpower
   // utilization (BX) or Patient Referral Record / Diabetic Foot Screening /
   // Prescription Dispense Record (HX) instead of Bill of Lading et al.
@@ -161,6 +175,14 @@ function goto(name) {
 
   const bar = document.getElementById('wizard-bar');
   if (bar) bar.style.display = (wiz && wiz.active && !apFlow) ? 'block' : 'none';
+
+  // Step 7 — refresh workspace-derived sidebar badges (Inbox + Drafts). The
+  // per-screen renderers above already call this when their state mutates,
+  // but navigating to a non-renderer screen (Agreements, Messages, Settings,
+  // etc.) still needs the badges resynced if the workspace changed since the
+  // last visit (e.g., a draft was deleted in a panel that didn't repaint
+  // here).
+  if (typeof updateSidebarBadges === 'function') updateSidebarBadges();
 }
 
 /* ============================================================
@@ -225,7 +247,7 @@ const WIZ_INITIAL = {
   isPack: true,
   viaPackSplit: false,
   cp: 'Maersk Logistics Pte Ltd',
-  cpDetail: 'Carrier · UEN 200512345R · TradeX · Ready for B/L sharing',
+  cpDetail: 'Carrier · UEN 200512345R · SGTradex · Ready for B/L sharing',
   sp: null,
   spDetail: null,
   direction: 'send',
@@ -579,6 +601,9 @@ function workspaceDraftToSeedRow(draft) {
 function renderDraftsFromWorkspace() {
   const rows = listAgreementDraftsForUser(activeUserId()).map(workspaceDraftToSeedRow);
   SCREEN_RENDERERS['drafts'](rows);
+  // Drafts count is workspace-derived; keep the sidebar Drafts badge in sync
+  // across every shell after each draft create / delete / submit.
+  if (typeof updateSidebarBadges === 'function') updateSidebarBadges();
 }
 
 function resumeDraftById(draftId) {
@@ -600,6 +625,31 @@ function resumeDraft(draftId) {
 }
 
 function workspaceAgreementToAgreementsRow(agreement) {
+  // ADR 0007 — three primary states (PENDING / ACTIVE / ENDED) and the
+  // Suspended flag overlaid on Active. Map onto the seed-row shape the
+  // list renderer already speaks; reason codes label the Ended row.
+  const ENDED_REASONS = {
+    REJECTED:                 'Rejected',
+    WITHDRAWN:                'Withdrawn',
+    REVOKED_BY_INITIATOR:     'Revoked',
+    REVOKED_BY_COUNTERPARTY:  'Revoked by counterparty',
+    EXPIRED:                  'Expired',
+    AUTO_TERMINATED:          'Auto-terminated'
+  };
+  let kind = agreement.state;
+  let label;
+  if (agreement.state === 'pending') label = 'Pending';
+  else if (agreement.state === 'ended') {
+    label = `Ended · ${ENDED_REASONS[agreement.endedReason] || 'Ended'}`;
+  } else if (agreement.suspended) {
+    label = 'Active · Suspended';
+  } else {
+    label = 'Active';
+  }
+  let actions;
+  if (agreement.state === 'pending') actions = ['withdraw'];
+  else if (agreement.state === 'ended') actions = ['view-audit'];
+  else actions = ['extend', 'revoke'];
   return {
     kind: 'flat',
     id: agreement.agreementId,
@@ -607,26 +657,51 @@ function workspaceAgreementToAgreementsRow(agreement) {
       initials: (agreement.counterpartyOrgName || 'CP').split(' ').map((part) => part[0]).join('').slice(0, 2),
       name: agreement.counterpartyOrgName,
       role: 'Counterparty',
-      dex: ({ tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[agreement.dexId] || 'TradeX')
+      dex: ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[agreement.dexId] || 'SGTradex')
     },
     element: {
       name: agreement.dataElementSummary.name,
       summary: agreement.dataElementSummary.detail
     },
     type: agreement.type === 'SERVICE_PROVIDER' ? 'Service-Provider Agreement' : 'Direct Agreement',
-    status: {
-      kind: agreement.state,
-      label: agreement.state === 'pending' ? 'Pending' : 'Active'
-    },
+    status: { kind, label },
     until: agreement.terms.effectiveFrom,
-    actions: agreement.state === 'pending' ? ['withdraw'] : ['extend', 'revoke']
+    actions
   };
 }
 
 function workspaceAgreementToDetailSeed(agreement) {
-  const dexLabel = ({ tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[agreement.dexId] || 'TradeX');
-  const operatorOrg = ORGS[agreement.operatorOrgId] || {};
-  const counterpartyShort = (agreement.counterpartyOrgName || '').split(' ').slice(0, 2).join(' ');
+  // When the workspace agreement carries a captured scene-detail block (seeded
+  // at bootstrap for the headline Agreement of each scene), use it verbatim
+  // for byte-identical rendering. The renderer is happy to consume any
+  // partial seed — we layer in any workspace-derived fields (state-driven
+  // timeline current/done flags, latest counterpartyOrgName) on top.
+  const dexLabel = ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[agreement.dexId] || 'SGTradex');
+  const orgsRegistry = (typeof getWorkspace === 'function' && getWorkspace().orgs) || (typeof ORGS !== 'undefined' ? ORGS : {});
+  const operatorOrg = orgsRegistry[agreement.operatorOrgId] || {};
+  const counterpartyOrg = agreement.counterpartyOrgId ? (orgsRegistry[agreement.counterpartyOrgId] || {}) : {};
+  const counterpartyShort = counterpartyOrg.short || (agreement.counterpartyOrgName || '').split(' ').slice(0, 2).join(' ');
+
+  if (agreement.detail) {
+    // Layer state-machine truth (counterpartyOrgName, terms changes) on top of
+    // the captured scene detail. The renderer ignores undefined fields, so we
+    // can spread the captured detail and override targeted bits.
+    const captured = agreement.detail;
+    return Object.assign({}, captured, {
+      title: agreement.title || captured.title,
+      agrId: agreement.agreementId,
+      dex: agreement.dexId,
+      dexLabel,
+      counterparty: Object.assign({}, captured.counterparty || {}, {
+        name: agreement.counterpartyOrgName || (captured.counterparty && captured.counterparty.name),
+        orgId: agreement.counterpartyOrgId || (captured.counterparty && captured.counterparty.orgId)
+      })
+    });
+  }
+
+  // Fallback: agreement was minted at runtime (wizard submit / doctor spawn)
+  // and never picked up a scene-detail capture. Synthesize a minimal seed
+  // from workspace fields only.
   return {
     title: agreement.title,
     agrId: agreement.agreementId,
@@ -636,7 +711,8 @@ function workspaceAgreementToDetailSeed(agreement) {
     counterparty: {
       name: agreement.counterpartyOrgName,
       short: counterpartyShort,
-      initials: (agreement.counterpartyOrgName || '').split(' ').map((part) => part[0]).join('').slice(0, 2),
+      initials: counterpartyOrg.initials || (agreement.counterpartyOrgName || '').split(' ').map((part) => part[0]).join('').slice(0, 2),
+      orgId: agreement.counterpartyOrgId,
       roleLabel: 'Counterparty',
       partyLabel: 'Receiver · Counterparty'
     },
@@ -693,6 +769,8 @@ function workspaceAgreementToDetailSeed(agreement) {
 function renderAgreementsFromWorkspace() {
   const rows = listAgreementsForDex(currentDexCode()).map(workspaceAgreementToAgreementsRow);
   SCREEN_RENDERERS['agreements'](rows);
+  if (typeof renderDoctorAgreementsList === 'function') renderDoctorAgreementsList();
+  if (typeof refreshDoctorAgreementPicker === 'function') refreshDoctorAgreementPicker();
 }
 
 function renderAgreementDetailFromWorkspace() {
@@ -707,6 +785,309 @@ function renderAgreementDetailFromWorkspace() {
   }
 
   SCREEN_RENDERERS['detail'](workspaceAgreementToDetailSeed(agreement));
+}
+
+/* ---------- Messages: workspace → seed-row shape (ADR 0020/0021)
+   The list renderer SCREEN_RENDERERS['messages'] already speaks the
+   seed-row dialect. We translate workspace.messages[*] back into that
+   shape so the renderer stays unchanged. Closed Messages are filtered
+   out unless the workspace-wide "Show closed" toggle is on (ADR 0021
+   §Close rule 2). */
+function workspaceMessageToRow(message) {
+  const statusLabel = {
+    'in-flight':    'In flight',
+    'delivered':    'Delivered',
+    'acknowledged': 'Acknowledged',
+    'failed':       'Failed'
+  }[message.status] || 'In flight';
+  const statusKind = message.status === 'failed' ? 'failed'
+    : message.status === 'in-flight' ? 'pending'
+    : 'active';
+
+  const row = {
+    id: message.messageId,
+    dir: message.direction,
+    cp: { name: message.counterparty.name, initials: message.counterparty.initials },
+    pitstop: message.pitstop ? Object.assign({}, message.pitstop) : null,
+    element: { name: message.element.name, version: message.element.version },
+    agreement: message.agreementId,
+    status: { kind: statusKind, label: statusLabel },
+    time: message.timeDisplay,
+    actions: (message.actions || []).slice(),
+    newArrival: !!message.newArrival,
+    failed: message.status === 'failed',
+    queued: message.status === 'in-flight' && !!message.queued,
+    closed: !!message.closed
+  };
+  if (message.status === 'failed') {
+    row.status.owner = message.owner || 'mine';
+    if (message.errorLine)  row.status.errorLine = message.errorLine;
+    if (message.errorIcon)  row.status.errorIcon = message.errorIcon;
+  }
+  return row;
+}
+
+function listMessageRowsForCurrentDex() {
+  const showClosed = typeof getShowClosedMessagesPref === 'function' && getShowClosedMessagesPref();
+  return listMessagesForDex(currentDexCode())
+    .filter((message) => showClosed || !message.closed)
+    .map(workspaceMessageToRow);
+}
+
+function renderMessagesFromWorkspace() {
+  if (typeof SCREEN_RENDERERS['messages'] !== 'function') return;
+  SCREEN_RENDERERS['messages'](listMessageRowsForCurrentDex());
+  if (typeof applyMsgFilters === 'function') applyMsgFilters();
+  if (typeof renderDoctorMessagesList === 'function') renderDoctorMessagesList();
+  if (typeof updateDoctorCaption === 'function') updateDoctorCaption();
+}
+
+/* Navigation from the Messages list — store selection so the detail
+   page can rehydrate from the workspace record (ADR 0021 two-layer
+   model: status in the list, flow-specific timeline in the detail). */
+function openMessageDetail(messageId) {
+  if (typeof setSelectedMessageId === 'function') setSelectedMessageId(messageId);
+  goto('message-detail');
+}
+
+/* Navigation from any list that points at an Agreement — store selection
+   so the Agreement detail frame rehydrates from the workspace record for
+   that specific agreement rather than showing whatever was last selected. */
+function openAgreementDetail(agreementId) {
+  if (typeof setSelectedAgreementId === 'function') setSelectedAgreementId(agreementId);
+  goto('detail');
+}
+
+/* Pick the MESSAGE_FLOWS key (push / pull / store / acked) that best
+   matches the selected workspace record so the existing detail-page
+   renderer can keep working off its rich hardcoded payload while the
+   list status, owner, close-flag and timeline class come from the
+   workspace. */
+function flowKeyForMessage(message) {
+  if (!message) return 'push';
+  if (message.status === 'acknowledged' && message.flow === 'push') return 'acked';
+  return message.flow || 'push';
+}
+
+/* workspaceMessageToDetailSeed — produce the message-row shape that
+   SCREEN_RENDERERS['message-detail'] consumes (same shape as one entry from
+   the messages list seed). The list renderer can drive the detail page's
+   identity-bearing surfaces (title, message ID, DEX chip, parties, agreement
+   card) entirely off this — MESSAGE_FLOWS still drives the flow-specific
+   timeline / payload sections. */
+function workspaceMessageToDetailSeed(message) {
+  if (!message) return null;
+  const STATUS_LABELS = {
+    'in-flight':    { kind: 'pending', label: 'In flight' },
+    'delivered':    { kind: 'active',  label: 'Delivered' },
+    'acknowledged': { kind: 'active',  label: 'Acknowledged' },
+    'failed':       { kind: 'failed',  label: 'Failed' }
+  };
+  const status = Object.assign({}, STATUS_LABELS[message.status] || STATUS_LABELS['delivered']);
+  if (message.status === 'failed') {
+    status.owner = message.owner;
+    if (message.errorLine) status.errorLine = message.errorLine;
+    if (message.errorIcon) status.errorIcon = message.errorIcon;
+  }
+  return {
+    id: message.messageId,
+    dir: message.direction === 'received' ? 'received' : 'sent',
+    cp: Object.assign({}, message.counterparty || {}),
+    pitstop: message.pitstop ? Object.assign({}, message.pitstop) : null,
+    element: Object.assign({}, message.element || {}),
+    agreement: message.agreementId,
+    status,
+    time: message.timeDisplay,
+    actions: (message.actions || []).slice()
+  };
+}
+
+function renderMessageDetailFromWorkspace() {
+  if (typeof getSelectedMessageId !== 'function') return false;
+  const messageId = getSelectedMessageId();
+  if (!messageId) return false;
+  const message = getMessageById(messageId);
+  if (!message) return false;
+  if (typeof setMessageFlow === 'function') setMessageFlow(flowKeyForMessage(message));
+  // After setMessageFlow has stamped in the flow-shape (hardcoded
+  // MESSAGE_FLOWS richness), overlay the identity-bearing pieces from the
+  // workspace record so the page reflects this specific Message rather than
+  // the prototype's default PSA · Bunker delivery.
+  if (typeof SCREEN_RENDERERS !== 'undefined' && typeof SCREEN_RENDERERS['message-detail'] === 'function') {
+    SCREEN_RENDERERS['message-detail'](workspaceMessageToDetailSeed(message));
+  }
+  return true;
+}
+
+/* ---------- Inbox (workspace-driven) ----------
+   Rebuilds the inbox-tx / inbox-bx / inbox-hx / inbox-all card stacks from
+   workspace.inboxItems. The static HTML in index.html is treated as a
+   skeleton — the renderer wipes both `.inbox-stack` containers (Mine + My
+   team's) and re-emits cards from workspace records.
+
+   Workspace item shape:
+     { inboxItemId, ownerUserId, dexId, bucket, title, meta,
+       btn, action, dir, completion, counterpartyOrgId, status }
+   The renderer is intentionally tolerant of missing optional fields — items
+   minted by submitAgreementDraft (post-wizard) only carry title/meta/bucket
+   and still render as a plain card with an "Open" affordance. */
+function renderInboxCardHTML(item) {
+  const dex = item.dexId || 'tx';
+  const dexLabel = ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dex] || 'SGTradex');
+  if (item.completion) {
+    return `<div class="inbox-card completion">` +
+      `<i class="ti ti-check" style="font-size:16px;color:var(--green-50);flex-shrink:0" aria-hidden="true"></i>` +
+      `<div class="body"><div class="title">${item.title || ''}</div><div class="meta">${item.meta || ''}</div></div>` +
+      `</div>`;
+  }
+  const dirChip = item.dir === 'in'
+    ? `<span class="dir-chip in" title="Incoming data request"><i class="ti ti-download"></i>Incoming request</span>`
+    : item.dir === 'out'
+      ? `<span class="dir-chip out" title="Outgoing data request"><i class="ti ti-upload"></i>Outgoing request</span>`
+      : '';
+  const dexChip = `<span class="dex-chip ${dex}"><span class="dex-dot"></span>${dexLabel}</span>`;
+  // Action button — map (action, btn) onto the existing click handlers so
+  // behaviour matches the static fixture. Unknown actions get a generic
+  // toast so the card stays clickable.
+  const safeBtn = escAttr(item.btn || 'Open');
+  const safeMessageId = item.messageId ? escAttr(item.messageId) : '';
+  let actionHandler = `toast('Opening ${escAttr(item.title || 'item')}')`;
+  if (item.action === 'review') actionHandler = 'openApprove()';
+  else if (item.action === 'extend') actionHandler = "openExtend('Cosco Shipping')";
+  else if (item.action === 'open' || item.action === 'open-de-promotion') actionHandler = `toast('Opening ${escAttr(item.title || 'item')}')`;
+  else if (item.action === 'renew' || item.action === 'renew-strict') actionHandler = `toast('Renewing ${escAttr(item.title || 'item')}')`;
+  else if (item.action === 'approve-network') actionHandler = 'openApprove()';
+  else if (item.action === 'review-org') actionHandler = 'openApprove()';
+  else if (item.action === 'retry-message') actionHandler = `openMessageFromInbox('${safeMessageId}', true)`;
+  else if (item.action === 'view-message') actionHandler = `openMessageFromInbox('${safeMessageId}', false)`;
+  else if (item.action === 'open-agreement') actionHandler = `toast('Opening ${escAttr(item.title || 'Agreement')}'); goto('detail')`;
+  // Bucket-driven default: 'team' rows without an action get a Claim button.
+  const isClaim = !item.btn && item.bucket === 'team';
+  const buttonClass = item.bucket === 'team' || item.btn === 'Claim'
+    ? 'btn-secondary'
+    : (item.action === 'review' || item.action === 'approve-network' || item.action === 'review-org' ? 'btn-primary' : 'btn-secondary');
+  const buttonStyle = buttonClass === 'btn-primary' ? ' style="padding:5px 10px;font-size:11px"' : '';
+  const buttonLabel = isClaim ? 'Claim' : (item.btn || 'Open');
+  const buttonHandler = isClaim ? 'openClaim()' : actionHandler;
+  const cardClick = item.derivedFrom === 'message' && safeMessageId
+    ? `openMessageFromInbox('${safeMessageId}', false)`
+    : "goto('detail')";
+  return `<div class="inbox-card${item.bucket === 'team' ? ' team' : ''}" onclick="${cardClick}">` +
+    dexChip +
+    dirChip +
+    `<div class="body"><div class="title">${item.title || ''}</div><div class="meta">${item.meta || ''}</div></div>` +
+    `<button class="${buttonClass}"${buttonStyle} onclick="event.stopPropagation(); ${buttonHandler}">${buttonLabel}</button>` +
+    `</div>`;
+}
+
+/* openMessageFromInbox — when a Failed-message-derived inbox card is clicked
+   (or its Retry/View button is fired), hydrate the message-detail page from
+   the workspace record and navigate. If `retry` is true and a retry hook is
+   available, fire it first so the operator's intent is captured on the
+   message activity log; the UI then lands on the (now-in-flight) detail
+   page. Unknown messageId falls through with a toast so the chrome stays
+   responsive. */
+function openMessageFromInbox(messageId, retry) {
+  if (!messageId) { toast('Message not found'); return; }
+  if (typeof getMessageById === 'function') {
+    const message = getMessageById(messageId);
+    if (!message) { toast('Message not found'); return; }
+    if (retry && typeof retryMessageRecord === 'function' && message.flow !== 'store') {
+      try { retryMessageRecord(messageId); toast('Retrying ' + (message.element && message.element.name || 'message')); }
+      catch (e) { /* fall through to detail navigation */ }
+    } else if (retry && message.flow === 'store' && typeof restageMessageRecord === 'function') {
+      try { restageMessageRecord(messageId); toast('Re-staging ' + (message.element && message.element.name || 'message')); }
+      catch (e) { /* fall through */ }
+    }
+  }
+  if (typeof setSelectedMessageId === 'function') setSelectedMessageId(messageId);
+  goto('message-detail');
+}
+window.openMessageFromInbox = openMessageFromInbox;
+
+/* renderParticipantsFromWorkspace — feed the participants list renderer from
+   workspace.participants filtered to the active DEX. Workspace records carry
+   the seed-shape verbatim so the existing SCREEN_RENDERERS['participants']
+   keeps working unchanged. */
+function renderParticipantsFromWorkspace() {
+  if (typeof listParticipantsForDex !== 'function') return;
+  if (typeof SCREEN_RENDERERS === 'undefined' || typeof SCREEN_RENDERERS['participants'] !== 'function') return;
+  const dex = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const rows = listParticipantsForDex(dex);
+  if (rows.length === 0) return;
+  SCREEN_RENDERERS['participants'](rows);
+}
+
+/* renderPackDetailFromWorkspace — pack-detail used to alias to the agreements
+   array; we now resolve it through workspace.agreementPacks. The renderer
+   takes a list of agreement rows (the pack-parent + members) — we build that
+   from workspace.agreements filtered by packId. */
+function renderPackDetailFromWorkspace() {
+  if (typeof listAgreementPacksForDex !== 'function') return;
+  if (typeof SCREEN_RENDERERS === 'undefined' || typeof SCREEN_RENDERERS['pack-detail'] !== 'function') return;
+  const dex = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const packs = listAgreementPacksForDex(dex);
+  if (packs.length === 0) return;
+  const pack = packs[0]; // prototype shows the first pack; future: pick selected pack
+  const memberRows = pack.memberAgreementIds
+    .map((id) => getAgreementById(id))
+    .filter(Boolean)
+    .map(workspaceAgreementToAgreementsRow);
+  const parentRow = {
+    kind: 'pack-parent',
+    id: pack.packId,
+    name: pack.name,
+    packTag: pack.packTag,
+    childCount: pack.childCount,
+    cpCount: pack.cpCount,
+    element: pack.element,
+    type: pack.type,
+    status: pack.status,
+    until: pack.until,
+    actions: pack.actions
+  };
+  SCREEN_RENDERERS['pack-detail']([parentRow].concat(memberRows));
+}
+
+function renderInboxFromWorkspace(screenName) {
+  if (typeof listInboxItemsForUserAndDex !== 'function') return;
+  // Inbox materialisation can resolve closed items or surface new failed
+  // messages → the Inbox badge across every sidebar must follow suit. Run
+  // first so the badge is consistent even if the early returns below skip
+  // the per-screen DOM updates.
+  if (typeof updateSidebarBadges === 'function') updateSidebarBadges();
+  const name = screenName || 'inbox-tx';
+  const isCrossDex = name === 'inbox-all';
+  const dex = isCrossDex ? null : (name.replace(/^inbox-/, '') || 'tx');
+  const screen = document.querySelector(`.screen[data-screen="${name}"]`);
+  if (!screen) return;
+
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  // Cross-DEX view unions the per-DEX lists so the derivation (failed
+  // messages + pending agreements) is honoured uniformly, instead of reading
+  // workspace.inboxItems directly (which would skip derived rows).
+  const items = isCrossDex
+    ? ['tx', 'bx', 'hx'].reduce((acc, d) => acc.concat(listInboxItemsForUserAndDex(userId, d)), [])
+    : listInboxItemsForUserAndDex(userId, dex);
+
+  // Honour the global "Show closed" toggle here too — completion rows are the
+  // inbox's analogue. Items past completion auto-disappear; we always render
+  // them in the prototype so the visual cadence is preserved.
+  const mine = items.filter((i) => i.bucket === 'mine');
+  const team = items.filter((i) => i.bucket === 'team');
+
+  const stacks = screen.querySelectorAll('.inbox-stack');
+  if (stacks[0]) stacks[0].innerHTML = mine.map(renderInboxCardHTML).join('');
+  if (stacks[1]) stacks[1].innerHTML = team.map(renderInboxCardHTML).join('');
+
+  // Update count badges in the sidebar + summary line at the top.
+  const lede = screen.querySelector('main.content > p.lede');
+  if (lede) lede.textContent = `${mine.length + team.length} items waiting`;
+  const summaries = screen.querySelectorAll('details.group-block summary .sub');
+  if (summaries[0]) summaries[0].textContent = `${mine.length} item${mine.length === 1 ? '' : 's'}`;
+  if (summaries[1]) summaries[1].textContent = `${team.length} item${team.length === 1 ? '' : 's'} · anyone can claim`;
+  const sidebarBadge = screen.querySelector('.sidebar .side-link.active .count-badge');
+  if (sidebarBadge) sidebarBadge.textContent = String(mine.length + team.length);
 }
 
 /* renderDraftsFromSeed(seed) — replaces every `.draft-row` in the drafts screen
@@ -739,7 +1120,7 @@ SCREEN_RENDERERS['drafts'] = function renderDraftsFromSeed(seed) {
    Rebuilds the cards list inside .screen[data-screen="participants"]. Each
    seed entry is one card: { initials, name, meta, useCases, status, joined,
    crossDex? }. status.kind ∈ {'active','pending','cross-dex'} drives the
-   right-column treatment — cross-DEX cards show a dex-chip (e.g., BuildEx)
+   right-column treatment — cross-DEX cards show a dex-chip (e.g., SGBuildex)
    in place of the status pill and tint the avatar with the cross-DEX colour
    ramp. The cards container preserves its layout styles; only innerHTML is
    replaced. */
@@ -758,7 +1139,7 @@ SCREEN_RENDERERS['participants'] = function renderParticipantsFromSeed(seed) {
   // `status.kind === 'cross-dex'` reads its primary DEX (chip color + chip label)
   // from ORGS[orgId].primaryDexId, and its "Cross-DEX since {date}" line from
   // the ORG_DEX_MEMBERSHIPS row keyed `<orgId>-<currentDex>`.
-  const DEX_LABELS = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' };
+  const DEX_LABELS = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' };
   function _formatDateShort(iso) {
     if (!iso) return '';
     const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -803,7 +1184,7 @@ SCREEN_RENDERERS['participants'] = function renderParticipantsFromSeed(seed) {
     let statusBlock;
     if (p.status && p.status.kind === 'cross-dex') {
       // Show a DEX chip instead of a status pill for cross-DEX participants.
-      // Label comes from ORGS[orgId].primaryDexId — no more hardcoded 'BuildEx'.
+      // Label comes from ORGS[orgId].primaryDexId — no more hardcoded 'SGBuildex'.
       const dex = primaryDexCode || 'bx';
       const chipLabel = (p.status.label) || primaryDexLabel || '';
       statusBlock = `<span class="dex-chip ${dex}"><span class="dex-dot"></span>${chipLabel}</span>`;
@@ -907,7 +1288,10 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
     const cpCellExtra = row.kind === 'pack-member' ? ' pack-member-cell' : '';
     const cp = row.cp || {};
     const actionsHtml = (row.actions || []).map(a => actionBtn(a, cp.name)).join('');
-    return `<tr class="${cls}" onclick="goto('detail')">` +
+    const openHandler = row.id
+      ? `openAgreementDetail('${escAttr(row.id)}')`
+      : `goto('detail')`;
+    return `<tr class="${cls}" onclick="${openHandler}">` +
       `<td><div class="cp-cell${cpCellExtra}"><div class="cp-avatar">${cp.initials || ''}</div>` +
         `<div><div class="cp-name">${cp.name || ''}</div><div style="font-size:11px;color:var(--g-50)">${cp.role || ''} · ${cp.dex || ''}</div></div></div></td>` +
       `<td>${elementCell(row.element)}</td>` +
@@ -961,7 +1345,7 @@ SCREEN_RENDERERS['messages'] = function renderMessagesListFromSeed(seed) {
   };
 
   const agreementCell = (agr) => agr
-    ? `<a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">${agr}</a>`
+    ? `<a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); openAgreementDetail('${escAttr(agr)}')">${agr}</a>`
     : '';
 
   const statusCellMsg = (s) => {
@@ -984,10 +1368,13 @@ SCREEN_RENDERERS['messages'] = function renderMessagesListFromSeed(seed) {
     return `<span class="status-cell ${cls}"><span class="dot"></span>${s.label || ''}</span>`;
   };
 
-  const actionBtnMsg = (kind, cpName) => {
+  const actionBtnMsg = (kind, cpName, messageId) => {
     const cp = escAttr(cpName || '');
+    const viewHandler = messageId
+      ? `openMessageDetail('${escAttr(messageId)}')`
+      : `goto('message-detail')`;
     switch (kind) {
-      case 'view':         return `<button onclick="event.stopPropagation(); goto('message-detail')" title="View" aria-label="View message detail"><i class="ti ti-eye" aria-hidden="true"></i></button>`;
+      case 'view':         return `<button onclick="event.stopPropagation(); ${viewHandler}" title="View" aria-label="View message detail"><i class="ti ti-eye" aria-hidden="true"></i></button>`;
       case 'retry':        return `<button onclick="event.stopPropagation(); retryRow(this.closest('tr'))" title="Retry — re-send payload to ${cp}"><i class="ti ti-refresh"></i></button>`;
       case 'restage':      return `<button onclick="event.stopPropagation(); restageRow(this.closest('tr'))" title="Re-stage — write new record with fresh TTL"><i class="ti ti-refresh"></i></button>`;
       case 'export':       return `<button onclick="event.stopPropagation(); toast('Exported message JSON')" title="Export"><i class="ti ti-download"></i></button>`;
@@ -1001,11 +1388,16 @@ SCREEN_RENDERERS['messages'] = function renderMessagesListFromSeed(seed) {
     if (m.newArrival) classes.push('new-arrival');
     if (m.failed)     classes.push('failed');
     if (m.queued)     classes.push('queued');
+    if (m.closed)     classes.push('closed');
     const cls = classes.length ? ` class="${classes.join(' ')}"` : '';
     const dataStatus = (m.status && m.status.kind) === 'failed' ? 'failed' : ((m.status && m.status.kind) === 'pending' ? 'in-flight' : 'delivered');
     const dataOwner = (m.status && m.status.owner) ? ` data-owner="${m.status.owner}"` : '';
-    const actionsHtml = (m.actions || []).map(a => actionBtnMsg(a, m.cp && m.cp.name)).join('');
-    return `<tr${cls} onclick="goto('message-detail')" data-dir="${m.dir || 'sent'}" data-status="${dataStatus}"${dataOwner}>` +
+    const dataId = m.id ? ` data-msg-id="${escAttr(m.id)}"` : '';
+    const clickHandler = m.id
+      ? `openMessageDetail('${escAttr(m.id)}')`
+      : `goto('message-detail')`;
+    const actionsHtml = (m.actions || []).map(a => actionBtnMsg(a, m.cp && m.cp.name, m.id)).join('');
+    return `<tr${cls} onclick="${clickHandler}" data-dir="${m.dir || 'sent'}" data-status="${dataStatus}"${dataOwner}${dataId}>` +
       `<td>${dirCell(m.dir)}</td>` +
       `<td>${cpCellHtml(m.cp, m.pitstop)}</td>` +
       `<td>${elementCellMsg(m.element)}</td>` +
@@ -1019,7 +1411,7 @@ SCREEN_RENDERERS['messages'] = function renderMessagesListFromSeed(seed) {
 
 /* ---------- renderPackDetailFromSeed ----------
    The pack-detail page (`data-screen="pack-detail"`, ADR 0027) is hardcoded
-   with the TradeX *Vessel arrival distribution* pack. When the operator
+   with the SGTradex *Vessel arrival distribution* pack. When the operator
    clicks a pack-parent row in the BX or HX agreements list, the page should
    reflect the BX *Subcontractor enablement pack* or HX *Clinical referral
    pack* instead.
@@ -1054,7 +1446,7 @@ SCREEN_RENDERERS['pack-detail'] = function renderPackDetailFromSeed(agreementsSe
   }
 
   const dexCode = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
-  const dexLabel = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dexCode] || 'TradeX';
+  const dexLabel = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexCode] || 'SGTradex';
 
   // Top row — DEX chip + pack ID + Revoke pack action label
   const dexChip = screen.querySelector('.pack-top-row .dex-chip');
@@ -1166,7 +1558,7 @@ SCREEN_RENDERERS['pack-detail'] = function renderPackDetailFromSeed(agreementsSe
 /* ---------- renderMessageDetailFromSeed ----------
    Message-detail is a heavy page driven primarily by setMessageFlow's
    MESSAGE_FLOWS table (timeline, payload, metadata, activity). That table
-   carries hard-coded TradeX content (Bill of Lading → PSA, etc.). The seed
+   carries hard-coded SGTradex content (Bill of Lading → PSA, etc.). The seed
    we receive here is one message row (resolved via SCENE_SEEDS' alias to
    messages[0]) which carries the *identity* of the currently-shown message:
    element, counterparty, agreement, dex, status.
@@ -1203,7 +1595,7 @@ SCREEN_RENDERERS['message-detail'] = function renderMessageDetailFromSeed(seed) 
 
   // DEX chip — derive from the active scene's dex (seed itself doesn't carry it)
   const dexCode = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
-  const dexLabel = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dexCode] || 'TradeX';
+  const dexLabel = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexCode] || 'SGTradex';
   const dexChip = screen.querySelector('.detail-header .top-row .dex-chip');
   if (dexChip) {
     dexChip.className = `dex-chip ${dexCode}`;
@@ -1283,8 +1675,8 @@ SCREEN_RENDERERS['message-detail'] = function renderMessageDetailFromSeed(seed) 
 
 /* ---------- renderDataElementsCatalogFromDex ----------
    The Data Elements directory (`data-screen="data-elements"`) is the per-DEX
-   catalog admins curate. Static HTML hardcodes the TradeX catalog. This
-   renderer rebuilds the H1 ("Data elements on TradeX/BuildEx/HealthDex"),
+   catalog admins curate. Static HTML hardcodes the SGTradex catalog. This
+   renderer rebuilds the H1 ("Data elements on SGTradex/SGBuildex/SGHealthdex"),
    the top filter chip totals, the category chip strip, and the table tbody
    from DATA_ELEMENTS_BY_DEX[dex].
 
@@ -1298,7 +1690,7 @@ function renderDataElementsCatalogFromDex(dexCode) {
   const screen = document.querySelector('.screen[data-screen="data-elements"]');
   if (!screen) return;
 
-  const dexLabel = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dexCode] || 'TradeX';
+  const dexLabel = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexCode] || 'SGTradex';
 
   // H1 in canvas-meta
   const h1 = screen.querySelector('.canvas-meta h1');
@@ -1389,13 +1781,13 @@ function renderDataElementsCatalogFromDex(dexCode) {
 
 /* ---------- renderDataPickerFromDex ----------
    The New-Agreement wizard's data-picker step is static HTML hard-coded with
-   TradeX elements (Bill of Lading, Vessel arrival pack, …). When the
-   operator enters the wizard while on BuildEx or HealthDex, rebuild the
+   SGTradex elements (Bill of Lading, Vessel arrival pack, …). When the
+   operator enters the wizard while on SGBuildex or SGHealthdex, rebuild the
    `.picker-tree` + the right-pane headline from DATA_ELEMENTS_BY_DEX[dex]
    so the picker offers the correct elements for the active DEX.
 
    Idempotent + null-safe: returns silently if the screen isn't in the DOM,
-   or if no DEX-specific registry exists (TradeX still works because its
+   or if no DEX-specific registry exists (SGTradex still works because its
    entry is just a structured re-statement of the static HTML — falling
    back to the existing markup if the registry is missing is also fine). */
 function renderDataPickerFromDex(dexCode) {
@@ -1435,7 +1827,7 @@ function renderDataPickerFromDex(dexCode) {
   }
 
   // 3. Right pane — show the DEX's headline pack/element so the picker
-  //    doesn't strand the operator on a TradeX-themed default.
+  //    doesn't strand the operator on a SGTradex-themed default.
   const detail = screen.querySelector('.picker-detail');
   if (detail && reg.headline) {
     const h = reg.headline;
@@ -1461,15 +1853,11 @@ function renderDataPickerFromDex(dexCode) {
 /* Real dispatcher — Phase 2's stub is replaced. Resolves the seed for the
    currently-active scene and screen, then calls the per-screen renderer.
    Idempotent + null-safe. */
-function renderScreenFromSeed(screenId) {
-  if (!screenId) return;
-  const renderer = SCREEN_RENDERERS[screenId];
-  if (!renderer) return;          // Phase 4 only ships 'detail'; others land Phase 5
-  if (typeof seedFor !== 'function' || typeof currentScene !== 'function') return;
-  const seed = seedFor(currentScene(), screenId);
-  if (!seed) return;              // No seed for this (scene, screen) → leave hardcoded markup
-  renderer(seed);
-}
+/* Phase 6 retired the (scene, screen) → renderer dispatch. Every screen now
+   has a dedicated render*FromWorkspace() function called by goto(). This
+   function is retained as a no-op for any legacy caller in the chrome
+   helpers that hasn't been audited yet. */
+function renderScreenFromSeed(_screenId) { /* no-op — replaced by workspace renderers */ }
 
 /* syncPrototypeRailToScene(scene) — Phase 7 of the rail-as-scene plan.
    When applyScene runs, the prototype-rail's persona pills and scenario
@@ -1599,21 +1987,23 @@ function applyScene(scene) {
     }
   }
 
-  if (typeof applyDemoSeedFromScene === 'function') {
-    applyDemoSeedFromScene(scene);
+  /* Phase 6 — workspace is unified across DEXes; no longer rebuild it on
+     scene switch. The workspace meta (activeUserId / activeDexId) is what
+     pivots; data persists. The old applyDemoSeedFromScene replaced the
+     entire workspace from a single scene, which is incompatible with the
+     unified bootstrap. Keep the function (workspace.js) as a meta-only
+     pivot for back-compat callers. */
+  if (typeof patchWorkspaceMeta === 'function') {
+    const patch = {};
+    if (scene.user) patch.activeUserId = scene.user;
+    if (scene.dex && scene.dex !== '*') patch.activeDexId = scene.dex;
+    if (Object.keys(patch).length) patchWorkspaceMeta(patch);
   }
 
   // 6. Sync chrome — defensive re-run of every refresher. switchPersona /
   //    switchDex already trigger most of these, but a scene without a
   //    persona or DEX delta wouldn't, so run them once more here. They are
   //    all idempotent.
-  //
-  //    themeInboxContent() runs LAST in this block so the inbox sees the
-  //    final (persona × dex × scenario × role) state. switchPersona's
-  //    internal themeInboxContent call (step 2) saw the pre-scenario state;
-  //    this final pass picks up the scene seed via seedFor(currentScene()).
-  //    Without this, Pat's scenario-D scene would render with Cosco items
-  //    because applyMpScenario hadn't run yet at step 2.
   if (typeof applyPersonaChrome === 'function') applyPersonaChrome();
   if (typeof refreshRoleChips === 'function') refreshRoleChips();
   if (typeof refreshCapabilityGates === 'function') refreshCapabilityGates();
@@ -1622,15 +2012,11 @@ function applyScene(scene) {
     themeInboxContent(currentDexCode());
   }
 
-  // 7. Render from seed — populates the destination screen from SCENE_SEEDS
-  //    via the per-screen renderers in SCREEN_RENDERERS. Phase 4 ships the
-  //    'detail' renderer; Phase 5 extends the set. Runs BEFORE goto so the
-  //    DOM is correct by the time the screen becomes visible — and goto
-  //    itself does NOT re-render, so direct goto() callers (state-switcher
-  //    buttons etc.) preserve the most-recent seed.
-  if (scene.screen) renderScreenFromSeed(scene.screen);
+  // 7. (retired) Scene-driven rendering — every screen now renders from
+  //    workspace via goto() below, so no renderScreenFromSeed dispatch here.
 
-  // 8. Sync prototype-rail back-reflection (Phase 7 stub).
+  // 8. Sync prototype-rail back-reflection — kept for the rail's persona
+  //    pill highlight; harmless if the rail HTML is gone.
   syncPrototypeRailToScene(scene);
 
   // 9. Optional wizard mid-step entry — fires BEFORE the destination goto so
@@ -2048,7 +2434,7 @@ function setDetailState(state, btn) {
       }
       if (nudge) {
         nudge.style.display = '';
-        nudge.innerHTML = '<i class="ti ti-arrows-cross" aria-hidden="true"></i><p>This Agreement crosses a DEX boundary — counterparty (<strong>Acme Construction</strong>) primary DEX is <strong>BuildEx</strong>. Every Message triggers a cross-DEX ack before Submit.</p><button class="btn-secondary" onclick="openComposer(\'cross-dex\')">Send Message</button>';
+        nudge.innerHTML = '<i class="ti ti-arrows-cross" aria-hidden="true"></i><p>This Agreement crosses a DEX boundary — counterparty (<strong>Acme Construction</strong>) primary DEX is <strong>SGBuildex</strong>. Every Message triggers a cross-DEX ack before Submit.</p><button class="btn-secondary" onclick="openComposer(\'cross-dex\')">Send Message</button>';
       }
       updateTimelineForState('active');
       announce('Cross-DEX agreement preview active — Send Message will route through the cross-DEX warning flow');
@@ -2335,11 +2721,11 @@ function setMessageFlow(flow, btn) {
   if (!data) return;
 
   // DEX chip — always re-sync from the active DEX so navigating BX → TX
-  // doesn't leave a stale BuildEx chip behind from the prior render. The
+  // doesn't leave a stale SGBuildex chip behind from the prior render. The
   // seed-driven renderer (renderMessageDetailFromSeed) re-applies these
   // same values from the seed afterwards, so the two paths agree.
   const dexCode = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
-  const dexLabel = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dexCode] || 'TradeX';
+  const dexLabel = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexCode] || 'SGTradex';
   const dexChip = document.querySelector('.screen[data-screen="message-detail"] .detail-header .top-row .dex-chip');
   if (dexChip) {
     dexChip.className = `dex-chip ${dexCode}`;
@@ -2490,10 +2876,16 @@ function msgRetry() {
   const data = MESSAGE_FLOWS[flow];
   if (!data) return;
 
+  const selectedMessageId = (typeof getSelectedMessageId === 'function') ? getSelectedMessageId() : null;
+
   if (flow === 'store') {
-    // Re-stage opens a confirm (modeled as a toast for the prototype + new MESSAGE_FLOWS entry would be needed for true mutation)
+    // Re-stage opens a confirm; per ADR 0021 the original Expired record
+    // stays intact and a new Message is minted with fresh TTL.
     if (!confirm('Re-stage this Message?\n\nA new record will be written under a fresh key with a fresh 7-day TTL. This is a new decision to share — the original Message stays Expired.')) return;
-    toast('Re-staged · new key store_2026_05_14_AGR-04501 · TTL 7 days');
+    if (selectedMessageId && typeof restageMessageRecord === 'function') {
+      try { restageMessageRecord(selectedMessageId); } catch (_) {}
+    }
+    toast('Re-staged · new key · TTL 7 days');
     return;
   }
   if (flow === 'pull') {
@@ -2501,7 +2893,12 @@ function msgRetry() {
     return;
   }
 
-  // PUSH flow — mutate to "In flight (retry 1 of 5)"
+  // PUSH flow — persist on the workspace record so the list reflects the
+  // retry on next render. The MESSAGE_FLOWS hardcoded payload below
+  // continues to drive the rich detail body.
+  if (selectedMessageId && typeof retryMessageRecord === 'function') {
+    try { retryMessageRecord(selectedMessageId); } catch (_) {}
+  }
   data.status = { label: 'In flight', cls: 'pending' };
   data.owner = null;
   data.banner = { visible: false };
@@ -2581,6 +2978,20 @@ function confirmMsgClose() {
       stamp.textContent = 'Closed';
       stamp.title = 'Closed by you · reason: ' + reason + (otherText ? ' (' + otherText + ')' : '') + ' · one-way';
       pill.parentNode.insertBefore(stamp, pill.nextSibling);
+    }
+  }
+  // Persist Close on the workspace record so list-view re-renders honour
+  // the global "Show closed" toggle (ADR 0021 §Close rules 2 + 6).
+  if (typeof getSelectedMessageId === 'function' && typeof closeMessageRecord === 'function') {
+    const messageId = getSelectedMessageId();
+    if (messageId) {
+      try {
+        closeMessageRecord(messageId, { reason, reasonText: otherText || null });
+      } catch (error) {
+        // The detail page can sit on a Message that isn't workspace-backed
+        // (cold-load fallback) — that's fine; the in-memory close above
+        // still reflects the user action for this session.
+      }
     }
   }
   closeOverlay('msg-close-modal');
@@ -2672,14 +3083,41 @@ function toggleClosedVisibility(chip) {
   chip.textContent = msgFilterState.showClosed ? 'Closed · shown' : 'Closed · hidden';
   chip.classList.toggle('solid', msgFilterState.showClosed);
   chip.classList.toggle('muted', !msgFilterState.showClosed);
-  applyMsgFilters();
+  // Persist the workspace-wide "Show closed" preference (ADR 0021 §Close
+  // rule 2) and re-render from the workspace so closed rows participate
+  // in the table again (or vanish) rather than just changing CSS display.
+  if (typeof setShowClosedMessagesPref === 'function') {
+    setShowClosedMessagesPref(msgFilterState.showClosed);
+  }
+  if (typeof renderMessagesFromWorkspace === 'function') {
+    renderMessagesFromWorkspace();
+  } else {
+    applyMsgFilters();
+  }
   toast(msgFilterState.showClosed ? 'Closed Messages now visible' : 'Closed Messages hidden again');
 }
 
-/* ===== Row mutation: Retry / Re-stage / Nudge counterparty ===== */
+/* ===== Row mutation: Retry / Re-stage / Nudge counterparty =====
+   When the row carries a workspace-backed message id (data-msg-id),
+   the mutation is recorded on the workspace record (status, owner,
+   retryCount, activity log) before the list re-renders from
+   workspace state. Rows without an id (legacy seed-only rows) fall
+   back to the original in-place DOM mutation. */
 function retryRow(tr) {
   if (!tr) return;
-  // Flip to In flight (yellow), remove owner badge + error line
+  const messageId = tr.dataset.msgId;
+  if (messageId && typeof retryMessageRecord === 'function') {
+    try {
+      retryMessageRecord(messageId);
+    } catch (error) {
+      toast('Retry failed · ' + (error.message || 'unknown error'), 'warn');
+      return;
+    }
+    if (typeof renderMessagesFromWorkspace === 'function') renderMessagesFromWorkspace();
+    toast('Retry queued · same idempotency key · counterparty pitstop will dedup if original delivered');
+    return;
+  }
+  // Legacy DOM fallback for rows that aren't workspace-backed.
   tr.classList.remove('failed');
   tr.dataset.status = 'in-flight';
   delete tr.dataset.owner;
@@ -2687,7 +3125,6 @@ function retryRow(tr) {
   if (statusCell) {
     statusCell.innerHTML = '<span class="status-cell pending"><span class="dot"></span>In flight</span><p style="font-size:11px;color:var(--g-50);margin-top:2px"><i class="ti ti-refresh" style="font-size:10px"></i> retry queued · same idempotency key</p>';
   }
-  // Replace retry button with view icon
   const action = tr.querySelector('.row-actions button');
   if (action) {
     action.outerHTML = '<button onclick="event.stopPropagation(); toast(\'Inspecting retry\')" title="View"><i class="ti ti-eye"></i></button>';
@@ -2699,6 +3136,19 @@ function retryRow(tr) {
 function restageRow(tr) {
   if (!tr) return;
   if (!confirm('Re-stage this STORE Message?\n\nA new record is written with a fresh 7-day TTL. The expired Message stays expired in the audit log.')) return;
+  const messageId = tr.dataset.msgId;
+  if (messageId && typeof restageMessageRecord === 'function') {
+    try {
+      restageMessageRecord(messageId);
+    } catch (error) {
+      toast('Re-stage failed · ' + (error.message || 'unknown error'), 'warn');
+      return;
+    }
+    if (typeof renderMessagesFromWorkspace === 'function') renderMessagesFromWorkspace();
+    toast('Re-staged · new STORE record written · counterparty will be notified');
+    return;
+  }
+  // Legacy DOM fallback.
   tr.classList.remove('failed');
   tr.dataset.status = 'in-flight';
   delete tr.dataset.owner;
@@ -3118,9 +3568,9 @@ const COMPOSE_SCENARIOS = {
     showCrossDexBanner: true,
     crossDex: {
       counterparty: 'Acme Construction Pte Ltd',
-      cpDex: 'BuildEx',
-      fromDex: 'TradeX',
-      target: 'BuildEx',
+      cpDex: 'SGBuildex',
+      fromDex: 'SGTradex',
+      target: 'SGBuildex',
       residency: 'Standard residency · cross-DEX OK with warning'
     },
     submitLabel: 'Submit · send to Acme Construction',
@@ -3729,7 +4179,7 @@ function closeCpPanel() {
  * would come from the registry API; here we mock it inline. */
 const DE_GROUPS = {
   'Vessel arrival pack': {
-    description: 'Curated Data element pack — flows together when a vessel arrives. Maintained by TradeX admins.',
+    description: 'Curated Data element pack — flows together when a vessel arrives. Maintained by SGTradex admins.',
     elements: [
       { name: 'ETA', version: 'v2.0' },
       { name: 'Vessel particulars', version: 'v1.5' },
@@ -3749,7 +4199,7 @@ const DE_GROUPS = {
 
 const DE_ELEMENTS = {
   'Bill of Lading': {
-    description: 'Document of title issued by a carrier to acknowledge receipt of cargo. The most-used data element on TradeX.',
+    description: 'Document of title issued by a carrier to acknowledge receipt of cargo. The most-used data element on SGTradex.',
     category: 'Trade documents',
     activeVersion: 'v2.1',
     previousVersions: ['v2.0 (deprecated)', 'v1.x (retired)'],
@@ -3862,8 +4312,20 @@ function initializeWorkspaceApp() {
   if (typeof switchDex === 'function') {
     switchDex(workspace.meta.activeDexId || 'tx', { silent: true, skipWorkspaceMeta: true });
   }
+  // Sync the in-memory Messages filter state from the persisted "Show closed"
+  // preference (ADR 0021 §Close rule 2) so the toggle chip is consistent
+  // across reloads.
+  if (typeof msgFilterState === 'object' && msgFilterState) {
+    msgFilterState.showClosed = !!workspace.meta.showClosedMessages;
+  }
   if (typeof applyPersonaChrome === 'function') applyPersonaChrome();
   if (typeof refreshRoleChips === 'function') refreshRoleChips();
+  if (typeof renderDoctorMessagesList === 'function') renderDoctorMessagesList();
+  if (typeof renderDoctorAgreementsList === 'function') renderDoctorAgreementsList();
+  if (typeof refreshDoctorAgreementPicker === 'function') refreshDoctorAgreementPicker();
+  if (typeof updateDoctorCaption === 'function') updateDoctorCaption();
+  if (typeof updateAgreementDoctorCaption === 'function') updateAgreementDoctorCaption();
+  if (typeof refreshAllDoctorContext === 'function') refreshAllDoctorContext();
   return workspace;
 }
 
@@ -3882,6 +4344,11 @@ function toggleDemoTools(forceOpen) {
   if (typeof patchWorkspaceMeta === 'function') {
     patchWorkspaceMeta({ demoToolsOpen: shouldOpen });
   }
+  // Lazily render context strips when the drawer opens — they depend on
+  // current workspace meta which can change while the drawer is closed.
+  if (shouldOpen && typeof refreshAllDoctorContext === 'function') {
+    refreshAllDoctorContext();
+  }
 }
 
 function resetWorkspaceAndRender() {
@@ -3891,7 +4358,822 @@ function resetWorkspaceAndRender() {
   renderDraftsFromWorkspace();
   renderAgreementsFromWorkspace();
   renderAgreementDetailFromWorkspace();
+  if (typeof renderMessagesFromWorkspace === 'function') renderMessagesFromWorkspace();
+  if (typeof renderDoctorMessagesList === 'function') renderDoctorMessagesList();
+  if (typeof renderDoctorAgreementsList === 'function') renderDoctorAgreementsList();
+  if (typeof refreshDoctorAgreementPicker === 'function') refreshDoctorAgreementPicker();
+  if (typeof refreshAllDoctorContext === 'function') refreshAllDoctorContext();
   toast('Workspace reset to demo fixtures');
+}
+
+/* ============================================================
+   MESSAGES DOCTOR — devtools surface (ADR 0020 · 0021 · 0003)
+   ============================================================
+   Demo-tools drawer affordance that mints workspace-backed Message
+   records on demand across (direction × flow × status × owner) so
+   reviewers can exercise the two-layer model without touching seed
+   files. Re-renders the Messages list immediately so the spawned
+   row appears wherever the operator currently sits.
+   ============================================================ */
+const DOCTOR_AXIS_DEFAULTS = { direction: 'sent', flow: 'push', status: 'delivered', owner: null, agreementId: '' };
+let doctorAxes = Object.assign({}, DOCTOR_AXIS_DEFAULTS);
+
+const AGREEMENT_DOCTOR_DEFAULTS = {
+  type: 'DIRECT',
+  direction: 'send',          // 'send' (Share with) | 'receive' (Request from)
+  elementSource: 'single',    // 'single' | 'pack'
+  elementKey: '',             // selected single-element key (when elementSource = single)
+  packKey: '',                // selected pack template key (when elementSource = pack)
+  packMode: 'same',           // 'same' | 'split' (when elementSource = pack)
+  state: 'active',
+  endedReason: 'EXPIRED',
+  suspended: false,
+  counterpartyOrgId: ''
+};
+let agreementDoctorAxes = Object.assign({}, AGREEMENT_DOCTOR_DEFAULTS);
+
+/* ---------- Doctor context renderer (Phase 8) ----------
+   Both doctors share a context strip showing the operator's identity +
+   reach on the active DEX. Called whenever persona / DEX / type changes
+   so the strip + spawn affordance stay in sync with the workspace. */
+function renderDoctorContextStrip(rootSelector) {
+  const root = document.querySelector(rootSelector);
+  if (!root || typeof getDoctorOperatorContext !== 'function') return;
+  const ctx = getDoctorOperatorContext();
+  if (!ctx) {
+    root.innerHTML = '<p class="pr-context-empty">No active operator.</p>';
+    return;
+  }
+  const dexClass = ctx.dexId || 'tx';
+  const roleLabel = ctx.role || (ctx.isPlatform ? 'Platform admin' : '—');
+  const membershipBit = ctx.isPlatform
+    ? `<span class="pr-context-membership pr-context-platform">platform — all DEXes</span>`
+    : (ctx.hasActiveMembership
+      ? `<span class="pr-context-membership pr-context-active">member since ${formatDoctorDate(ctx.membershipJoined)}</span>`
+      : `<span class="pr-context-membership pr-context-missing">not a member of ${ctx.dexLabel}</span>`);
+  root.innerHTML =
+    `<div class="pr-context-row">` +
+      `<div class="pr-context-avatar" aria-hidden="true">${escAttr(ctx.userInitials || ctx.orgInitials || '')}</div>` +
+      `<div class="pr-context-body">` +
+        `<div class="pr-context-line"><strong>${escAttr(ctx.userName)}</strong> · ${escAttr(ctx.orgName)}</div>` +
+        `<div class="pr-context-line pr-context-meta">` +
+          `<span class="dex-chip ${dexClass}"><span class="dex-dot"></span>${escAttr(ctx.dexLabel)}</span>` +
+          `<span class="pr-context-role">${escAttr(roleLabel)}</span>` +
+          membershipBit +
+        `</div>` +
+      `</div>` +
+    `</div>`;
+}
+
+function formatDoctorDate(iso) {
+  if (!iso) return '—';
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return iso;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(m[3], 10)} ${months[parseInt(m[2], 10) - 1] || ''} ${m[1]}`;
+}
+
+/* ---------- Counterparty picker for the Agreements doctor ----------
+   Workspace-driven: pool comes from
+   listEligibleCounterpartiesForOperator(operatorOrgId, dexId, type) so the
+   picker reflects exactly the orgs that could be the other side of this
+   spawn. Empty pool disables Spawn and surfaces a one-line hint. */
+function refreshAgreementDoctorCounterpartyPicker() {
+  const select = document.querySelector('[data-ad-counterparty]');
+  if (!select || typeof getDoctorOperatorContext !== 'function' || typeof listEligibleCounterpartiesForOperator !== 'function') return;
+  const ctx = getDoctorOperatorContext();
+  const type = agreementDoctorAxes.type;
+  const eligible = ctx && ctx.hasActiveMembership
+    ? listEligibleCounterpartiesForOperator(ctx.orgId, ctx.dexId, type)
+    : [];
+
+  // Label change — "Counterparty" / "Principal" (SP) / "Provider" (request).
+  // The wizard uses "Provider" when the operator is the data consumer
+  // (direction=receive); we mirror that here.
+  const label = document.querySelector('[data-ad-cp-label]');
+  if (label) {
+    if (type === 'SERVICE_PROVIDER') label.textContent = 'Principal';
+    else if (agreementDoctorAxes.direction === 'receive') label.textContent = 'Provider';
+    else label.textContent = 'Counterparty';
+  }
+
+  const current = agreementDoctorAxes.counterpartyOrgId;
+  select.innerHTML = '<option value="">Round-robin · auto-pick</option>' +
+    eligible.map((org) => `<option value="${escAttr(org.orgId)}">${escAttr(org.name)}</option>`).join('');
+  if (current && eligible.some((org) => org.orgId === current)) {
+    select.value = current;
+  } else {
+    select.value = '';
+    agreementDoctorAxes.counterpartyOrgId = '';
+  }
+  return eligible;
+}
+
+function setAgreementDoctorCounterparty(orgId) {
+  agreementDoctorAxes.counterpartyOrgId = orgId || '';
+  updateAgreementDoctorCaption();
+}
+
+function setAgreementDoctorPack(packKey) {
+  agreementDoctorAxes.packKey = packKey || '';
+  updateAgreementDoctorCaption();
+}
+
+function setAgreementDoctorElement(elementKey) {
+  agreementDoctorAxes.elementKey = elementKey || '';
+  updateAgreementDoctorCaption();
+}
+
+/* refreshAgreementDoctorElementPicker — populate the single-element
+   dropdown from the per-DEX catalogue. Resets to auto-pick if the
+   current selection isn't present in the new DEX's catalogue (e.g.
+   workspace pill flipped from TX to BX). */
+function refreshAgreementDoctorElementPicker() {
+  const select = document.querySelector('[data-ad-element]');
+  if (!select || typeof listDoctorSingleElementsForDex !== 'function') return;
+  const dex = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const elements = listDoctorSingleElementsForDex(dex);
+  const current = agreementDoctorAxes.elementKey;
+  select.innerHTML = '<option value="">Auto-pick · first element on this DEX</option>' +
+    elements.map((el) => `<option value="${escAttr(el.key)}">${escAttr(el.name)} · ${escAttr(el.version)}</option>`).join('');
+  if (current && elements.some((el) => el.key === current)) {
+    select.value = current;
+  } else {
+    select.value = '';
+    agreementDoctorAxes.elementKey = '';
+  }
+}
+
+/* refreshAgreementDoctorElementRows — toggles the Pack picker + Pack-mode
+   row when elementSource flips, and toggles the single-CP picker when
+   pack-mode flips. Mirrors the data-ad-conditional pattern already used
+   for state-driven conditional rows (ended-reason + suspended toggle). */
+function refreshAgreementDoctorElementRows() {
+  const source = agreementDoctorAxes.elementSource;
+  document.querySelectorAll('[data-ad-conditional-element]').forEach((el) => {
+    el.hidden = el.dataset.adConditionalElement !== source;
+  });
+  // CP picker is hidden in split-pack mode (one CP per pack element is
+  // auto-round-robin'd from the eligible pool, so a single dropdown can't
+  // express the result).
+  const cpRow = document.querySelector('[data-ad-conditional-pack-mode]');
+  if (cpRow) {
+    const splitting = source === 'pack' && agreementDoctorAxes.packMode === 'split';
+    cpRow.hidden = splitting;
+  }
+}
+
+/* refreshAgreementDoctorPackPicker — fills the pack dropdown from the
+   per-DEX template list. If the current pack pick is no longer in the
+   list (DEX switched), reset to auto-pick. */
+function refreshAgreementDoctorPackPicker() {
+  const select = document.querySelector('[data-ad-pack]');
+  if (!select || typeof listDoctorPackTemplatesForDex !== 'function') return;
+  const dex = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const packs = listDoctorPackTemplatesForDex(dex);
+  const current = agreementDoctorAxes.packKey;
+  select.innerHTML = '<option value="">Auto-pick · first pack on this DEX</option>' +
+    packs.map((pack) => `<option value="${escAttr(pack.key)}">${escAttr(pack.name)} · ${pack.elements.length} elements</option>`).join('');
+  if (current && packs.some((pack) => pack.key === current)) {
+    select.value = current;
+  } else {
+    select.value = '';
+    agreementDoctorAxes.packKey = '';
+  }
+}
+
+/* refreshAgreementDoctorSpawnState — disables Spawn when context can't
+   produce a valid Agreement. Three reasons:
+     · operator org has no active membership on the current DEX
+     · operator org is platform-tier (SGTradex doesn't create Agreements)
+     · zero eligible counterparties for the current type
+   Each surfaces its own one-line hint above the action row. */
+function refreshAgreementDoctorSpawnState() {
+  const spawn = document.querySelector('.pr-ad .md-spawn');
+  const body = document.querySelector('.pr-ad .pr-doctor-body');
+  if (!spawn || !body) return;
+  const ctx = (typeof getDoctorOperatorContext === 'function') ? getDoctorOperatorContext() : null;
+  let blocker = null;
+  if (!ctx) {
+    blocker = 'No active operator.';
+  } else if (ctx.isPlatform) {
+    blocker = 'Platform-tier accounts (' + ctx.orgName + ') don\'t create Agreements; switch persona to a participant.';
+  } else if (!ctx.hasActiveMembership) {
+    blocker = `${ctx.orgName} isn't a member of ${ctx.dexLabel}.`;
+  } else {
+    const eligible = listEligibleCounterpartiesForOperator(ctx.orgId, ctx.dexId, agreementDoctorAxes.type);
+    if (eligible.length === 0) {
+      const label = agreementDoctorAxes.type === 'SERVICE_PROVIDER' ? 'principal' : 'counterparty';
+      blocker = `No eligible ${label} for ${ctx.orgName} on ${ctx.dexLabel}.`;
+    }
+  }
+  // Render / clear the blocker line. Placed before the actions row by CSS order.
+  let hint = body.querySelector('[data-ad-blocker]');
+  if (blocker) {
+    if (!hint) {
+      hint = document.createElement('p');
+      hint.setAttribute('data-ad-blocker', '');
+      hint.className = 'pr-doctor-blocker';
+      body.appendChild(hint);
+    }
+    hint.textContent = blocker;
+    spawn.setAttribute('disabled', '');
+  } else {
+    if (hint) hint.remove();
+    spawn.removeAttribute('disabled');
+  }
+}
+
+function refreshMessagesDoctorSpawnState() {
+  const spawn = document.querySelector('.pr-doctor[data-doctor="messages"] .md-spawn');
+  const body = document.querySelector('.pr-doctor[data-doctor="messages"] .pr-doctor-body');
+  if (!spawn || !body) return;
+  const ctx = (typeof getDoctorOperatorContext === 'function') ? getDoctorOperatorContext() : null;
+  let blocker = null;
+  if (!ctx) {
+    blocker = 'No active operator.';
+  } else if (ctx.isPlatform) {
+    blocker = 'Platform-tier accounts don\'t send Messages.';
+  } else if (!ctx.hasActiveMembership) {
+    blocker = `${ctx.orgName} isn't a member of ${ctx.dexLabel}.`;
+  } else if (typeof listAgreementsForDoctor === 'function') {
+    const agreementsOnDex = listAgreementsForDoctor(ctx.dexId).filter((a) => a.operatorOrgId === ctx.orgId);
+    if (agreementsOnDex.length === 0) {
+      blocker = `No Agreements for ${ctx.orgName} on ${ctx.dexLabel} — spawn one in the Agreements doctor first.`;
+    }
+  }
+  let hint = body.querySelector('[data-md-blocker]');
+  if (blocker) {
+    if (!hint) {
+      hint = document.createElement('p');
+      hint.setAttribute('data-md-blocker', '');
+      hint.className = 'pr-doctor-blocker';
+      body.appendChild(hint);
+    }
+    hint.textContent = blocker;
+    spawn.setAttribute('disabled', '');
+  } else {
+    if (hint) hint.remove();
+    spawn.removeAttribute('disabled');
+  }
+}
+
+function refreshAllDoctorContext() {
+  renderDoctorContextStrip('[data-ad-context]');
+  renderDoctorContextStrip('[data-md-context]');
+  refreshAgreementDoctorCounterpartyPicker();
+  refreshAgreementDoctorSpawnState();
+  refreshMessagesDoctorSpawnState();
+  // ADR 0027: per-DEX pack templates differ; rebuild the pack picker
+  // whenever DEX changes. Same for the conditional element rows so the
+  // Pack picker + Pack-mode row reflect the active elementSource setting.
+  if (typeof refreshAgreementDoctorPackPicker === 'function') refreshAgreementDoctorPackPicker();
+  if (typeof refreshAgreementDoctorElementPicker === 'function') refreshAgreementDoctorElementPicker();
+  if (typeof refreshAgreementDoctorElementRows === 'function') refreshAgreementDoctorElementRows();
+  // ADR 0021: keep the Owner sub-row honest with the active flow on every
+  // context refresh — persona/DEX/reset paths all flow through here.
+  if (typeof refreshDoctorOwnerOptions === 'function') refreshDoctorOwnerOptions();
+  if (typeof updateAgreementDoctorCaption === 'function') updateAgreementDoctorCaption();
+  if (typeof updateDoctorCaption === 'function') updateDoctorCaption();
+}
+
+function setDoctorAxis(axis, value, btn) {
+  if (!['direction', 'flow', 'status'].includes(axis)) return;
+  doctorAxes[axis] = value;
+  syncDoctorAxisChips(axis, btn);
+  if (axis === 'status') {
+    // Reveal / hide the Owner sub-row when Status = Failed; mirrors the
+    // Agreements doctor's Ended-reason conditional pattern. Default owner
+    // to 'mine' on entering Failed; null otherwise.
+    document.querySelectorAll('[data-md-conditional]').forEach((el) => {
+      el.hidden = el.dataset.mdConditional !== value;
+    });
+    if (value === 'failed') {
+      if (!doctorAxes.owner) doctorAxes.owner = 'mine';
+      refreshDoctorOwnerOptions();
+      syncDoctorOwnerChips();
+    } else {
+      doctorAxes.owner = null;
+    }
+  }
+  if (axis === 'flow') {
+    // Flow change can invalidate the active owner (Expired requires STORE).
+    // refreshDoctorOwnerOptions hides ineligible pills and falls back to
+    // 'mine' if the current selection is no longer valid.
+    refreshDoctorOwnerOptions();
+  }
+  updateDoctorCaption();
+}
+
+/* refreshDoctorOwnerOptions — enforces ADR 0021's "expired === STORE-only"
+   rule. The Expired pill carries data-md-owner-requires-flow="store"; when
+   flow is not store, we hide the pill. If the active owner was Expired we
+   fall back to Yours so the spawn stays semantically coherent. */
+function refreshDoctorOwnerOptions() {
+  const root = document.querySelector('[data-md-axis="owner"]');
+  if (!root) return;
+  const currentFlow = doctorAxes.flow || 'push';
+  root.querySelectorAll('.pr-pill[data-md-owner-requires-flow]').forEach((pill) => {
+    const required = pill.dataset.mdOwnerRequiresFlow;
+    const ok = required === currentFlow;
+    pill.hidden = !ok;
+    pill.disabled = !ok;
+  });
+  // If the current owner choice is no longer valid (e.g., user picked
+  // Expired then switched flow off STORE), reset to the closest sibling.
+  if (doctorAxes.owner === 'expired' && currentFlow !== 'store') {
+    doctorAxes.owner = 'mine';
+    syncDoctorOwnerChips();
+  }
+}
+
+function setDoctorOwner(owner, btn) {
+  if (!['mine', 'theirs', 'expired'].includes(owner)) return;
+  doctorAxes.owner = owner;
+  syncDoctorOwnerChips(btn);
+  updateDoctorCaption();
+}
+
+function syncDoctorOwnerChips(btn) {
+  const root = document.querySelector('[data-md-axis="owner"]');
+  if (!root) return;
+  root.querySelectorAll('.pr-pill').forEach((chip) => {
+    const matches = btn ? chip === btn : chip.dataset.mdOwner === doctorAxes.owner;
+    chip.classList.toggle('active', matches);
+    chip.setAttribute('aria-pressed', matches ? 'true' : 'false');
+  });
+}
+
+function syncDoctorAxisChips(axis, btn) {
+  const root = document.querySelector(`[data-md-axis="${axis}"]`);
+  if (!root) return;
+  root.querySelectorAll('.pr-pill').forEach((chip) => {
+    chip.classList.remove('active');
+    chip.setAttribute('aria-pressed', 'false');
+  });
+  if (btn) {
+    btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
+  }
+}
+
+function updateDoctorCaption() {
+  const caption = document.querySelector('[data-md-caption]');
+  if (!caption) return;
+  const flow = ({ push: 'PUSH', pull: 'PULL', store: 'STORE' }[doctorAxes.flow] || 'PUSH');
+  const direction = doctorAxes.direction === 'received' ? 'received' : 'sent';
+  const STATUS_LABELS = {
+    'in-flight':    'In flight',
+    'delivered':    'Delivered',
+    'acknowledged': 'Acknowledged',
+    'failed':       'Failed'
+  };
+  const OWNER_LABELS = { mine: 'yours', theirs: 'the counterparty', expired: 'expiry' };
+  let statusFragment = STATUS_LABELS[doctorAxes.status] || 'Delivered';
+  if (doctorAxes.status === 'failed' && doctorAxes.owner) {
+    statusFragment = `Failed (${OWNER_LABELS[doctorAxes.owner] || doctorAxes.owner})`;
+  }
+  const dexLabel = ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[(typeof currentDexCode === 'function' ? currentDexCode() : 'tx')] || 'SGTradex');
+  caption.innerHTML = `Will spawn a <strong>${direction}</strong> <strong>${flow}</strong> Message in <strong>${statusFragment}</strong> state on <strong>${dexLabel}</strong>.`;
+}
+
+function setDoctorMessageAgreement(agreementId) {
+  doctorAxes.agreementId = agreementId || '';
+  updateDoctorCaption();
+}
+
+function doctorSpawnMessage() {
+  if (typeof simulateMessageRecord !== 'function') {
+    toast('Doctor unavailable · workspace not loaded', 'warn');
+    return;
+  }
+  let owner = doctorAxes.status === 'failed' ? doctorAxes.owner : null;
+  // Truth-table validation (workspace.js). The UI prevents impossible
+  // combinations through pill hiding + clamping, but this is the canonical
+  // gate — any spawn that fails validation is rejected outright.
+  if (typeof validateDoctorMessageAxes === 'function') {
+    const verdict = validateDoctorMessageAxes({
+      direction: doctorAxes.direction,
+      flow:      doctorAxes.flow,
+      status:    doctorAxes.status,
+      owner:     owner
+    });
+    if (!verdict.valid) {
+      toast(`Can't spawn that combination · ${verdict.reason}`, 'warn');
+      // Re-sync the Owner row so the user sees the corrected state.
+      if (typeof refreshDoctorOwnerOptions === 'function') refreshDoctorOwnerOptions();
+      return;
+    }
+  }
+  let record;
+  try {
+    record = simulateMessageRecord({
+      direction:   doctorAxes.direction,
+      flow:        doctorAxes.flow,
+      status:      doctorAxes.status,
+      owner:       owner,
+      agreementId: doctorAxes.agreementId || null
+    });
+  } catch (error) {
+    if (error && error.message === 'NO_AGREEMENT_IN_DEX') {
+      toast('No Agreement in this DEX · spawn one with the Agreements doctor first', 'warn');
+      return;
+    }
+    toast('Spawn failed · ' + (error.message || 'unknown error'), 'warn');
+    return;
+  }
+  if (typeof renderMessagesFromWorkspace === 'function') renderMessagesFromWorkspace();
+  renderDoctorMessagesList();
+  refreshDoctorAgreementPicker();
+  const statusLabel = doctorAxes.status === 'failed' && doctorAxes.owner
+    ? `Failed · ${doctorAxes.owner}`
+    : doctorAxes.status;
+  toast(`Spawned ${record.messageId} · ${doctorAxes.flow.toUpperCase()} · ${statusLabel} · bound to ${record.agreementId}`);
+}
+
+function refreshDoctorAgreementPicker() {
+  const select = document.querySelector('[data-md-agreement]');
+  if (!select) return;
+  if (typeof listAgreementsForDoctor !== 'function') return;
+  const dex = currentDexCode();
+  const agreements = listAgreementsForDoctor(dex).slice().sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+  const current = doctorAxes.agreementId;
+  select.innerHTML = '<option value="">Round-robin · auto-pick</option>' + agreements.map((agr) => {
+    const stateLabel = agr.state === 'pending' ? 'Pending'
+      : agr.state === 'ended' ? `Ended · ${agr.endedReason || '—'}`
+      : (agr.suspended ? 'Active · Suspended' : 'Active');
+    const safeId = escAttr(agr.agreementId);
+    const label = `${agr.agreementId} · ${agr.counterpartyOrgName} · ${stateLabel}`;
+    return `<option value="${safeId}">${label}</option>`;
+  }).join('');
+  // Re-select the previous value if still present; otherwise reset to round-robin.
+  if (current && agreements.some((agr) => agr.agreementId === current)) {
+    select.value = current;
+  } else {
+    select.value = '';
+    doctorAxes.agreementId = '';
+  }
+}
+
+function doctorClearSimulated() {
+  if (typeof clearSimulatedMessages !== 'function') return;
+  clearSimulatedMessages();
+  if (typeof renderMessagesFromWorkspace === 'function') renderMessagesFromWorkspace();
+  renderDoctorMessagesList();
+  toast('Cleared simulated Messages · seeded rows untouched');
+}
+
+function doctorMutate(messageId, action) {
+  try {
+    if (action === 'retry'   && typeof retryMessageRecord   === 'function') retryMessageRecord(messageId);
+    if (action === 'restage' && typeof restageMessageRecord === 'function') restageMessageRecord(messageId);
+    if (action === 'close'   && typeof closeMessageRecord   === 'function') closeMessageRecord(messageId, { reason: 'NOT_NEEDED' });
+    if (action === 'delete'  && typeof deleteMessageRecord  === 'function') deleteMessageRecord(messageId);
+  } catch (error) {
+    toast(`Doctor: ${error.message || 'mutation failed'}`, 'warn');
+    return;
+  }
+  if (typeof renderMessagesFromWorkspace === 'function') renderMessagesFromWorkspace();
+  renderDoctorMessagesList();
+}
+
+/* ---------- Agreement doctor (ADR 0007 + 0027) ---------- */
+const AGREEMENT_DOCTOR_AXIS_WHITELIST = ['type', 'direction', 'elementSource', 'packMode', 'state', 'endedReason'];
+
+function setAgreementDoctorAxis(axis, value, btn) {
+  if (!AGREEMENT_DOCTOR_AXIS_WHITELIST.includes(axis)) return;
+  agreementDoctorAxes[axis] = value;
+  syncAgreementDoctorChips(axis, btn);
+  if (axis === 'state') {
+    // Reveal / hide conditional rows (ended-reason, suspended toggle).
+    document.querySelectorAll('[data-ad-conditional]').forEach((el) => {
+      el.hidden = el.dataset.adConditional !== value;
+    });
+    if (value !== 'active') agreementDoctorAxes.suspended = false;
+    const cb = document.querySelector('[data-ad-suspended]');
+    if (cb) cb.checked = agreementDoctorAxes.suspended;
+  }
+  if (axis === 'type') {
+    // Direct ↔ SP changes the counterparty pool (regulators dropped for SP)
+    // and the picker label ("Counterparty" ↔ "Principal").
+    refreshAgreementDoctorCounterpartyPicker();
+    refreshAgreementDoctorSpawnState();
+  }
+  if (axis === 'direction') {
+    // Direction flips the picker label and the caption framing.
+    refreshAgreementDoctorCounterpartyPicker();
+  }
+  if (axis === 'elementSource') {
+    refreshAgreementDoctorElementRows();
+    refreshAgreementDoctorPackPicker();
+    refreshAgreementDoctorElementPicker();
+    refreshAgreementDoctorCounterpartyPicker();
+  }
+  if (axis === 'packMode') {
+    // Split mode hides the single-CP picker (auto round-robin instead).
+    refreshAgreementDoctorElementRows();
+  }
+  updateAgreementDoctorCaption();
+}
+
+function setAgreementDoctorSuspended(value) {
+  agreementDoctorAxes.suspended = !!value;
+  updateAgreementDoctorCaption();
+}
+
+function syncAgreementDoctorChips(axis, btn) {
+  const root = document.querySelector(`[data-ad-axis="${axis}"]`);
+  if (!root) return;
+  root.querySelectorAll('.pr-pill').forEach((chip) => {
+    chip.classList.remove('active');
+    chip.setAttribute('aria-pressed', 'false');
+  });
+  if (btn) {
+    btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
+  }
+}
+
+function updateAgreementDoctorCaption() {
+  const caption = document.querySelector('[data-ad-caption]');
+  if (!caption) return;
+  const type = agreementDoctorAxes.type === 'SERVICE_PROVIDER' ? 'Service-Provider' : 'Direct';
+  const ENDED_LABELS = {
+    REJECTED:                 'rejected',
+    WITHDRAWN:                'withdrawn',
+    REVOKED_BY_INITIATOR:     'revoked',
+    REVOKED_BY_COUNTERPARTY:  'revoked by counterparty',
+    EXPIRED:                  'expired',
+    AUTO_TERMINATED:          'auto-terminated'
+  };
+  let statusBit;
+  if (agreementDoctorAxes.state === 'pending') statusBit = 'Pending';
+  else if (agreementDoctorAxes.state === 'ended') statusBit = `Ended (${ENDED_LABELS[agreementDoctorAxes.endedReason] || 'expired'})`;
+  else statusBit = agreementDoctorAxes.suspended ? 'Active · Suspended' : 'Active';
+  const ctx = (typeof getDoctorOperatorContext === 'function') ? getDoctorOperatorContext() : null;
+  const dexLabel = ctx ? ctx.dexLabel : 'SGTradex';
+
+  const isReceive = agreementDoctorAxes.direction === 'receive';
+  const isPack    = agreementDoctorAxes.elementSource === 'pack';
+  const isSplit   = isPack && agreementDoctorAxes.packMode === 'split';
+
+  // Element name preview. Single mode names the selected element (or the
+  // per-DEX default when no pick is set); pack mode names the pack +
+  // element count.
+  const dex = ctx ? ctx.dexId : (typeof currentDexCode === 'function' ? currentDexCode() : 'tx');
+  let elementName = 'a data element';
+  if (isPack && typeof findDoctorPackTemplate === 'function') {
+    const pack = findDoctorPackTemplate(dex, agreementDoctorAxes.packKey);
+    elementName = pack ? `the <strong>${escAttr(pack.name)}</strong> (${pack.elements.length} elements)` : 'a Data element pack';
+  } else if (!isPack && typeof findDoctorSingleElement === 'function') {
+    const el = findDoctorSingleElement(dex, agreementDoctorAxes.elementKey);
+    elementName = el
+      ? `<strong>${escAttr(el.name)}</strong> · ${escAttr(el.version)}`
+      : 'a data element';
+  }
+
+  // Counterparty preview. In split mode each pack element gets its own
+  // counterparty (round-robin), so we describe the spread instead of
+  // naming one. Otherwise we show the explicit pick or the head of the pool.
+  let cpFragment;
+  if (isSplit && ctx && ctx.hasActiveMembership && typeof listEligibleCounterpartiesForOperator === 'function') {
+    const pool = listEligibleCounterpartiesForOperator(ctx.orgId, ctx.dexId, agreementDoctorAxes.type);
+    const dex = ctx.dexId;
+    const pack = (typeof findDoctorPackTemplate === 'function') ? findDoctorPackTemplate(dex, agreementDoctorAxes.packKey) : null;
+    const memberCount = pack ? pack.elements.length : 0;
+    if (pool.length === 0) {
+      cpFragment = isReceive ? 'no eligible providers' : 'no eligible counterparties';
+    } else {
+      const distinctCount = Math.min(memberCount, pool.length);
+      cpFragment = `<strong>${memberCount} member Agreements</strong> across ${distinctCount} counterparties (round-robin)`;
+    }
+  } else {
+    let cpName = isReceive ? 'auto-picked provider' : 'auto-picked counterparty';
+    if (ctx && ctx.hasActiveMembership && typeof listEligibleCounterpartiesForOperator === 'function') {
+      const pool = listEligibleCounterpartiesForOperator(ctx.orgId, ctx.dexId, agreementDoctorAxes.type);
+      if (pool.length > 0) {
+        const explicit = agreementDoctorAxes.counterpartyOrgId
+          && pool.find((org) => org.orgId === agreementDoctorAxes.counterpartyOrgId);
+        cpName = (explicit || pool[0]).name;
+      } else {
+        cpName = agreementDoctorAxes.type === 'SERVICE_PROVIDER'
+          ? 'no eligible principal'
+          : (isReceive ? 'no eligible provider' : 'no eligible counterparty');
+      }
+    }
+    cpFragment = `<strong>${escAttr(cpName)}</strong>`;
+  }
+
+  // Verb framing — Share (send) / Request (receive) / acting on behalf of (SP).
+  let verb;
+  if (agreementDoctorAxes.type === 'SERVICE_PROVIDER') verb = 'acting on behalf of';
+  else if (isReceive) verb = 'requesting';
+  else verb = 'sharing';
+
+  // Final sentence. Pack-same renders as a normal Agreement bundled
+  // around a pack name; pack-split renders as the multi-Agreement preview.
+  const packSuffix = isPack
+    ? (isSplit ? ' (1 pack + member Agreements)' : ' (one Agreement, whole pack)')
+    : '';
+  caption.innerHTML =
+    `Will spawn a <strong>${type}</strong> Agreement ${verb} ` +
+    cpFragment +
+    ` · ${elementName}${packSuffix} · <strong>${statusBit}</strong> state on <strong>${dexLabel}</strong>.`;
+}
+
+function agreementDoctorSpawn() {
+  if (typeof simulateAgreementRecord !== 'function') {
+    toast('Doctor unavailable · workspace not loaded', 'warn');
+    return;
+  }
+  const isPack = agreementDoctorAxes.elementSource === 'pack';
+  const isSplit = isPack && agreementDoctorAxes.packMode === 'split';
+  // Pre-spawn truth-table validation. The UI's conditional rows already
+  // null-out endedReason / suspended / packMode when they don't apply, but
+  // the validator is the canonical gate — any cell outside the documented
+  // matrix is refused before it can reach the workspace.
+  if (typeof validateDoctorAgreementAxes === 'function') {
+    const verdict = validateDoctorAgreementAxes({
+      type:          agreementDoctorAxes.type,
+      direction:     agreementDoctorAxes.direction,
+      elementSource: agreementDoctorAxes.elementSource,
+      packMode:      isPack ? agreementDoctorAxes.packMode : null,
+      state:         agreementDoctorAxes.state,
+      endedReason:   agreementDoctorAxes.state === 'ended' ? agreementDoctorAxes.endedReason : null,
+      suspended:     agreementDoctorAxes.state === 'active' ? !!agreementDoctorAxes.suspended : false
+    });
+    if (!verdict.valid) {
+      toast(`Can't spawn that combination · ${verdict.reason}`, 'warn');
+      return;
+    }
+  }
+
+  const sharedOptions = {
+    type:               agreementDoctorAxes.type,
+    direction:          agreementDoctorAxes.direction,
+    state:              agreementDoctorAxes.state,
+    endedReason:        agreementDoctorAxes.endedReason,
+    suspended:          agreementDoctorAxes.suspended,
+    counterpartyOrgId:  agreementDoctorAxes.counterpartyOrgId || undefined,
+    elementKey:         (!isPack && agreementDoctorAxes.elementKey) ? agreementDoctorAxes.elementKey : undefined
+  };
+
+  let toastMessage;
+  try {
+    if (isPack) {
+      const result = simulateAgreementPackRecord(Object.assign({}, sharedOptions, {
+        packKey:  agreementDoctorAxes.packKey || undefined,
+        packMode: agreementDoctorAxes.packMode || 'same'
+      }));
+      if (isSplit) {
+        toastMessage = `Spawned pack ${result.packId} · ${result.agreementIds.length} member Agreements`;
+      } else {
+        toastMessage = `Spawned ${result.agreementIds[0]} · pack as single Agreement`;
+      }
+    } else {
+      const record = simulateAgreementRecord(sharedOptions);
+      let statusLabel;
+      if (record.state === 'pending') statusLabel = 'Pending';
+      else if (record.state === 'ended') statusLabel = `Ended · ${record.endedReason}`;
+      else statusLabel = record.suspended ? 'Active · Suspended' : 'Active';
+      const typeLabel = record.type === 'SERVICE_PROVIDER' ? 'Service-Provider' : 'Direct';
+      const dirLabel = record.direction === 'receive' ? 'request' : 'share';
+      toastMessage = `Spawned ${record.agreementId} · ${typeLabel} ${dirLabel} · ${statusLabel}`;
+    }
+  } catch (error) {
+    if (error && error.message === 'NO_ELIGIBLE_COUNTERPARTY') {
+      const label = agreementDoctorAxes.type === 'SERVICE_PROVIDER' ? 'principal'
+                  : agreementDoctorAxes.direction === 'receive' ? 'provider' : 'counterparty';
+      toast(`No eligible ${label} on this DEX for the active operator.`, 'warn');
+      refreshAgreementDoctorSpawnState();
+      return;
+    }
+    if (error && error.message === 'NO_PACK_TEMPLATE_FOR_DEX') {
+      toast(`No packs defined for this DEX in the doctor templates.`, 'warn');
+      return;
+    }
+    toast('Spawn failed · ' + (error.message || 'unknown error'), 'warn');
+    return;
+  }
+
+  if (typeof renderAgreementsFromWorkspace === 'function') renderAgreementsFromWorkspace();
+  renderDoctorAgreementsList();
+  refreshDoctorAgreementPicker();
+  refreshAgreementDoctorCounterpartyPicker();
+  refreshMessagesDoctorSpawnState();
+  toast(toastMessage);
+}
+
+function agreementDoctorClear() {
+  if (typeof clearSimulatedAgreements !== 'function') return;
+  clearSimulatedAgreements();
+  if (typeof renderAgreementsFromWorkspace === 'function') renderAgreementsFromWorkspace();
+  if (typeof renderMessagesFromWorkspace === 'function') renderMessagesFromWorkspace();
+  renderDoctorAgreementsList();
+  refreshDoctorAgreementPicker();
+  refreshMessagesDoctorSpawnState();
+  toast('Cleared simulated Agreements · seeded rows untouched');
+}
+
+function agreementDoctorDelete(agreementId) {
+  if (typeof deleteAgreementRecord !== 'function') return;
+  deleteAgreementRecord(agreementId);
+  if (typeof renderAgreementsFromWorkspace === 'function') renderAgreementsFromWorkspace();
+  if (typeof renderMessagesFromWorkspace === 'function') renderMessagesFromWorkspace();
+  renderDoctorAgreementsList();
+  refreshDoctorAgreementPicker();
+  refreshMessagesDoctorSpawnState();
+}
+
+function syncDoctorClearButton(selector, count) {
+  // Count-aware Clear: disabled when zero, label includes the count so the
+  // operator knows what they're about to wipe.
+  const btn = document.querySelector(selector);
+  if (!btn) return;
+  if (count === 0) {
+    btn.setAttribute('disabled', '');
+    btn.innerHTML = '<i class="ti ti-trash" aria-hidden="true"></i>Remove spawned';
+  } else {
+    btn.removeAttribute('disabled');
+    btn.innerHTML = `<i class="ti ti-trash" aria-hidden="true"></i>Remove ${count} spawned`;
+  }
+}
+
+function renderDoctorAgreementsList() {
+  const root = document.querySelector('[data-ad-list]');
+  if (!root) return;
+  if (typeof listAgreementsForDoctor !== 'function') {
+    root.innerHTML = '';
+    syncDoctorClearButton('[data-ad-clear]', 0);
+    return;
+  }
+  const agreements = listAgreementsForDoctor(currentDexCode())
+    .slice()
+    .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  const spawnedCount = agreements.filter((a) => a.spawnedByDoctor).length;
+  syncDoctorClearButton('[data-ad-clear]', spawnedCount);
+  if (agreements.length === 0) {
+    root.innerHTML = '<p class="md-empty">Nothing spawned yet — click <strong>Spawn Agreement</strong> to add one.</p>';
+    return;
+  }
+  root.innerHTML = agreements.map((agr) => {
+    const typeLabel = agr.type === 'SERVICE_PROVIDER' ? 'SP' : 'Direct';
+    let statusBit;
+    if (agr.state === 'pending') statusBit = 'pending';
+    else if (agr.state === 'ended') statusBit = `ended · ${(agr.endedReason || '').toLowerCase().replace(/_/g, ' ')}`;
+    else statusBit = agr.suspended ? 'active · suspended' : 'active';
+    const typeTag = `<span class="md-tag md-tag-type md-tag-type-${agr.type.toLowerCase()}">${typeLabel}</span>`;
+    const stateClass = agr.state === 'active' && agr.suspended ? 'suspended' : agr.state;
+    const stateTag = `<span class="md-tag md-tag-state md-tag-state-${stateClass}">${statusBit}</span>`;
+    const id = escAttr(agr.agreementId);
+    return `<div class="md-row">` +
+      `<div class="md-row-head"><strong>${agr.counterpartyOrgName}</strong> ${typeTag} ${stateTag}</div>` +
+      `<div class="md-row-meta"><code>${agr.agreementId}</code> · ${escAttr(agr.dataElementSummary.name)}</div>` +
+      `<div class="md-row-actions">` +
+        `<button type="button" class="md-mini md-mini-danger" onclick="agreementDoctorDelete('${id}')" title="Delete from workspace"><i class="ti ti-x"></i></button>` +
+      `</div>` +
+    `</div>`;
+  }).join('');
+}
+
+function renderDoctorMessagesList() {
+  const root = document.querySelector('[data-md-list]');
+  if (!root) return;
+  if (typeof listMessagesForDex !== 'function') {
+    root.innerHTML = '';
+    syncDoctorClearButton('[data-md-clear]', 0);
+    return;
+  }
+  const messages = listMessagesForDex(currentDexCode())
+    .slice()
+    .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  const spawnedCount = messages.filter((m) => m.spawnedByDoctor).length;
+  syncDoctorClearButton('[data-md-clear]', spawnedCount);
+  if (messages.length === 0) {
+    root.innerHTML = '<p class="md-empty">Nothing spawned yet — click <strong>Spawn Message</strong> to add one.</p>';
+    return;
+  }
+  root.innerHTML = messages.map((m) => {
+    const cp = (m.counterparty && m.counterparty.name) || 'Counterparty';
+    const ownerSuffix = m.owner ? ` · ${m.owner}` : '';
+    const closedTag = m.closed ? '<span class="md-tag md-tag-closed">closed</span>' : '';
+    const flowTag = `<span class="md-tag md-tag-flow md-tag-${m.flow}">${m.flow.toUpperCase()}</span>`;
+    const statusTag = `<span class="md-tag md-tag-status md-tag-${m.status}">${m.status}${ownerSuffix}</span>`;
+    const isFailedPushPull = m.status === 'failed' && m.flow !== 'store';
+    const isFailedStore    = m.status === 'failed' && m.flow === 'store';
+    const canClose         = m.status === 'failed' && !m.closed;
+    const id = escAttr(m.messageId);
+    return `<div class="md-row">` +
+      `<div class="md-row-head"><strong>${cp}</strong> ${flowTag} ${statusTag} ${closedTag}</div>` +
+      `<div class="md-row-meta"><code>${m.messageId}</code> · ${escAttr(m.direction)} · ${escAttr(m.timeDisplay || '')}</div>` +
+      `<div class="md-row-actions">` +
+        (isFailedPushPull ? `<button type="button" class="md-mini" onclick="doctorMutate('${id}','retry')"><i class="ti ti-refresh"></i>Retry</button>` : '') +
+        (isFailedStore    ? `<button type="button" class="md-mini" onclick="doctorMutate('${id}','restage')"><i class="ti ti-package"></i>Restage</button>` : '') +
+        (canClose         ? `<button type="button" class="md-mini" onclick="doctorMutate('${id}','close')"><i class="ti ti-archive"></i>Close</button>` : '') +
+        `<button type="button" class="md-mini md-mini-danger" onclick="doctorMutate('${id}','delete')" title="Delete from workspace"><i class="ti ti-x"></i></button>` +
+      `</div>` +
+    `</div>`;
+  }).join('');
 }
 
 function pickExtend(btn, m) {
@@ -3960,7 +5242,7 @@ function startImpersonation() {
     updateImpTime();
     if (impSeconds <= 0) endImpersonation('timeout');
   }, 1000);
-  toast('Impersonation started · acting as participant on TradeX', 'warn');
+  toast('Impersonation started · acting as participant on SGTradex', 'warn');
 }
 function updateImpTime() {
   const m = Math.floor(impSeconds / 60);
@@ -4006,7 +5288,7 @@ function toggleBulkAck(cb) {
   cta.disabled = !cb.checked;
   cta.classList.toggle('on', cb.checked);
 }
-function bulkProceed() { toast('Extending 13 Agreements · HealthDex excluded'); goto('inbox-tx'); }
+function bulkProceed() { toast('Extending 13 Agreements · SGHealthdex excluded'); goto('inbox-tx'); }
 
 /* ---------- Migration banner dismiss ---------- */
 function dismissMigration(btn) {
@@ -4146,10 +5428,14 @@ const SHELL_CONFIG = {
  *   - Navigation/index.js:86 — Use Cases/Agreements gated to Super Admin OR Admin User
  *   - Navigation/index.js:124 — User Management gated to Super Admin only
  */
+/* Inbox + Drafts counts are derived from workspace records at render time
+ * (see computeSidebarBadgeCounts / updateSidebarBadges). The legacy hardcoded
+ * `badge: 12 / 3` defaults were dropped on 2026-05-18 so the sidebar always
+ * mirrors the workspace truth, not the bootstrap-time fixture totals. */
 const SIDEBAR_ITEMS = [
   // WORK
-  { label: 'Inbox',         icon: 'inbox',         badge: 12, group: 'Work' },
-  { label: 'Drafts',        icon: 'folders',       badge: 3,  group: 'Work',      capability: 'canCreateAgreement' },
+  { label: 'Inbox',         icon: 'inbox',                    group: 'Work' },
+  { label: 'Drafts',        icon: 'folders',                  group: 'Work',      capability: 'canCreateAgreement' },
   // EXCHANGE
   { label: 'Agreements',    icon: 'file-text',                group: 'Exchange',  capability: 'canCreateAgreement' },
   { label: 'Messages',      icon: 'mail-forward',             group: 'Exchange' }, // Operation User runs these (data ops)
@@ -4183,11 +5469,11 @@ function sidebarItemAllowedFor(item, role) {
 function buildPortalTopbarHtml() {
   // Role chip surfaces the user's permission level on the current DEX (Admin /
   // Participant / Super-admin). Reads from INBOX_BY_DEX (the source of truth for
-  // per-DEX user role). Defaults to TradeX 'Admin' before any switchDex.
+  // per-DEX user role). Defaults to SGTradex 'Admin' before any switchDex.
   const initialRole = (INBOX_BY_DEX.tx && INBOX_BY_DEX.tx.role) || 'Admin';
   const slug = initialRole.toLowerCase().replace(/[^a-z]/g, '-');
   return `
-    <button class="workspace-pill" onclick="toggleSwitcher(event)" aria-haspopup="menu" aria-label="Workspace switcher"><span class="dot"></span><span class="ws-label">TradeX</span><i class="ti ti-chevron-down" style="font-size:14px" aria-hidden="true"></i></button>
+    <button class="workspace-pill" onclick="toggleSwitcher(event)" aria-haspopup="menu" aria-label="Workspace switcher"><span class="dot"></span><span class="ws-label">SGTradex</span><i class="ti ti-chevron-down" style="font-size:14px" aria-hidden="true"></i></button>
     <span class="role-chip" data-role="${slug}" title="Your permission level on this DEX. Admin can manage Agreements; Participant has read + accept rights; Super-admin can take governance actions."><i class="ti ti-id-badge-2" aria-hidden="true"></i><span class="role-chip-label">${initialRole}</span></span>
     <div class="search-pill" role="button" tabindex="0" onclick="openSearch()" onkeydown="if(event.key==='Enter'){openSearch()}" aria-label="Open search"><i class="ti ti-search" aria-hidden="true"></i><span>Search</span><kbd>⌘K</kbd></div>
     <div class="spacer"></div>
@@ -4257,8 +5543,8 @@ function refreshRoleChips() {
   const profileRole = document.getElementById('profile-role-value');
   if (profileRole) {
     // Org name comes from the active persona, not the DEX config — so when Pat
-    // (CrimsonLogic SP) is logged in on TradeX, the role row reads "Admin User ·
-    // CrimsonLogic on TradeX" instead of leaking the DEX's default Cosco context.
+    // (CrimsonLogic SP) is logged in on SGTradex, the role row reads "Admin User ·
+    // CrimsonLogic on SGTradex" instead of leaking the DEX's default Cosco context.
     const personaOrgName = (PERSONAS[currentPersona] && PERSONAS[currentPersona].orgName);
     const orgName = personaOrgName || cfg.orgName || 'your org';
     profileRole.textContent = role + ' · ' + orgName + ' on ' + (cfg.name || 'this DEX');
@@ -4339,6 +5625,12 @@ function refreshSidebarVisibility() {
 function switchPersona(personaId) {
   if (!PERSONAS[personaId]) return;
   currentPersona = personaId;
+  // Phase 6 — keep workspace.meta.activeUserId in lockstep with the chrome's
+  // active persona so workspace renderers (drafts, inbox, etc.) filter to
+  // the correct operator on every persona pivot.
+  if (typeof patchWorkspaceMeta === 'function') {
+    patchWorkspaceMeta({ activeUserId: PERSONA_TO_USER[personaId] || personaId });
+  }
   // Issue 0008 — clear any colleague pin when switching persona category.
   // A pin only makes sense within the same category; cross-category persona
   // switches start fresh on the new category's default user.
@@ -4365,6 +5657,11 @@ function switchPersona(personaId) {
   if (typeof themeInboxContent === 'function') {
     themeInboxContent(personaId === 'platform-admin' ? 'tx' : currentDexCode());
   }
+
+  // Refresh doctor context + counterparty pool when the active persona pivots
+  // — the new operator's org may not be a member of the current DEX, or may
+  // have a different counterparty pool.
+  if (typeof refreshAllDoctorContext === 'function') refreshAllDoctorContext();
 
   const p = PERSONAS[personaId];
   toast(`Now viewing as ${p.name} (${p.label})`, personaId === 'platform-admin' ? 'warn' : undefined);
@@ -4417,6 +5714,13 @@ function rebuildAllShells() {
     const sidebar = screen.querySelector('nav.sidebar, .sidebar');
     if (sidebar) sidebar.innerHTML = buildPortalSidebarHtml(active, opts);
   });
+
+  // After every rebuild, refresh the workspace-derived Inbox + Drafts counts
+  // on every sidebar. The builder writes counts at HTML-construction time, but
+  // calling this here is a defensive sweep that also catches the inbox-all
+  // shell (intentionally skipped from STATIC_SHELL_REBUILDS) and any sidebar
+  // whose markup was constructed before the workspace was loaded.
+  if (typeof updateSidebarBadges === 'function') updateSidebarBadges();
 
   // Rebind click handlers on the freshly-rendered side-links
   document.querySelectorAll('.portal-frame .sidebar .side-link').forEach(link => {
@@ -4668,7 +5972,7 @@ function switchToColleague(userId) {
 }
 
 /* Renders a resolved-user line adjacent to the prototype rail's scenario caption —
- * "→ Marcus (Cosco · TradeX)" — surfaces the dispatch chain so the audience can
+ * "→ Marcus (Cosco · SGTradex)" — surfaces the dispatch chain so the audience can
  * follow who's on stage. ADR 0030 Q9-g.
  *
  * Lives as a SIBLING of the caption so applyMpScenario's textContent reassignment
@@ -4676,7 +5980,7 @@ function switchToColleague(userId) {
 function updateRailCaptionWithActiveUser(active) {
   if (!active) return;
   const dexCode = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
-  const dexLabel = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dexCode] || dexCode;
+  const dexLabel = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexCode] || dexCode;
   const orgName = active.orgName || '';
   const text = ` → ${active.name} (${orgName}${orgName ? ' · ' : ''}${dexLabel})`;
   document.querySelectorAll('[data-mp-scenario-caption]').forEach(node => {
@@ -4763,15 +6067,93 @@ function syncProfilePersonaSwitchRow() {
   });
 }
 
+/* computeSidebarBadgeCounts — derive the Inbox + Drafts sidebar counts from
+ * workspace records (the canonical store), not bootstrap-time fixture totals.
+ *
+ *   · Inbox  — `listInboxItemsForUserAndDex(activeUser, dex)`. When opts.crossDex
+ *              is true (i.e., rendering the /portal/all sidebar), the count is
+ *              summed across TX + BX + HX to match the cross-DEX inbox aggregate.
+ *   · Drafts — `listAgreementDraftsForUser(activeUser)`. Drafts aren't DEX-scoped
+ *              (a draft can target any DEX before submit), so this is the same
+ *              count on every sidebar.
+ *
+ * Returns null when the workspace helpers aren't wired up yet (early boot path
+ * before workspace.js initialises). Callers fall back to omitting the badge. */
+function computeSidebarBadgeCounts(opts) {
+  if (typeof listInboxItemsForUserAndDex !== 'function' || typeof listAgreementDraftsForUser !== 'function') {
+    return null;
+  }
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const dex = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const crossDex = !!(opts && opts.crossDex);
+  const inboxItems = crossDex
+    ? ['tx', 'bx', 'hx'].reduce((acc, d) => acc.concat(listInboxItemsForUserAndDex(userId, d)), [])
+    : listInboxItemsForUserAndDex(userId, dex);
+  const draftItems = listAgreementDraftsForUser(userId);
+  return {
+    Inbox: inboxItems.length,
+    Drafts: draftItems.length
+  };
+}
+
+/* updateSidebarBadges — fan workspace-derived Inbox + Drafts counts out to
+ * every rendered `.portal-frame .sidebar` (injected SHELL_CONFIG shells plus
+ * the static inbox-tx / inbox-all / empty shells). Idempotent — call after
+ * any mutation that can change inbox or draft state (new draft, draft
+ * deletion, agreement submit, message retry, persona/dex switch, scene reset).
+ * Cross-DEX scope is detected per-sidebar by reading the parent screen's
+ * data-screen attribute — inbox-all gets the cross-DEX sum; everything else
+ * gets the per-DEX count. */
+function updateSidebarBadges() {
+  document.querySelectorAll('.portal-frame .sidebar').forEach((sidebar) => {
+    const screen = sidebar.closest('.screen');
+    const screenId = screen && screen.dataset ? screen.dataset.screen : '';
+    // The first-time-user demo screen ('empty') is rebuilt with noBadges:true
+    // by rebuildAllShells — its sidebar must stay badge-less even when the
+    // workspace has items, so the empty-state framing isn't undermined by
+    // workspace counts seeped in from the materialiser.
+    if (screenId === 'empty') {
+      sidebar.querySelectorAll('.side-link .count-badge').forEach((b) => b.remove());
+      return;
+    }
+    const counts = computeSidebarBadgeCounts({ crossDex: screenId === 'inbox-all' });
+    if (!counts) return;
+    sidebar.querySelectorAll('.side-link').forEach((link) => {
+      const label = link.dataset.screenTarget
+        || (link.querySelector('.ti-inbox') ? 'Inbox' : link.querySelector('.ti-folders') ? 'Drafts' : '');
+      if (label !== 'Inbox' && label !== 'Drafts') return;
+      const count = counts[label];
+      let badge = link.querySelector('.count-badge');
+      if (!count) {
+        if (badge) badge.remove();
+        return;
+      }
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'count-badge';
+        link.appendChild(badge);
+      }
+      badge.textContent = String(count);
+      badge.setAttribute('aria-label', `${count} items`);
+    });
+  });
+}
+
 function buildPortalSidebarHtml(activeLabel, opts) {
   // opts.noBadges → suppress count badges (used on the first-time-user screen
-  // where the operator hasn't accumulated any items yet — keeping the badges
-  // hardcoded to '12 / 3' on an empty-state screen would be inconsistent).
+  // where the operator hasn't accumulated any items yet — surfacing workspace
+  // counts on an empty-state screen would defeat the empty-state framing).
+  // opts.crossDex → sidebar belongs to the cross-DEX /portal/all screen; Inbox
+  // count is summed across TX + BX + HX rather than read for the active DEX.
   const noBadges = !!(opts && opts.noBadges);
+  const counts = noBadges ? null : computeSidebarBadgeCounts({ crossDex: !!(opts && opts.crossDex) });
   const renderItem = (item) => {
     const isActive = item.label === activeLabel;
     const cls = isActive ? 'side-link active' : 'side-link';
-    const badge = (!noBadges && item.badge) ? `<span class="count-badge" aria-label="${item.badge} items">${item.badge}</span>` : '';
+    const count = counts ? counts[item.label] : 0;
+    const badge = count
+      ? `<span class="count-badge" aria-label="${count} items">${count}</span>`
+      : '';
     return `<div class="${cls}" role="link" tabindex="0" aria-current="${isActive ? 'page' : 'false'}" data-screen-target="${item.label}"><i class="ti ti-${item.icon}" aria-hidden="true"></i>${item.label}${badge}</div>`;
   };
 
@@ -4991,9 +6373,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.dex-mini').forEach(link => {
     link.addEventListener('click', () => {
       const label = link.textContent.trim();
-      if (label.startsWith('TradeX'))    { switchDex('tx'); goto('inbox-tx'); }
-      else if (label.startsWith('BuildEx'))   { switchDex('bx'); goto('inbox-tx'); }
-      else if (label.startsWith('HealthDex')) { switchDex('hx'); goto('inbox-tx'); }
+      if (label.startsWith('SGTradex'))    { switchDex('tx'); goto('inbox-tx'); }
+      else if (label.startsWith('SGBuildex'))   { switchDex('bx'); goto('inbox-tx'); }
+      else if (label.startsWith('SGHealthdex')) { switchDex('hx'); goto('inbox-tx'); }
     });
   });
 
@@ -5034,7 +6416,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // The previous per-element wiring (`document.querySelectorAll('.leaf').forEach...`)
   // bound handlers exactly once at DOMContentLoaded — but `renderDataPickerFromDex()`
   // wipes the tree and detail innerHTML every time the user navigates to data-picker
-  // (so it can swap in BuildEx / HealthDex elements), stripping the handlers off.
+  // (so it can swap in SGBuildex / SGHealthdex elements), stripping the handlers off.
   // A single delegated listener on the screen survives every innerHTML replacement.
   const dataPickerScreen = document.querySelector('.screen[data-screen="data-picker"]');
   if (dataPickerScreen) {
@@ -5127,10 +6509,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = row.querySelector('.cp-name').textContent;
         const meta = row.querySelector('.cp-meta').textContent;
         const dexChip = row.querySelector('.dex-chip');
-        const dexLabel = dexChip ? dexChip.textContent.trim() : 'TradeX';
+        const dexLabel = dexChip ? dexChip.textContent.trim() : 'SGTradex';
         wiz.cp = name;
         wiz.cpDetail = meta + ' · ' + dexLabel;
-        wiz.crossDex = !dexLabel.includes('TradeX');
+        wiz.crossDex = !dexLabel.includes('SGTradex');
         if (typeof persistWizardDraftFromState === 'function') persistWizardDraftFromState();
         if (wiz.crossDex) {
           toast(name + ' is on ' + dexLabel + ' — cross-DEX warning incoming', 'warn');
@@ -5146,7 +6528,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // First paint
   renderStepper();
-  // Apply role-driven UI gates on initial paint (defaults to participant → TradeX → Admin User).
+  // Apply role-driven UI gates on initial paint (defaults to participant → SGTradex → Admin User).
   // switchDex() re-runs these on subsequent DEX switches; switchPersona() does the same on
   // persona switch.
   if (typeof applyPersonaChrome === 'function') applyPersonaChrome();

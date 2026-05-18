@@ -6,6 +6,7 @@ function loadPrototype() {
   return loadPortal({
     scriptPaths: [
       'scripts/state.js',
+      'scripts/workspace-fixtures.js',
       'scripts/pitstop.js'
     ]
   });

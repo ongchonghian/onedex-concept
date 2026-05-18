@@ -16,7 +16,7 @@ test('writeWorkspaceSnapshot persists and readWorkspaceSnapshot returns the same
   });
 
   const snapshot = {
-    schemaVersion: 1,
+    schemaVersion: 4,
     seededAt: '2026-05-18T00:00:00.000Z',
     meta: {
       activeUserId: 'marcus',
@@ -24,9 +24,20 @@ test('writeWorkspaceSnapshot persists and readWorkspaceSnapshot returns the same
       darkMode: false,
       demoToolsOpen: false
     },
+    orgs: {},
+    users: {},
+    userOrgAffiliations: {},
+    orgDexMemberships: {},
+    pitstopsByOrg: {},
+    pitstopElementScope: {},
+    userPitstopRoles: {},
+    pitstopActivityLogs: {},
     agreementDrafts: {},
     agreements: {},
+    agreementPacks: {},
     inboxItems: {},
+    messages: {},
+    participants: {},
     indexes: {}
   };
 

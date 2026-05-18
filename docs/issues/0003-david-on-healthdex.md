@@ -1,4 +1,4 @@
-# David on HealthDex
+# David on SGHealthdex
 
 **Labels:** `needs-triage`, `AFK`
 **ADRs:** [0029](../adr/0029-user-org-affiliation-as-n-to-m-with-embedded-dex-roles.md), [0030](../adr/0030-demo-persona-resolution-via-persona-pill-and-url-dex.md)
@@ -17,10 +17,10 @@ AFK because Issue 0002 has already established the visible chrome contract; this
 - [ ] `david-cosco` affiliation row added with `dexRoles: { hx: 'Super Admin' }`
 - [ ] `marcus-cosco` affiliation's `dexRoles.hx` removed
 - [ ] `/portal/hx` with participant persona renders David as active user
-- [ ] Workspace pill, avatar 200ms cross-fade, rail caption suffix *"David (Cosco · HealthDex)"*, role chip *"Super Admin"* all adapt
+- [ ] Workspace pill, avatar 200ms cross-fade, rail caption suffix *"David (Cosco · SGHealthdex)"*, role chip *"Super Admin"* all adapt
 - [ ] Marcus navigating to `/portal/hx` auto-redirects to `/portal/tx`
 - [ ] Existing HX inbox seed lines reviewed for any "Marcus" references and reattributed to David where appropriate
 
 ## Blocked by
 
-- [Issue 0002 — Alice on BuildEx](./0002-alice-on-buildex.md)
+- [Issue 0002 — Alice on SGBuildex](./0002-alice-on-buildex.md)

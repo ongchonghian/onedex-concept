@@ -88,7 +88,7 @@ Out of scope for this prototype:
 
 **DX-R6** — operators trained on legacy EForm/ETR may resist unified composer. Mitigation: tooltip on the `+ Send Message` button shows the legacy label as alternate ("Share data / Issue ETR"). Glossary entry on the Compose screen.
 
-**DX-R7** — schema drift. The Agreement captured a snapshot of the data element at creation (ADR 0013). v1 composes strictly against that snapshot. **Cross-pitstop schema negotiation does not exist in dexconnect/dexweaver today** (verified against Atlassian: CTD-10307 surfaced this gap; DSV Phase 2 only covers internal admin per Confluence 915407031). The v1 escape is **revoke-and-recreate** the Agreement with the latest schema. The amendment-with-renegotiation flow is a future Phase-6 Story dependent on DSV Phase 3 or successor work.
+**DX-R7** — schema drift. The Agreement captured a snapshot of the data element at creation (ADR 0013). v1 composes strictly against that snapshot. **Cross-pitstop schema negotiation does not exist in DEXconnect/DEXweaver today** (verified against Atlassian: CTD-10307 surfaced this gap; DSV Phase 2 only covers internal admin per Confluence 915407031). The v1 escape is **revoke-and-recreate** the Agreement with the latest schema. The amendment-with-renegotiation flow is a future Phase-6 Story dependent on DSV Phase 3 or successor work.
 
 **DX-R8** — manual sends bypass automated pitstop validation. Risk of malformed payloads reaching counterparty. Mitigation: client-side AJV validation against the snapshot schema, plus server-side re-validation at pitstop accept.
 
@@ -159,7 +159,7 @@ This decision becomes the access section of [ADR 0024](./docs/adr/0024-agreement
 **Position:** v1 composes strictly against the Agreement snapshot (per ADR 0013). The "Compose with newer schema" affordance proposed in §4 P8-A is **not built in v1** — surfacing it would create dummy UI that produces broken Messages downstream.
 
 **Why not the original Option C (snapshot with upgrade affordance):** the cross-pitstop schema negotiation infrastructure that an upgrade flow depends on does not exist in production today. Verified against Atlassian:
-- **CTD-10307** (Done) — a DexConnect schema-field mismatch was discovered in QA, not prevented by design contract. Payloads are not validated against an agreed schema version up front.
+- **CTD-10307** (Done) — a DEXconnect schema-field mismatch was discovered in QA, not prevented by design contract. Payloads are not validated against an agreed schema version up front.
 - **DSV Phase 2** (CTD-10228, CTD-10227, CTD-10242, CTD-10354 — all Done/QA Done) — internal schema admin only; explicitly does not address cross-pitstop alignment per Confluence page 915407031.
 - **Confluence 891453466** — the team has raised the cross-pitstop question but not specified a solution.
 
@@ -251,7 +251,7 @@ If the relevant pitstop is unreachable at Submit:
 - The operator sees: *"Your pitstop is currently unreachable. Your draft is saved — try again when it's restored."*
 - No Message record is created in `consent_message`. The portal does not hold the payload in a second queue.
 
-**Rationale:** the pitstop *is* the queueing layer in the SGTraDex architecture. Building a parallel queue at the portal layer duplicates concerns, creates eventual-consistency complexity, and creates ambiguity about *when a Message is created* (at portal-outbox-add or at pitstop-accept?). Fast-fail is architecturally honest.
+**Rationale:** the pitstop *is* the queueing layer in the SGTradex architecture. Building a parallel queue at the portal layer duplicates concerns, creates eventual-consistency complexity, and creates ambiguity about *when a Message is created* (at portal-outbox-add or at pitstop-accept?). Fast-fail is architecturally honest.
 
 **Pre-emptive availability detection.**
 

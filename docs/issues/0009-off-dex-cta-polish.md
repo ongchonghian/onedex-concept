@@ -20,4 +20,4 @@ This is the honest display of the new model's answer — *"you need a different 
 
 ## Blocked by
 
-- [Issue 0002 — Alice on BuildEx](./0002-alice-on-buildex.md)
+- [Issue 0002 — Alice on SGBuildex](./0002-alice-on-buildex.md)

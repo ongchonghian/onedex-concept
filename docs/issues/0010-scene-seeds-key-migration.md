@@ -14,13 +14,13 @@ Scenes without a user (e.g., a hypothetical PCL KYC review fixture) stay out of 
 - [ ] Resolver helper `resolveSeedKey(activeUser, dex, scenario)` produces the `<affiliationId>-<dexId>-<scenarioId>` shape
 - [ ] Resolver tries the new key shape, then falls back to legacy `<userId>-<scenarioId>` shape
 - [ ] Existing `marcus-C` entry renamed to `marcus-cosco-tx-C`
-- [ ] New seed entries land for Alice's BX scenarios (per ADR 0028's scenario set applicable to BuildEx)
-- [ ] New seed entries land for David's HX scenarios (per ADR 0028's scenario set applicable to HealthDex)
+- [ ] New seed entries land for Alice's BX scenarios (per ADR 0028's scenario set applicable to SGBuildex)
+- [ ] New seed entries land for David's HX scenarios (per ADR 0028's scenario set applicable to SGHealthdex)
 - [ ] Resolver default behaviour when DEX isn't in rail/URL: pick `USERS[userId].primaryOrgId`'s active membership's home DEX
 - [ ] Resolver comment block names the legacy-fallback deprecation deadline
 - [ ] Rail-pill `data-scene` attributes use the new key shape
 
 ## Blocked by
 
-- [Issue 0002 — Alice on BuildEx](./0002-alice-on-buildex.md)
-- [Issue 0003 — David on HealthDex](./0003-david-on-healthdex.md)
+- [Issue 0002 — Alice on SGBuildex](./0002-alice-on-buildex.md)
+- [Issue 0003 — David on SGHealthdex](./0003-david-on-healthdex.md)

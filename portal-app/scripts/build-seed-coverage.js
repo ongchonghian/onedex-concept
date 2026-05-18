@@ -34,7 +34,7 @@ const STATE_JS = path.join(HERE, 'state.js');
 const OUT_MD = path.resolve(HERE, '..', '..', 'docs', 'seed-coverage.md');
 
 const SCREEN_SLOTS = ['detail', 'inbox', 'message-detail', 'dashboard', 'drafts', 'participants', 'agreements', 'messages'];
-const DEX_LABELS = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' };
+const DEX_LABELS = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' };
 
 function _extractTopBlock(src, blockName) {
   // Finds `const <blockName> = { ... };` at column 0 and returns the inner body

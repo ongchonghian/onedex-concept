@@ -8,6 +8,7 @@ function loadWorkspaceWindow() {
       'scripts/state.js',
       'scripts/access.js',
       'scripts/workspace-storage.js',
+      'scripts/workspace-fixtures.js',
       'scripts/workspace-bootstrap.js',
       'scripts/workspace.js'
     ]
@@ -45,7 +46,7 @@ test('submitAgreementDraft creates a pending agreement, deletes the draft, and c
 
   window.updateAgreementDraft(draft.draftId, {
     dataElement: { name: 'Bill of Lading', detail: 'Single element · v2.1' },
-    counterparty: { name: 'PSA International', detail: 'Terminal operator · TradeX' },
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' },
     terms: { durationMonths: 12, residency: 'standard', crossDex: false }
   });
 

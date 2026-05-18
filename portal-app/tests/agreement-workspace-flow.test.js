@@ -6,6 +6,7 @@ const FULL_SCRIPT_PATHS = [
   'scripts/state.js',
   'scripts/access.js',
   'scripts/workspace-storage.js',
+      'scripts/workspace-fixtures.js',
   'scripts/workspace-bootstrap.js',
   'scripts/workspace.js',
   'scripts/components.js',
@@ -47,7 +48,7 @@ test('startWizard creates a draft and data-picker / counterparty selections pers
   window.wiz.de = 'Bill of Lading';
   window.wiz.deDetail = 'Single element · v2.1';
   window.wiz.cp = 'PSA International';
-  window.wiz.cpDetail = 'Terminal operator · TradeX';
+  window.wiz.cpDetail = 'Terminal operator · SGTradex';
   window.wiz.crossDex = false;
   window.persistWizardDraftFromState();
 
@@ -67,7 +68,7 @@ test('renderDraftsFromWorkspace shows live workspace drafts and resumeDraft hydr
     type: 'DIRECT',
     direction: 'send',
     dataElement: { name: 'Bunker delivery confirmation', detail: 'Single element · v1.0' },
-    counterparty: { name: 'PSA International', detail: 'Terminal operator · TradeX' }
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' }
   });
 
   window.goto('drafts');
@@ -89,7 +90,7 @@ test('submitWizard creates a pending agreement, selects it, and removes the draf
   const draftId = window.wiz.draftId;
   window.updateAgreementDraft(draftId, {
     dataElement: { name: 'Bill of Lading', detail: 'Single element · v2.1' },
-    counterparty: { name: 'PSA International', detail: 'Terminal operator · TradeX' },
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' },
     terms: { durationMonths: 12, residency: 'standard', crossDex: false }
   });
   window.hydrateWizardFromDraft(window.getWorkspace().agreementDrafts[draftId]);
@@ -112,7 +113,7 @@ test('renderAgreementsFromWorkspace and renderAgreementDetailFromWorkspace proje
     type: 'DIRECT',
     direction: 'send',
     dataElement: { name: 'Bill of Lading', detail: 'Single element · v2.1' },
-    counterparty: { name: 'PSA International', detail: 'Terminal operator · TradeX' },
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' },
     terms: { durationMonths: 12, residency: 'standard', crossDex: false }
   });
 
@@ -142,7 +143,7 @@ test('themeInboxContent renders workspace inbox items after agreement submit', (
     type: 'DIRECT',
     direction: 'send',
     dataElement: { name: 'Bill of Lading', detail: 'Single element · v2.1' },
-    counterparty: { name: 'PSA International', detail: 'Terminal operator · TradeX' },
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' },
     terms: { durationMonths: 12, residency: 'standard', crossDex: false }
   });
 

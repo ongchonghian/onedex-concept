@@ -168,13 +168,13 @@ function listScopeForPitstop(pitstopId) {
    Used by the scope-capture step and the Settings page to render
    user-facing element names. Mirrors the per-DEX element catalogue
    curated by DEX admin per ADR 0013. */
-/* Element catalogue — names sourced from the live SGTradEx seed
+/* Element catalogue — names sourced from the live SGTradex seed
    (`local-dev/data/dynamodb/sgtradextech-data-element-dev.json`) and the
-   SGBuildEx orchestrator seed (`sgbuildex-dex-orchestrator-dev.json`) so the
+   SGBuildex orchestrator seed (`sgbuildex-dex-orchestrator-dev.json`) so the
    prototype's scenarios reflect actual production data-element vocabulary
    rather than placeholder names. */
 const ELEMENT_CATALOGUE = {
-  // SGTradEx — bunkering / vessel-scheduling / port-ops domain
+  // SGTradex — bunkering / vessel-scheduling / port-ops domain
   'bunker-requisition-form':   'Bunker Requisition Form',
   'mass-flow-meter-receipt':   'Mass Flow Meter Receipt',
   'container-booking':         'Container Booking',
@@ -184,7 +184,7 @@ const ELEMENT_CATALOGUE = {
   'mother-vessel-info':        'Mother Vessel Information',
   'storing-order':             'Storing Order',
   'lighter-boat-schedule':     'Lighter Boat Schedule',
-  // SGBuildEx — manpower / construction-site reporting domain (per the dex-orchestrator
+  // SGBuildex — manpower / construction-site reporting domain (per the dex-orchestrator
   // seed). `manpower_utilization` is the canonical sending element with BCA and HDB
   // listed as receiving regulators; required fields include person_id_no,
   // person_id_and_work_pass_type, person_trade, employer hierarchy, attendance.
@@ -229,7 +229,7 @@ function applyMpScenario(scenarioKey, btn) {
   }
 
   // Scenario F: degrade the counterparty's scope for the warning to fire.
-  // Element is Statement of Facts (real SGTradEx port-call event log) — Maersk's
+  // Element is Statement of Facts (real SGTradex port-call event log) — Maersk's
   // consume-scope (originally ['maersk-sg']) is wiped to demonstrate the joint-state
   // banner. Stashed in PITSTOP_ELEMENT_SCOPE._fStash so leaving F restores it.
   if (scenarioKey === 'F') {
@@ -721,7 +721,7 @@ let activePitstopConfigId = null;
 let activePitstopConfigPane = 'scope';
 
 function dexLabelForId(dexId) {
-  return { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dexId] || dexId;
+  return { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexId] || dexId;
 }
 
 function ensurePitstopActivityLog(pitstopId) {

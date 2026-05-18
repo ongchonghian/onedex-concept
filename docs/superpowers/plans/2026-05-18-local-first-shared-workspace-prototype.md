@@ -300,7 +300,7 @@ test('buildWorkspaceFromScene seeds scene-specific workspace records for a demo 
   assert.equal(workspace.meta.activeDexId, 'bx');
   assert.ok(
     Object.values(workspace.agreements).some((agreement) => agreement.dexId === 'bx'),
-    'expected a BuildEx agreement'
+    'expected a SGBuildex agreement'
   );
 });
 ```
@@ -516,7 +516,7 @@ test('submitAgreementDraft creates a pending agreement, deletes the draft, and c
 
   window.updateAgreementDraft(draft.draftId, {
     dataElement: { name: 'Bill of Lading', detail: 'Single element · v2.1' },
-    counterparty: { name: 'PSA International', detail: 'Terminal operator · TradeX' },
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' },
     terms: { durationMonths: 12, residency: 'standard', crossDex: false }
   });
 
@@ -843,7 +843,7 @@ function switchDex(dex, opts) {
   document.body.classList.remove('theme-tx', 'theme-bx', 'theme-hx');
   document.body.classList.add(`theme-${dex}`);
   updateActiveSwitcher(dex);
-  updatePillText(({ tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dex] || 'TradeX'), dex);
+  updatePillText(({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dex] || 'SGTradex'), dex);
 
   if (!opts.skipWorkspaceMeta && typeof patchWorkspaceMeta === 'function') {
     patchWorkspaceMeta({ activeDexId: dex });
@@ -852,7 +852,7 @@ function switchDex(dex, opts) {
   themeInboxContent(dex);
   if (typeof applyPersonaChrome === 'function') applyPersonaChrome();
   if (typeof refreshRoleChips === 'function') refreshRoleChips();
-  if (!opts.silent) toast(({ tx: 'Now viewing TradeX', bx: 'Switched to BuildEx · BuildEx-themed chrome and items', hx: 'Switched to HealthDex · residency-strict items surfaced' }[dex]), dex === 'tx' ? undefined : 'warn');
+  if (!opts.silent) toast(({ tx: 'Now viewing SGTradex', bx: 'Switched to SGBuildex · SGBuildex-themed chrome and items', hx: 'Switched to SGHealthdex · residency-strict items surfaced' }[dex]), dex === 'tx' ? undefined : 'warn');
 }
 ```
 
@@ -947,7 +947,7 @@ test('startWizard creates a draft and data-picker / counterparty selections pers
   window.wiz.de = 'Bill of Lading';
   window.wiz.deDetail = 'Single element · v2.1';
   window.wiz.cp = 'PSA International';
-  window.wiz.cpDetail = 'Terminal operator · TradeX';
+  window.wiz.cpDetail = 'Terminal operator · SGTradex';
   window.wiz.crossDex = false;
   window.persistWizardDraftFromState();
 
@@ -1054,7 +1054,7 @@ if (wiz.active) {
 ```js
 wiz.cp = name;
 wiz.cpDetail = meta + ' · ' + dexLabel;
-wiz.crossDex = !dexLabel.includes('TradeX');
+wiz.crossDex = !dexLabel.includes('SGTradex');
 if (typeof persistWizardDraftFromState === 'function') persistWizardDraftFromState();
 ```
 
@@ -1109,7 +1109,7 @@ test('renderDraftsFromWorkspace shows live workspace drafts and resumeDraft hydr
     type: 'DIRECT',
     direction: 'send',
     dataElement: { name: 'Bunker delivery confirmation', detail: 'Single element · v1.0' },
-    counterparty: { name: 'PSA International', detail: 'Terminal operator · TradeX' }
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' }
   });
 
   window.goto('drafts');
@@ -1229,7 +1229,7 @@ test('submitWizard creates a pending agreement, selects it, and removes the draf
   const draftId = window.wiz.draftId;
   window.updateAgreementDraft(draftId, {
     dataElement: { name: 'Bill of Lading', detail: 'Single element · v2.1' },
-    counterparty: { name: 'PSA International', detail: 'Terminal operator · TradeX' },
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' },
     terms: { durationMonths: 12, residency: 'standard', crossDex: false }
   });
   window.hydrateWizardFromDraft(window.getWorkspace().agreementDrafts[draftId]);
@@ -1336,7 +1336,7 @@ test('renderAgreementsFromWorkspace and renderAgreementDetailFromWorkspace proje
     type: 'DIRECT',
     direction: 'send',
     dataElement: { name: 'Bill of Lading', detail: 'Single element · v2.1' },
-    counterparty: { name: 'PSA International', detail: 'Terminal operator · TradeX' },
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' },
     terms: { durationMonths: 12, residency: 'standard', crossDex: false }
   });
 
@@ -1379,7 +1379,7 @@ function workspaceAgreementToAgreementsRow(agreement) {
       initials: (agreement.counterpartyOrgName || 'CP').split(' ').map((part) => part[0]).join('').slice(0, 2),
       name: agreement.counterpartyOrgName,
       role: 'Counterparty',
-      dex: ({ tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[agreement.dexId] || 'TradeX')
+      dex: ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[agreement.dexId] || 'SGTradex')
     },
     element: {
       name: agreement.dataElementSummary.name,
@@ -1400,7 +1400,7 @@ function workspaceAgreementToDetailSeed(agreement) {
     title: agreement.title,
     agrId: agreement.agreementId,
     dex: agreement.dexId,
-    dexLabel: ({ tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[agreement.dexId] || 'TradeX'),
+    dexLabel: ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[agreement.dexId] || 'SGTradex'),
     counterparty: {
       name: agreement.counterpartyOrgName,
       short: agreement.counterpartyOrgName.split(' ').slice(0, 2).join(' '),
@@ -1508,7 +1508,7 @@ test('themeInboxContent renders workspace inbox items after agreement submit', (
     type: 'DIRECT',
     direction: 'send',
     dataElement: { name: 'Bill of Lading', detail: 'Single element · v2.1' },
-    counterparty: { name: 'PSA International', detail: 'Terminal operator · TradeX' },
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' },
     terms: { durationMonths: 12, residency: 'standard', crossDex: false }
   });
 
@@ -1557,7 +1557,7 @@ function themeInboxContent(dex) {
       }));
 
       const data = {
-        name: ({ tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dex] || 'TradeX'),
+        name: ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dex] || 'SGTradex'),
         chip: dex,
         count: mine.length + team.length,
         mineCount: mine.length,

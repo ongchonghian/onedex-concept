@@ -362,7 +362,7 @@
 }
 
 /* When in platform-admin persona, the DEX switcher popover should hide its
-   per-DEX items (TradeX/BuildEx/HealthDex) — platform admins don't operate
+   per-DEX items (SGTradex/SGBuildex/SGHealthdex) — platform admins don't operate
    within a single DEX. The /portal/all "All DEXes" entry stays visible. */
 body.persona-platform-admin #switcher-pop .switcher-item:not(.all):not(:last-child) {
   display: none;
@@ -1198,7 +1198,415 @@ body.demo-tools-open .demo-tools-drawer {
   border: 0;
   padding: 0;
   background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
 }
+
+/* ---------- Persona row inside the demo drawer ----------
+   Single horizontal row above the doctor sections so it reads as a
+   meta control ("who am I?") rather than competing with the doctors. */
+.demo-tools-body .pr-persona {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.demo-tools-body .pr-glossary { margin-left: auto; }
+
+/* ---------- Doctor disclosure (Phase 7+ progressive disclosure) ----------
+   Each doctor is a <details> card. Collapsed by default; click summary to
+   expand. Mirrors index.html's other collapsible groups (e.g. inbox
+   `.group-block`) so the affordance is familiar. */
+.demo-tools-body .pr-doctor {
+  border: 1px solid var(--g-90);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  overflow: hidden;
+}
+.demo-tools-body .pr-doctor[open] { border-color: var(--g-85); }
+.demo-tools-body .pr-doctor > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  color: var(--g-20);
+  user-select: none;
+}
+.demo-tools-body .pr-doctor > summary::-webkit-details-marker { display: none; }
+.demo-tools-body .pr-doctor > summary:hover { background: var(--g-98); }
+.demo-tools-body .pr-doctor-chev {
+  font-size: 14px;
+  color: var(--g-50);
+  transition: transform 150ms ease;
+}
+.demo-tools-body .pr-doctor[open] > summary .pr-doctor-chev { transform: rotate(90deg); }
+.demo-tools-body .pr-doctor-title {
+  font-weight: var(--fw-medium);
+  color: var(--g-10);
+}
+.demo-tools-body .pr-doctor-hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--g-50);
+  font-weight: 400;
+}
+.demo-tools-body .pr-doctor-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 12px 14px;
+  border-top: 1px solid var(--g-95);
+}
+
+/* Sub-axis label for the conditional Owner row inside the Messages doctor.
+   Inline with the pills so reviewers see "Owner: [Yours] [Counterparty]
+   [Expired]" as one statement. */
+.demo-tools-body .md-axis .md-axis-label {
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  color: var(--g-50);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-right: 4px;
+}
+
+/* Owner row carries a subtle leading rule so the dependency on the Failed
+   status is visible — it's a sub-axis of Status, not a sibling axis. */
+.demo-tools-body .md-owner-axis {
+  padding-left: 10px;
+  border-left: 2px solid var(--theme-90);
+  margin-top: -2px;
+}
+
+/* Inline `?` hint marker for label clarifications (e.g. the Suspended
+   toggle). Quiet by default; the title= tooltip carries the detail. */
+.demo-tools-body .md-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 4px;
+  border: 0.5px solid var(--g-80);
+  border-radius: 50%;
+  font-size: 9px;
+  color: var(--g-50);
+  cursor: help;
+  font-weight: var(--fw-medium);
+}
+
+/* Disabled "Remove spawned" — quiet until at least one doctor-spawned row
+   exists. Avoids the visual whiplash of a button that does nothing on
+   click during the demo opening. */
+.demo-tools-body .md-clear[disabled],
+.demo-tools-body .md-spawn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Context strip — operator identity + reach at the top of each doctor
+   body. One avatar circle + two text lines (who · org, DEX chip · role ·
+   membership). Visually quiet so it reads as metadata, not a control. */
+.demo-tools-body .pr-doctor-context {
+  background: var(--g-99, #fafafa);
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+}
+.demo-tools-body .pr-doctor-context .pr-context-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.demo-tools-body .pr-context-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--theme-90);
+  color: var(--theme-20);
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  flex-shrink: 0;
+}
+.demo-tools-body .pr-context-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.demo-tools-body .pr-context-line {
+  font-size: 11px;
+  color: var(--g-30);
+  line-height: 1.4;
+}
+.demo-tools-body .pr-context-line strong { color: var(--g-10); font-weight: var(--fw-medium); }
+.demo-tools-body .pr-context-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.demo-tools-body .pr-context-role {
+  font-size: 10px;
+  color: var(--g-50);
+  padding: 1px 6px;
+  background: var(--g-95);
+  border-radius: 3px;
+}
+.demo-tools-body .pr-context-membership {
+  font-size: 10px;
+  font-style: italic;
+}
+.demo-tools-body .pr-context-active   { color: var(--green-30, #166534); }
+.demo-tools-body .pr-context-platform { color: var(--theme-20); }
+.demo-tools-body .pr-context-missing  { color: var(--red-30, #b91c1c); font-style: normal; font-weight: var(--fw-medium); }
+.demo-tools-body .pr-context-empty {
+  font-size: 11px;
+  color: var(--g-50);
+  font-style: italic;
+  margin: 0;
+}
+
+/* Counterparty / principal picker dropdown — sits in the axis row, label
+   to the left, select to the right. */
+.demo-tools-body .md-cp-pick {
+  align-items: center;
+}
+.demo-tools-body .md-cp-pick .md-select {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 6px;
+  border: 0.5px solid var(--g-85);
+  border-radius: var(--r-sm);
+  background: var(--surface, #fff);
+  color: var(--g-10);
+  min-height: 26px;
+}
+
+/* Spawn blocker hint — appears between caption and actions when context
+   can't produce a valid spawn. Quiet red text + warning icon prefix. */
+.demo-tools-body .pr-doctor-blocker {
+  order: 8;
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--red-30, #b91c1c);
+  background: var(--red-95, #fef2f2);
+  border: 0.5px solid var(--red-80, #fecaca);
+  border-radius: var(--r-sm);
+  line-height: 1.4;
+}
+.demo-tools-body .pr-doctor-blocker::before {
+  content: '⚠ ';
+}
+
+/* Reorder the doctor body so the live preview caption sits between the
+   axes and the action row — operator reads the caption, confirms, presses
+   Spawn. */
+.demo-tools-body .pr-doctor-body .pr-caption {
+  order: 8;
+  margin: 4px 0 0;
+  font-style: normal;
+  white-space: normal;
+}
+.demo-tools-body .pr-doctor-body .md-actions { order: 9; }
+.demo-tools-body .pr-doctor-body .md-list    { order: 10; }
+.demo-tools-body .pr-doctor-body .md-empty   { order: 10; }
+
+/* ---------- Messages doctor (ADR 0020 · 0021) ----------
+   Sits inside the prototype-rail so it inherits the surrounding label /
+   pill conventions. The doctor exposes three axes (direction · flow ·
+   status+owner) as segmented pill groups + an action row + a live
+   list of in-workspace Messages. Anchored under the rail so it
+   reflows naturally with the rest of the demo drawer.
+
+   Visual budget mirrors the existing pr-section gap scale (6px / 8px /
+   16px) and the pr-pill colour tokens so the new surface doesn't
+   compete visually with the persona / scenario pills above it. */
+.prototype-rail .pr-md {
+  flex: 1 1 100%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px dashed var(--g-85);
+}
+.prototype-rail .pr-md .md-axis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.prototype-rail .pr-md .md-status-axis { gap: 4px 6px; }
+.prototype-rail .pr-md .md-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.prototype-rail .pr-md .md-spawn,
+.prototype-rail .pr-md .md-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  min-height: 28px;
+}
+.prototype-rail .pr-md .md-spawn i,
+.prototype-rail .pr-md .md-clear i { font-size: 13px; }
+.prototype-rail .pr-md .md-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 4px;
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-sm);
+  background: var(--g-99, var(--g-98));
+}
+.prototype-rail .pr-md .md-empty {
+  font-size: 11px;
+  color: var(--g-50);
+  font-style: italic;
+  padding: 8px;
+  margin: 0;
+}
+.prototype-rail .pr-md .md-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--surface, #fff);
+  border: 0.5px solid var(--g-90);
+  font-size: 11px;
+}
+.prototype-rail .pr-md .md-row-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.prototype-rail .pr-md .md-row-head strong {
+  font-weight: var(--fw-medium);
+  color: var(--g-10);
+}
+.prototype-rail .pr-md .md-row-meta {
+  font-size: 10px;
+  color: var(--g-50);
+}
+.prototype-rail .pr-md .md-row-meta code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  color: var(--g-30);
+  background: var(--g-95);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.prototype-rail .pr-md .md-row-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.prototype-rail .pr-md .md-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  font-size: 10px;
+  border: 0.5px solid var(--g-90);
+  background: var(--surface, #fff);
+  color: var(--g-30);
+  border-radius: 4px;
+  cursor: pointer;
+  min-height: 22px;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.prototype-rail .pr-md .md-mini:hover { background: var(--g-95); border-color: var(--g-80); }
+.prototype-rail .pr-md .md-mini:focus-visible { outline: 2px solid var(--theme-50); outline-offset: 1px; }
+.prototype-rail .pr-md .md-mini i { font-size: 10px; }
+.prototype-rail .pr-md .md-mini-danger { color: var(--red-50, #b91c1c); }
+.prototype-rail .pr-md .md-mini-danger:hover { background: var(--red-98, #fef2f2); border-color: var(--red-80, #fecaca); }
+
+/* Status / flow / closed chips inside the doctor list — small,
+   typography-driven, no animation. Colour conveys flow class (push
+   blue / pull violet / store amber) and status (failed red / closed
+   muted). */
+.prototype-rail .pr-md .md-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.2px;
+  border: 0.5px solid transparent;
+  white-space: nowrap;
+}
+.prototype-rail .pr-md .md-tag-flow.md-tag-push   { background: rgba(4, 70, 195, 0.08);  color: #0446c3; border-color: rgba(4, 70, 195, 0.18); }
+.prototype-rail .pr-md .md-tag-flow.md-tag-pull   { background: rgba(166, 20, 185, 0.08); color: #8e0fa3; border-color: rgba(166, 20, 185, 0.18); }
+.prototype-rail .pr-md .md-tag-flow.md-tag-store  { background: rgba(180, 83, 9, 0.08);   color: #92400e; border-color: rgba(180, 83, 9, 0.18); }
+.prototype-rail .pr-md .md-tag-status.md-tag-in-flight    { background: var(--yellow-95, #fef9c3); color: #854d0e; }
+.prototype-rail .pr-md .md-tag-status.md-tag-delivered    { background: var(--g-95);              color: var(--g-30); }
+.prototype-rail .pr-md .md-tag-status.md-tag-acknowledged { background: rgba(22,163,74,0.12);     color: #166534; }
+.prototype-rail .pr-md .md-tag-status.md-tag-failed       { background: var(--red-98, #fef2f2);   color: var(--red-50, #b91c1c); }
+.prototype-rail .pr-md .md-tag-closed                     { background: var(--g-90);              color: var(--g-50); }
+
+/* Agreement-doctor specific bits — suspended toggle row, picker
+   select, type / state tags (ADR 0007). Keeps the same compact pill
+   vocabulary as the Messages doctor for visual coherence. */
+.prototype-rail .pr-md .md-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--g-30);
+}
+.prototype-rail .pr-md .md-toggle input { margin: 0; }
+.prototype-rail .pr-md .md-toggle[hidden] { display: none; }
+
+.prototype-rail .pr-md .md-agr-pick {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.prototype-rail .pr-md .md-axis-label {
+  font-size: 11px;
+  color: var(--g-30);
+  font-weight: var(--fw-medium);
+}
+.prototype-rail .pr-md .md-select {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 11px;
+  border: 0.5px solid var(--g-90);
+  background: var(--surface, #fff);
+  color: var(--g-30);
+  border-radius: var(--r-sm);
+}
+.prototype-rail .pr-md .md-select:focus-visible { outline: 2px solid var(--theme-50); outline-offset: 1px; }
+
+.prototype-rail .pr-md .md-tag-type-direct          { background: rgba(78, 0, 88, 0.08);   color: #4e0058; border-color: rgba(78, 0, 88, 0.18); }
+.prototype-rail .pr-md .md-tag-type-service_provider { background: rgba(0, 109, 93, 0.08);  color: #006d5d; border-color: rgba(0, 109, 93, 0.18); }
+.prototype-rail .pr-md .md-tag-state-pending        { background: var(--yellow-95, #fef9c3); color: #854d0e; }
+.prototype-rail .pr-md .md-tag-state-active         { background: rgba(22, 163, 74, 0.12);   color: #166534; }
+.prototype-rail .pr-md .md-tag-state-suspended      { background: rgba(180, 83, 9, 0.12);    color: #92400e; }
+.prototype-rail .pr-md .md-tag-state-ended          { background: var(--g-90);               color: var(--g-50); }
 
 /* Mobile reflow — drop sticky positioning at narrow widths so the rail
    doesn't dominate. Sections wrap onto multiple lines. */

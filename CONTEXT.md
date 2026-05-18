@@ -158,7 +158,7 @@ _Avoid_: Subscriber, prosumer, peer, partner
 > **Engineer:** "Then Maersk has a **Service-Provider Agreement** with their partner. From the user's side, they still just see one **Agreement** with Maersk as the **Counterparty** — the partner shows up as Maersk's **Service Provider** on that record."
 
 **DEX**:
-A regulated data-exchange domain (SGTraDex, BuildEx, HealthDex). An org may hold memberships in multiple DEXes via `org_dex_membership`. The current DEX in the portal is anchored in the URL path — see [ADR 0001](./docs/adr/0001-url-anchored-dex-context.md).
+A regulated data-exchange domain (SGTradex, SGBuildex, SGHealthdex). An org may hold memberships in multiple DEXes via `org_dex_membership`. The current DEX in the portal is anchored in the URL path — see [ADR 0001](./docs/adr/0001-url-anchored-dex-context.md).
 _Avoid_: Dex (mixed casing), data exchange, marketplace
 
 **Pitstop**:

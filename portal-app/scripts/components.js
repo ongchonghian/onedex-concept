@@ -7,8 +7,8 @@
 
 /* ---------- DEX chip ---------- */
 function renderDexChip(dex) {
-  const labels = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' };
-  return `<span class="dex-chip ${dex}"><span class="dex-dot"></span>${labels[dex] || 'TradeX'}</span>`;
+  const labels = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' };
+  return `<span class="dex-chip ${dex}"><span class="dex-dot"></span>${labels[dex] || 'SGTradex'}</span>`;
 }
 
 /* ---------- Ready / Invitation pill ---------- */

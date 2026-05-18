@@ -79,7 +79,7 @@ These were flagged across ADRs as deferred concerns. Each needs a named owner be
 |---|---|---|
 | **View-as-participant audit signature spec** — fields to tag impersonation; max session duration; pre-impersonation user acceptance flow | P5-R5 + ADR 0002 | Compliance / Legal + Eng lead |
 | **Residency-strict classification per data element** — which data classes fire the hard-stop variant of the cross-DEX warning | ADR 0012 | Compliance + Product |
-| **DEX-membership-change effects on existing Agreements** — what happens when Maersk moves primary DEX from BuildEx to TradeDex mid-Agreement | ADR 0012 | Product + Eng lead |
+| **DEX-membership-change effects on existing Agreements** — what happens when Maersk moves primary DEX from SGBuildex to SGTradex mid-Agreement | ADR 0012 | Product + Eng lead |
 | **Maximum single-extension period + cumulative cap per data class** | ADR 0009 | Compliance + Product |
 | **Counterparty acknowledgment for extensions on specific data classes** — unilateral or co-signal required? | ADR 0009 | Compliance + Product |
 | **Platform brand for `/portal/all` chrome** — does the Dex platform itself get a logo, accent, name? | ADR 0005 | Marketing + Brand |

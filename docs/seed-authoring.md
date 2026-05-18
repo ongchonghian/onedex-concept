@@ -37,7 +37,7 @@ Field `orgId` is **retired** — chrome reads org from `primaryOrgId` via the ac
 ```js
 const ORGS = {
   cosco: { name: 'Cosco Shipping', short: 'Cosco', initials: 'Cs', tier: 'participant', primaryDexId: 'tx' },
-  sgtradex: { name: 'SGTraDex', short: 'SGTradex', initials: 'SG', tier: 'platform' },
+  sgtradex: { name: 'SGTradex', short: 'SGTradex', initials: 'SG', tier: 'platform' },
 };
 ```
 
@@ -45,7 +45,7 @@ const ORGS = {
 |---|---|---|
 | `name` / `short` / `initials` | Yes | Surfaces across activity log, ack chips, counterparty cards. `short` is the org annotation in cross-org actor names ("Wen Chen (PSA)"). |
 | `tier` | Yes | `'participant'` \| `'platform'`. Dispatches the resolver's role lookup. |
-| `primaryDexId` | Participant tier: yes; platform tier: omit | The org's home DEX. Drives `primary DEX is BuildEx` rendering on cross-DEX participant cards + ADR 0012 cross-DEX warning. |
+| `primaryDexId` | Participant tier: yes; platform tier: omit | The org's home DEX. Drives `primary DEX is SGBuildex` rendering on cross-DEX participant cards + ADR 0012 cross-DEX warning. |
 
 ### USER_ORG_AFFILIATIONS
 
@@ -76,7 +76,7 @@ Keyed `<orgId>-<dexId>`. The org's enrolment record on the DEX — first-class s
 ```js
 const ORG_DEX_MEMBERSHIPS = {
   'cosco-tx':  { joinedDate: '2023-08-22', status: 'active' },
-  'acme-tx':   { joinedDate: '2026-04-12', status: 'active' },   // Acme cross-DEX onto TradeX
+  'acme-tx':   { joinedDate: '2026-04-12', status: 'active' },   // Acme cross-DEX onto SGTradex
   'pcl-tx':    { joinedDate: null,         status: 'pending' },  // PCL applicant
 };
 ```
@@ -163,7 +163,7 @@ For each screen's exact field set, scaffold a new scene and read the generated t
 | Activity log shows "undefined" or empty actor | Typo in `actorUserId` (e.g., `'wenchan'` vs `'wenchen'`) | `runSeedDoctor()` catches these. Compare against `USERS` keys. |
 | Counterparty card has no "Primary contact" line | Missing or misspelled `primaryUserId` | Same — doctor flags. |
 | Off-DEX redirect fires when you didn't expect it | Active user has no `USER_ORG_AFFILIATIONS` entry granting a seat on the target DEX | Add the affiliation, or accept the redirect as correct ADR 0030 behaviour. |
-| Cross-DEX warning copy still shows hardcoded "BuildEx" | Acme participant card seed still uses legacy `crossDex: 'bx'` literal | Migrate to `orgId: 'acme'` + ensure `ORGS.acme.primaryDexId = 'bx'` + `ORG_DEX_MEMBERSHIPS['acme-tx']` exists. |
+| Cross-DEX warning copy still shows hardcoded "SGBuildex" | Acme participant card seed still uses legacy `crossDex: 'bx'` literal | Migrate to `orgId: 'acme'` + ensure `ORGS.acme.primaryDexId = 'bx'` + `ORG_DEX_MEMBERSHIPS['acme-tx']` exists. |
 | Renamed user disappears from prototype but old name still shows in some demo path | Stale legacy `<userId>-<scenarioId>` seed key | Check the resolver fallback path (`seedFor` in `access.js`); seed key migration tracked by Issue 0010. |
 
 ## Related documents

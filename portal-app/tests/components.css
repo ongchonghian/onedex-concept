@@ -362,7 +362,7 @@
 }
 
 /* When in platform-admin persona, the DEX switcher popover should hide its
-   per-DEX items (TradeX/BuildEx/HealthDex) — platform admins don't operate
+   per-DEX items (SGTradex/SGBuildex/SGHealthdex) — platform admins don't operate
    within a single DEX. The /portal/all "All DEXes" entry stays visible. */
 body.persona-platform-admin #switcher-pop .switcher-item:not(.all):not(:last-child) {
   display: none;

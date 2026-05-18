@@ -8,9 +8,9 @@
 function switchDex(dex, opts) {
   opts = opts || {};
   const config = {
-    tx: { label: 'TradeX', toast: 'Now viewing TradeX',                                 kind: undefined },
-    bx: { label: 'BuildEx', toast: 'Switched to BuildEx · BuildEx-themed chrome and items', kind: 'warn' },
-    hx: { label: 'HealthDex', toast: 'Switched to HealthDex · residency-strict items surfaced', kind: 'warn' }
+    tx: { label: 'SGTradex', toast: 'Now viewing SGTradex',                                 kind: undefined },
+    bx: { label: 'SGBuildex', toast: 'Switched to SGBuildex · SGBuildex-themed chrome and items', kind: 'warn' },
+    hx: { label: 'SGHealthdex', toast: 'Switched to SGHealthdex · residency-strict items surfaced', kind: 'warn' }
   }[dex];
   if (!config) return;
 
@@ -33,7 +33,7 @@ function switchDex(dex, opts) {
     if (!wouldBeUser && homeDex && homeDex !== dex) {
       // No peer on this DEX — show the polished blocked-state modal.
       if (typeof showOffDexBlocked === 'function') {
-        showOffDexBlocked({ targetDex: dex, targetDexLabel: config.label, homeDex, homeDexLabel: { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[homeDex] || homeDex });
+        showOffDexBlocked({ targetDex: dex, targetDexLabel: config.label, homeDex, homeDexLabel: { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[homeDex] || homeDex });
       } else {
         // Fallback if the modal helper isn't loaded yet
         toast(`No seat on ${config.label} for your persona.`, 'warn');
@@ -62,13 +62,13 @@ function switchDex(dex, opts) {
   updatePillText(config.label, dex);
   themeInboxContent(dex);
   // Keep any active flow ribbon copy aligned with the new DEX (e.g. "First-time user:
-  // you're a new admin on BuildEx ..." after switching from TradeX). No-op if no flow active.
+  // you're a new admin on SGBuildex ..." after switching from SGTradex). No-op if no flow active.
   if (typeof refreshFlowRibbon === 'function') refreshFlowRibbon();
   // Active user can change on DEX switch (Marcus on TX → Alice on BX), so re-apply
   // persona chrome (workspace pill sub-label, avatar cross-fade, profile menu).
   if (typeof applyPersonaChrome === 'function') applyPersonaChrome();
-  // User's permission level can differ per DEX (Admin on TradeX, Operation User on BuildEx,
-  // Super-admin on HealthDex) — re-render the role chip in the topbar + profile menu.
+  // User's permission level can differ per DEX (Admin on SGTradex, Operation User on SGBuildex,
+  // Super-admin on SGHealthdex) — re-render the role chip in the topbar + profile menu.
   if (typeof refreshRoleChips === 'function') refreshRoleChips();
   toast(config.toast, config.kind);
 }

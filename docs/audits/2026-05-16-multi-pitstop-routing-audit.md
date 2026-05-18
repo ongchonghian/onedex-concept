@@ -1,7 +1,7 @@
 # Audit — does the design-concepts agreement + message flow handle multi-pitstop?
 
 **Date:** 2026-05-16
-**Auditor's brief:** participants in TradeDex / HealthDex / BuildEx each run *their own* pitstop portals. A participant org can have **0, 1, or N pitstop portals within a single DEX**. Each DEX has 1 admin portal. When a participant has multiple pitstops, they need to decide — **per data element** — which of their pitstops sends or receives that element. The user-experience objective: an operator should complete their task without learning how the other side has set up *their* DEX presence; each participant declares what *they* know about their own side and the system stitches the rest.
+**Auditor's brief:** participants in SGTradex / SGHealthdex / SGBuildex each run *their own* pitstop portals. A participant org can have **0, 1, or N pitstop portals within a single DEX**. Each DEX has 1 admin portal. When a participant has multiple pitstops, they need to decide — **per data element** — which of their pitstops sends or receives that element. The user-experience objective: an operator should complete their task without learning how the other side has set up *their* DEX presence; each participant declares what *they* know about their own side and the system stitches the rest.
 
 **Verdict in one sentence:** the current design-concepts model **does not** handle the multi-pitstop scenario. The agreement and message flow both quietly assume one transport endpoint per (org × DEX), which contradicts the live production model already in `admin-corev2` and `pitstop-core`. Closing this gap is not a small ADR amendment — it requires a new first-class concept ("Pitstop") in CONTEXT.md, an additional axis on the Agreement record (and on `agreement_pack`), an extra step in the Agreement wizard, and a routing-resolution rule on the message-compose side.
 
@@ -59,14 +59,14 @@ Each gap is listed with the affected ADR/file, the failure mode under the multi-
 
 - **Where:** ADR 0004 (Unified Agreement), ADR 0007 (lifecycle), ADR 0013 (data-element picker), ADR 0026 (snapshot immutability).
 - **What's missing:** no equivalent of the live `DataElementTracking (producerPitstopId, consumerPitstopId)` 5-tuple. The Agreement snapshot only captures `data_element_ids[]`.
-- **Failure mode:** consider org-Cosco enrolled in TradeDex with two pitstops, `cosco-ops` (handles vessel/cargo) and `cosco-finance` (handles invoicing). When Cosco creates one Agreement with Maersk for "vessel arrival pack" (ETA + crew + cargo manifest + invoice prefill), the design can't say "ETA + crew + cargo from `cosco-ops`; invoice prefill from `cosco-finance`". The Agreement pack split fork (ADR 0027) splits *by counterparty*, not by own-side pitstop.
+- **Failure mode:** consider org-Cosco enrolled in SGTradex with two pitstops, `cosco-ops` (handles vessel/cargo) and `cosco-finance` (handles invoicing). When Cosco creates one Agreement with Maersk for "vessel arrival pack" (ETA + crew + cargo manifest + invoice prefill), the design can't say "ETA + crew + cargo from `cosco-ops`; invoice prefill from `cosco-finance`". The Agreement pack split fork (ADR 0027) splits *by counterparty*, not by own-side pitstop.
 - **Minimum change:** add a per-element binding on the Agreement snapshot for the **own side's pitstop** (one of the org's `EnterpriseSystems` in that DEX). Counterparty-side pitstop is *not* recorded on the Agreement — it is resolved at message-time from the counterparty's own routing config, so the operator never has to know about it (this is the heart of the "don't make me understand the other side" objective).
 
 ### 3.3 Counterparty picker has no pitstop dimension and no enrolment-readiness *at pitstop granularity*
 
 - **Where:** ADR 0014 (counterparty picker hybrid).
 - **What's missing:** the picker rows display org-type + DEX + use-case-enrolment indicator, but nothing about which of the counterparty's pitstops actually accepts the data element you're about to pick.
-- **Failure mode:** Maersk has `maersk-singapore` and `maersk-rotterdam` pitstops in TradeDex; only `maersk-singapore` is enrolled in the use case for *this* element. Picking "Maersk" gives the operator no signal that the routing only works through one of their pitstops. If `maersk-rotterdam` is the only one with a fast-lane operator team, the Agreement may activate but messages will go to the slow pitstop.
+- **Failure mode:** Maersk has `maersk-singapore` and `maersk-rotterdam` pitstops in SGTradex; only `maersk-singapore` is enrolled in the use case for *this* element. Picking "Maersk" gives the operator no signal that the routing only works through one of their pitstops. If `maersk-rotterdam` is the only one with a fast-lane operator team, the Agreement may activate but messages will go to the slow pitstop.
 - **Minimum change:** the *readiness* signal on each picker row needs to account for which of the counterparty's pitstops is enrolled (still surfacing as one row per *org*, because the operator must not be made to learn the counterparty's pitstop names). When zero of the counterparty's pitstops are enrolled → "Invitation required"; when ≥1 is enrolled → "Ready"; when *some* are and *some* aren't → "Ready (partial)" with a tooltip *"only some of their endpoints accept this element — they'll route on their side."* The counterparty's pitstop selection stays *their* problem — but the picker must not lie about readiness.
 
 ### 3.4 The Agreement wizard has no own-side pitstop step
@@ -158,8 +158,8 @@ These ground the gaps against the user's stated scenarios.
 
 ### Scenario A — single-pitstop participant talks to multi-pitstop counterparty
 
-- **Cosco** has 1 pitstop in TradeDex.
-- **Maersk** has 3 pitstops in TradeDex (`maersk-singapore`, `maersk-rotterdam`, `maersk-shanghai`), each handling a different data element family.
+- **Cosco** has 1 pitstop in SGTradex.
+- **Maersk** has 3 pitstops in SGTradex (`maersk-singapore`, `maersk-rotterdam`, `maersk-shanghai`), each handling a different data element family.
 - **Cosco operator wants:** create one Agreement with Maersk for the vessel arrival pack.
 - **Does it work today (design-concepts)?** Yes — but only by luck. The Agreement points at "Maersk" as an org. Whether the message routes correctly depends on Maersk's own routing config — which Maersk maintains on their side. Cosco *should never* need to know which Maersk pitstop receives what; this matches the user's stated objective. **The design-concepts handle this case correctly *if and only if* the back-end resolves the counterparty-side pitstop from Maersk's `DataElementTracking.consumerPitstopId` at message-time.** Today, the design-concepts say nothing about this resolution step — the Composer (ADR 0024) and lifecycle (ADR 0021) speak of "the counterparty's pitstop" as if obvious.
 - **Required fix:** ADR 0024 should declare that the consumer pitstop is resolved at compose-time from counterparty config, not stored on the Agreement.
@@ -182,7 +182,7 @@ These ground the gaps against the user's stated scenarios.
 
 - Cross-DEX agreement creation (ADR 0014's "Include other DEXes" + ADR 0012's cross-DEX warning fires).
 - **Does it work today?** No, for the same B+C reasons plus the cross-DEX warning copy doesn't name the bound pitstops.
-- **Required fix:** the warning copy gains a line: *"This Agreement will send from your `cosco-finance` Pitstop (TradeDex) to Maersk's BuildEx endpoint. BuildEx residency rules apply."*
+- **Required fix:** the warning copy gains a line: *"This Agreement will send from your `cosco-finance` Pitstop (SGTradex) to Maersk's SGBuildex endpoint. SGBuildex residency rules apply."*
 
 ### Scenario E — operator changes a binding mid-life
 

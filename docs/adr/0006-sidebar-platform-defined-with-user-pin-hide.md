@@ -24,4 +24,4 @@ At `/portal/all`, the sidebar is the union of items visible across the user's DE
 - No tenant may rename "Agreements" → "Sharing Arrangements" in their sidebar in v1. This pre-empts vocabulary drift that would undo the unification recorded in [CONTEXT.md](../../CONTEXT.md).
 - Pin and hide preferences are stored per user (server-side, not localStorage — survives device changes).
 - Hidden items remain reachable via cmd-K palette (P5-D power-user enhancement); a "Show hidden items" footer link in the sidebar provides a non-keyboard escape hatch.
-- If a future tenant has a contractual or regulatory constraint requiring a label override (e.g. HealthDex legal docs binding a specific term), revisit and consider per-DEX label config — but only as a new ADR, not as undocumented drift.
+- If a future tenant has a contractual or regulatory constraint requiring a label override (e.g. SGHealthdex legal docs binding a specific term), revisit and consider per-DEX label config — but only as a new ADR, not as undocumented drift.

@@ -14,31 +14,31 @@ body.theme-tx {
   --theme-90: var(--tx-90);
   --theme-95: var(--tx-95);
   --theme-98: var(--tx-98);
-  /* TradeX 20 = #4e0058 */
+  /* SGTradex 20 = #4e0058 */
   --theme-tint-rgb: 78, 0, 88;
 }
 
 body.theme-bx {
   --theme-20: var(--bx-20);
   --theme-40: var(--bx-40);
-  --theme-50: var(--bx-40);     /* BuildEx 50 maps to its mid-stop */
+  --theme-50: var(--bx-40);     /* SGBuildex 50 maps to its mid-stop */
   --theme-80: var(--bx-80);
   --theme-90: var(--bx-90);
   --theme-95: var(--bx-95);
   --theme-98: var(--bx-98);
-  /* BuildEx 20 = #00266d */
+  /* SGBuildex 20 = #00266d */
   --theme-tint-rgb: 0, 38, 109;
 }
 
 body.theme-hx {
   --theme-20: var(--hx-20);
   --theme-40: var(--hx-40);
-  --theme-50: var(--hx-40);     /* HealthDex 50 maps to its mid-stop */
+  --theme-50: var(--hx-40);     /* SGHealthdex 50 maps to its mid-stop */
   --theme-80: var(--hx-80);
   --theme-90: var(--hx-90);
   --theme-95: var(--hx-95);
   --theme-98: var(--hx-98);
-  /* HealthDex 20 = #003c32 */
+  /* SGHealthdex 20 = #003c32 */
   --theme-tint-rgb: 0, 60, 50;
 }
 

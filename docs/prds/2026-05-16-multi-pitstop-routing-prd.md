@@ -14,7 +14,7 @@
 
 ## Problem Statement
 
-Today, the design-concepts prototype models routing as if every participant has exactly one Pitstop per DEX. But in production, organisations across TradeDex / HealthDex / BuildEx already operate with **zero, one, or many Pitstop portals per DEX** — slicing by division, by branch, by geography, by team, or any other axis their org chart dictates. The prototype's Agreement and Message flows silently dropped this capability, even though the live `admin-corev2` already keys routing on `(producerPitstopId, consumerPitstopId)`.
+Today, the design-concepts prototype models routing as if every participant has exactly one Pitstop per DEX. But in production, organisations across SGTradex / SGHealthdex / SGBuildex already operate with **zero, one, or many Pitstop portals per DEX** — slicing by division, by branch, by geography, by team, or any other axis their org chart dictates. The prototype's Agreement and Message flows silently dropped this capability, even though the live `admin-corev2` already keys routing on `(producerPitstopId, consumerPitstopId)`.
 
 From an operator's perspective: *"I work for an Org with multiple Pitstop portals. I want to set up data sharing with a counterparty and have it route correctly. I should not have to learn anything about the counterparty's internal Pitstop setup, and I shouldn't have to reconfigure my own Pitstops every time I create a new Agreement."*
 

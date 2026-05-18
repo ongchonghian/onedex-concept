@@ -8,7 +8,7 @@ An amendment-and-renegotiation workflow that would allow live schema upgrade on 
 
 During P8 grilling round 2, we proposed an "Upgrade schema" affordance in the Composer — a banner that would let operators bump an Agreement to a newer data element version on demand, with explicit counterparty re-consent. Then we fact-checked against Atlassian and found:
 
-- **CTD-10307** ("Done") — a DexConnect bug where extraction schema fields appeared in the wrong payload structure. Discovered in *QA*, not prevented by design contract. Payloads are not validated against an agreed schema version up front at the wire layer.
+- **CTD-10307** ("Done") — a DEXconnect bug where extraction schema fields appeared in the wrong payload structure. Discovered in *QA*, not prevented by design contract. Payloads are not validated against an agreed schema version up front at the wire layer.
 - **DSV Phase 2** (CTD-10228, CTD-10227, CTD-10242, CTD-10354 — Done / QA Done) — semantic versioning infrastructure is being built, but explicitly scoped to *internal admin* per Confluence page **915407031**. No cross-pitstop alignment.
 - **Confluence page 891453466** — the team has raised the cross-pitstop-coordination question ("Single Pitstop for BCA users → that means there must be a way t[o]…") but the design is unspecified.
 - **No formal ADR or RFC** for a cross-org schema negotiation protocol exists.

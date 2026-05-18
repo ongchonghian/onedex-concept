@@ -5,7 +5,7 @@
 
    setFlow accepts either a literal HTML string or a builder
    function (dexLabel) => html. The builder pattern lets the ribbon
-   stay accurate when the user switches DEX (TradeX/BuildEx/HealthDex)
+   stay accurate when the user switches DEX (SGTradex/SGBuildex/SGHealthdex)
    mid-flow — switchDex() in theme.js calls refreshFlowRibbon() to
    re-evaluate the builder against the new DEX label.
    ============================================================ */
@@ -13,9 +13,9 @@
 let flowTextBuilder = null; // function(dexLabel: string) => htmlString
 
 function currentDexLabel() {
-  if (document.body.classList.contains('theme-bx')) return 'BuildEx';
-  if (document.body.classList.contains('theme-hx')) return 'HealthDex';
-  return 'TradeX';
+  if (document.body.classList.contains('theme-bx')) return 'SGBuildex';
+  if (document.body.classList.contains('theme-hx')) return 'SGHealthdex';
+  return 'SGTradex';
 }
 
 function refreshFlowRibbon() {
@@ -60,11 +60,11 @@ function runFlow(name) {
       goto('ap-review');
       break;
     case 'cross-dex':
-      // Cross-DEX flow names BuildEx specifically — that's the scenario, not the active DEX.
-      // Use a builder so the active-DEX framing stays accurate even on BuildEx/HealthDex.
-      setFlow(name, (dex) => `<strong>Cross-DEX acknowledge:</strong> from ${dex}, create an Agreement with <code style="background:rgba(166,20,185,0.1);padding:1px 4px;border-radius:3px">Acme Construction</code> (BuildEx-primary) — the warning will fire on counterparty pick.`);
+      // Cross-DEX flow names SGBuildex specifically — that's the scenario, not the active DEX.
+      // Use a builder so the active-DEX framing stays accurate even on SGBuildex/SGHealthdex.
+      setFlow(name, (dex) => `<strong>Cross-DEX acknowledge:</strong> from ${dex}, create an Agreement with <code style="background:rgba(166,20,185,0.1);padding:1px 4px;border-radius:3px">Acme Construction</code> (SGBuildex-primary) — the warning will fire on counterparty pick.`);
       startWizard('direct');
-      setTimeout(() => toast('Pick any data element to continue · Acme Construction is on BuildEx so the warning fires at step 2'), 600);
+      setTimeout(() => toast('Pick any data element to continue · Acme Construction is on SGBuildex so the warning fires at step 2'), 600);
       break;
     case 'migration':
       setFlow(name, () => '<strong>Migration onboarding:</strong> you used admin-ui yesterday. Here\'s what changed today.');

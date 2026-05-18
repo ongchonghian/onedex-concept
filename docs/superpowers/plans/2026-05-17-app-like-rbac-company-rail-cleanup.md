@@ -17,14 +17,14 @@ This inverts the model:
 | Persona switching via prototype-rail pills changes which rail items are visible. | Persona switching via prototype-rail pills is a fine-tune override of the current scene; rail items stay visible always. |
 | Hide rail items that the current persona can't use. | Every rail item is always visible; clicking it switches the persona/role/company to match its declared scene. |
 
-The in-app sidebar inside the portal-frame **still** gates by role — but that's correct app simulation. Once the rail has placed you in Marcus/Cosco/Admin User on TradeX, the sidebar should show what Admin User on TradeX sees. The rail places the simulation; the sidebar reflects the simulation.
+The in-app sidebar inside the portal-frame **still** gates by role — but that's correct app simulation. Once the rail has placed you in Marcus/Cosco/Admin User on SGTradex, the sidebar should show what Admin User on SGTradex sees. The rail places the simulation; the sidebar reflects the simulation.
 
 ## What this means concretely
 
-When the user clicks `Inbox · TradeX` on the outer rail, the app:
+When the user clicks `Inbox · SGTradex` on the outer rail, the app:
 
 1. **Resets** — closes panels, hides overlays, clears injected banners, exits any active flow, exits any active wizard, clears scenario-only DOM mutations from prior screens.
-2. **Applies the scene binding** declared by that rail item — switches persona to Marcus, switches DEX to TradeX, sets role to Admin User, sets scenario to C, loads the Cosco-on-TradeX-scenario-C seed.
+2. **Applies the scene binding** declared by that rail item — switches persona to Marcus, switches DEX to SGTradex, sets role to Admin User, sets scenario to C, loads the Cosco-on-SGTradex-scenario-C seed.
 3. **Renders** the target screen (`inbox-tx`) from the seed.
 4. **Syncs the prototype-rail** persona pill and scenario pill to reflect the now-active scene.
 
@@ -36,7 +36,7 @@ Each rail item gets a `data-scene` attribute (or attribute set) declaring the tu
 
 ### Defaults
 
-The prototype's primary tour persona is **Marcus / Cosco / Admin User / TradeX / scenario C** (the SGTradex-realistic default). Any rail item that doesn't need to be different inherits this default.
+The prototype's primary tour persona is **Marcus / Cosco / Admin User / SGTradex / scenario C** (the SGTradex-realistic default). Any rail item that doesn't need to be different inherits this default.
 
 ### Scene table
 
@@ -48,9 +48,9 @@ The prototype's primary tour persona is **Marcus / Cosco / Admin User / TradeX /
 | **User flows · First-time user** | Marcus | Cosco | TX | Admin User | C | (starts flow `first-agreement`) | A first-time Cosco operator creating their first Agreement. |
 | **User flows · Extend before expiry** | Marcus | Cosco | TX | Admin User | C | (starts flow `extend`) | Cosco extending an existing Agreement with PSA. |
 | **User flows · Approve incoming** | Marcus | Cosco | TX | Admin User | C | (starts flow `approve`) | Marcus approving an incoming invitation from Maersk. **Ambiguity:** "approve" sounds like counterparty side, but in the demo Marcus is always the operator; the "counterparty" in `approve` is whoever invited Marcus. Resolution: Marcus, scenario C, with an incoming invitation pre-seeded. |
-| **User flows · Cross-DEX acknowledge** | Marcus | Cosco | TX → BX | Admin User on TX, Operation User on BX | C | (starts flow `cross-dex`) | Marcus crossing from TradeX into BuildEx territory. **Ambiguity:** which DEX is "primary"? Resolution: TX is the starting DEX; the flow demonstrates the warning when a TX action implicates BX. |
+| **User flows · Cross-DEX acknowledge** | Marcus | Cosco | TX → BX | Admin User on TX, Operation User on BX | C | (starts flow `cross-dex`) | Marcus crossing from SGTradex into SGBuildex territory. **Ambiguity:** which DEX is "primary"? Resolution: TX is the starting DEX; the flow demonstrates the warning when a TX action implicates BX. |
 | **User flows · Migration onboarding** | Marcus | Cosco | TX | Admin User | C | (starts flow `migration`) | Migrated legacy user banner + welcome. |
-| **Work · Inbox · TradeX** | Marcus | Cosco | TX | Admin User | C | inbox-tx | Cosco's TradeX inbox. |
+| **Work · Inbox · SGTradex** | Marcus | Cosco | TX | Admin User | C | inbox-tx | Cosco's SGTradex inbox. |
 | **Work · Inbox · all DEXes** | Marcus | Cosco | (cross-DEX) | aggregated | C | inbox-all | **Ambiguity:** Pat is SP-scoped, Sarah is platform tier — neither has a cross-DEX participant inbox. Resolution: this rail item is Marcus-only by design. |
 | **Work · Drafts** | Marcus | Cosco | TX | Admin User | C | drafts | Cosco's drafts. |
 | **Work · Empty state (new user)** | Marcus | Cosco | TX | Admin User | (none) | empty | **Ambiguity:** is this Marcus pre-onboarding, or a different user? Resolution: Marcus, but with `emptyState=true` flag — same identity, empty seeds. Mirrors what a fresh Cosco user sees on day 1. |
@@ -237,7 +237,7 @@ The prototype-rail at the top of the canvas keeps its persona and scenario pills
 
 ## In-app sidebar (inside the portal-frame) — unchanged
 
-Once a scene is applied, the in-app sidebar still gates by the active role (today's `refreshSidebarVisibility()` is correct as-is). This is the right behaviour — within the simulation of "Marcus on TradeX as Admin User", the sidebar should only show items Admin User can use. The rail-as-scene-picker model and the role-gated in-app sidebar are complementary, not contradictory.
+Once a scene is applied, the in-app sidebar still gates by the active role (today's `refreshSidebarVisibility()` is correct as-is). This is the right behaviour — within the simulation of "Marcus on SGTradex as Admin User", the sidebar should only show items Admin User can use. The rail-as-scene-picker model and the role-gated in-app sidebar are complementary, not contradictory.
 
 ## Phased implementation
 
@@ -267,7 +267,7 @@ Add the four Pat/Sarah rail items to `index.html`. Wire them via the same `apply
 
 ### Phase 7 — Prototype-rail becomes fine-tune
 Update the persona pill click handler to switch persona without resetting the scene; same for scenario pill. Drop the outer-rail item's active highlight when the active state no longer matches any rail item's declaration.
-**Acceptance:** click `Inbox · TradeX`, then click Pat's persona pill — the inbox now shows Pat's CrimsonLogic view but the rail's highlight has dropped (signalling "off-scene").
+**Acceptance:** click `Inbox · SGTradex`, then click Pat's persona pill — the inbox now shows Pat's CrimsonLogic view but the rail's highlight has dropped (signalling "off-scene").
 
 ## Files touched
 
@@ -297,9 +297,9 @@ Update the persona pill click handler to switch persona without resetting the sc
 1. Click any rail item → screen renders fresh, no leaked banners or panels.
 2. Open `Agreement detail`, hit the on-screen Revoke button (state-switcher), then click `Agreements list` in the rail → revoke banner gone, status pill default.
 3. Click `Persona scenes · SP operator (Pat) — Compose as SP` → topbar shows CrimsonLogic chrome, Acting as Maersk chip visible, scenario D pill active, outer rail's `Compose Message` item un-highlighted.
-4. Click `Inbox · TradeX` → resets to Marcus/Cosco/Admin User/C; prototype-rail's Marcus pill goes active.
-5. Click Marcus's BuildEx in the prototype-rail's DEX switcher (fine-tune) → role chip changes to Operation User, +New button vanishes, sidebar collapses to Inbox/Messages/Data elements + "Limited view" pill. Rail highlight drops.
-6. Click `Inbox · TradeX` again → returns cleanly to Admin User on TX.
+4. Click `Inbox · SGTradex` → resets to Marcus/Cosco/Admin User/C; prototype-rail's Marcus pill goes active.
+5. Click Marcus's SGBuildex in the prototype-rail's DEX switcher (fine-tune) → role chip changes to Operation User, +New button vanishes, sidebar collapses to Inbox/Messages/Data elements + "Limited view" pill. Rail highlight drops.
+6. Click `Inbox · SGTradex` again → returns cleanly to Admin User on TX.
 7. Cycle through every rail item top-to-bottom. Each lands in its declared scene exactly. No "what's on screen?" mystery.
 
 Each step has a single observable yes/no.

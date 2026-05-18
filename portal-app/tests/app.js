@@ -136,8 +136,8 @@ function goto(name) {
   }
 
   // Per-DEX data-element picker — the wizard's data-picker step is a static
-  // HTML tree of TradeX elements. When the operator enters the wizard while
-  // on BuildEx or HealthDex, rebuild the tree from DATA_ELEMENTS_BY_DEX so
+  // HTML tree of SGTradex elements. When the operator enters the wizard while
+  // on SGBuildex or SGHealthdex, rebuild the tree from DATA_ELEMENTS_BY_DEX so
   // the picker offers Subcontractor Onboarding / BCA Compliance / Manpower
   // utilization (BX) or Patient Referral Record / Diabetic Foot Screening /
   // Prescription Dispense Record (HX) instead of Bill of Lading et al.
@@ -225,7 +225,7 @@ const WIZ_INITIAL = {
   isPack: true,
   viaPackSplit: false,
   cp: 'Maersk Logistics Pte Ltd',
-  cpDetail: 'Carrier · UEN 200512345R · TradeX · Ready for B/L sharing',
+  cpDetail: 'Carrier · UEN 200512345R · SGTradex · Ready for B/L sharing',
   sp: null,
   spDetail: null,
   direction: 'send',
@@ -607,7 +607,7 @@ function workspaceAgreementToAgreementsRow(agreement) {
       initials: (agreement.counterpartyOrgName || 'CP').split(' ').map((part) => part[0]).join('').slice(0, 2),
       name: agreement.counterpartyOrgName,
       role: 'Counterparty',
-      dex: ({ tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[agreement.dexId] || 'TradeX')
+      dex: ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[agreement.dexId] || 'SGTradex')
     },
     element: {
       name: agreement.dataElementSummary.name,
@@ -624,7 +624,7 @@ function workspaceAgreementToAgreementsRow(agreement) {
 }
 
 function workspaceAgreementToDetailSeed(agreement) {
-  const dexLabel = ({ tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[agreement.dexId] || 'TradeX');
+  const dexLabel = ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[agreement.dexId] || 'SGTradex');
   const operatorOrg = ORGS[agreement.operatorOrgId] || {};
   const counterpartyShort = (agreement.counterpartyOrgName || '').split(' ').slice(0, 2).join(' ');
   return {
@@ -739,7 +739,7 @@ SCREEN_RENDERERS['drafts'] = function renderDraftsFromSeed(seed) {
    Rebuilds the cards list inside .screen[data-screen="participants"]. Each
    seed entry is one card: { initials, name, meta, useCases, status, joined,
    crossDex? }. status.kind ∈ {'active','pending','cross-dex'} drives the
-   right-column treatment — cross-DEX cards show a dex-chip (e.g., BuildEx)
+   right-column treatment — cross-DEX cards show a dex-chip (e.g., SGBuildex)
    in place of the status pill and tint the avatar with the cross-DEX colour
    ramp. The cards container preserves its layout styles; only innerHTML is
    replaced. */
@@ -758,7 +758,7 @@ SCREEN_RENDERERS['participants'] = function renderParticipantsFromSeed(seed) {
   // `status.kind === 'cross-dex'` reads its primary DEX (chip color + chip label)
   // from ORGS[orgId].primaryDexId, and its "Cross-DEX since {date}" line from
   // the ORG_DEX_MEMBERSHIPS row keyed `<orgId>-<currentDex>`.
-  const DEX_LABELS = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' };
+  const DEX_LABELS = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' };
   function _formatDateShort(iso) {
     if (!iso) return '';
     const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -803,7 +803,7 @@ SCREEN_RENDERERS['participants'] = function renderParticipantsFromSeed(seed) {
     let statusBlock;
     if (p.status && p.status.kind === 'cross-dex') {
       // Show a DEX chip instead of a status pill for cross-DEX participants.
-      // Label comes from ORGS[orgId].primaryDexId — no more hardcoded 'BuildEx'.
+      // Label comes from ORGS[orgId].primaryDexId — no more hardcoded 'SGBuildex'.
       const dex = primaryDexCode || 'bx';
       const chipLabel = (p.status.label) || primaryDexLabel || '';
       statusBlock = `<span class="dex-chip ${dex}"><span class="dex-dot"></span>${chipLabel}</span>`;
@@ -1019,7 +1019,7 @@ SCREEN_RENDERERS['messages'] = function renderMessagesListFromSeed(seed) {
 
 /* ---------- renderPackDetailFromSeed ----------
    The pack-detail page (`data-screen="pack-detail"`, ADR 0027) is hardcoded
-   with the TradeX *Vessel arrival distribution* pack. When the operator
+   with the SGTradex *Vessel arrival distribution* pack. When the operator
    clicks a pack-parent row in the BX or HX agreements list, the page should
    reflect the BX *Subcontractor enablement pack* or HX *Clinical referral
    pack* instead.
@@ -1054,7 +1054,7 @@ SCREEN_RENDERERS['pack-detail'] = function renderPackDetailFromSeed(agreementsSe
   }
 
   const dexCode = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
-  const dexLabel = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dexCode] || 'TradeX';
+  const dexLabel = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexCode] || 'SGTradex';
 
   // Top row — DEX chip + pack ID + Revoke pack action label
   const dexChip = screen.querySelector('.pack-top-row .dex-chip');
@@ -1166,7 +1166,7 @@ SCREEN_RENDERERS['pack-detail'] = function renderPackDetailFromSeed(agreementsSe
 /* ---------- renderMessageDetailFromSeed ----------
    Message-detail is a heavy page driven primarily by setMessageFlow's
    MESSAGE_FLOWS table (timeline, payload, metadata, activity). That table
-   carries hard-coded TradeX content (Bill of Lading → PSA, etc.). The seed
+   carries hard-coded SGTradex content (Bill of Lading → PSA, etc.). The seed
    we receive here is one message row (resolved via SCENE_SEEDS' alias to
    messages[0]) which carries the *identity* of the currently-shown message:
    element, counterparty, agreement, dex, status.
@@ -1203,7 +1203,7 @@ SCREEN_RENDERERS['message-detail'] = function renderMessageDetailFromSeed(seed) 
 
   // DEX chip — derive from the active scene's dex (seed itself doesn't carry it)
   const dexCode = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
-  const dexLabel = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dexCode] || 'TradeX';
+  const dexLabel = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexCode] || 'SGTradex';
   const dexChip = screen.querySelector('.detail-header .top-row .dex-chip');
   if (dexChip) {
     dexChip.className = `dex-chip ${dexCode}`;
@@ -1283,8 +1283,8 @@ SCREEN_RENDERERS['message-detail'] = function renderMessageDetailFromSeed(seed) 
 
 /* ---------- renderDataElementsCatalogFromDex ----------
    The Data Elements directory (`data-screen="data-elements"`) is the per-DEX
-   catalog admins curate. Static HTML hardcodes the TradeX catalog. This
-   renderer rebuilds the H1 ("Data elements on TradeX/BuildEx/HealthDex"),
+   catalog admins curate. Static HTML hardcodes the SGTradex catalog. This
+   renderer rebuilds the H1 ("Data elements on SGTradex/SGBuildex/SGHealthdex"),
    the top filter chip totals, the category chip strip, and the table tbody
    from DATA_ELEMENTS_BY_DEX[dex].
 
@@ -1298,7 +1298,7 @@ function renderDataElementsCatalogFromDex(dexCode) {
   const screen = document.querySelector('.screen[data-screen="data-elements"]');
   if (!screen) return;
 
-  const dexLabel = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dexCode] || 'TradeX';
+  const dexLabel = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexCode] || 'SGTradex';
 
   // H1 in canvas-meta
   const h1 = screen.querySelector('.canvas-meta h1');
@@ -1389,13 +1389,13 @@ function renderDataElementsCatalogFromDex(dexCode) {
 
 /* ---------- renderDataPickerFromDex ----------
    The New-Agreement wizard's data-picker step is static HTML hard-coded with
-   TradeX elements (Bill of Lading, Vessel arrival pack, …). When the
-   operator enters the wizard while on BuildEx or HealthDex, rebuild the
+   SGTradex elements (Bill of Lading, Vessel arrival pack, …). When the
+   operator enters the wizard while on SGBuildex or SGHealthdex, rebuild the
    `.picker-tree` + the right-pane headline from DATA_ELEMENTS_BY_DEX[dex]
    so the picker offers the correct elements for the active DEX.
 
    Idempotent + null-safe: returns silently if the screen isn't in the DOM,
-   or if no DEX-specific registry exists (TradeX still works because its
+   or if no DEX-specific registry exists (SGTradex still works because its
    entry is just a structured re-statement of the static HTML — falling
    back to the existing markup if the registry is missing is also fine). */
 function renderDataPickerFromDex(dexCode) {
@@ -1435,7 +1435,7 @@ function renderDataPickerFromDex(dexCode) {
   }
 
   // 3. Right pane — show the DEX's headline pack/element so the picker
-  //    doesn't strand the operator on a TradeX-themed default.
+  //    doesn't strand the operator on a SGTradex-themed default.
   const detail = screen.querySelector('.picker-detail');
   if (detail && reg.headline) {
     const h = reg.headline;
@@ -2048,7 +2048,7 @@ function setDetailState(state, btn) {
       }
       if (nudge) {
         nudge.style.display = '';
-        nudge.innerHTML = '<i class="ti ti-arrows-cross" aria-hidden="true"></i><p>This Agreement crosses a DEX boundary — counterparty (<strong>Acme Construction</strong>) primary DEX is <strong>BuildEx</strong>. Every Message triggers a cross-DEX ack before Submit.</p><button class="btn-secondary" onclick="openComposer(\'cross-dex\')">Send Message</button>';
+        nudge.innerHTML = '<i class="ti ti-arrows-cross" aria-hidden="true"></i><p>This Agreement crosses a DEX boundary — counterparty (<strong>Acme Construction</strong>) primary DEX is <strong>SGBuildex</strong>. Every Message triggers a cross-DEX ack before Submit.</p><button class="btn-secondary" onclick="openComposer(\'cross-dex\')">Send Message</button>';
       }
       updateTimelineForState('active');
       announce('Cross-DEX agreement preview active — Send Message will route through the cross-DEX warning flow');
@@ -2335,11 +2335,11 @@ function setMessageFlow(flow, btn) {
   if (!data) return;
 
   // DEX chip — always re-sync from the active DEX so navigating BX → TX
-  // doesn't leave a stale BuildEx chip behind from the prior render. The
+  // doesn't leave a stale SGBuildex chip behind from the prior render. The
   // seed-driven renderer (renderMessageDetailFromSeed) re-applies these
   // same values from the seed afterwards, so the two paths agree.
   const dexCode = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
-  const dexLabel = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dexCode] || 'TradeX';
+  const dexLabel = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexCode] || 'SGTradex';
   const dexChip = document.querySelector('.screen[data-screen="message-detail"] .detail-header .top-row .dex-chip');
   if (dexChip) {
     dexChip.className = `dex-chip ${dexCode}`;
@@ -3118,9 +3118,9 @@ const COMPOSE_SCENARIOS = {
     showCrossDexBanner: true,
     crossDex: {
       counterparty: 'Acme Construction Pte Ltd',
-      cpDex: 'BuildEx',
-      fromDex: 'TradeX',
-      target: 'BuildEx',
+      cpDex: 'SGBuildex',
+      fromDex: 'SGTradex',
+      target: 'SGBuildex',
       residency: 'Standard residency · cross-DEX OK with warning'
     },
     submitLabel: 'Submit · send to Acme Construction',
@@ -3729,7 +3729,7 @@ function closeCpPanel() {
  * would come from the registry API; here we mock it inline. */
 const DE_GROUPS = {
   'Vessel arrival pack': {
-    description: 'Curated Data element pack — flows together when a vessel arrives. Maintained by TradeX admins.',
+    description: 'Curated Data element pack — flows together when a vessel arrives. Maintained by SGTradex admins.',
     elements: [
       { name: 'ETA', version: 'v2.0' },
       { name: 'Vessel particulars', version: 'v1.5' },
@@ -3749,7 +3749,7 @@ const DE_GROUPS = {
 
 const DE_ELEMENTS = {
   'Bill of Lading': {
-    description: 'Document of title issued by a carrier to acknowledge receipt of cargo. The most-used data element on TradeX.',
+    description: 'Document of title issued by a carrier to acknowledge receipt of cargo. The most-used data element on SGTradex.',
     category: 'Trade documents',
     activeVersion: 'v2.1',
     previousVersions: ['v2.0 (deprecated)', 'v1.x (retired)'],
@@ -3960,7 +3960,7 @@ function startImpersonation() {
     updateImpTime();
     if (impSeconds <= 0) endImpersonation('timeout');
   }, 1000);
-  toast('Impersonation started · acting as participant on TradeX', 'warn');
+  toast('Impersonation started · acting as participant on SGTradex', 'warn');
 }
 function updateImpTime() {
   const m = Math.floor(impSeconds / 60);
@@ -4006,7 +4006,7 @@ function toggleBulkAck(cb) {
   cta.disabled = !cb.checked;
   cta.classList.toggle('on', cb.checked);
 }
-function bulkProceed() { toast('Extending 13 Agreements · HealthDex excluded'); goto('inbox-tx'); }
+function bulkProceed() { toast('Extending 13 Agreements · SGHealthdex excluded'); goto('inbox-tx'); }
 
 /* ---------- Migration banner dismiss ---------- */
 function dismissMigration(btn) {
@@ -4183,11 +4183,11 @@ function sidebarItemAllowedFor(item, role) {
 function buildPortalTopbarHtml() {
   // Role chip surfaces the user's permission level on the current DEX (Admin /
   // Participant / Super-admin). Reads from INBOX_BY_DEX (the source of truth for
-  // per-DEX user role). Defaults to TradeX 'Admin' before any switchDex.
+  // per-DEX user role). Defaults to SGTradex 'Admin' before any switchDex.
   const initialRole = (INBOX_BY_DEX.tx && INBOX_BY_DEX.tx.role) || 'Admin';
   const slug = initialRole.toLowerCase().replace(/[^a-z]/g, '-');
   return `
-    <button class="workspace-pill" onclick="toggleSwitcher(event)" aria-haspopup="menu" aria-label="Workspace switcher"><span class="dot"></span><span class="ws-label">TradeX</span><i class="ti ti-chevron-down" style="font-size:14px" aria-hidden="true"></i></button>
+    <button class="workspace-pill" onclick="toggleSwitcher(event)" aria-haspopup="menu" aria-label="Workspace switcher"><span class="dot"></span><span class="ws-label">SGTradex</span><i class="ti ti-chevron-down" style="font-size:14px" aria-hidden="true"></i></button>
     <span class="role-chip" data-role="${slug}" title="Your permission level on this DEX. Admin can manage Agreements; Participant has read + accept rights; Super-admin can take governance actions."><i class="ti ti-id-badge-2" aria-hidden="true"></i><span class="role-chip-label">${initialRole}</span></span>
     <div class="search-pill" role="button" tabindex="0" onclick="openSearch()" onkeydown="if(event.key==='Enter'){openSearch()}" aria-label="Open search"><i class="ti ti-search" aria-hidden="true"></i><span>Search</span><kbd>⌘K</kbd></div>
     <div class="spacer"></div>
@@ -4257,8 +4257,8 @@ function refreshRoleChips() {
   const profileRole = document.getElementById('profile-role-value');
   if (profileRole) {
     // Org name comes from the active persona, not the DEX config — so when Pat
-    // (CrimsonLogic SP) is logged in on TradeX, the role row reads "Admin User ·
-    // CrimsonLogic on TradeX" instead of leaking the DEX's default Cosco context.
+    // (CrimsonLogic SP) is logged in on SGTradex, the role row reads "Admin User ·
+    // CrimsonLogic on SGTradex" instead of leaking the DEX's default Cosco context.
     const personaOrgName = (PERSONAS[currentPersona] && PERSONAS[currentPersona].orgName);
     const orgName = personaOrgName || cfg.orgName || 'your org';
     profileRole.textContent = role + ' · ' + orgName + ' on ' + (cfg.name || 'this DEX');
@@ -4668,7 +4668,7 @@ function switchToColleague(userId) {
 }
 
 /* Renders a resolved-user line adjacent to the prototype rail's scenario caption —
- * "→ Marcus (Cosco · TradeX)" — surfaces the dispatch chain so the audience can
+ * "→ Marcus (Cosco · SGTradex)" — surfaces the dispatch chain so the audience can
  * follow who's on stage. ADR 0030 Q9-g.
  *
  * Lives as a SIBLING of the caption so applyMpScenario's textContent reassignment
@@ -4676,7 +4676,7 @@ function switchToColleague(userId) {
 function updateRailCaptionWithActiveUser(active) {
   if (!active) return;
   const dexCode = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
-  const dexLabel = { tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[dexCode] || dexCode;
+  const dexLabel = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexCode] || dexCode;
   const orgName = active.orgName || '';
   const text = ` → ${active.name} (${orgName}${orgName ? ' · ' : ''}${dexLabel})`;
   document.querySelectorAll('[data-mp-scenario-caption]').forEach(node => {
@@ -4991,9 +4991,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.dex-mini').forEach(link => {
     link.addEventListener('click', () => {
       const label = link.textContent.trim();
-      if (label.startsWith('TradeX'))    { switchDex('tx'); goto('inbox-tx'); }
-      else if (label.startsWith('BuildEx'))   { switchDex('bx'); goto('inbox-tx'); }
-      else if (label.startsWith('HealthDex')) { switchDex('hx'); goto('inbox-tx'); }
+      if (label.startsWith('SGTradex'))    { switchDex('tx'); goto('inbox-tx'); }
+      else if (label.startsWith('SGBuildex'))   { switchDex('bx'); goto('inbox-tx'); }
+      else if (label.startsWith('SGHealthdex')) { switchDex('hx'); goto('inbox-tx'); }
     });
   });
 
@@ -5034,7 +5034,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // The previous per-element wiring (`document.querySelectorAll('.leaf').forEach...`)
   // bound handlers exactly once at DOMContentLoaded — but `renderDataPickerFromDex()`
   // wipes the tree and detail innerHTML every time the user navigates to data-picker
-  // (so it can swap in BuildEx / HealthDex elements), stripping the handlers off.
+  // (so it can swap in SGBuildex / SGHealthdex elements), stripping the handlers off.
   // A single delegated listener on the screen survives every innerHTML replacement.
   const dataPickerScreen = document.querySelector('.screen[data-screen="data-picker"]');
   if (dataPickerScreen) {
@@ -5127,10 +5127,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = row.querySelector('.cp-name').textContent;
         const meta = row.querySelector('.cp-meta').textContent;
         const dexChip = row.querySelector('.dex-chip');
-        const dexLabel = dexChip ? dexChip.textContent.trim() : 'TradeX';
+        const dexLabel = dexChip ? dexChip.textContent.trim() : 'SGTradex';
         wiz.cp = name;
         wiz.cpDetail = meta + ' · ' + dexLabel;
-        wiz.crossDex = !dexLabel.includes('TradeX');
+        wiz.crossDex = !dexLabel.includes('SGTradex');
         if (typeof persistWizardDraftFromState === 'function') persistWizardDraftFromState();
         if (wiz.crossDex) {
           toast(name + ' is on ' + dexLabel + ' — cross-DEX warning incoming', 'warn');
@@ -5146,7 +5146,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // First paint
   renderStepper();
-  // Apply role-driven UI gates on initial paint (defaults to participant → TradeX → Admin User).
+  // Apply role-driven UI gates on initial paint (defaults to participant → SGTradex → Admin User).
   // switchDex() re-runs these on subsequent DEX switches; switchPersona() does the same on
   // persona switch.
   if (typeof applyPersonaChrome === 'function') applyPersonaChrome();

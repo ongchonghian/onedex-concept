@@ -18,7 +18,7 @@ The original instinct was to optimise the picker for speed-of-known-targets — 
 
 | Sub-decision | Choice | Rationale |
 |---|---|---|
-| **Who curates groups?** | Per-DEX admin | TradeDex shipping vocabulary differs from BuildEx construction vocabulary; one platform team can't reasonably own both. Org-level group creation is premature. |
+| **Who curates groups?** | Per-DEX admin | SGTradex shipping vocabulary differs from SGBuildex construction vocabulary; one platform team can't reasonably own both. Org-level group creation is premature. |
 | **Are groups versioned?** | No — mutable | Snapshot semantics already protect existing Agreements. Group versioning adds complexity that doesn't change the protection. Edits to a group are audit-logged. |
 | **Can users mix groups and individual elements in one Agreement?** | Yes | Once a group is expanded into its snapshot, the user can deselect any element and add others via the same picker. The Agreement's stored set is the resulting `data_element_ids[]`; group membership is provenance only. |
 | **Snapshot semantics** | Snapshot at creation; never re-evaluated | Matches the product principle that data elements within an Agreement do not change. Removes "live reference" failure modes. |

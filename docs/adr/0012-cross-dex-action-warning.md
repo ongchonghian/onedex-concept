@@ -24,17 +24,17 @@ For data classes flagged as `residency-strict` (TBD by compliance), the warning 
 
 Generic warnings ("Are you sure?") get ignored after the second exposure. The warning copy must say *what's different* and *why it matters*:
 
-> *"Maersk's primary DEX is BuildEx. You're creating this Agreement from TradeDex. BuildEx residency rules apply to outgoing data, and governance approval may be required."*
+> *"Maersk's primary DEX is SGBuildex. You're creating this Agreement from SGTradex. SGBuildex residency rules apply to outgoing data, and governance approval may be required."*
 
 Name the DEXes. Name the rule classes that differ. Avoid hedging.
 
 ## Audit logging
 
-Every cross-DEX warning acknowledgement is audit-logged: *"Marcus acknowledged cross-DEX warning at 14:23, proceeded with Agreement-create on Maersk (BuildEx primary)."* Acknowledgement is a deliberate audit signal, not just UI state.
+Every cross-DEX warning acknowledgement is audit-logged: *"Marcus acknowledged cross-DEX warning at 14:23, proceeded with Agreement-create on Maersk (SGBuildex primary)."* Acknowledgement is a deliberate audit signal, not just UI state.
 
 ## Consequences
 
 - Three UI components to build (inline panel, modal, chip), all reusable across record types.
 - `data_element` rows need a `residency_class` enum to drive the hard-stop behaviour.
 - The audit-log schema must support a `cross_dex_acknowledged` flag with the user's acknowledgement timestamp and the source/target DEX pair.
-- Future scenario worth pre-empting: what happens if a counterparty moves their primary DEX from BuildEx to TradeDex while an existing Agreement is active? Not covered by this ADR — a separate "DEX-membership-change effects on existing Agreements" decision is needed before that scenario is supported.
+- Future scenario worth pre-empting: what happens if a counterparty moves their primary DEX from SGBuildex to SGTradex while an existing Agreement is active? Not covered by this ADR — a separate "DEX-membership-change effects on existing Agreements" decision is needed before that scenario is supported.

@@ -34,7 +34,7 @@
       __comment_: 'Agreement detail page seed. All fields below feed into setDetailState in app.js.',
       agrId:           'AGR-XXXX-XXXXX',        // Agreement ID (display only — collision-free in seed scope)
       dex:             null,                    // 'tx' | 'bx' | 'hx' — match the scene's DEX
-      dexLabel:        null,                    // 'TradeX' | 'BuildEx' | 'HealthDex'
+      dexLabel:        null,                    // 'SGTradex' | 'SGBuildex' | 'SGHealthdex'
       title:           null,                    // e.g. "Share Bills of Lading with Maersk"
       composerTooltip: null,                    // hovers on the Compose CTA
       sendMessageLabel:'Send Message',
@@ -173,7 +173,7 @@
 
     const key = `${userId}-${orgId}-${dexId}-${scenarioId}`;
     const seed = {
-      __comment_: `Seed for ${USERS[userId].name} operating ${ORGS && ORGS[orgId] ? ORGS[orgId].name : orgId} on ${{ tx:'TradeX', bx:'BuildEx', hx:'HealthDex' }[dexId]} (scenario ${scenarioId}).`,
+      __comment_: `Seed for ${USERS[userId].name} operating ${ORGS && ORGS[orgId] ? ORGS[orgId].name : orgId} on ${{ tx:'SGTradex', bx:'SGBuildex', hx:'SGHealthdex' }[dexId]} (scenario ${scenarioId}).`,
       // Fill in what you need. Slots set to null fall back to per-DEX fixtures
       // (INBOX_BY_DEX[dex]) and the static HTML defaults — the renderer is null-safe.
       detail:           _emptyDetail(),

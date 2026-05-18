@@ -21,7 +21,7 @@ HITL because the colleague-switch interaction crosses three surfaces (chevron po
 - [ ] Clicking the chevron opens a small popover listing colleagues at the same affiliation
 - [ ] Selecting a colleague switches `activeUser` and, if needed, navigates to that colleague's home DEX
 - [ ] Profile menu gains a *"Switch colleague"* row showing the same list
-- [ ] When a colleague's home DEX differs, the menu row labels the destination: *"Switch to David (HealthDex)"*
+- [ ] When a colleague's home DEX differs, the menu row labels the destination: *"Switch to David (SGHealthdex)"*
 - [ ] Profile menu's existing demo-persona row renames to *"Demo: switch persona category"*
 - [ ] Chevron and *"Switch colleague"* row are both hidden when no same-affiliation colleagues exist (Pat is the only CrimsonLogic user — both affordances hide)
 - [ ] Avatar 200ms cross-fade fires on colleague switch (reuses Issue 0002 transition)
@@ -29,5 +29,5 @@ HITL because the colleague-switch interaction crosses three surfaces (chevron po
 
 ## Blocked by
 
-- [Issue 0003 — David on HealthDex](./0003-david-on-healthdex.md)
+- [Issue 0003 — David on SGHealthdex](./0003-david-on-healthdex.md)
 - [Issue 0004 — Wei Lin canonicalised](./0004-wei-lin-canonicalised-platform-tier.md)

@@ -1,6 +1,6 @@
 # URL-anchored DEX context in the unified portal
 
-The unified portal serves users who may hold memberships in multiple DEXes (SGTraDex, BuildEx, HealthDex). We need a way to know which DEX a given page is operating in. We chose to anchor the DEX in the URL path: `/portal/<dex>/...` for DEX-scoped views and `/portal/all/...` for the aggregated multi-DEX view. `/portal` alone redirects to the user's single DEX (if they have one) or `/portal/all` (if they have multiple).
+The unified portal serves users who may hold memberships in multiple DEXes (SGTradex, SGBuildex, SGHealthdex). We need a way to know which DEX a given page is operating in. We chose to anchor the DEX in the URL path: `/portal/<dex>/...` for DEX-scoped views and `/portal/all/...` for the aggregated multi-DEX view. `/portal` alone redirects to the user's single DEX (if they have one) or `/portal/all` (if they have multiple).
 
 ## Considered Options
 

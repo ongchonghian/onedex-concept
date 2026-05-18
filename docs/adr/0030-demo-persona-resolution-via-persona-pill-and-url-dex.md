@@ -27,7 +27,7 @@ The original prototype seeded Marcus with three roles — `tx: 'Admin User', bx:
 Phase 4 of the implementation plan removes Marcus's BX and HX entries. The corresponding demo personas are:
 
 - **Alice Ho** (Cosco) — `dexRoles: { bx: 'Operation User' }`. Reuses the name "Alice" that already appears in the existing TX team inbox seed line ("Alice approved CrimsonLogic appointment for ABC Logistics") — that seed line is reattributed to the same Alice once she exists as a fixture.
-- **David Kim** (Cosco) — `dexRoles: { hx: 'Super Admin' }`. New fixture for HealthDex.
+- **David Kim** (Cosco) — `dexRoles: { hx: 'Super Admin' }`. New fixture for SGHealthdex.
 
 The existing BX team inbox seed line "Wei Lin approved subcontractor onboarding" — which previously named someone who also appears in the platform inbox — is reattributed to Alice in the same pass. Wei Lin is anchored to her single canonical home: platform-tier SGTradex teammate.
 
@@ -43,7 +43,7 @@ Each persona-aware chrome component changes its behaviour. Decisions ratified du
 | **Role chip** | Hides when `resolveSeat() === null` | Cleaner than rendering a "No access" chip on a screen the user shouldn't be on |
 | **Capability gates** | Read role from `resolveSeat()` instead of `PERSONAS[currentPersona].role` | Wiring change only; semantics unchanged |
 | **Sidebar** | On off-DEX navigation: auto-redirect for accidental landings, "switch colleague" CTA for cross-link entry | Honest display of the new model's answer ("you need a different person for this DEX") |
-| **Rail caption** | Suffixes with the resolved user — e.g., *"Scenario C · Marcus (Cosco · TradeX)"* | Surfaces the dispatch chain so demo controllers and audience never wonder who's on stage |
+| **Rail caption** | Suffixes with the resolved user — e.g., *"Scenario C · Marcus (Cosco · SGTradex)"* | Surfaces the dispatch chain so demo controllers and audience never wonder who's on stage |
 
 ## Scenario pills gain a `dexes:` validity field
 
@@ -61,7 +61,7 @@ Per Phase 4 of `2026-05-17-app-like-rbac-company-rail-cleanup.md` (extended at t
 
 ## Consequences
 
-- **Marcus loses observable access to BX and HX.** Stakeholders who saw earlier demos with Marcus across all DEXes will see a different operator on BX/HX after Phase 4. The rail caption explicitly names the new operator ("Scenario A · Alice (Cosco · BuildEx)") to head off the "what happened to Marcus" question.
+- **Marcus loses observable access to BX and HX.** Stakeholders who saw earlier demos with Marcus across all DEXes will see a different operator on BX/HX after Phase 4. The rail caption explicitly names the new operator ("Scenario A · Alice (Cosco · SGBuildex)") to head off the "what happened to Marcus" question.
 - **`primaryOrgId` on `USERS`** becomes the resolver tiebreaker for users with multiple matching affiliations on the same DEX. Sparse today; future-proof.
 - **Off-DEX-route handling** is now a real code path. Previously masked by Marcus's universal access; now exercised by every "wrong persona on this DEX" navigation. The Phase 4 auto-redirect is the minimum-viable gate; Phase 5 adds the CTA polish.
 - **`ROLE_CAPABILITIES` lookup** moves to `resolveSeat().role`. No new capability strings; the lookup just goes through one more layer.

@@ -20,4 +20,4 @@ This issue completes the resolution of the cross-tier contradiction surfaced dur
 
 ## Blocked by
 
-- [Issue 0002 — Alice on BuildEx](./0002-alice-on-buildex.md)
+- [Issue 0002 — Alice on SGBuildex](./0002-alice-on-buildex.md)

@@ -168,7 +168,7 @@ Proposed record shape:
   },
   "counterparty": {
     "name": "Maersk Logistics Pte Ltd",
-    "detail": "Carrier · UEN 200512345R · TradeX · Ready for B/L sharing"
+    "detail": "Carrier · UEN 200512345R · SGTradex · Ready for B/L sharing"
   },
   "terms": {
     "durationMonths": 12,

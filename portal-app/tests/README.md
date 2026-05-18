@@ -1,6 +1,6 @@
 # Dex Portal — Prototype (refactored)
 
-Self-contained navigable prototype of the unified Dex portal. Honours dex-repo design tokens (TradeX purple, BuildEx blue, HealthDex teal — from `dex-monorepo/ui/libs/src/assets/scss/base/_colors.scss`) and Avenir typography. No build step — open `index.html` in any modern browser.
+Self-contained navigable prototype of the unified Dex portal. Honours dex-repo design tokens (SGTradex purple, SGBuildex blue, SGHealthdex teal — from `dex-monorepo/ui/libs/src/assets/scss/base/_colors.scss`) and Avenir typography. No build step — open `index.html` in any modern browser.
 
 This is the refactored version of the original single-file `portal-prototype.html`. Both still exist; this directory demonstrates a clean architecture with separated concerns.
 
@@ -202,7 +202,7 @@ A second wave added the remaining sidebar pages plus dark mode:
 |---|---|---|
 | `data-screen="dashboard"` | Metric cards (active / pending / renewals / messages) + a 7-day chart with clickable bars + recent activity feed + top counterparties | `screens.css`, `index.html`, `app.js` (sidebar route) |
 | `data-screen="data-elements"` | Full data-element registry — table with element name, version badges (active/draft/deprecated/retired), category, usage bar showing adoption, status, and action buttons (impact analysis, promote, migration tracking) | Same |
-| `data-screen="participants"` | Cards-style directory — orgs with avatar, type, UEN, team-member count, active-Agreement count, use-case pills, status, and the cross-DEX Acme Construction example showing the BuildEx chip + cross-DEX status | Same |
+| `data-screen="participants"` | Cards-style directory — orgs with avatar, type, UEN, team-member count, active-Agreement count, use-case pills, status, and the cross-DEX Acme Construction example showing the SGBuildex chip + cross-DEX status | Same |
 | **Dark mode** | Full app dark theme via token rebinding | `tokens.css` (added `--surface*` tokens), `themes.css` (added `body.dark` block), `components.css` + `screens.css` (find/replace `background: #ffffff` → `background: var(--surface)`), `app.js` (toggle + localStorage persistence) |
 
 ### Dark mode — the architecture's payoff
@@ -232,7 +232,7 @@ That's it. Every component, every screen, every modal, every popover flips colou
 
 **Toggle access:** floating FAB at bottom-left (always visible), Settings → Theme → Colour mode toggle, or via the profile menu. Preference persists across reloads via `localStorage`.
 
-**Both DEX theme switching and dark mode are independent and composable.** A user can be in BuildEx + dark mode, HealthDex + light mode, etc. Try: switch to BuildEx, then toggle the moon icon — the BuildEx blue accent stays while the chrome inverts.
+**Both DEX theme switching and dark mode are independent and composable.** A user can be in SGBuildex + dark mode, SGHealthdex + light mode, etc. Try: switch to SGBuildex, then toggle the moon icon — the SGBuildex blue accent stays while the chrome inverts.
 
 This is what the token-first architecture buys you. With the original single-file prototype, dark mode would have required editing every component's hardcoded colours — easily 200+ touch points. Here, it was ~30 lines + one find/replace.
 

@@ -168,7 +168,7 @@ function colleaguesForActiveUser() {
       const dexKeys = Object.keys(aff.dexRoles);
       if (dexKeys.length) homeDexCode = dexKeys[0];
     }
-    const homeDexLabel = homeDexCode ? ({ tx: 'TradeX', bx: 'BuildEx', hx: 'HealthDex' }[homeDexCode] || homeDexCode) : null;
+    const homeDexLabel = homeDexCode ? ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[homeDexCode] || homeDexCode) : null;
     out.push({
       userId,
       name: user.name,

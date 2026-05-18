@@ -31,16 +31,16 @@ Legend: **F** = full seed · **·** = placeholder (null/empty) · **—** = slot
 
 ## Per-DEX coverage
 
-- **TradeX**: 6 scenes (6 full)
+- **SGTradex**: 6 scenes (6 full)
   - `marcus-cosco-tx-A`
   - `marcus-cosco-tx-B`
   - `marcus-cosco-tx-C`
   - `pat-crimsonlogic-tx-D`
   - `marcus-cosco-tx-E`
   - `marcus-cosco-tx-F`
-- **BuildEx**: 1 scene (1 full)
+- **SGBuildex**: 1 scene (1 full)
   - `alice-cosco-bx-C`
-- **HealthDex**: 1 scene (1 full)
+- **SGHealthdex**: 1 scene (1 full)
   - `david-cosco-hx-C`
 
 ## How to add a scene
