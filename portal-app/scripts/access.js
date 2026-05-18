@@ -40,6 +40,45 @@
      seedFor(scene, screenId)         → returns the seed slice for (scene, screen).
    ============================================================ */
 
+/* ---------- Workspace reference accessors ----------
+   ADR 0028-0031 / local-first workspace migration: identity + pitstop graph
+   are cloned into workspace.{users,orgs,userOrgAffiliations} at bootstrap by
+   seedReferenceCollections(). These helpers prefer the workspace clone so
+   future mutations (admin tools, doctor flows) flow through one source of
+   truth, and fall back to the script-level globals when the workspace hasn't
+   been built yet (early bootstrap, test harnesses that load access.js before
+   workspace.js, or empty/uninitialised collections). */
+/* Re-entrancy guard: access.js helpers are called transitively from inside
+   workspace construction (mergeSceneIntoWorkspace → seedFor → resolveSeedKey
+   → _refUsers). If we let getWorkspace() recurse during a build, the
+   workspaceCache hasn't been assigned yet and we'd loop forever. While the
+   guard is held, callers fall back to the global state.js constants — which
+   is exactly the data that seedReferenceCollections() is about to clone. */
+let _refLock = false;
+function _refWorkspace() {
+  if (_refLock) return null;
+  if (typeof getWorkspace !== 'function') return null;
+  _refLock = true;
+  try { return getWorkspace(); }
+  catch (_) { return null; }
+  finally { _refLock = false; }
+}
+function _refUsers() {
+  const ws = _refWorkspace();
+  if (ws && ws.users && Object.keys(ws.users).length) return ws.users;
+  return (typeof USERS !== 'undefined') ? USERS : {};
+}
+function _refOrgs() {
+  const ws = _refWorkspace();
+  if (ws && ws.orgs && Object.keys(ws.orgs).length) return ws.orgs;
+  return (typeof ORGS !== 'undefined') ? ORGS : {};
+}
+function _refAffiliations() {
+  const ws = _refWorkspace();
+  if (ws && ws.userOrgAffiliations && Object.keys(ws.userOrgAffiliations).length) return ws.userOrgAffiliations;
+  return (typeof USER_ORG_AFFILIATIONS !== 'undefined') ? USER_ORG_AFFILIATIONS : {};
+}
+
 /* ---------- resolveSeat (the canonical read path) ----------
    Inputs:   userId, dexId
    Output:   { tier, orgId, role }  or  null
@@ -55,13 +94,14 @@
    affiliation becomes non-sparse (future issues), the resolver will need a
    "currently-active affiliation" pointer; for now primaryOrgId IS that pointer. */
 function resolveSeat(userId, dexId) {
-  const user = USERS && USERS[userId];
+  const users = _refUsers();
+  const user = users[userId];
   if (!user) return null;
   const orgId = user.primaryOrgId;
   if (!orgId) return null;
-  const affiliation = USER_ORG_AFFILIATIONS && USER_ORG_AFFILIATIONS[`${userId}-${orgId}`];
+  const affiliation = _refAffiliations()[`${userId}-${orgId}`];
   if (!affiliation || affiliation.status !== 'active') return null;
-  const org = ORGS && ORGS[orgId];
+  const org = _refOrgs()[orgId];
   if (!org) return null;
   if (org.tier === 'platform') {
     return { tier: 'platform', orgId, role: affiliation.platformRole || null };
@@ -96,7 +136,8 @@ function resolveActiveUserId(personaId, dexId) {
   if (!personaId) return null;
   const defaultUserId = (typeof PERSONA_TO_USER !== 'undefined') ? PERSONA_TO_USER[personaId] : null;
   if (!defaultUserId) return null;
-  const defaultUser = USERS[defaultUserId];
+  const users = _refUsers();
+  const defaultUser = users[defaultUserId];
   if (!defaultUser) return null;
 
   // Platform-tier shortcut — Sarah / Wei Lin operate cross-DEX, no per-DEX seat search.
@@ -112,9 +153,9 @@ function resolveActiveUserId(personaId, dexId) {
   // use personaType 'participant' as a sidebar-shape marker — see app.js
   // switchPersona). Filtering on primaryOrgId is the canonical category boundary.
   const defaultOrgId = defaultUser.primaryOrgId;
-  for (const userId of Object.keys(USERS)) {
+  for (const userId of Object.keys(users)) {
     if (userId === defaultUserId) continue;
-    const user = USERS[userId];
+    const user = users[userId];
     if (!user || user.primaryOrgId !== defaultOrgId) continue;
     if (resolveSeat(userId, dexId)) return userId;
   }
@@ -138,15 +179,16 @@ function workspaceMeta() {
    personaType still matches the current persona category — otherwise the pin is
    stale and ignored. */
 function activeUserId() {
+  const users = _refUsers();
   const meta = workspaceMeta();
-  if (meta && meta.activeUserId && USERS[meta.activeUserId]) {
+  if (meta && meta.activeUserId && users[meta.activeUserId]) {
     return meta.activeUserId;
   }
   if (typeof currentPersona === 'undefined') return null;
-  if (typeof pinnedActiveUserId === 'string' && pinnedActiveUserId && USERS[pinnedActiveUserId]) {
-    const pinnedUser = USERS[pinnedActiveUserId];
+  if (typeof pinnedActiveUserId === 'string' && pinnedActiveUserId && users[pinnedActiveUserId]) {
+    const pinnedUser = users[pinnedActiveUserId];
     const defaultUserId = PERSONA_TO_USER[currentPersona];
-    const defaultUser = defaultUserId && USERS[defaultUserId];
+    const defaultUser = defaultUserId && users[defaultUserId];
     if (defaultUser && pinnedUser.primaryOrgId === defaultUser.primaryOrgId) {
       return pinnedActiveUserId;
     }
@@ -164,18 +206,20 @@ function activeUserId() {
  * "Switch colleague" rows. Hidden affordance when the list is empty (Pat at
  * CrimsonLogic, or any sole-employee org). */
 function colleaguesForActiveUser() {
+  const users = _refUsers();
+  const affiliations = _refAffiliations();
   const activeUid = activeUserId();
-  if (!activeUid || !USERS[activeUid]) return [];
-  const activeOrgId = USERS[activeUid].primaryOrgId;
+  if (!activeUid || !users[activeUid]) return [];
+  const activeOrgId = users[activeUid].primaryOrgId;
   if (!activeOrgId) return [];
   const out = [];
-  for (const userId of Object.keys(USERS)) {
+  for (const userId of Object.keys(users)) {
     if (userId === activeUid) continue;
-    const user = USERS[userId];
+    const user = users[userId];
     if (!user || user.primaryOrgId !== activeOrgId) continue;
     // Find this colleague's home DEX = first DEX their primary affiliation has a seat on.
     let homeDexCode = null;
-    const aff = USER_ORG_AFFILIATIONS[`${userId}-${activeOrgId}`];
+    const aff = affiliations[`${userId}-${activeOrgId}`];
     if (aff && aff.dexRoles) {
       const dexKeys = Object.keys(aff.dexRoles);
       if (dexKeys.length) homeDexCode = dexKeys[0];
@@ -201,9 +245,9 @@ function activeUserDescriptor() {
   const uid = activeUserId();
   if (!uid) return persona;            // null → router will redirect; chrome reads default for the transition frame
   if (uid === persona.userId) return persona;
-  const user = USERS[uid];
+  const user = _refUsers()[uid];
   if (!user) return persona;
-  const org = ORGS[user.primaryOrgId];
+  const org = _refOrgs()[user.primaryOrgId];
   return {
     userId:      uid,
     name:        user.name,
@@ -219,16 +263,17 @@ function activeUserDescriptor() {
 /* ---------- Identity ---------- */
 
 function activeUser() {
+  const users = _refUsers();
   const uid = activeUserId();
-  if (uid) return USERS[uid] || null;
+  if (uid) return users[uid] || null;
   const persona = PERSONAS[currentPersona];
-  return persona ? (USERS[persona.userId] || null) : null;
+  return persona ? (users[persona.userId] || null) : null;
 }
 
 function activeOrg() {
   const user = activeUser();
   if (!user) return null;
-  return ORGS[user.primaryOrgId] || null;
+  return _refOrgs()[user.primaryOrgId] || null;
 }
 
 /* Returns the active user's primary affiliation row, or null. Sparse today —
@@ -237,9 +282,9 @@ function activeOrg() {
 function activeAffiliation() {
   const persona = PERSONAS[currentPersona];
   if (!persona) return null;
-  const user = USERS[persona.userId];
+  const user = _refUsers()[persona.userId];
   if (!user || !user.primaryOrgId) return null;
-  const aff = USER_ORG_AFFILIATIONS[`${persona.userId}-${user.primaryOrgId}`];
+  const aff = _refAffiliations()[`${persona.userId}-${user.primaryOrgId}`];
   return aff || null;
 }
 
@@ -368,7 +413,8 @@ function readSceneFromAttrs(el) {
   Object.keys(scene).forEach(k => { if (scene[k] === null || scene[k] === '') delete scene[k]; });
   // Derive org from user if not explicitly set.
   // Derive org from user's primary affiliation if not explicitly set.
-  if (scene.user && !scene.org && USERS[scene.user]) scene.org = USERS[scene.user].primaryOrgId;
+  const _refUsersForScene = _refUsers();
+  if (scene.user && !scene.org && _refUsersForScene[scene.user]) scene.org = _refUsersForScene[scene.user].primaryOrgId;
   return scene;
 }
 
@@ -396,14 +442,16 @@ function readSceneFromAttrs(el) {
  * — that's the "home" DEX of the user's affiliation. */
 function resolveSeedKey(scene) {
   scene = scene || {};
+  const users = _refUsers();
+  const orgs = _refOrgs();
   const user = scene.user || (PERSONAS[currentPersona] && PERSONAS[currentPersona].userId);
-  if (!user || !USERS[user]) return null;
+  if (!user || !users[user]) return null;
   // Org defaults from the user's primary affiliation
-  const org = scene.org || USERS[user].primaryOrgId;
+  const org = scene.org || users[user].primaryOrgId;
   // DEX defaults: current URL DEX → user's home DEX (org's primaryDexId)
   let dex = scene.dex;
   if (!dex && typeof currentDexCode === 'function') dex = currentDexCode();
-  if (!dex && org && ORGS && ORGS[org] && ORGS[org].primaryDexId) dex = ORGS[org].primaryDexId;
+  if (!dex && org && orgs[org] && orgs[org].primaryDexId) dex = orgs[org].primaryDexId;
   const scenario = scene.scenario || (typeof activeMpScenario !== 'undefined' ? activeMpScenario : 'C');
   if (!org || !dex || !scenario) return null;
   return `${user}-${org}-${dex}-${scenario}`;
@@ -436,8 +484,9 @@ function _legacySceneKey(scene) {
    default would always return Marcus and SCENE_SEEDS lookups for Alice's BX or
    David's HX scenes would never resolve on plain in-app sidebar navigation. */
 function currentScene() {
+  const users = _refUsers();
   const userId = (typeof activeUserId === 'function') ? activeUserId() : null;
-  const orgId = userId && USERS[userId] ? USERS[userId].primaryOrgId : null;
+  const orgId = userId && users[userId] ? users[userId].primaryOrgId : null;
   const dex = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
   const scenario = (typeof activeMpScenario !== 'undefined') ? activeMpScenario : 'C';
   return { user: userId, org: orgId, dex, scenario };

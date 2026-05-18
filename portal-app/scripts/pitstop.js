@@ -27,6 +27,52 @@
    NONE of these functions touch the DOM. Renderers read their output.
    ============================================================ */
 
+/* ---------- Workspace-backed MRU accessors ----------
+   The Composer-chip MRU map lives on workspace.meta.pitstopMru so it survives
+   reload (local-first workspace migration; see access.js _refWorkspace docs).
+   The script-level `pitstopMru` in state.js is kept as a fallback for
+   bootstraps that load pitstop.js without the workspace stack (e.g., the
+   pitstop-settings test harness loads only state.js + pitstop.js). Writes
+   stamp BOTH stores so the in-memory mirror stays consistent and tests that
+   only read `pitstopMru` still see the value.
+
+   Re-entrancy: getWorkspace() can transitively re-enter access.js helpers
+   during a build. We don't need the re-entrancy guard here because pitstop.js
+   helpers are only called at runtime — never from inside a workspace build —
+   but we still keep the try/catch for safety. */
+function _pitstopMruMap() {
+  if (typeof getWorkspace === 'function') {
+    try {
+      const ws = getWorkspace();
+      if (ws && ws.meta) {
+        if (!ws.meta.pitstopMru) ws.meta.pitstopMru = {};
+        return ws.meta.pitstopMru;
+      }
+    } catch (_) { /* fall through to global */ }
+  }
+  return (typeof pitstopMru !== 'undefined') ? pitstopMru : {};
+}
+function _readPitstopMru(operatorId, elementId, direction) {
+  const map = _pitstopMruMap();
+  return (((map[operatorId] || {})[elementId] || {})[direction]) || null;
+}
+function _writePitstopMru(operatorId, elementId, direction, pitstopId) {
+  const map = _pitstopMruMap();
+  if (!map[operatorId]) map[operatorId] = {};
+  if (!map[operatorId][elementId]) map[operatorId][elementId] = {};
+  map[operatorId][elementId][direction] = pitstopId;
+  // Mirror to the script-level global for any legacy reader that still
+  // imports state.js without the workspace stack.
+  if (typeof pitstopMru !== 'undefined' && map !== pitstopMru) {
+    if (!pitstopMru[operatorId]) pitstopMru[operatorId] = {};
+    if (!pitstopMru[operatorId][elementId]) pitstopMru[operatorId][elementId] = {};
+    pitstopMru[operatorId][elementId][direction] = pitstopId;
+  }
+  if (typeof persistWorkspace === 'function') {
+    try { persistWorkspace(); } catch (_) { /* persistence is best-effort */ }
+  }
+}
+
 /* ---------- Lookup helpers ---------- */
 
 function getPitstopById(pitstopId) {
@@ -88,7 +134,7 @@ function getActingAsPitstopChipState(operatorId, orgId, dexId, elementId, direct
     return { eligible, default: eligible[0], isAmbiguous: false, isBlocked: false };
   }
   // Multi-eligible: try MRU; fall through to null (first-time) if MRU is no longer eligible
-  const mruId = (((pitstopMru[operatorId] || {})[elementId] || {})[direction]);
+  const mruId = _readPitstopMru(operatorId, elementId, direction);
   const mruStillEligible = mruId && eligible.find(p => p.id === mruId);
   return {
     eligible,
@@ -100,9 +146,7 @@ function getActingAsPitstopChipState(operatorId, orgId, dexId, elementId, direct
 }
 
 function recordPitstopMru(operatorId, elementId, direction, pitstopId) {
-  if (!pitstopMru[operatorId]) pitstopMru[operatorId] = {};
-  if (!pitstopMru[operatorId][elementId]) pitstopMru[operatorId][elementId] = {};
-  pitstopMru[operatorId][elementId][direction] = pitstopId;
+  _writePitstopMru(operatorId, elementId, direction, pitstopId);
 }
 
 /* ---------- 3. shouldFireScopeCaptureStep ----------

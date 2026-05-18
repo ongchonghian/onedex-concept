@@ -306,14 +306,15 @@ function resetApp() {
   });
 
   // 6. Status-pill class drift — the detail page's status pill flips between
-  //    .pending / .suspended / .ended via setDetailState. Reset to default
-  //    (active) by re-running setDetailState if the detail screen exists.
-  //    Guarded — setDetailState is a heavy mutator; skip if the screen isn't
-  //    in the DOM yet (early init paths).
+  //    .pending / .suspended / .ended via setDetailState. Re-sync from the
+  //    workspace so the next paint reflects the selected Agreement's real
+  //    state instead of an unconditional 'active'. Guarded — setDetailState
+  //    is a heavy mutator; skip if the screen isn't in the DOM yet (early
+  //    init paths). syncDetailStateFromWorkspace falls back to 'active' when
+  //    no agreement is selected, preserving the pre-workspace behaviour.
   const detailScreen = document.querySelector('.screen[data-screen="detail"]');
-  if (detailScreen && typeof setDetailState === 'function') {
-    // 'active' is the default-state key in setDetailState's switch.
-    setDetailState('active');
+  if (detailScreen && typeof syncDetailStateFromWorkspace === 'function') {
+    syncDetailStateFromWorkspace();
   }
 
   // 7. Composer state — return to scenario-C-flavoured push-high-stakes.
@@ -773,6 +774,58 @@ function renderAgreementsFromWorkspace() {
   if (typeof refreshDoctorAgreementPicker === 'function') refreshDoctorAgreementPicker();
 }
 
+/* Map a workspace agreement record onto the setDetailState key that
+   reflects its current state. Mirror of flowKeyForMessage for the agreement
+   detail page — replaces the legacy "always 'active'" reset that was
+   shadowing the workspace.
+
+   Truth-table (workspace.js §AGREEMENT TRUTH TABLE):
+     state='pending'                      → 'pending-mine' if the active user
+                                            is the operator, else 'pending-theirs'
+     state='active'   && suspended         → 'suspended'
+     state='active'   && !suspended        → 'active'
+                                            (no special case for cross-DEX /
+                                             pack — those flip a CTA, not the
+                                             state machine; see
+                                             openComposerFromDetail)
+     state='ended', endedReason='EXPIRED' → 'expired'
+     state='ended', endedReason= other     → 'revoked'
+     anything else                         → 'active' (safe default) */
+function deriveDetailStateKey(agreement) {
+  if (!agreement) return 'active';
+  if (agreement.state === 'pending') {
+    const activeUid = (typeof activeUserId === 'function') ? activeUserId() : null;
+    // Operator-side users see "pending-mine" (their action took the agreement
+    // pending); anyone else viewing the same record sees "pending-theirs".
+    const activeUser = activeUid && (typeof getUser === 'function' ? getUser(activeUid) : null);
+    if (activeUser && agreement.operatorOrgId && activeUser.primaryOrgId === agreement.operatorOrgId) {
+      return 'pending-mine';
+    }
+    return 'pending-theirs';
+  }
+  if (agreement.state === 'active') {
+    return agreement.suspended ? 'suspended' : 'active';
+  }
+  if (agreement.state === 'ended') {
+    return agreement.endedReason === 'EXPIRED' ? 'expired' : 'revoked';
+  }
+  return 'active';
+}
+
+/* Sync the detail-page state-switcher (setDetailState) with the currently-
+   selected workspace agreement. Replaces unconditional setDetailState('active')
+   calls — the persona-reset / detail-render paths now show the agreement's
+   real state. Safe no-op when there's no selected agreement or the
+   detail screen isn't in the DOM. */
+function syncDetailStateFromWorkspace() {
+  if (typeof setDetailState !== 'function') return;
+  if (typeof getSelectedAgreementId !== 'function') { setDetailState('active'); return; }
+  const id = getSelectedAgreementId();
+  if (!id) { setDetailState('active'); return; }
+  const agreement = (typeof getAgreementById === 'function') ? getAgreementById(id) : null;
+  setDetailState(deriveDetailStateKey(agreement));
+}
+
 function renderAgreementDetailFromWorkspace() {
   const agreementId = getSelectedAgreementId();
   if (!agreementId) return;
@@ -785,6 +838,15 @@ function renderAgreementDetailFromWorkspace() {
   }
 
   SCREEN_RENDERERS['detail'](workspaceAgreementToDetailSeed(agreement));
+  // After the seed render stamps in identity-bearing content, sync the
+  // state-switcher (status pill, banners, primary action label) to the
+  // workspace state. Mirrors renderMessageDetailFromWorkspace's call to
+  // setMessageFlow(flowKeyForMessage(message)) — the agreement detail page
+  // now reflects pending / active / suspended / ended-revoked / ended-expired
+  // directly from workspace.agreements[id], not a hardcoded 'active'.
+  if (typeof setDetailState === 'function') {
+    setDetailState(deriveDetailStateKey(agreement));
+  }
 }
 
 /* ---------- Messages: workspace → seed-row shape (ADR 0020/0021)

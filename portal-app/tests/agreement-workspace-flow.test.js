@@ -176,3 +176,89 @@ test('Demo tools can reset the workspace and stay hidden until opened', () => {
   window.resetWorkspaceAndRender();
   assert.equal(window.getWorkspace().agreementDrafts[draft.draftId], undefined);
 });
+
+/* ---------- deriveDetailStateKey — workspace-state → setDetailState ---------- */
+
+test('deriveDetailStateKey maps a pending agreement owned by the active user to "pending-mine"', () => {
+  const window = loadPortal({ scriptPaths: FULL_SCRIPT_PATHS });
+  window.initializeWorkspaceApp();
+  window.patchWorkspaceMeta({ activeUserId: 'marcus' });
+
+  const draft = window.createAgreementDraft({
+    operatorId: 'marcus', orgId: 'cosco', dexId: 'tx', type: 'DIRECT', direction: 'send',
+    dataElement: { name: 'Bill of Lading', detail: 'Single element · v2.1' },
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' },
+    terms: { durationMonths: 12, residency: 'standard' }
+  });
+  const { agreementId } = window.submitAgreementDraft(draft.draftId);
+  const agreement = window.getAgreementById(agreementId);
+
+  assert.equal(agreement.state, 'pending');
+  assert.equal(window.deriveDetailStateKey(agreement), 'pending-mine');
+});
+
+test('deriveDetailStateKey maps a pending agreement seen by a counterparty-side user to "pending-theirs"', () => {
+  const window = loadPortal({ scriptPaths: FULL_SCRIPT_PATHS });
+  window.initializeWorkspaceApp();
+
+  const draft = window.createAgreementDraft({
+    operatorId: 'marcus', orgId: 'cosco', dexId: 'tx', type: 'DIRECT', direction: 'send',
+    dataElement: { name: 'Bill of Lading', detail: 'Single element · v2.1' },
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' },
+    terms: { durationMonths: 12, residency: 'standard' }
+  });
+  const { agreementId } = window.submitAgreementDraft(draft.draftId);
+  const agreement = window.getAgreementById(agreementId);
+
+  // Flip the active user to someone whose primaryOrgId differs from the
+  // operator's org. Pat at CrimsonLogic is the canonical counterparty-side
+  // persona — Cosco's pending agreement should read as "pending-theirs"
+  // from their seat.
+  window.patchWorkspaceMeta({ activeUserId: 'pat' });
+  assert.equal(window.deriveDetailStateKey(agreement), 'pending-theirs');
+});
+
+test('deriveDetailStateKey reflects state / suspended / endedReason on the workspace record', () => {
+  const window = loadPortal({ scriptPaths: FULL_SCRIPT_PATHS });
+  window.initializeWorkspaceApp();
+  window.patchWorkspaceMeta({ activeUserId: 'marcus' });
+
+  // Build a stub agreement record purely against the truth table — no need
+  // to round-trip through the wizard for this mapping test.
+  const base = { agreementId: 'AGR-STUB', operatorOrgId: 'cosco', counterpartyOrgId: 'psa' };
+
+  assert.equal(window.deriveDetailStateKey(Object.assign({}, base, { state: 'active', suspended: false })), 'active');
+  assert.equal(window.deriveDetailStateKey(Object.assign({}, base, { state: 'active', suspended: true })),  'suspended');
+  assert.equal(window.deriveDetailStateKey(Object.assign({}, base, { state: 'ended',  endedReason: 'EXPIRED' })),          'expired');
+  assert.equal(window.deriveDetailStateKey(Object.assign({}, base, { state: 'ended',  endedReason: 'REVOKED_BY_INITIATOR' })), 'revoked');
+  assert.equal(window.deriveDetailStateKey(Object.assign({}, base, { state: 'ended',  endedReason: 'REJECTED' })),         'revoked');
+  // Defensive default
+  assert.equal(window.deriveDetailStateKey(null), 'active');
+});
+
+test('renderAgreementDetailFromWorkspace syncs the state-switcher to the agreement state', () => {
+  const window = loadPortal({ scriptPaths: FULL_SCRIPT_PATHS });
+  window.initializeWorkspaceApp();
+  window.patchWorkspaceMeta({ activeUserId: 'marcus' });
+
+  // Create + submit a draft so a pending agreement exists and is selected.
+  const draft = window.createAgreementDraft({
+    operatorId: 'marcus', orgId: 'cosco', dexId: 'tx', type: 'DIRECT', direction: 'send',
+    dataElement: { name: 'Bill of Lading', detail: 'Single element · v2.1' },
+    counterparty: { name: 'PSA International', detail: 'Terminal operator · SGTradex' },
+    terms: { durationMonths: 12, residency: 'standard' }
+  });
+  const { agreementId } = window.submitAgreementDraft(draft.draftId);
+  window.setSelectedAgreementId(agreementId);
+
+  window.goto('detail');
+  window.renderAgreementDetailFromWorkspace();
+
+  // After the render path runs setDetailState(deriveDetailStateKey(agreement)),
+  // the state-switcher's active button matches "pending-mine".
+  const activeBtn = window.document.querySelector(
+    '.screen[data-screen="detail"] .state-switcher button.active'
+  );
+  assert.ok(activeBtn, 'expected one state-switcher button to be active');
+  assert.equal(activeBtn.dataset.state, 'pending-mine');
+});

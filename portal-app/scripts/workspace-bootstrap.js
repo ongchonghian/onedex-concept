@@ -7,7 +7,12 @@ function createEmptyWorkspace(meta = {}) {
       activeDexId: meta.activeDexId || 'tx',
       darkMode: false,
       demoToolsOpen: false,
-      showClosedMessages: false
+      showClosedMessages: false,
+      /* Per-operator most-recently-used Pitstop memory (ADR 0028 / pitstop.js).
+         Shape: pitstopMru[operatorId][elementId][direction] = pitstopId
+         Lives in meta so it survives reload — was a transient script-level
+         object in state.js before the workspace migration. */
+      pitstopMru: {}
     },
     /* Reference collections — schema v2.
        Cloned from state.js fixtures on bootstrap so the workspace owns its
