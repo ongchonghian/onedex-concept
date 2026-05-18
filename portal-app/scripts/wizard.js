@@ -75,6 +75,10 @@ function startWizard(type, opts = {}) {
   // sides land in the same 5-step direct wizard; copy flips screen-by-screen.
   wiz.direction = opts.direction || 'send';
   wiz.viaPackSplit = false; // fresh wizard run — clear any stale pack-split memory
+  // Clear element-picked state and the pitstop scope-capture stash so a fresh
+  // run resolves from scratch rather than inheriting the previous run's picks.
+  wiz.deId = null;
+  wiz.scopeCapture = null;
   wizardSteps = wiz.type === 'SERVICE_PROVIDER' ? WIZARD_STEPS_SP : WIZARD_STEPS_DIRECT;
   if (opts.template) wiz.idx = wizardSteps.length - 2; // jump to review
 
@@ -153,15 +157,39 @@ function wizardNext() {
   // multi-Pitstop Org with an unscoped element, divert into wiz-scope-capture so the
   // operator establishes scope inline. Falls through to cp-picker once captured.
   // Mirrors the pack-fork interception pattern. Single-Pitstop Orgs skip this entirely.
-  if (currentScreen === 'data-picker' && typeof shouldFireScopeCaptureStep === 'function') {
+  //
+  // Resolution order (live-first):
+  //   1. The element the operator just clicked in the picker (wiz.deId, set by the
+  //      data-picker leaf click handler in app.js). currentOperatorOrgId() and
+  //      currentDexCode() resolve from the active persona + DEX chrome. Direction
+  //      maps from wiz.direction ('send' → operator produces, 'receive' → consumes).
+  //   2. Scenario fallback — preserved so the authored scenario pills (A–F) still
+  //      demo correctly when a user enters the wizard via a pre-staged scene.
+  //   3. Packs skip entirely; pack-fork is the next step for them, and scope-set
+  //      is captured per member element after split-mapping.
+  if (currentScreen === 'data-picker' && typeof shouldFireScopeCaptureStep === 'function' && !wiz.isPack) {
     const visibleScreen = document.querySelector('.screen.active')?.dataset.screen;
-    const scenario = (typeof MP_SCENARIOS !== 'undefined') ? MP_SCENARIOS[activeMpScenario] : null;
-    if (scenario && visibleScreen !== 'wiz-scope-capture' && visibleScreen !== 'pack-fork') {
-      const fires = shouldFireScopeCaptureStep(scenario.operatorOrg, scenario.operatorDex, scenario.element, 'produces');
-      if (fires) {
-        goto('wiz-scope-capture');
-        syncWizardFoot();
-        return;
+    if (visibleScreen !== 'wiz-scope-capture' && visibleScreen !== 'pack-fork') {
+      const scenario = (typeof MP_SCENARIOS !== 'undefined') ? MP_SCENARIOS[activeMpScenario] : null;
+      const liveOrgId    = (typeof currentOperatorOrgId === 'function') ? currentOperatorOrgId() : null;
+      const liveDexId    = (typeof currentDexCode      === 'function') ? currentDexCode()      : null;
+      const liveElementId = wiz.deId
+        || (typeof elementIdFromName === 'function' ? elementIdFromName(wiz.de) : null);
+      const orgId    = liveOrgId    || (scenario && scenario.operatorOrg);
+      const dexId    = liveDexId    || (scenario && scenario.operatorDex);
+      const elementId = liveElementId || (scenario && scenario.element);
+      const direction = wiz.direction === 'receive' ? 'consumes' : 'produces';
+      if (orgId && dexId && elementId) {
+        const fires = shouldFireScopeCaptureStep(orgId, dexId, elementId, direction);
+        if (fires) {
+          // Stash the resolved tuple so the scope-capture renderer + confirm
+          // handler read identical values (avoids a second resolve that might
+          // diverge if MP_SCENARIOS were swapped mid-flow).
+          wiz.scopeCapture = { orgId, dexId, elementId, direction };
+          goto('wiz-scope-capture');
+          syncWizardFoot();
+          return;
+        }
       }
     }
   }

@@ -116,11 +116,39 @@ function shouldFireScopeCaptureStep(operatorOrgId, dexId, elementId, direction) 
   return scopeIds.length === 0; // unscoped → first use → capture
 }
 
-function persistScopeCapture(operatorOrgId, dexId, elementId, direction, pitstopIds) {
+/* ADR 0033 §Consequences: scope-capture audit records the surface
+   ('wizard' | 'composer' | 'settings') so operators reading lineage can
+   distinguish a deliberate agreement-creation choice from a first-send
+   capture. In production this becomes a column on the audit table; in
+   the prototype we keep an in-memory list and log to console. */
+const SCOPE_CAPTURE_AUDIT = [];
+
+function persistScopeCapture(operatorOrgId, dexId, elementId, direction, pitstopIds, via) {
   if (!PITSTOP_ELEMENT_SCOPE[operatorOrgId]) PITSTOP_ELEMENT_SCOPE[operatorOrgId] = {};
   if (!PITSTOP_ELEMENT_SCOPE[operatorOrgId][dexId]) PITSTOP_ELEMENT_SCOPE[operatorOrgId][dexId] = {};
   if (!PITSTOP_ELEMENT_SCOPE[operatorOrgId][dexId][elementId]) PITSTOP_ELEMENT_SCOPE[operatorOrgId][dexId][elementId] = {};
   PITSTOP_ELEMENT_SCOPE[operatorOrgId][dexId][elementId][direction] = pitstopIds.slice();
+  SCOPE_CAPTURE_AUDIT.push({
+    ts: Date.now(),
+    operatorOrgId, dexId, elementId, direction,
+    pitstopIds: pitstopIds.slice(),
+    capturedVia: via || 'wizard'
+  });
+}
+
+/* ADR 0033 §Decision ¶1: skip path. Operator chose "Decide later"; persist
+   no scope. The agreement is created with empty scope for this element;
+   the Composer chip's capture mode handles the question on first send. */
+function deferScopeCapture() {
+  if (typeof wiz !== 'undefined') {
+    wiz.scopeCapture = null; // clear the resolved-tuple stash
+  }
+  toast('No problem — we\'ll ask which Pitstop to use the first time you send this element. You can also configure it later in Settings → Pitstops.');
+  if (typeof wiz !== 'undefined' && wiz.active && typeof wizardNext === 'function') {
+    wizardNext();
+  } else {
+    goto('cp-picker');
+  }
 }
 
 /* ---------- isCounterpartyRoutable (symmetric joint-state probe) ----------
@@ -170,7 +198,7 @@ function listScopeForPitstop(pitstopId) {
    curated by DEX admin per ADR 0013. */
 /* Element catalogue — names sourced from the live SGTradex seed
    (`local-dev/data/dynamodb/sgtradextech-data-element-dev.json`) and the
-   SGBuildex orchestrator seed (`sgbuildex-dex-orchestrator-dev.json`) so the
+   SGSGBuildex orchestrator seed (`sgbuildex-dex-orchestrator-dev.json`) so the
    prototype's scenarios reflect actual production data-element vocabulary
    rather than placeholder names. */
 const ELEMENT_CATALOGUE = {
@@ -184,7 +212,7 @@ const ELEMENT_CATALOGUE = {
   'mother-vessel-info':        'Mother Vessel Information',
   'storing-order':             'Storing Order',
   'lighter-boat-schedule':     'Lighter Boat Schedule',
-  // SGBuildex — manpower / construction-site reporting domain (per the dex-orchestrator
+  // SGSGBuildex — manpower / construction-site reporting domain (per the dex-orchestrator
   // seed). `manpower_utilization` is the canonical sending element with BCA and HDB
   // listed as receiving regulators; required fields include person_id_no,
   // person_id_and_work_pass_type, person_trade, employer hierarchy, attendance.
@@ -201,6 +229,165 @@ const ELEMENT_CATALOGUE = {
 
 function getElementName(elementId) {
   return ELEMENT_CATALOGUE[elementId] || elementId;
+}
+
+/* ---------- elementIdFromName ----------
+   Reverse-lookup for the data-picker leaf-click handler: turns a human
+   element name ("Bunker Requisition Form") into the canonical catalogue
+   id ('bunker-requisition-form') used as the key in PITSTOP_ELEMENT_SCOPE.
+
+   - Exact catalogue match wins (handles cases where the slug differs from
+     the canonical id, e.g. 'Terminal Pilot Booking Information' → catalogue
+     id 'terminal-pilot-booking').
+   - Falls back to a deterministic slug so picker leaves authored without a
+     catalogue entry still get a stable id. First-use scope capture then
+     fires correctly the first time the operator picks that element.
+   - Case-insensitive on the catalogue match so 'Cargo manifest' and
+     'Cargo Manifest' both resolve to 'cargo-manifest'. */
+function elementIdFromName(name) {
+  if (!name) return null;
+  const trimmed = String(name).trim();
+  const lowerTrimmed = trimmed.toLowerCase();
+  for (const id of Object.keys(ELEMENT_CATALOGUE)) {
+    if (ELEMENT_CATALOGUE[id].toLowerCase() === lowerTrimmed) return id;
+  }
+  return trimmed
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/* ---------- Element → group map ----------
+   ADR 0033's inference rule needs to know which catalogue group an element
+   belongs to. Built lazily: populated when the operator clicks a leaf in
+   the data-picker (see app.js leaf click handler) and supplemented by a
+   scan of DATA_ELEMENTS_BY_DEX + the static SGTradex picker tree below.
+
+   We intentionally don't piggyback the group onto PITSTOP_ELEMENT_SCOPE —
+   scope rows stay (org, dex, element, direction) → [pitstopId] per
+   ADR 0028. The group map is a render-time lookup so the inference can
+   partition elements by group without changing scope storage. */
+const ELEMENT_GROUP_BY_ID = {};
+
+function recordElementGroup(elementId, groupName) {
+  if (!elementId || !groupName) return;
+  ELEMENT_GROUP_BY_ID[elementId] = groupName;
+}
+
+function getElementGroup(elementId) {
+  if (!elementId) return null;
+  if (ELEMENT_GROUP_BY_ID[elementId]) return ELEMENT_GROUP_BY_ID[elementId];
+  // Lazy scan: walk DATA_ELEMENTS_BY_DEX for any leaf whose slugified name
+  // matches this id, and remember the group. Covers elements the operator
+  // hasn't clicked yet (so inference works on first sibling capture).
+  if (typeof DATA_ELEMENTS_BY_DEX !== 'undefined') {
+    for (const dexId of Object.keys(DATA_ELEMENTS_BY_DEX)) {
+      const groups = (DATA_ELEMENTS_BY_DEX[dexId] || {}).groups || [];
+      for (const g of groups) {
+        for (const el of (g.elements || [])) {
+          const id = elementIdFromName(el.name);
+          if (id && !ELEMENT_GROUP_BY_ID[id]) ELEMENT_GROUP_BY_ID[id] = g.name;
+        }
+      }
+    }
+  }
+  // Also scan the static SGTradex picker tree in the DOM (hardcoded
+  // groups under .picker-tree details > summary).
+  document.querySelectorAll('.screen[data-screen="data-picker"] .picker-tree details').forEach(d => {
+    const summary = d.querySelector('summary');
+    if (!summary) return;
+    // Extract the group name (textContent minus the count chip)
+    let groupName = '';
+    Array.from(summary.childNodes).forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE) groupName += node.textContent;
+    });
+    groupName = groupName.trim();
+    if (!groupName) return;
+    d.querySelectorAll('.leaf').forEach(leaf => {
+      let leafName = '';
+      Array.from(leaf.childNodes).forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE) leafName += node.textContent;
+      });
+      const id = elementIdFromName(leafName.trim());
+      if (id && !ELEMENT_GROUP_BY_ID[id]) ELEMENT_GROUP_BY_ID[id] = groupName;
+    });
+  });
+  return ELEMENT_GROUP_BY_ID[elementId] || null;
+}
+
+/* ---------- inferScopeSuggestion (ADR 0033 §Decision ¶3) ----------
+   Returns a single suggested pitstopId based on the operator's own past
+   scope captures. The platform never declares why pitstops exist; it only
+   mirrors the org's observed pattern.
+
+   Rule:
+   1. Find the group of the target element.
+   2. Within the group, tally pitstop occurrences across sibling elements'
+      scope sets (same direction). If any pitstop appears ≥2 times, suggest
+      the most frequent. Ties broken by stable iteration order.
+   3. If no within-group pattern, tally across ALL the org's scope captures
+      for this direction. If any pitstop appears ≥3 times, suggest it.
+   4. Otherwise, return null — the wizard / chip shows empty checkboxes.
+
+   Returns { pitstopId, confidence, reason } so the UI can render a
+   tooltip explaining why the system suggested this. Confidence is a
+   coarse label, not a probability. */
+function inferScopeSuggestion(orgId, dexId, elementId, direction) {
+  if (!orgId || !dexId || !elementId || !direction) return null;
+  const orgScope = ((PITSTOP_ELEMENT_SCOPE[orgId] || {})[dexId]) || {};
+
+  const tallyAndPick = (elementIds, threshold) => {
+    const counts = {};
+    elementIds.forEach(eid => {
+      const set = (orgScope[eid] || {})[direction] || [];
+      // Count an element as "voting" once for each pitstop it scopes to;
+      // an element scoping to two pitstops contributes one to each, which
+      // is the right behaviour — a multi-scoped sibling is evidence for
+      // both choices.
+      set.forEach(pid => { counts[pid] = (counts[pid] || 0) + 1; });
+    });
+    let best = null, bestCount = 0;
+    for (const pid of Object.keys(counts)) {
+      if (counts[pid] > bestCount) { best = pid; bestCount = counts[pid]; }
+    }
+    return bestCount >= threshold ? { pitstopId: best, count: bestCount } : null;
+  };
+
+  // Step 1: same-group inference (N=2)
+  const targetGroup = getElementGroup(elementId);
+  if (targetGroup) {
+    const siblingIds = Object.keys(orgScope).filter(eid => {
+      if (eid === elementId) return false;
+      return getElementGroup(eid) === targetGroup;
+    });
+    const inGroup = tallyAndPick(siblingIds, 2);
+    if (inGroup) {
+      const ps = getPitstopById(inGroup.pitstopId);
+      if (ps && !ps.retired) {
+        return {
+          pitstopId: inGroup.pitstopId,
+          confidence: 'high',
+          reason: `you've routed ${inGroup.count} other "${targetGroup}" element${inGroup.count > 1 ? 's' : ''} this way`
+        };
+      }
+    }
+  }
+
+  // Step 2: org-wide fallback (N=3)
+  const allIds = Object.keys(orgScope).filter(eid => eid !== elementId);
+  const orgWide = tallyAndPick(allIds, 3);
+  if (orgWide) {
+    const ps = getPitstopById(orgWide.pitstopId);
+    if (ps && !ps.retired) {
+      return {
+        pitstopId: orgWide.pitstopId,
+        confidence: 'medium',
+        reason: `you've routed ${orgWide.count} other elements this way`
+      };
+    }
+  }
+
+  return null;
 }
 
 /* ---------- Apply a state-switcher scenario ----------
@@ -307,7 +494,7 @@ function currentOperatorOrgId() {
 }
 
 function currentOperatorDex() {
-  // The active scenario's operatorDex wins. Otherwise default to TradeX.
+  // The active scenario's operatorDex wins. Otherwise default to SGTradex.
   const s = MP_SCENARIOS[activeMpScenario];
   return (s && s.operatorDex) || 'tx';
 }
@@ -319,18 +506,24 @@ function currentOperatorDex() {
    state and updates the DOM to match. Registered via mpSceneListeners
    so applyMpScenario() can fan out to all relevant surfaces. */
 
-/* ---------- Composer · Pitstop chip ("Send from") ---------- */
+/* ---------- Composer · Pitstop chip ("Send from") ----------
+   Two modes per CONTEXT.md "Pitstop chip" entry + ADR 0033:
+     · Dispatch mode — scope is established; chip shows eligible pitstops.
+     · Capture mode  — scope is empty but the operator has ≥1 accessible
+                       non-retired pitstop; chip expands inline into a
+                       picker that captures scope on first send. */
 function renderComposerActingAsPitstopChip() {
   const banner = document.getElementById('compose-acting-pitstop-banner');
   const select = document.getElementById('compose-acting-pitstop-select');
   const hint = document.getElementById('compose-acting-pitstop-hint');
+  const labelEl = banner ? banner.querySelector('.apc-label') : null;
   if (!banner || !select || !hint) return;
 
   const scenario = MP_SCENARIOS[activeMpScenario];
   if (!scenario) { banner.hidden = true; return; }
 
-  // Scenario A hides the chip (single-Pitstop Org). Scenario B fires inline-capture
-  // in the wizard, not the Composer — chip is hidden until scope exists.
+  // Scenario A hides the chip (single-Pitstop Org). Scenario B is a wizard
+  // scenario — chip stays hidden until wizard scope-capture completes.
   if (scenario.chipVisibility === 'hidden' || scenario.chipVisibility === 'first-time') {
     banner.hidden = true;
     return;
@@ -343,14 +536,49 @@ function renderComposerActingAsPitstopChip() {
   const direction = 'produces'; // composing = sending = produces from operator's Pitstop
 
   const chipState = getActingAsPitstopChipState(operatorId, orgId, dexId, elementId, direction);
+  const accessible = listAccessiblePitstops(operatorId, orgId, dexId).filter(p => !p.retired);
+
+  // Reset capture-mode marker each render
+  banner.dataset.captureMode = '0';
 
   if (chipState.eligible.length === 0) {
-    // Should not happen in normal scenarios (B handles first-use via wizard).
-    banner.hidden = true;
+    // Two sub-cases per ADR 0033:
+    //  · scope empty + ≥1 accessible non-retired pitstop → capture mode
+    //  · scope empty + zero accessible non-retired pitstops → hard block
+    if (accessible.length === 0) {
+      // Hard block — unchanged ADR 0028 behaviour. Chip stays hidden;
+      // Composer's higher-level routing-setup CTA (when added) handles
+      // the admin handoff. For the prototype we just hide.
+      banner.hidden = true;
+      return;
+    }
+
+    // Capture mode — show all accessible pitstops with inference soft pre-fill.
+    banner.dataset.captureMode = '1';
+    const suggestion = inferScopeSuggestion(orgId, dexId, elementId, direction);
+    const suggestedId = (suggestion && accessible.find(p => p.id === suggestion.pitstopId))
+      ? suggestion.pitstopId
+      : null;
+
+    if (labelEl) labelEl.textContent = 'Set up routing';
+    select.innerHTML = (suggestedId ? '' : '<option value="" disabled selected>Pick a Pitstop…</option>') +
+      accessible.map(p => {
+        const sel = (p.id === suggestedId) ? ' selected' : '';
+        const mark = (p.id === suggestedId) ? ' ✨ suggested' : '';
+        return `<option value="${p.id}"${sel}>${p.name}${mark}</option>`;
+      }).join('');
+    select.disabled = false;
+    if (suggestion) {
+      hint.textContent = `first time sending this — we suggest this Pitstop because ${suggestion.reason}. Picking sends + remembers for next time.`;
+    } else {
+      hint.textContent = 'first time sending this element — pick a Pitstop. We\'ll remember your choice.';
+    }
+    banner.hidden = false;
     return;
   }
 
-  // Build the dropdown — eligible Pitstops only
+  // Dispatch mode — scope is established; build the dropdown from eligible.
+  if (labelEl) labelEl.textContent = 'Send from';
   select.innerHTML = chipState.eligible.map(p => {
     const isDefault = chipState.default && p.id === chipState.default.id;
     return `<option value="${p.id}"${isDefault ? ' selected' : ''}>${p.name}</option>`;
@@ -376,9 +604,22 @@ function renderComposerActingAsPitstopChip() {
 function onActingAsPitstopChange(selectEl) {
   const scenario = MP_SCENARIOS[activeMpScenario];
   if (!scenario) return;
+  const banner = document.getElementById('compose-acting-pitstop-banner');
+  const isCaptureMode = banner && banner.dataset.captureMode === '1';
   const operatorId = currentOperatorId();
-  recordPitstopMru(operatorId, scenario.element, 'produces', selectEl.value);
   const chosen = getPitstopById(selectEl.value);
+
+  if (isCaptureMode) {
+    // ADR 0033 §Decision ¶2: chip's capture mode persists scope on first send.
+    persistScopeCapture(scenario.operatorOrg, scenario.operatorDex, scenario.element, 'produces', [selectEl.value], 'composer');
+    recordPitstopMru(operatorId, scenario.element, 'produces', selectEl.value);
+    toast('Scope set: ' + (chosen ? chosen.name : selectEl.value) + ' · captured via Composer · audit-logged · we\'ll route this way next time');
+    // Re-render so chip flips from capture mode → dispatch mode immediately
+    renderComposerActingAsPitstopChip();
+    return;
+  }
+
+  recordPitstopMru(operatorId, scenario.element, 'produces', selectEl.value);
   toast('Sending from ' + (chosen ? chosen.name : selectEl.value) + ' · audit-logged · per-operator memory updated');
 }
 
@@ -417,19 +658,43 @@ function renderComposerJointStateBanner() {
 /* ---------- Wizard · Scope-capture micro-step ----------
    Renders the multi-select checkbox list of the operator's Org Pitstops
    that could handle this element + direction. Called when the screen
-   becomes active. */
+   becomes active.
+
+   Resolution order (live-first, see also wizard.js wizardNext intercept):
+     1. wiz.scopeCapture — the tuple stashed by the intercept when it
+        decided to fire this step. Source of truth during an active
+        wizard run so the renderer agrees with the gate that triggered it.
+     2. Live persona / DEX chrome + wiz.deId — for the case where the
+        screen is reached without going through the intercept (e.g. an
+        outer-rail demo scene that jumps straight here on a fresh wizard).
+     3. Scenario fallback — preserved so the authored scenario B pill
+        still demos when no wizard run is in progress. */
 function renderScopeCaptureStep() {
   const scenario = MP_SCENARIOS[activeMpScenario];
-  if (!scenario) return;
+  const stashed = (typeof wiz !== 'undefined' && wiz.scopeCapture) ? wiz.scopeCapture : null;
 
-  const orgId = scenario.operatorOrg;
-  const dexId = scenario.operatorDex;
-  const elementId = scenario.element;
-  const direction = 'produces'; // wizard captures producer-side scope
+  const liveOrgId    = (typeof currentOperatorOrgId === 'function') ? currentOperatorOrgId() : null;
+  const liveDexId    = (typeof currentDexCode       === 'function') ? currentDexCode()       : null;
+  const liveDirection = (typeof wiz !== 'undefined' && wiz.direction === 'receive') ? 'consumes' : 'produces';
+  const liveElementId = (typeof wiz !== 'undefined')
+    ? (wiz.deId || (typeof elementIdFromName === 'function' ? elementIdFromName(wiz.de) : null))
+    : null;
+
+  const orgId     = (stashed && stashed.orgId)     || (typeof wiz !== 'undefined' && wiz.active ? liveOrgId   : null) || (scenario && scenario.operatorOrg);
+  const dexId     = (stashed && stashed.dexId)     || (typeof wiz !== 'undefined' && wiz.active ? liveDexId   : null) || (scenario && scenario.operatorDex);
+  const elementId = (stashed && stashed.elementId) || (typeof wiz !== 'undefined' && wiz.active ? liveElementId : null) || (scenario && scenario.element);
+  const direction = (stashed && stashed.direction) || (typeof wiz !== 'undefined' && wiz.active ? liveDirection : null) || 'produces';
+
+  if (!orgId || !dexId || !elementId) return;
+
+  // Prefer wiz.de (the picker's exact label) when present so the screen
+  // matches what the operator clicked — catalogue lookup still wins for
+  // ids that have an authoritative name (e.g. scenarios that bypass wiz).
+  const displayName = (typeof wiz !== 'undefined' && wiz.active && wiz.de) ? wiz.de : getElementName(elementId);
 
   const elementNameEl = document.getElementById('sc-element-name');
   const directionEl = document.getElementById('sc-direction');
-  if (elementNameEl) elementNameEl.textContent = getElementName(elementId);
+  if (elementNameEl) elementNameEl.textContent = displayName;
   if (directionEl) directionEl.textContent = direction === 'produces' ? 'produces (you send this)' : 'consumes (you receive this)';
 
   // List the Org's non-retired Pitstops as checkbox candidates
@@ -438,18 +703,33 @@ function renderScopeCaptureStep() {
   const container = document.getElementById('sc-pitstop-checkboxes');
   if (!container) return;
 
+  // ADR 0033 soft pre-fill: when scope is empty for this element, ask the
+  // inference for a suggestion. If found, soft-check that pitstop's row
+  // and annotate it so the operator sees why it's pre-checked. The
+  // operator must still click Continue — pre-fill never auto-advances.
+  let suggestion = null;
+  if (existingScope.length === 0) {
+    suggestion = inferScopeSuggestion(orgId, dexId, elementId, direction);
+  }
+
   container.innerHTML = orgPitstops.map(p => {
-    const checked = existingScope.includes(p.id);
-    return `<label class="sc-checkbox-row">
-      <input type="checkbox" value="${p.id}" ${checked ? 'checked' : ''} onchange="onScopeCaptureChange()" aria-label="Use ${p.name} for ${getElementName(elementId)}">
+    const isExistingChoice = existingScope.includes(p.id);
+    const isSuggested = !!(suggestion && suggestion.pitstopId === p.id);
+    const checked = isExistingChoice || isSuggested;
+    const suggestedMark = isSuggested
+      ? `<div class="sc-suggested-pill" style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 8px;background:var(--theme-95);color:var(--theme-20);border-radius:10px;font-size:11px;font-weight:500"><i class="ti ti-sparkles" style="font-size:11px"></i>Suggested — ${suggestion.reason}</div>`
+      : '';
+    return `<label class="sc-checkbox-row" data-suggested="${isSuggested ? '1' : '0'}">
+      <input type="checkbox" value="${p.id}" ${checked ? 'checked' : ''} onchange="onScopeCaptureChange()" aria-label="Use ${p.name} for ${displayName}${isSuggested ? ' — suggested based on your past choices' : ''}">
       <div class="sc-body">
         <div class="sc-name">${p.name}</div>
-        <div class="sc-meta">Pitstop ID <code>${p.id}</code> · deployed on TradeX · part of your Org's operational footprint</div>
+        <div class="sc-meta">Pitstop ID <code>${p.id}</code> · deployed on SGTradex · part of your Org's operational footprint</div>
+        ${suggestedMark}
       </div>
     </label>`;
   }).join('');
 
-  // Pre-validate (e.g. when reopening with existing scope)
+  // Pre-validate (e.g. when reopening with existing scope or a soft pre-fill)
   onScopeCaptureChange();
 }
 
@@ -473,16 +753,36 @@ function confirmScopeCapture() {
   const checked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(c => c.value);
   if (checked.length === 0) return;
 
+  // Resolve the same way renderScopeCaptureStep does — stashed tuple first
+  // (set by the wizardNext intercept), then live wizard state, then scenario.
   const scenario = MP_SCENARIOS[activeMpScenario];
-  if (!scenario) return;
+  const stashed = (typeof wiz !== 'undefined' && wiz.scopeCapture) ? wiz.scopeCapture : null;
+  const liveDirection = (typeof wiz !== 'undefined' && wiz.direction === 'receive') ? 'consumes' : 'produces';
+  const liveOrgId    = (typeof currentOperatorOrgId === 'function') ? currentOperatorOrgId() : null;
+  const liveDexId    = (typeof currentDexCode       === 'function') ? currentDexCode()       : null;
+  const liveElementId = (typeof wiz !== 'undefined')
+    ? (wiz.deId || (typeof elementIdFromName === 'function' ? elementIdFromName(wiz.de) : null))
+    : null;
 
-  persistScopeCapture(scenario.operatorOrg, scenario.operatorDex, scenario.element, 'produces', checked);
+  const orgId     = (stashed && stashed.orgId)     || (typeof wiz !== 'undefined' && wiz.active ? liveOrgId   : null) || (scenario && scenario.operatorOrg);
+  const dexId     = (stashed && stashed.dexId)     || (typeof wiz !== 'undefined' && wiz.active ? liveDexId   : null) || (scenario && scenario.operatorDex);
+  const elementId = (stashed && stashed.elementId) || (typeof wiz !== 'undefined' && wiz.active ? liveElementId : null) || (scenario && scenario.element);
+  const direction = (stashed && stashed.direction) || (typeof wiz !== 'undefined' && wiz.active ? liveDirection : null) || 'produces';
+
+  if (!orgId || !dexId || !elementId) return;
+
+  persistScopeCapture(orgId, dexId, elementId, direction, checked, 'wizard');
 
   const names = checked.map(id => {
     const ps = getPitstopById(id);
     return ps ? ps.name : id;
   });
-  toast(`Scope set for ${getElementName(scenario.element)}: ${names.join(', ')} · captured at first use · audit-logged`);
+  const elementLabel = (typeof wiz !== 'undefined' && wiz.active && wiz.de) ? wiz.de : getElementName(elementId);
+  toast(`Scope set for ${elementLabel}: ${names.join(', ')} · captured via wizard · audit-logged`);
+
+  // Clear the stash now that scope is persisted — a future wizard run on a
+  // different element should re-resolve from scratch.
+  if (typeof wiz !== 'undefined') wiz.scopeCapture = null;
 
   // Advance to the next wizard step (counterparty picker). In the prototype this
   // is a direct goto; in the real wizard intercept it would resume wizardNext().
@@ -1059,7 +1359,7 @@ function renderSettingsPitstops() {
   };
 
   activeList.innerHTML = active.length === 0
-    ? `<p style="color:var(--g-50);font-style:italic;padding:14px 0">No active Pitstops in TradeX. Provision one to start operating here.</p>`
+    ? `<p style="color:var(--g-50);font-style:italic;padding:14px 0">No active Pitstops in SGTradex. Provision one to start operating here.</p>`
     : active.map(p => renderRow(p, false)).join('');
   retiredList.innerHTML = retired.length === 0
     ? `<p style="color:var(--g-50);font-style:italic;padding:8px 0;font-size:12px">No retired Pitstops. Soft-retired Pitstops appear here for audit and historical reference per ADR 0028.</p>`

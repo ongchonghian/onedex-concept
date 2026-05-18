@@ -6444,6 +6444,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (wiz.active) {
           wiz.de = name;
           wiz.isPack = isPack;
+          // Capture the canonical element id so the pitstop scope-capture
+          // interception (wizardNext, renderScopeCaptureStep) can resolve
+          // PITSTOP_ELEMENT_SCOPE against the actually-picked element rather
+          // than the scenario's pre-declared one. See pitstop.js
+          // elementIdFromName() for the catalogue + slug-fallback rules.
+          wiz.deId = (typeof elementIdFromName === 'function') ? elementIdFromName(name) : null;
+          // Capture the picker-group too (ADR 0033's inference rule uses
+          // catalogue groups as the primary signal). Walk up to the parent
+          // <details><summary> to read the group name; record it against
+          // the element's id so the inference can find sibling captures
+          // across future agreements.
+          const detailsEl = leaf.closest('details');
+          if (detailsEl && wiz.deId && typeof recordElementGroup === 'function') {
+            const summary = detailsEl.querySelector('summary');
+            if (summary) {
+              let groupName = '';
+              Array.from(summary.childNodes).forEach(node => {
+                if (node.nodeType === Node.TEXT_NODE) groupName += node.textContent;
+              });
+              groupName = groupName.trim();
+              if (groupName) recordElementGroup(wiz.deId, groupName);
+            }
+          }
           wiz.deDetail = isPack
             ? 'Data element pack · multi-counterparty capable (ADR 0027)'
             : `Single element · ${version || 'current Active version'}`;

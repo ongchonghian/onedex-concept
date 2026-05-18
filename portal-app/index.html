@@ -812,6 +812,9 @@
     <footer class="pf-foot">
       <button class="btn-cancel" onclick="goto('data-picker')"><i class="ti ti-arrow-left" style="font-size:12px"></i>Back to data element</button>
       <span class="pf-foot-hint" id="sc-foot-hint">Pick at least one Pitstop to continue</span>
+      <!-- ADR 0033 §Decision ¶1: skippable. Picks nothing; agreement is created with empty scope.
+           The Composer chip (capture mode) handles the question on first send. -->
+      <button class="btn-cancel" id="sc-skip-btn" onclick="deferScopeCapture()" title="We'll ask the first time you actually use this element"><i class="ti ti-clock" style="font-size:12px"></i>Decide later</button>
       <button class="btn-primary" id="sc-continue-btn" disabled onclick="confirmScopeCapture()">Continue to counterparty <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
     </footer>
   </div>
