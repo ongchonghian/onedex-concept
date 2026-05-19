@@ -4799,6 +4799,7 @@ const MESSAGE_FLOWS = {
       { dot: 'green', who: 'Cosco system',     text: 'Booking acknowledged · ack hash <code>5f2a83c1</code> · final status: <strong>Acknowledged</strong>',    when: '10:22 SGT · automated' },
       { dot: 'green', who: 'Cosco pitstop',    text: 'Payload received · 200 OK · idempotency key stored',                                                      when: '10:22 SGT · automated' },
       { dot: 'green', who: 'CL-Shipping',      text: 'Payload encrypted and transmitted to Cosco via TLS 1.3',                                                  when: '10:22 SGT · automated' },
+      // actingAs: true → renderer tags this <li> with data-demo="message.audit.acting-as-row"
       { dot: 'tx',    who: 'Pat Chou',         text: 'Composed via Composer · acting as <strong>Maersk Logistics</strong> · idempotency key <code>idem_cl_8b2e44</code>', when: '10:22 SGT · request_id req_cl_8b2e44', actingAs: true }
     ]
   }
