@@ -117,7 +117,6 @@ test('pitstop element-scope survives a workspace reload', () => {
       'scripts/components.js',
       'scripts/theme.js',
       'scripts/wizard.js',
-      'scripts/flows.js',
       'scripts/app.js',
       'scripts/pitstop.js'
     ],

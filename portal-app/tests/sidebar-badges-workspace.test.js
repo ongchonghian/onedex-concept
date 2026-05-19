@@ -12,7 +12,6 @@ const FULL_SCRIPT_PATHS = [
   'scripts/components.js',
   'scripts/theme.js',
   'scripts/wizard.js',
-  'scripts/flows.js',
   'scripts/app.js',
   'scripts/pitstop.js'
 ];

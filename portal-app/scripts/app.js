@@ -774,7 +774,57 @@ function workspaceAgreementToDetailSeed(agreement) {
 }
 
 function renderAgreementsFromWorkspace() {
-  const rows = listAgreementsForDex(currentDexCode()).map(workspaceAgreementToAgreementsRow);
+  const dex = currentDexCode();
+  const flatAgreements = listAgreementsForDex(dex);
+
+  // Build pack-aware row list: pack-parent rows (from workspace.agreementPacks)
+  // group their members visually; flat agreements that are not pack members or
+  // pack stubs render as standalone rows. This ensures the workspace-driven
+  // agreements list matches the static-HTML prototype's pack grouping
+  // (ADR 0027) and that clicking a pack-parent row fires goto('pack-detail').
+  const packs = (typeof listAgreementPacksForDex === 'function')
+    ? listAgreementPacksForDex(dex)
+    : [];
+  const packMemberIdSet = new Set();
+  const packStubIdSet = new Set(); // pack-header stubs stored in agreements{}
+  packs.forEach((p) => {
+    packStubIdSet.add(p.packId);
+    (p.memberAgreementIds || []).forEach((id) => packMemberIdSet.add(id));
+  });
+
+  const rows = [];
+  packs.forEach((p) => {
+    // Pack-parent header row
+    rows.push({
+      kind: 'pack-parent',
+      id: p.packId,
+      name: p.name,
+      packTag: p.packTag,
+      childCount: p.childCount,
+      cpCount: p.cpCount,
+      element: p.element,
+      type: p.type,
+      status: p.status,
+      until: p.until,
+      actions: p.actions
+    });
+    // Pack-member rows — inline under the parent
+    (p.memberAgreementIds || []).forEach((memberId) => {
+      const agr = (typeof getAgreementById === 'function') ? getAgreementById(memberId) : null;
+      if (agr) {
+        const memberRow = workspaceAgreementToAgreementsRow(agr);
+        memberRow.kind = 'pack-member';
+        rows.push(memberRow);
+      }
+    });
+  });
+  // Append flat agreements that are not pack stubs or pack members
+  flatAgreements.forEach((agr) => {
+    if (packStubIdSet.has(agr.agreementId)) return; // skip pack-header stubs
+    if (packMemberIdSet.has(agr.agreementId)) return; // already emitted above
+    rows.push(workspaceAgreementToAgreementsRow(agr));
+  });
+
   SCREEN_RENDERERS['agreements'](rows);
   if (typeof renderDoctorAgreementsList === 'function') renderDoctorAgreementsList();
   if (typeof refreshDoctorAgreementPicker === 'function') refreshDoctorAgreementPicker();
@@ -1098,15 +1148,21 @@ function renderInboxCardHTML(item, opts) {
     ? 'btn-secondary'
     : (cta === 'review' || cta === 'approve-network' || cta === 'review-org' ? 'btn-primary' : 'btn-secondary');
   const buttonLabel = isClaim ? 'Claim' : (item.btn || 'Open');
-  const buttonHandler = isClaim ? 'openClaim()' : actionHandler;
+  const safeItemId = item.inboxItemId ? escAttr(item.inboxItemId) : '';
+  const buttonHandler = isClaim ? `openClaim('${safeItemId}')` : actionHandler;
   const cardClick = item.sourceType === 'message' && safeMessageId
     ? `openMessageFromInbox('${safeMessageId}', false)`
     : "goto('detail')";
   // Stamp data-agreement-id / data-msg-id on the card so cross-screen
   // highlight handoffs (highlightAgreementRows / highlightMessageRows)
-  // can find the inbox card after navigation.
+  // can find the inbox card after navigation. Per ADR 0037 we also stamp
+  // data-inbox-item-id so Demo flows can target a specific card by its
+  // stable id even when the underlying entity has no agreement/message id
+  // (hand-seeded inbox items carry only inboxItemId).
   const agrIdAttr = item.agreementId ? ` data-agreement-id="${escAttr(item.agreementId)}"` : '';
   const msgIdAttr = safeMessageId ? ` data-msg-id="${escAttr(safeMessageId)}"` : '';
+  const itemIdAttr = item.inboxItemId ? ` data-inbox-item-id="${escAttr(item.inboxItemId)}"` : '';
+  const ctaAttr = cta ? ` data-cta="${escAttr(cta)}"` : '';
   const ageClass = ageClassFromSurfacedAt(item.surfacedAt);
   const ageLabel = formatCompactAge(item.surfacedAt);
   const ageTooltip = {
@@ -1120,18 +1176,18 @@ function renderInboxCardHTML(item, opts) {
   // still click anywhere on the card body. The action button sits at z-index 2
   // so it remains independently activatable.
   const titleLink = `<a class="card-link" href="#" onclick="event.preventDefault(); ${cardClick}; return false;">${item.title || ''}</a>`;
-  return `<div class="inbox-card${item.bucket === 'team' ? ' team' : ''}"${agrIdAttr}${msgIdAttr}>` +
+  return `<div class="inbox-card${item.bucket === 'team' ? ' team' : ''}"${agrIdAttr}${msgIdAttr}${itemIdAttr}>` +
     actionChip + sourceIcon + dexChip + dirChip +
     `<div class="body"><div class="title">${ageDot}${titleLink}</div><div class="meta">${item.meta || ''}</div></div>` +
     dueChip +
-    `<button type="button" class="${buttonClass}" onclick="${buttonHandler}">${buttonLabel}</button>` +
+    `<button type="button" class="${buttonClass}"${isClaim ? ' data-cta="claim"' : ctaAttr} onclick="${buttonHandler}">${buttonLabel}</button>` +
     `</div>`;
 }
 
 /* renderInboxCompletionHTML — completion echo rows are rendered into the
    completion ribbon (above Mine), not the team stack. Compact one-liner. */
 function renderInboxCompletionHTML(item) {
-  return `<div class="completion-row">` +
+  return `<div class="completion-row" data-demo="inbox.completion-echo-row">` +
     `<i class="ti ti-check" aria-hidden="true"></i>` +
     `<span class="title">${item.title || ''}</span>` +
     `<span class="meta">${item.meta || ''}</span>` +
@@ -1190,7 +1246,11 @@ function renderPackDetailFromWorkspace() {
   const memberRows = pack.memberAgreementIds
     .map((id) => getAgreementById(id))
     .filter(Boolean)
-    .map(workspaceAgreementToAgreementsRow);
+    .map((agr) => {
+      const row = workspaceAgreementToAgreementsRow(agr);
+      row.kind = 'pack-member';
+      return row;
+    });
   const parentRow = {
     kind: 'pack-parent',
     id: pack.packId,
@@ -2593,7 +2653,7 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
       case 'revoke':       return `<button onclick="event.stopPropagation(); openRevoke('${cp}')" title="Revoke"><i class="ti ti-x"></i></button>`;
       case 'withdraw':     return `<button onclick="event.stopPropagation(); openWithdraw('${cp}', ${idArg})" title="Withdraw"><i class="ti ti-x"></i></button>`;
       case 'view-audit':   return `<button onclick="event.stopPropagation(); toast('Opened ended-Agreement audit (read-only)')" title="View audit"><i class="ti ti-eye"></i></button>`;
-      case 'send-pack':    return `<button onclick="event.stopPropagation(); toast('Opens Composer in pack mode · dispatches 1 Message per member')" title="Send pack now"><i class="ti ti-send"></i></button>`;
+      case 'send-pack':    return `<button data-demo="pack.send-pack-btn" onclick="event.stopPropagation(); toast('Opens Composer in pack mode · dispatches 1 Message per member')" title="Send pack now"><i class="ti ti-send"></i></button>`;
       case 'revoke-pack':  return `<button onclick="event.stopPropagation(); toast('Revoke pack — fans out to all 4 members')" title="Revoke pack"><i class="ti ti-x"></i></button>`;
       default:             return '';
     }
@@ -2628,7 +2688,7 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
     if (row.kind === 'pack-parent') {
       const actionsHtml = (row.actions || []).map(a => actionBtn(a, row.name, row.id)).join('');
       const packIdAttr = row.id ? ` data-agreement-id="${escAttr(row.id)}"` : '';
-      return `<tr class="pack-parent"${packIdAttr} onclick="goto('pack-detail')">` +
+      return `<tr class="pack-parent" data-demo="pack.parent-row"${packIdAttr} onclick="goto('pack-detail')">` +
         `<td><div class="cp-cell"><i class="ti ti-chevron-down pack-toggle" aria-hidden="true"></i><div class="pack-ic"><i class="ti ti-stack-2"></i></div>` +
           `<div><div class="cp-name">${row.name || ''} <span class="pack-tag">${row.packTag || 'PACK'}</span></div><div style="font-size:11px;color:var(--g-50)">${row.childCount || 0} Agreements · ${row.cpCount || 0} counterparties</div></div></div></td>` +
         `<td>${elementCell(row.element)}</td>` +
@@ -2646,7 +2706,7 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
       ? `openAgreementDetail('${escAttr(row.id)}')`
       : `goto('detail')`;
     const idAttr = row.id ? ` data-agreement-id="${escAttr(row.id)}"` : '';
-    return `<tr class="${cls}"${idAttr} onclick="${openHandler}">` +
+    return `<tr class="${cls}"${idAttr}${cls === 'pack-member' ? ' data-demo="pack.member-row"' : ''} onclick="${openHandler}">` +
       `<td><div class="cp-cell${cpCellExtra}"><div class="cp-avatar">${cp.initials || ''}</div>` +
         `<div><div class="cp-name">${cp.name || ''}</div><div style="font-size:11px;color:var(--g-50)">${cp.role || ''} · ${cp.dex || ''}</div></div></div></td>` +
       `<td>${elementCell(row.element)}</td>` +
@@ -2890,7 +2950,10 @@ SCREEN_RENDERERS['pack-detail'] = function renderPackDetailFromSeed(agreementsSe
         `<td><code class="agr-mono">${memberId}</code></td>` +
         `<td><span class="status-cell ${statusCls}"><span class="dot"></span>${status.label || ''}</span></td>` +
         `<td><span style="font-size:11px;color:var(--g-50)">Acknowledged · recent</span></td>` +
-        `<td class="row-actions"><button onclick="event.stopPropagation(); goto('detail')" title="Open"><i class="ti ti-arrow-right"></i></button></td>` +
+        `<td class="row-actions">` +
+          `<button data-demo="pack.send-pack-btn" onclick="event.stopPropagation(); toast('Opens Composer in pack mode · dispatches 1 Message per member')" title="Send pack now"><i class="ti ti-send"></i></button>` +
+          `<button onclick="event.stopPropagation(); goto('detail')" title="Open"><i class="ti ti-arrow-right"></i></button>` +
+        `</td>` +
       `</tr>`;
     }).join('');
   }
@@ -3508,11 +3571,17 @@ function renderDataPickerFromDex(dexCode) {
       const chev = open ? 'down' : 'right';
       const leaves = (g.elements || []).map(e => {
         const activeCls = e.active ? ' active' : '';
+        // Per ADR 0037: emit data-pack-id / data-element-id when the registry
+        // declares an explicit id, so Demo flows can target the entity rather
+        // than positional .leaf:nth-of-type selectors. No-op when id is absent.
+        const idAttr = e.id
+          ? ` ${e.kind === 'pack' ? 'data-pack-id' : 'data-element-id'}="${e.id}"`
+          : '';
         if (e.kind === 'pack') {
-          return `<button class="leaf${activeCls}"><i class="ti ti-stack"></i>${e.name}<span class="group-pill">pack</span></button>`;
+          return `<button class="leaf${activeCls}"${idAttr}><i class="ti ti-stack"></i>${e.name}<span class="group-pill">pack</span></button>`;
         }
         const v = e.version ? ` <span class="v-tag">${e.version}</span>` : '';
-        return `<button class="leaf${activeCls}"><i class="ti ti-${e.icon || 'file-text'}"></i>${e.name}${v}</button>`;
+        return `<button class="leaf${activeCls}"${idAttr}><i class="ti ti-${e.icon || 'file-text'}"></i>${e.name}${v}</button>`;
       }).join('');
       return `<details ${open}>
         <summary><i class="ti ti-chevron-${chev} chev"></i><i class="ti ti-folder"></i>${g.name}<span class="ct">${g.count != null ? g.count : ''}</span></summary>
@@ -3868,7 +3937,8 @@ function showOffDexBlocked(opts) {
   openOverlay('off-dex-blocked');
 }
 function openExtend(cp) { if (cp) document.getElementById('extend-cp').textContent = cp; openOverlay('extend-modal'); }
-function openClaim()   { openOverlay('claim-modal'); }
+let _pendingClaimItemId = null;
+function openClaim(itemId)   { _pendingClaimItemId = itemId || null; openOverlay('claim-modal'); }
 function openApprove() { openOverlay('approve-modal'); }
 function openJoin()    { openOverlay('join-modal'); }
 function openTemplate(){ openOverlay('template-modal'); }
@@ -4686,6 +4756,52 @@ const MESSAGE_FLOWS = {
       { dot: 'green', who: 'Pitstop',        text: 'Payload encrypted and transmitted to Maersk via TLS 1.3',                                                when: '14:14 SGT · automated' },
       { dot: 'tx',    who: 'Marcus Ong',     text: 'Created the message via Composer · idempotency key <code>idem_b7e3f221</code>',                          when: '14:14 SGT · request_id req_b7e3f221' }
     ]
+  },
+  /* sp-send — CrimsonLogic (Pat) transmits a Container Booking to Cosco
+     acting as Maersk. Audit activity records both operator and delegating
+     owner per ADR 0024 §SP-acting-as. The acting-as row carries actingAs:true
+     so the renderer tags it with data-demo="message.audit.acting-as-row". */
+  'sp-send': {
+    title: 'Container Booking → Cosco Shipping (acting as Maersk)',
+    msgId: 'MSG-2026-118622',
+    status: { label: 'Acknowledged', cls: 'active' },
+    owner: null,
+    retryTooltip: 'Re-send Container Booking to Cosco · creates a new Message (this one is already acknowledged)',
+    flowHint: 'PUSH flow · 4 stages · SP acting-as · acknowledged',
+    banner: { visible: false },
+    timeline: [
+      { label: 'Queued',       state: 'done', time: '10:22:01 SGT · created by CrimsonLogic (acting as Maersk)' },
+      { label: 'Sent',         state: 'done', time: '10:22:02 SGT' },
+      { label: 'Delivered',    state: 'done', time: '10:22:03 SGT · Cosco pitstop' },
+      { label: 'Acknowledged', state: 'done', time: '10:22:04 SGT · Cosco system confirmed', current: true, end: true }
+    ],
+    parties: {
+      sender:   { role: 'Sender · Service Provider (acting as Maersk)', name: 'CrimsonLogic Pte Ltd',         meta: 'SP acting as Maersk Logistics · UEN 198803003E' },
+      receiver: { role: 'Receiver · Counterparty',                      name: 'Cosco Shipping Lines (SG)',    meta: 'Carrier · UEN 199001234A · acknowledged' }
+    },
+    agreement: { id: 'AGR-2026-04711', title: 'Transmit Container Booking to Cosco (acting as Maersk)', meta: 'Active · SP-delegated · Maersk is data owner, CrimsonLogic transmits · 48 bookings this week' },
+    payload: {
+      visible: true,
+      summary: 'JSON · 3.1 KB · encrypted in transit (TLS 1.3) · at rest (AES-256)',
+      body: '<span class="key">"messageId"</span>: <span class="str">"MSG-2026-118622"</span>,\n<span class="key">"agreementId"</span>: <span class="str">"AGR-2026-04711"</span>,\n<span class="key">"dataElement"</span>: { <span class="key">"id"</span>: <span class="str">"de_container_booking"</span>, <span class="key">"version"</span>: <span class="str">"v1.8"</span> },\n<span class="key">"composedBy"</span>: { <span class="key">"userId"</span>: <span class="str">"pat@crimsonlogic.com"</span>, <span class="key">"org"</span>: <span class="str">"CrimsonLogic Pte Ltd"</span> },\n<span class="key">"actingAsOrg"</span>: <span class="str">"Maersk Logistics"</span>,\n<span class="key">"booking"</span>: {\n  <span class="key">"vesselImo"</span>: <span class="str">"IMO9395044"</span>,\n  <span class="key">"pol"</span>: <span class="str">"SGSIN"</span>,\n  <span class="key">"pod"</span>: <span class="str">"CNSHA"</span>,\n  <span class="key">"etd"</span>: <span class="str">"2026-05-21"</span>,\n  <span class="key">"containerCount"</span>: <span class="num">3</span>\n}'
+    },
+    metadata: {
+      'Message ID':           'MSG-2026-118622',
+      'Idempotency key':      'idem_cl_8b2e44',
+      'Size':                 '3.1 KB',
+      'Encryption (transit)': 'TLS 1.3 · ECDHE-RSA-AES256',
+      'Encryption (rest)':    'AES-256-GCM · key #kms_2026_q2',
+      'Composed by':          'Pat Chou (CrimsonLogic)',
+      'Acting as':            'Maersk Logistics (data owner)',
+      'Acknowledged':         '10:22:04.088 SGT (T+3s)'
+    },
+    activity: [
+      { dot: 'green', who: 'Cosco system',     text: 'Booking acknowledged · ack hash <code>5f2a83c1</code> · final status: <strong>Acknowledged</strong>',    when: '10:22 SGT · automated' },
+      { dot: 'green', who: 'Cosco pitstop',    text: 'Payload received · 200 OK · idempotency key stored',                                                      when: '10:22 SGT · automated' },
+      { dot: 'green', who: 'CL-Shipping',      text: 'Payload encrypted and transmitted to Cosco via TLS 1.3',                                                  when: '10:22 SGT · automated' },
+      // actingAs: true → renderer tags this <li> with data-demo="message.audit.acting-as-row"
+      { dot: 'tx',    who: 'Pat Chou',         text: 'Composed via Composer · acting as <strong>Maersk Logistics</strong> · idempotency key <code>idem_cl_8b2e44</code>', when: '10:22 SGT · request_id req_cl_8b2e44', actingAs: true }
+    ]
   }
 };
 
@@ -4839,7 +4955,8 @@ function setMessageFlow(flow, btn) {
       activityList.innerHTML = data.activity.map(ev => {
         const colorStyle = (ev.dot && ev.dot !== 'tx' && dotColor[ev.dot]) ? ' style="background:' + dotColor[ev.dot] + '"' : '';
         const cls = ev.dot === 'tx' ? 'ev-dot tx' : 'ev-dot';
-        return '<li class="ev"><span class="' + cls + '"' + colorStyle + ' aria-hidden="true"></span>'
+        const demoAttr = ev.actingAs ? ' data-demo="message.audit.acting-as-row"' : '';
+        return '<li class="ev"' + demoAttr + '><span class="' + cls + '"' + colorStyle + ' aria-hidden="true"></span>'
           + '<div class="ev-body"><p><strong>' + ev.who + '</strong> ' + ev.text + '</p>'
           + '<p class="ev-time"><time>' + ev.when + '</time></p></div></li>';
       }).join('');
@@ -7623,6 +7740,7 @@ function confirmExtend() {
     if (body && !body.querySelector('.renewed-banner')) {
       const b = document.createElement('div');
       b.className = 'renewed-banner';
+      b.setAttribute('data-demo', 'detail.renewed-banner');
       b.innerHTML = '<i class="ti ti-clock-play"></i><p>Extended by ' + extendMonths + ' months · new end date 30 Sep 2027 · notification cadence reset (60 / 30 / 14 / 7 / 1 days)</p>';
       body.insertBefore(b, body.firstChild);
     }
@@ -7633,7 +7751,25 @@ function confirmExtend() {
   }, 100);
 }
 
-function confirmClaim() { closeOverlay('claim-modal'); toast('Claimed · moved to your Mine stack'); }
+function confirmClaim() {
+  closeOverlay('claim-modal');
+  // Mutate the workspace so the item visibly moves from team to mine,
+  // matching the Step 4 rationale ("The item lives in Mine until Marcus
+  // completes or releases it"). Mirrors the bucket-flip in runBundleBulkAction
+  // (app.js:1468) — same pattern, single item.
+  const itemId = _pendingClaimItemId;
+  _pendingClaimItemId = null;
+  if (itemId && typeof ensureWorkspaceLoaded === 'function') {
+    const ws = ensureWorkspaceLoaded();
+    if (ws && ws.inboxItems && ws.inboxItems[itemId]) {
+      ws.inboxItems[itemId].bucket = 'mine';
+      ws.inboxItems[itemId].surfacedAt = new Date().toISOString();
+      if (typeof writeWorkspaceSnapshot === 'function') writeWorkspaceSnapshot(ws);
+    }
+  }
+  if (typeof refreshInboxSurfaces === 'function') refreshInboxSurfaces();
+  toast('Claimed · moved to your Mine stack');
+}
 function confirmApprove() { closeOverlay('approve-modal'); toast('Agreement accepted · data flow starting'); goto('detail'); startDataFlowSim(); }
 function useTemplate(name) {
   closeOverlay('template-modal');

@@ -478,9 +478,21 @@ function captureAgreementPacksFromSeed(seed, meta, workspace) {
       const memberId = row.id || `${currentPack}-M${String(memberSeq).padStart(2, '0')}`;
       pack.memberAgreementIds.push(memberId);
       // Stamp packId on the matching workspace agreement record so the detail
-      // page's pack chip resolves back to the parent.
+      // page's pack chip resolves back to the parent. If no workspace agreement
+      // exists yet for this member (pack-member seeds typically don't have a
+      // pre-existing agreement record), create one from the seed row so that
+      // renderPackDetailFromWorkspace can resolve memberAgreementIds to real records.
       if (workspace.agreements[memberId]) {
         workspace.agreements[memberId].packId = currentPack;
+      } else {
+        const memberRecord = agreementRowToWorkspaceAgreement(
+          Object.assign({}, row, { id: memberId, kind: 'flat' }),
+          memberSeq,
+          meta,
+          workspace
+        );
+        memberRecord.packId = currentPack;
+        workspace.agreements[memberId] = memberRecord;
       }
     } else {
       currentPack = null;

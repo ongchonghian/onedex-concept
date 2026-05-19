@@ -3,6 +3,12 @@
    Per ADR 0034. Marcus extends an Active Agreement with Maersk
    before its end date passes.
 
+   Per ADR 0037, this flow targets stable demo anchors:
+   · [data-demo="<semantic.role>"] for unique anchors
+   Existing stable ids (#detail-status-pill, #detail-primary-action)
+   are kept — ADR 0037 only displaces class-based and positional
+   selectors.
+
    ADRs demonstrated: 0007 (lifecycle), 0009 (extend by action),
    0010 (lifecycle-reminder pattern)
    ============================================================ */
@@ -20,10 +26,8 @@
     seed: (workspace) => {
       // Leaves the seeded Cosco / Maersk fixtures intact — they include the
       // Active Maersk Agreement we land on. Just pins Marcus on SGTradex.
-      if (!workspace) return;
-      if (workspace.meta) {
-        workspace.meta.activeUserId = 'marcus';
-        workspace.meta.activeDexId = 'tx';
+      if (typeof window.setActivePersona === 'function') {
+        window.setActivePersona(workspace, { userId: 'marcus', dexId: 'tx' });
       }
     },
 
@@ -47,21 +51,21 @@
       { action: 'click', target: '#detail-primary-action', dwell: 700 },
 
       // ---- Modal ----
-      { action: 'expect', target: '#extend-modal .extend-chip.active' },
+      { action: 'expect', target: '#extend-modal [data-demo="extend-modal.chip-12mo"]' },
 
       { action: 'annotate',
-        anchor: '#extend-modal .extend-row',
+        anchor: '#extend-modal [data-demo="extend-modal.row"]',
         label: 'Step 3 of 4 — Pick how long',
         rationale: "Twelve months matches the original Agreement term — the common choice. Marcus could pick shorter if Cosco only needs another quarter, or longer if his contract calls for it.",
         dwell: 4400 },
 
-      { action: 'click', target: '#extend-modal .btn-primary', dwell: 800, after: 1200 },
+      { action: 'click', target: '#extend-modal [data-demo="extend-modal.confirm"]', dwell: 800, after: 1200 },
 
       // ---- Confirmation ----
-      { action: 'expect', target: '.screen[data-screen="detail"].active .renewed-banner' },
+      { action: 'expect', target: '.screen[data-screen="detail"].active [data-demo="detail.renewed-banner"]' },
 
       { action: 'annotate',
-        anchor: '.screen[data-screen="detail"].active .renewed-banner',
+        anchor: '.screen[data-screen="detail"].active [data-demo="detail.renewed-banner"]',
         label: 'Done — twelve more months secured',
         rationale: "The Agreement now runs through 30 September 2027. Maersk has been notified and the renewal reminders reset automatically. Cosco's data sharing carries on without interruption.",
         dwell: 4800 },

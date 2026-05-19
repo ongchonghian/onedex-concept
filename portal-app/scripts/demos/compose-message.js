@@ -4,8 +4,14 @@
    Agreement with Maersk — a Bill of Lading attached to a real
    shipment.
 
+   Per ADR 0037, this flow targets stable demo anchors:
+   · [data-demo="<semantic.role>"] for unique class-based anchors
+   Existing stable ids (#detail-compose-btn, #detail-status-pill,
+   #compose-next, #compose-submit) are kept — ADR 0037 only
+   displaces class-based and positional selectors.
+
    ADRs demonstrated: 0024 (agreement-anchored composer),
-   0021 (message lifecycle), 0033 (Pitstop scope capture)
+   0021 (message lifecycle)
    ============================================================ */
 
 (function (window) {
@@ -15,16 +21,14 @@
     id: 'compose-message',
     title: 'Compose Message',
     description: "Marcus's Bill-of-Lading Agreement with Maersk is Active. A new shipment just left port — he sends the Bill of Lading through the portal in two steps.",
-    adrs: ['0024', '0021', '0033'],
+    adrs: ['0024', '0021'],
     durationSec: 60,
 
     seed: (workspace) => {
       // Default workspace fixtures already carry the Active Maersk Agreement
       // the composer anchors against. Pin Marcus on SGTradex.
-      if (!workspace) return;
-      if (workspace.meta) {
-        workspace.meta.activeUserId = 'marcus';
-        workspace.meta.activeDexId = 'tx';
+      if (typeof window.setActivePersona === 'function') {
+        window.setActivePersona(workspace, { userId: 'marcus', dexId: 'tx' });
       }
     },
 
@@ -51,7 +55,7 @@
       { action: 'expect', target: '.screen[data-screen="compose"].active #compose-next' },
 
       { action: 'annotate',
-        anchor: '.screen[data-screen="compose"].active .compose-foot',
+        anchor: '.screen[data-screen="compose"].active [data-demo="compose.foot"]',
         label: 'Step 3 of 5 — Fill in the document',
         rationale: "The composer presents only the fields Maersk needs for this kind of Message. For high-stakes documents like Bills of Lading, there's a final review step before anything is sent — the portal nudges Marcus to slow down on the things that matter.",
         dwell: 4600 },
@@ -73,7 +77,7 @@
       { action: 'expect', target: '.screen[data-screen="compose-success"].active' },
 
       { action: 'annotate',
-        anchor: '.screen[data-screen="compose-success"].active .cs-sub',
+        anchor: '.screen[data-screen="compose-success"].active [data-demo="compose-success.subline"]',
         label: 'Done — the Bill of Lading is on its way to Maersk',
         rationale: "Within seconds, Maersk's portal acknowledges receipt. If anything fails downstream, Marcus gets a notification with a clear path to retry — he doesn't have to babysit the transmission.",
         dwell: 4800 },

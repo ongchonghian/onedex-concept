@@ -23,8 +23,8 @@ test('workspace.inboxItems are seeded with btn/action/dir/completion fields', ()
   assert.ok(items.length >= 3, 'expected seeded inbox items');
 
   // Mine bucket: at least one Review action (Maersk wants to receive...).
-  const review = items.find((i) => i.bucket === 'mine' && i.action === 'review');
-  assert.ok(review, 'expected a mine-bucket inbox item with action=review');
+  const review = items.find((i) => i.bucket === 'mine' && i.cta === 'review');
+  assert.ok(review, 'expected a mine-bucket inbox item with cta=review');
   assert.equal(review.btn, 'Review');
   assert.equal(review.dir, 'in');
   assert.equal(review.completion, false);
@@ -46,15 +46,15 @@ test('inbox derives entries from Failed messages so they surface alongside Agree
 
   // MSG-1240 is seeded as Failed · mine on Marcus's Cosco-TX surface.
   // It should derive a mine-bucket inbox card with a Retry action.
-  const msgItem = items.find((i) => i.derivedFrom === 'message' && i.messageId === 'MSG-1240');
+  const msgItem = items.find((i) => i.sourceType === 'message' && i.messageId === 'MSG-1240');
   assert.ok(msgItem, 'expected a derived inbox item for the Failed · mine message');
   assert.equal(msgItem.bucket, 'mine');
   assert.equal(msgItem.btn, 'Retry');
-  assert.equal(msgItem.action, 'retry-message');
+  assert.equal(msgItem.cta, 'retry-message');
   assert.equal(msgItem.dir, 'out');
 
   // MSG-1230 is Failed · expired — auto-closed per ADR 0021, must NOT derive.
-  const expiredItem = items.find((i) => i.derivedFrom === 'message' && i.messageId === 'MSG-1230');
+  const expiredItem = items.find((i) => i.sourceType === 'message' && i.messageId === 'MSG-1230');
   assert.equal(expiredItem, undefined, 'expired (auto-closed) messages must not surface in inbox');
 });
 
@@ -65,7 +65,7 @@ test('inbox derives entries from pending Agreements not already covered by the s
   const items = window.listInboxItemsForUserAndDex('marcus', 'tx');
   // AGR-2026-04955 is a pending Service-Provider Agreement seeded into the
   // workspace but not present in INBOX_BY_DEX. Derivation should expose it.
-  const agrItem = items.find((i) => i.derivedFrom === 'agreement' && i.agreementId === 'AGR-2026-04955');
+  const agrItem = items.find((i) => i.sourceType === 'agreement' && i.agreementId === 'AGR-2026-04955');
   assert.ok(agrItem, 'expected a derived inbox item for the pending Agreement');
   assert.equal(agrItem.bucket, 'mine');
   assert.equal(agrItem.dir, 'out');

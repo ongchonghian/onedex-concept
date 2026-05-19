@@ -65,7 +65,7 @@
 
   let runtime = null;
 
-  function initRuntime(flow) {
+  function initRuntime(flow, options = {}) {
     runtime = {
       flow,
       stepIndex: 0,
@@ -74,6 +74,13 @@
       speed: Number(localStorage.getItem('dex-demo-speed') || '1'),
       annotateCount: 0,
       currentCallout: null,
+      // Per ADR 0037: headless mode skips cursor/callout/control-bar DOM
+      // mounting, skips visibility checks (unreliable under JSDOM, which has
+      // no layout engine), and collapses sleeps to zero. Selectors and click
+      // handlers still execute; workspace mutations still flow through real
+      // product handlers. Used by tests/demos.test.js to smoke every
+      // registered flow.
+      headless: !!options.headless,
     };
   }
 
@@ -84,6 +91,12 @@
   // ---------- Sleep with pause + stop awareness ----------
 
   function sleep(ms) {
+    if (runtime && runtime.headless) {
+      // Animation dwells (annotate, expect, goto) collapse aggressively in
+      // headless — no human is watching, and post-action settles use settle()
+      // below for the timer-drain case. 30ms is enough for microtask drain.
+      return new Promise(r => setTimeout(r, Math.min(ms, 30)));
+    }
     const scaled = ms * speedFactor();
     return new Promise(resolve => {
       const start = Date.now();
@@ -388,17 +401,21 @@
         if (!found) {
           throw new Error(`expect: selector "${step.target}" not found in DOM`);
         }
-        // Visibility check — prototype's .screen elements are always in DOM
-        // but only the .active one is visible. Using offsetParent because
-        // it returns null when the element OR any ancestor has display:none,
-        // which is what we want, without false-positives on flex containers
-        // that report 0×0 dimensions on otherwise-laid-out children.
-        // Native checkVisibility() is preferred when available (Chrome 105+).
-        const isVisible = (typeof found.checkVisibility === 'function')
-          ? found.checkVisibility({ checkOpacity: false })
-          : (found.offsetParent !== null || getComputedStyle(found).position === 'fixed');
-        if (!isVisible) {
-          throw new Error(`expect: selector "${step.target}" exists but is not visible (display:none on an ancestor)`);
+        // Headless mode (per ADR 0037) is presence-only — JSDOM has no
+        // layout engine, so offsetParent and checkVisibility both lie.
+        if (!runtime.headless) {
+          // Visibility check — prototype's .screen elements are always in DOM
+          // but only the .active one is visible. Using offsetParent because
+          // it returns null when the element OR any ancestor has display:none,
+          // which is what we want, without false-positives on flex containers
+          // that report 0×0 dimensions on otherwise-laid-out children.
+          // Native checkVisibility() is preferred when available (Chrome 105+).
+          const isVisible = (typeof found.checkVisibility === 'function')
+            ? found.checkVisibility({ checkOpacity: false })
+            : (found.offsetParent !== null || getComputedStyle(found).position === 'fixed');
+          if (!isVisible) {
+            throw new Error(`expect: selector "${step.target}" exists but is not visible (display:none on an ancestor)`);
+          }
         }
         await sleep(step.dwell || 200);
         break;
@@ -406,14 +423,16 @@
 
       case 'annotate': {
         runtime.annotateCount++;
-        const anchorEl = step.anchor ? $(step.anchor) : null;
-        if (anchorEl && typeof anchorEl.scrollIntoView === 'function') {
-          anchorEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-          await sleep(200);
-          moveCursorToElement(anchorEl);
+        if (!runtime.headless) {
+          const anchorEl = step.anchor ? $(step.anchor) : null;
+          if (anchorEl && typeof anchorEl.scrollIntoView === 'function') {
+            anchorEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            await sleep(200);
+            moveCursorToElement(anchorEl);
+          }
+          showCallout({ anchor: step.anchor, label: step.label, rationale: step.rationale });
+          updateControlBar();
         }
-        showCallout({ anchor: step.anchor, label: step.label, rationale: step.rationale });
-        updateControlBar();
         await sleep(step.dwell || 1800);
         break;
       }
@@ -421,16 +440,18 @@
       case 'click': {
         const target = $(step.target);
         if (!target) throw new Error(`click: selector "${step.target}" not found`);
-        target.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        await sleep(200);
-        const rect = target.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        moveCursorTo(cx - 4, cy - 4);
-        await sleep(step.dwell || 500);
-        emitRipple(cx, cy);
+        if (!runtime.headless) {
+          target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          await sleep(200);
+          const rect = target.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          moveCursorTo(cx - 4, cy - 4);
+          await sleep(step.dwell || 500);
+          emitRipple(cx, cy);
+        }
         target.click();
-        await sleep(step.after || 400);
+        await settle(step.after || 400);
         break;
       }
 
@@ -446,7 +467,7 @@
           target.dispatchEvent(new Event('input', { bubbles: true }));
           await sleep(60);
         }
-        await sleep(step.after || 200);
+        await settle(step.after || 200);
         break;
       }
 
@@ -455,7 +476,7 @@
         if (!target) throw new Error(`select: selector "${step.target}" not found`);
         target.value = step.value;
         target.dispatchEvent(new Event('change', { bubbles: true }));
-        await sleep(step.after || 200);
+        await settle(step.after || 200);
         break;
       }
 
@@ -463,6 +484,19 @@
         await sleep(step.ms || 600);
         break;
     }
+  }
+
+  /* Real-time post-action wait. Used after click/type/select to drain any
+     setTimeout-driven handler side effects (composerSubmit's 900ms deferred
+     goto('compose-success'), the cp-row's 250ms goto('warn-inline'),
+     confirmExtend's 100ms renewed-banner injection). Distinct from sleep()
+     which collapses animation dwells in headless. In normal mode it falls
+     through to sleep() so pause/speed/stop semantics still apply. */
+  function settle(ms) {
+    if (runtime && runtime.headless) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+    return sleep(ms);
   }
 
   function waitWhilePaused() {
@@ -502,7 +536,7 @@
 
   // ---------- Public: run / stop ----------
 
-  async function runDemoFlow(flowId) {
+  async function runDemoFlow(flowId, options = {}) {
     if (runtime && !runtime.stopped) {
       console.warn('Demo already running. Stop the current demo first.');
       return;
@@ -510,20 +544,25 @@
     const flow = flows.get(flowId);
     if (!flow) throw new Error('Unknown flow: ' + flowId);
 
+    const headless = !!options.headless;
+
     // Close the Demos panel if it's open
     document.body.classList.remove('demos-panel-open');
 
-    const ok = await showPreflight(flow);
-    if (!ok) return;
+    if (!headless) {
+      const ok = await showPreflight(flow);
+      if (!ok) return;
+    }
 
     // Seed the workspace — reset to canonical fixtures, then mutate.
     seedWorkspaceForFlow(flow.seed);
 
-    initRuntime(flow);
-    mountCursor();
-    mountControlBar();
-
-    document.body.classList.add('demo-running');
+    initRuntime(flow, { headless });
+    if (!headless) {
+      mountCursor();
+      mountControlBar();
+      document.body.classList.add('demo-running');
+    }
 
     try {
       for (let i = 0; i < flow.steps.length; i++) {
@@ -537,6 +576,13 @@
       }
     } catch (err) {
       runtime.paused = true;
+      if (headless) {
+        // Re-throw so tests/demos.test.js can assert on the failure.
+        // Annotate with the step index to make the failure self-locating.
+        err.stepIndex = runtime.stepIndex;
+        teardown();
+        throw err;
+      }
       showErrorOverlay(err, runtime.stepIndex);
     }
   }

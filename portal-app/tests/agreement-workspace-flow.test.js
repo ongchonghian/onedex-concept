@@ -12,7 +12,6 @@ const FULL_SCRIPT_PATHS = [
   'scripts/components.js',
   'scripts/theme.js',
   'scripts/wizard.js',
-  'scripts/flows.js',
   'scripts/app.js',
   'scripts/pitstop.js'
 ];
@@ -151,7 +150,7 @@ test('themeInboxContent renders workspace inbox items after agreement submit', (
   window.themeInboxContent('tx');
 
   const inboxScreen = window.document.querySelector('.screen[data-screen="inbox-tx"]');
-  assert.match(inboxScreen.textContent, /awaiting review/);
+  assert.match(inboxScreen.textContent, /awaiting (their )?review/);
   assert.match(inboxScreen.textContent, /PSA International/);
 });
 
@@ -740,7 +739,7 @@ test('switchToAccount from a TX user to an HX user refreshes the agreements list
   }
 });
 
-test('switchToAccount on the agreement-detail screen routes to the agreements list', () => {
+test('switchToAccount on the agreement-detail screen clears selection and routes off the stale detail page', () => {
   const window = loadPortal({ scriptPaths: FULL_SCRIPT_PATHS });
   window.initializeWorkspaceApp();
 
@@ -757,14 +756,16 @@ test('switchToAccount on the agreement-detail screen routes to the agreements li
 
   // Switch to Sarah (platform-admin) — the previously-selected agreement
   // doesn't belong to her seat. The re-render must clear the selection and
-  // route to the agreements list rather than render a stale detail page.
+  // route off the stale detail page. The exact destination is persona-driven
+  // (Sarah lands on inbox-all per ADR 0005's neutral-chrome routing); the
+  // contract is "not the stale detail page".
   window.switchToAccount('sarah');
 
   assert.equal(window.getSelectedAgreementId(), null,
     'selected agreement should be cleared on account switch');
-  const agreementsScreen = window.document.querySelector('.screen[data-screen="agreements"]');
-  assert.ok(agreementsScreen.classList.contains('active'),
-    'the agreements list (not the detail page) should be active after switching from detail');
+  const detailScreen = window.document.querySelector('.screen[data-screen="detail"]');
+  assert.equal(detailScreen.classList.contains('active'), false,
+    'the stale detail page must not remain active after switching to an account that cannot see the previous agreement');
 });
 
 test('switchToAccount pins to non-default same-category users', () => {

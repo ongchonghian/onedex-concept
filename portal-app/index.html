@@ -493,12 +493,12 @@
         <!-- Welcome heading, role/DEX lede, and suggest-card desc all hydrate
              from the active user + workspace via hydrateEmptyHeroChrome().
              Server-side defaults below render gracefully if JS is delayed. -->
-        <h1 data-empty-hero-welcome>Welcome.</h1>
+        <h1 data-empty-hero-welcome data-demo="empty-state.welcome-heading">Welcome.</h1>
         <p class="lede" data-empty-hero-lede>You can review approvals, manage data elements, and create Agreements on behalf of your org.</p>
         <a class="help-link" onclick="openGlossary()" style="cursor:pointer">What else can I do here?</a>
         <div class="suggest-grid">
           <a class="suggest-card" onclick="goto('inbox-tx')"><div class="ic-pill"><i class="ti ti-file-text"></i></div><p class="ttl">Review your org's Agreements</p><p class="desc" data-empty-hero-org-agreements>Get the lay of the land on your org's active Agreements.</p><p class="more">View Agreements <i class="ti ti-arrow-right"></i></p></a>
-          <a class="suggest-card primary" onclick="startWizard('direct', { direction: 'send' })" style="cursor:pointer"><div class="ic-pill"><i class="ti ti-plus"></i></div><p class="ttl">Create your first Agreement</p><p class="desc">Set up data sharing with a counterparty, or appoint a service provider to act for you.</p><p class="more">Start now <i class="ti ti-arrow-right"></i></p></a>
+          <a class="suggest-card primary" data-demo="empty-state.primary-cta" onclick="startWizard('direct', { direction: 'send' })" style="cursor:pointer"><div class="ic-pill"><i class="ti ti-plus"></i></div><p class="ttl">Create your first Agreement</p><p class="desc">Set up data sharing with a counterparty, or appoint a service provider to act for you.</p><p class="more">Start now <i class="ti ti-arrow-right"></i></p></a>
         </div>
         <p style="font-size:11px;color:var(--g-70);margin:20px 0 0;max-width:480px;line-height:1.6">When items arrive, they'll appear above, split into <strong style="font-weight:500;color:var(--g-10)">Mine</strong> and <strong style="font-weight:500;color:var(--g-10)">My team's</strong>.</p>
       </main>
@@ -537,7 +537,7 @@
         <details open>
           <summary><i class="ti ti-chevron-down chev"></i><i class="ti ti-folder"></i>Trade documents<span class="ct">14</span></summary>
           <button class="leaf"><i class="ti ti-file-text"></i>Bill of Lading <span class="v-tag">v2.1</span></button>
-          <button class="leaf active"><i class="ti ti-stack"></i>Vessel arrival pack<span class="group-pill">pack</span></button>
+          <button class="leaf active" data-pack-id="vessel-arrival"><i class="ti ti-stack"></i>Vessel arrival pack<span class="group-pill">pack</span></button>
           <button class="leaf"><i class="ti ti-file-text"></i>Cargo manifest <span class="v-tag">v3.0</span></button>
           <button class="leaf"><i class="ti ti-file-text"></i>Certificate of origin <span class="v-tag">v1.4</span></button>
           <button class="leaf"><i class="ti ti-stack"></i>Pre-shipment documents<span class="group-pill">pack</span></button>
@@ -617,7 +617,7 @@
       <p class="pf-lede">Pick one. The choice determines how many Agreements get created in the next step. You can always extend with more counterparties later — this isn't a permanent decision.</p>
 
       <div class="pf-cards">
-        <button class="pf-card pf-card-same" type="button" onclick="wiz.viaPackSplit = false; if (wiz.active) { wizardNext(); } else { goto('cp-picker'); }">
+        <button class="pf-card pf-card-same" type="button" data-demo="pack-fork.same" onclick="wiz.viaPackSplit = false; if (wiz.active) { wizardNext(); } else { goto('cp-picker'); }">
           <header>
             <div class="pf-card-icon"><i class="ti ti-user-check"></i></div>
             <h3>Same counterparty for all 4 elements</h3>
@@ -679,7 +679,7 @@
     <div>Only shown when your Org has <strong>multiple Pitstops</strong> on this DEX and this element has no established scope yet. The platform asks once, at the moment the decision matters; future Agreements for this element reuse your choice silently. Pick one or more — picking multiple lets any of them dispatch (failover, regional split, gradual migration). Operators with access to only one will see no choice; managers with access to multiple will see the chip at compose-time.</div>
   </div>
 
-  <div class="pack-fork-frame">
+  <div class="pack-fork-frame" data-demo="wizard.scope-step">
     <header class="pf-header">
       <span class="agr-id">SCOPE-CAPTURE</span>
       <div class="pf-context">
@@ -831,11 +831,11 @@
     <details open>
       <summary style="display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;list-style:none;font-size:11px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--g-50);background:var(--g-98)"><i class="ti ti-chevron-down" style="font-size:14px"></i>Counterparties your org has worked with (8)</summary>
       <div class="cp-list">
-        <button class="cp-row" onclick="goto('warn-inline')"><div class="cp-avatar">Mk</div><div class="cp-body"><div class="cp-name">Maersk Logistics Pte Ltd</div><div class="cp-meta">Carrier · UEN 200512345R · 3 active Agreements with you</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill"><i class="ti ti-check"></i>Ready</span></button>
-        <button class="cp-row" onclick="toast('PSA selected'); setTimeout(() => goto('detail'), 600)"><div class="cp-avatar">PS</div><div class="cp-body"><div class="cp-name">PSA International</div><div class="cp-meta">Port operator · UEN 199702345K · 1 active Agreement with you</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill"><i class="ti ti-check"></i>Ready</span></button>
-        <button class="cp-row" onclick="toast('CrimsonLogic selected · invitation will be sent','warn'); setTimeout(() => goto('detail'), 700)"><div class="cp-avatar">CL</div><div class="cp-body"><div class="cp-name">CrimsonLogic Pte Ltd</div><div class="cp-meta">Service provider · UEN 198812345J · onboarded 6mo ago</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill invite"><i class="ti ti-mail"></i>Invitation required</span></button>
-        <button class="cp-row" onclick="toast('Cosco Shipping selected'); setTimeout(() => goto('detail'), 600)"><div class="cp-avatar">CS</div><div class="cp-body"><div class="cp-name">Cosco Shipping Lines</div><div class="cp-meta">Carrier · UEN 200012345B · also known as COSCON</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill"><i class="ti ti-check"></i>Ready</span></button>
-        <button class="cp-row" onclick="goto('warn-inline')"><div class="cp-avatar">AC</div><div class="cp-body"><div class="cp-name">Acme Construction Pte Ltd</div><div class="cp-meta">Contractor · UEN 201111223J · primary DEX is SGBuildex</div></div><span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span><span class="ready-pill" style="background:var(--yellow-98);color:var(--yellow-50)"><i class="ti ti-alert-triangle"></i>Cross-DEX</span></button>
+        <button class="cp-row" data-cp-id="maersk" onclick="goto('warn-inline')"><div class="cp-avatar">Mk</div><div class="cp-body"><div class="cp-name">Maersk Logistics Pte Ltd</div><div class="cp-meta">Carrier · UEN 200512345R · 3 active Agreements with you</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill"><i class="ti ti-check"></i>Ready</span></button>
+        <button class="cp-row" data-cp-id="psa" onclick="toast('PSA selected'); setTimeout(() => goto('detail'), 600)"><div class="cp-avatar">PS</div><div class="cp-body"><div class="cp-name">PSA International</div><div class="cp-meta">Port operator · UEN 199702345K · 1 active Agreement with you</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill"><i class="ti ti-check"></i>Ready</span></button>
+        <button class="cp-row" data-cp-id="crimsonlogic" onclick="toast('CrimsonLogic selected · invitation will be sent','warn'); setTimeout(() => goto('detail'), 700)"><div class="cp-avatar">CL</div><div class="cp-body"><div class="cp-name">CrimsonLogic Pte Ltd</div><div class="cp-meta">Service provider · UEN 198812345J · onboarded 6mo ago</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill invite"><i class="ti ti-mail"></i>Invitation required</span></button>
+        <button class="cp-row" data-cp-id="cosco" onclick="toast('Cosco Shipping selected'); setTimeout(() => goto('detail'), 600)"><div class="cp-avatar">CS</div><div class="cp-body"><div class="cp-name">Cosco Shipping Lines</div><div class="cp-meta">Carrier · UEN 200012345B · also known as COSCON</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill"><i class="ti ti-check"></i>Ready</span></button>
+        <button class="cp-row" data-cp-id="acme" onclick="goto('warn-inline')"><div class="cp-avatar">AC</div><div class="cp-body"><div class="cp-name">Acme Construction Pte Ltd</div><div class="cp-meta">Contractor · UEN 201111223J · primary DEX is SGBuildex</div></div><span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span><span class="ready-pill" style="background:var(--yellow-98);color:var(--yellow-50)"><i class="ti ti-alert-triangle"></i>Cross-DEX</span></button>
       </div>
     </details>
     <p class="list-foot"><i class="ti ti-info-circle"></i>Ready = counterparty has enrolled in the same use case as your data element.</p>
@@ -850,7 +850,7 @@
     <p class="sub-lede">Duration, residency class, and notification cadence. All editable from the detail page later.</p>
     <div class="terms-form">
       <div class="form-row"><div class="form-k">Effective from<span class="opt">Defaults to today</span></div><div class="form-v"><input type="date" id="t-effective" value="2026-05-14"><span class="hint">Data flow begins as soon as the counterparty accepts.</span></div></div>
-      <div class="form-row"><div class="form-k">Duration<span class="opt">Until renewal</span></div><div class="form-v"><div class="duration-chips"><button class="d-chip" onclick="pickDuration(this,3)">3 months</button><button class="d-chip" onclick="pickDuration(this,6)">6 months</button><button class="d-chip active" onclick="pickDuration(this,12)">12 months</button><button class="d-chip" onclick="pickDuration(this,24)">24 months</button></div><span class="hint">Ends on <strong id="t-enddate" style="font-weight:500;color:var(--g-30)">14 May 2027</strong>.</span></div></div>
+      <div class="form-row"><div class="form-k">Duration<span class="opt">Until renewal</span></div><div class="form-v"><div class="duration-chips" data-demo="wiz-terms.duration-chips"><button class="d-chip" onclick="pickDuration(this,3)">3 months</button><button class="d-chip" onclick="pickDuration(this,6)">6 months</button><button class="d-chip active" onclick="pickDuration(this,12)">12 months</button><button class="d-chip" onclick="pickDuration(this,24)">24 months</button></div><span class="hint">Ends on <strong id="t-enddate" style="font-weight:500;color:var(--g-30)">14 May 2027</strong>.</span></div></div>
       <div class="form-row"><div class="form-k">Residency class</div><div class="form-v"><select id="t-residency"><option value="standard">Standard — cross-DEX OK with warning</option><option value="strict">Residency-strict — hard block on cross-DEX</option></select><span class="hint">For most B/L data, Standard is correct.</span></div></div>
       <div class="form-row"><div class="form-k">Renewal notifications</div><div class="form-v"><div class="toggle-row-inline"><div class="track-i on" onclick="this.classList.toggle('on')"><div class="knob-i"></div></div><span class="lbl">Send reminders at 60 / 30 / 14 / 7 / 1 days before expiry</span></div><div class="toggle-row-inline"><div class="track-i on" onclick="this.classList.toggle('on')"><div class="knob-i"></div></div><span class="lbl">Broadcast to all admins on this org (recommended)</span></div><div class="toggle-row-inline"><div class="track-i" onclick="this.classList.toggle('on')"><div class="knob-i"></div></div><span class="lbl">Allow 7-day grace period after expiry</span></div></div></div>
       <div class="form-row"><div class="form-k">Custom note<span class="opt">Optional</span></div><div class="form-v"><input type="text" placeholder="e.g. Per service agreement #2026-MARSK-014"><span class="hint">Visible to both parties on the Agreement detail page.</span></div></div>
@@ -997,15 +997,15 @@
         <span class="chip muted"     onclick="setMsgFilter('in-flight', this)"   data-filter="in-flight">In flight · 7</span>
         <span class="chip muted"     onclick="setMsgFilter('delivered', this)"   data-filter="delivered">Delivered · 0</span>
         <span class="chip muted"     onclick="setMsgFilter('acknowledged', this)" data-filter="acknowledged">Acknowledged · 1,232</span>
-        <span class="chip muted failed-multi" style="color:var(--red-50)" onclick="openFailedFilterPop(event)" id="failed-filter-chip" title="Failed · mine (3) + theirs (4) + expired (1)" data-filter="failed">Failed (3) · 8 <i class="ti ti-chevron-down" style="font-size:9px;margin-left:2px"></i></span>
+        <span class="chip muted failed-multi" style="color:var(--red-50)" onclick="openFailedFilterPop(event)" id="failed-filter-chip" data-demo="messages.failed-filter" title="Failed · mine (3) + theirs (4) + expired (1)" data-filter="failed">Failed (3) · 8 <i class="ti ti-chevron-down" style="font-size:9px;margin-left:2px"></i></span>
         <span class="chip muted closed-toggle" style="color:var(--g-50)" onclick="toggleClosedVisibility(this)" id="closed-filter-chip" title="Closed Messages are hidden by default — click to reveal (per ADR 0021)" data-filter="closed">Closed · hidden</span>
         <!-- Popover for Failed sub-filter (ADR 0021) -->
         <div class="failed-pop" id="failed-filter-pop" hidden role="menu" aria-label="Failed sub-filters">
           <p class="failed-pop-head">Failed sub-filters</p>
-          <label class="failed-pop-row"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="mine"><span class="owner-badge mine">Your action</span><span class="ct">3</span></label>
-          <label class="failed-pop-row"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="theirs"><span class="owner-badge theirs">Their action</span><span class="ct">4</span></label>
-          <label class="failed-pop-row"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="expired"><span class="owner-badge expired">Expired</span><span class="ct">1</span></label>
-          <div class="failed-pop-foot"><button class="btn-ghost" onclick="closeFailedFilterPop()">Done</button></div>
+          <label class="failed-pop-row" data-demo="messages.failed-popup.owner-mine"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="mine"><span class="owner-badge mine">Your action</span><span class="ct">3</span></label>
+          <label class="failed-pop-row" data-demo="messages.failed-popup.owner-theirs"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="theirs"><span class="owner-badge theirs">Their action</span><span class="ct">4</span></label>
+          <label class="failed-pop-row" data-demo="messages.failed-popup.owner-expired"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="expired"><span class="owner-badge expired">Expired</span><span class="ct">1</span></label>
+          <div class="failed-pop-foot"><button class="btn-ghost" onclick="closeFailedFilterPop()" data-demo="messages.failed-popup.done-btn">Done</button></div>
         </div>
       </div>
       <div class="grow"></div>
@@ -1218,7 +1218,7 @@
       <span id="msg-list-count">Showing 14 of 1,247 messages today · <a onclick="toast('Loading older messages')" style="color:var(--theme-20);cursor:pointer;text-decoration:underline">load more</a></span>
       <div class="pager-btns">
         <button onclick="openComposerPicker()" class="btn-primary-mini" title="Compose a new Message — pick which Agreement (counterparty + data element) to compose under"><i class="ti ti-pencil-plus" style="font-size:12px"></i>New Message</button>
-        <button onclick="openBulkRetryModal()" id="msg-bulk-retry-btn" title="Retry all Failed · your action Messages with the same idempotency keys">Bulk Retry · 3</button>
+        <button onclick="openBulkRetryModal()" id="msg-bulk-retry-btn" data-demo="messages.bulk-retry-btn" title="Retry all Failed · your action Messages with the same idempotency keys">Bulk Retry · 3</button>
         <button onclick="openBulkCloseModal()" id="msg-bulk-close-btn" title="Close all Failed · their action Messages with one shared reason">Bulk Close · 4</button>
         <button onclick="toast('Exporting today\'s messages as signed CSV')">Export today</button>
       </div>
@@ -1243,6 +1243,7 @@
       <button data-flow="pull" onclick="setMessageFlow('pull', this)">PULL (in flight)</button>
       <button data-flow="store" onclick="setMessageFlow('store', this)">STORE (failed · expired)</button>
       <button data-flow="acked" onclick="setMessageFlow('acked', this)">PUSH (acknowledged)</button>
+      <button data-flow="sp-send" onclick="setMessageFlow('sp-send', this)">PUSH · SP acting-as</button>
     </div>
   </div>
 
@@ -1257,7 +1258,7 @@
         <h2 id="msg-title">Bunker delivery confirmation → PSA International</h2>
         <span class="status-pill failed" id="msg-status-pill"><span class="dot" aria-hidden="true"></span>Failed</span>
         <span class="owner-badge mine" id="msg-owner-badge" title="You can remediate this alone">Your action</span>
-        <button class="btn-secondary" id="msg-retry-btn" onclick="msgRetry()" title="Re-send payload to PSA · same idempotency key (within 24h window)"><i class="ti ti-refresh" aria-hidden="true"></i>Retry</button>
+        <button class="btn-secondary" id="msg-retry-btn" data-demo="message-detail.retry-btn" onclick="msgRetry()" title="Re-send payload to PSA · same idempotency key (within 24h window)"><i class="ti ti-refresh" aria-hidden="true"></i>Retry</button>
         <button class="btn-ghost" id="msg-edit-resend-btn" onclick="msgEditResend()" title="Open the composer pre-filled with this Message's payload · fix the failure reason · same idempotency key (safe because Failed · your action means counterparty never saw it)"><i class="ti ti-pencil" aria-hidden="true"></i>Edit &amp; resend</button>
         <button class="btn-ghost" id="msg-close-btn" onclick="msgClose()" title="Close · declare no further remediation expected (one-way per ADR 0021)"><i class="ti ti-archive" aria-hidden="true"></i>Close</button>
         <button class="btn-ghost" onclick="toast('More: Resend with new key · Export signed JSON · Mark for review · Copy permalink')" aria-label="More actions"><i class="ti ti-dots" aria-hidden="true"></i></button>
@@ -1455,7 +1456,7 @@
   </div>
 
   <!-- Acting-as banner — surfaces when operator is SP composing on data-owner's behalf (ADR 0024) -->
-  <div class="compose-acting-banner" id="compose-acting-banner" hidden role="status" aria-live="polite">
+  <div class="compose-acting-banner" id="compose-acting-banner" data-demo="composer.acting-as-chip" hidden role="status" aria-live="polite">
     <i class="ti ti-user-share" aria-hidden="true"></i>
     <div class="banner-body">
       <p><strong>Acting as Maersk Logistics</strong> · this Message will be composed on Maersk's behalf via your Service-Provider role</p>
@@ -1481,12 +1482,12 @@
        · D (SP, multi-Pitstop SP):           shown with choice (intersection ≥ 2)
        · E (one Pitstop retired):            shown with remaining choices
        · F (joint-state warning):            shown above the warning banner -->
-  <div class="compose-acting-pitstop-banner" id="compose-acting-pitstop-banner" hidden role="status" aria-live="polite">
+  <div class="compose-acting-pitstop-banner" id="compose-acting-pitstop-banner" data-demo="composer.send-from-chip" hidden role="status" aria-live="polite">
     <i class="ti ti-map-pin" aria-hidden="true"></i>
     <div class="banner-body">
       <div class="apc-row">
         <span class="apc-label">Send from</span>
-        <select id="compose-acting-pitstop-select" class="acting-owner-picker" onchange="onActingAsPitstopChange(this)" aria-label="Choose dispatching Pitstop"></select>
+        <select id="compose-acting-pitstop-select" class="acting-owner-picker" data-demo="composer.send-from-override" onchange="onActingAsPitstopChange(this)" aria-label="Choose dispatching Pitstop"></select>
         <span class="apc-hint" id="compose-acting-pitstop-hint">your last choice for this element — change anytime</span>
       </div>
       <p class="apc-foot">Audit triple records <code>composed_by</code> + <code>acting_as_org</code> + <code>acting_as_pitstop</code> per ADR 0028 (column name stays parallel for schema; user-facing label is "Send from"). Per-operator memory; override per message.</p>
@@ -1598,7 +1599,7 @@
          LEFT: Back (hidden on step 1)
          RIGHT: hint + primary action (Review on step 1; Submit on step 2 / simple)
          Cancel lives in the compose-header top-right (matches wizard-bar pattern) — single location, top of view, always accessible. -->
-    <footer class="compose-foot">
+    <footer class="compose-foot" data-demo="compose.foot">
       <button class="btn-cancel compose-back" id="compose-back" hidden onclick="composerStep(-1)"><i class="ti ti-arrow-left" style="font-size:12px"></i>Back</button>
       <div class="grow"></div>
       <span class="foot-hint" id="compose-foot-hint">All required fields filled · ready to review</span>
@@ -1619,7 +1620,7 @@
   <div class="success-card">
     <div class="success-icon"><i class="ti ti-check"></i></div>
     <h2 id="cs-title">Submitted to Maersk Logistics</h2>
-    <p class="cs-sub">Your Bill of Lading is now <strong>In flight</strong> · Message ID <code>MSG-2026-118504</code></p>
+    <p class="cs-sub" data-demo="compose-success.subline">Your Bill of Lading is now <strong>In flight</strong> · Message ID <code>MSG-2026-118504</code></p>
     <ul class="cs-details">
       <li><i class="ti ti-key"></i> Idempotency key <code>idem_a7f3c91d</code> · counterparty pitstop will dedup if original delivered</li>
       <li><i class="ti ti-clock"></i> Submitted 14:18:40 SGT · expected delivery within 2 seconds</li>
@@ -2100,7 +2101,7 @@
           <div class="ov-cta-icon"><i class="ti ti-player-play" aria-hidden="true"></i></div>
           <div class="ov-cta-body">
             <p class="ov-cta-title">Run a demo</p>
-            <p class="ov-cta-desc">Watch a guided journey. Five short auto-demos walk through the flows the design decisions were made for. Pause or stop at any point.</p>
+            <p class="ov-cta-desc">Watch a guided journey. Each short auto-demo walks through one of the flows the design decisions were made for. Pause or stop at any point.</p>
           </div>
         </a>
       </div>
@@ -2345,7 +2346,7 @@
           <button class="btn-ghost" id="detail-more-btn" onclick="toggleOverflowMenu(event)" aria-haspopup="menu" aria-expanded="false" aria-label="More actions"><i class="ti ti-dots" aria-hidden="true"></i></button>
           <div class="overflow-menu" id="detail-overflow-menu" hidden role="menu" aria-label="Agreement actions">
             <button role="menuitem" onclick="closeOverflowMenu(); openExtend('Maersk Logistics')"><i class="ti ti-clock-play" aria-hidden="true"></i>Extend</button>
-            <button role="menuitem" onclick="closeOverflowMenu(); if (suspendCurrentAgreement()) toast('Agreement suspended','warn');"><i class="ti ti-player-pause" aria-hidden="true"></i>Suspend</button>
+            <button role="menuitem" data-demo="agreement-actions.suspend" onclick="closeOverflowMenu(); if (suspendCurrentAgreement()) toast('Agreement suspended','warn');"><i class="ti ti-player-pause" aria-hidden="true"></i>Suspend</button>
             <button role="menuitem" onclick="closeOverflowMenu(); toast('Audit log exported as CSV (mock)')"><i class="ti ti-download" aria-hidden="true"></i>Export audit</button>
             <button role="menuitem" onclick="closeOverflowMenu(); toast('Link copied to clipboard (mock)')"><i class="ti ti-link" aria-hidden="true"></i>Copy link</button>
             <div class="menu-divider" role="separator"></div>
@@ -2365,7 +2366,7 @@
           <li class="step mid" aria-current="step"><div class="step-row"><span class="dot curr" aria-hidden="true"></span><span class="step-label">Active</span></div><p class="step-time">21 Mar · Maersk accepted</p></li>
           <li class="step end"><div class="step-row"><span class="dot future" aria-hidden="true"></span><span class="step-label muted">Ends</span></div><p class="step-time">30 Sep · expires</p></li>
         </ol>
-        <div class="nudge" id="detail-nudge" role="status">
+        <div class="nudge" id="detail-nudge" data-demo="detail.appointment-banner" role="status">
           <i class="ti ti-clock" aria-hidden="true"></i>
           <p>Expires in 9 days. Extend before 30 Sep to avoid the 7-day grace window.</p>
           <button class="btn-secondary" onclick="openExtend('Maersk Logistics')">Extend now</button>
@@ -2485,7 +2486,7 @@
 
 <!-- ============ Warning panels ============ -->
 <section class="screen" data-screen="warn-inline">
-  <div class="canvas-meta"><span class="meta-label">Cross-DEX · Trigger A</span><h1>Inline panel warning at counterparty-selection step</h1><span class="adr-tag">ADR 0012</span></div>
+  <div class="canvas-meta"><span class="meta-label">Cross-DEX · Trigger A</span><h1 data-demo="warn-inline.heading">Inline panel warning at counterparty-selection step</h1><span class="adr-tag">ADR 0012</span></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Cancel is default focus; "Continue anyway" is a deliberate click. Both audit-logged.</div></div>
   <div class="warn-frame">
     <p class="step-tag">Step 3 of 5 · /portal/tradex/agreements/new</p>
@@ -3003,7 +3004,7 @@
       <!-- Member Agreements table -->
       <p class="section-label" style="margin-top:24px">Member Agreements (4)</p>
       <div class="pack-members-frame">
-        <table class="pack-members-table">
+        <table class="pack-members-table" data-demo="pack-detail.members-table">
           <thead><tr><th>Counterparty</th><th>Element</th><th>Agreement ID</th><th>Status</th><th>Latest Message</th><th></th></tr></thead>
           <tbody>
             <tr onclick="goto('detail')">
@@ -3347,9 +3348,9 @@
 </div>
 
 <div class="dropdown-pop" hidden id="dropdown-pop" role="menu" aria-label="Create new">
-  <div class="dropdown-item" role="menuitem" onclick="startWizard('direct', { direction: 'send' })"><div class="icon-bubble"><i class="ti ti-upload"></i></div><div><div class="label">Share data with a counterparty</div><div class="desc">Contributor side · you have the data and want to send it.</div></div></div>
-  <div class="dropdown-item" role="menuitem" onclick="startWizard('direct', { direction: 'receive' })"><div class="icon-bubble"><i class="ti ti-download"></i></div><div><div class="label">Request data from a counterparty</div><div class="desc">Consumer side · you need data another org holds.</div></div></div>
-  <div class="dropdown-item" role="menuitem" onclick="startWizard('sp')"><div class="icon-bubble"><i class="ti ti-users-group"></i></div><div><div class="label">Appoint a service provider</div><div class="desc">Authorise another org to send or receive data on your behalf.</div></div></div>
+  <div class="dropdown-item" role="menuitem" data-demo="new-agreement-dropdown.direct-send" onclick="startWizard('direct', { direction: 'send' })"><div class="icon-bubble"><i class="ti ti-upload"></i></div><div><div class="label">Share data with a counterparty</div><div class="desc">Contributor side · you have the data and want to send it.</div></div></div>
+  <div class="dropdown-item" role="menuitem" data-demo="new-agreement-dropdown.direct-receive" onclick="startWizard('direct', { direction: 'receive' })"><div class="icon-bubble"><i class="ti ti-download"></i></div><div><div class="label">Request data from a counterparty</div><div class="desc">Consumer side · you need data another org holds.</div></div></div>
+  <div class="dropdown-item" role="menuitem" data-demo="new-agreement-dropdown.sp" onclick="startWizard('sp')"><div class="icon-bubble"><i class="ti ti-users-group"></i></div><div><div class="label">Appoint a service provider</div><div class="desc">Authorise another org to send or receive data on your behalf.</div></div></div>
   <div class="dropdown-divider"></div>
   <div class="dropdown-item" role="menuitem" onclick="openTemplate()"><div class="icon-bubble neutral"><i class="ti ti-template"></i></div><div><div class="label">Start from a template</div><div class="desc">4 available · pre-filled blueprint for repeat patterns.</div></div></div>
 </div>
@@ -3485,19 +3486,19 @@
     <div class="overlay-head"><div class="ic tx"><i class="ti ti-clock-play"></i></div><h4>Extend Agreement with <span id="extend-cp">Maersk Logistics</span></h4><button class="close" onclick="closeOverlay('extend-modal')"><i class="ti ti-x"></i></button></div>
     <div class="overlay-body">
       <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:8px">Pick a new end date — your previous extension was 6 months.</p>
-      <div class="extend-row"><button class="extend-chip" onclick="pickExtend(this,3)">+3 months</button><button class="extend-chip" onclick="pickExtend(this,6)">+6 months</button><button class="extend-chip active" onclick="pickExtend(this,12)">+12 months</button><button class="extend-chip" onclick="pickExtend(this,24)">+24 months</button></div>
+      <div class="extend-row" data-demo="extend-modal.row"><button class="extend-chip" onclick="pickExtend(this,3)">+3 months</button><button class="extend-chip" onclick="pickExtend(this,6)">+6 months</button><button class="extend-chip active" data-demo="extend-modal.chip-12mo" onclick="pickExtend(this,12)">+12 months</button><button class="extend-chip" onclick="pickExtend(this,24)">+24 months</button></div>
       <div class="extend-summary"><p>New end date: <strong id="extend-newdate">30 Sep 2027</strong></p><p style="margin-top:6px">Notification cadence resets. Audit-logged.</p></div>
     </div>
-    <div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('extend-modal')">Cancel</button><button class="btn-primary" onclick="confirmExtend()">Extend by 12 months</button></div>
+    <div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('extend-modal')">Cancel</button><button class="btn-primary" data-demo="extend-modal.confirm" onclick="confirmExtend()">Extend by 12 months</button></div>
   </div>
 </div>
 
 <div class="overlay-veil" id="claim-modal" hidden>
-  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-hand-finger" aria-hidden="true"></i></div><h4>Claim this item?</h4><button class="close" onclick="closeOverlay('claim-modal')" aria-label="Close"><i class="ti ti-x" aria-hidden="true"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5">This will remove the item from your teammates' queue. It moves from <strong style="font-weight:500">My team's</strong> into <strong style="font-weight:500">Mine</strong>, and only you will see it until you complete or release it.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('claim-modal')">Not now</button><button class="btn-primary" onclick="confirmClaim()">Claim</button></div></div>
+  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-hand-finger" aria-hidden="true"></i></div><h4>Claim this item?</h4><button class="close" onclick="closeOverlay('claim-modal')" aria-label="Close"><i class="ti ti-x" aria-hidden="true"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5">This will remove the item from your teammates' queue. It moves from <strong style="font-weight:500">My team's</strong> into <strong style="font-weight:500">Mine</strong>, and only you will see it until you complete or release it.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('claim-modal')">Not now</button><button class="btn-primary" onclick="confirmClaim()" data-demo="inbox.claim-modal.confirm">Claim</button></div></div>
 </div>
 
 <div class="overlay-veil" id="approve-modal" hidden>
-  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-check"></i></div><h4>Approve incoming Agreement</h4><button class="close" onclick="closeOverlay('approve-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5">Maersk Logistics will start receiving Bills of Lading. The Agreement transitions to <strong style="font-weight:500;color:var(--green-50)">Active</strong>.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('approve-modal')">Cancel</button><button class="btn-primary" onclick="confirmApprove()">Approve</button></div></div>
+  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-check"></i></div><h4>Approve incoming Agreement</h4><button class="close" onclick="closeOverlay('approve-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body" data-demo="approve-modal.body"><p style="font-size:12px;color:var(--g-30);line-height:1.5">Maersk Logistics will start receiving Bills of Lading. The Agreement transitions to <strong style="font-weight:500;color:var(--green-50)">Active</strong>.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('approve-modal')">Cancel</button><button class="btn-primary" data-demo="approve-modal.confirm" onclick="confirmApprove()">Approve</button></div></div>
 </div>
 
 <div class="overlay-veil" id="join-modal" hidden>
@@ -3987,11 +3988,19 @@
 <script src="scripts/app.js?v=p17"></script>
 <!-- Auto-demo runner (ADR 0034) — load order: runtime first, then each flow self-registers, then the launcher reads the registry. -->
 <script src="scripts/demos/runtime.js?v=p17"></script>
+<script src="scripts/demos/lib/seed-helpers.js?v=p17"></script>
 <script src="scripts/demos/first-agreement.js?v=p17"></script>
 <script src="scripts/demos/extend.js?v=p17"></script>
 <script src="scripts/demos/approve.js?v=p17"></script>
 <script src="scripts/demos/cross-dex.js?v=p17"></script>
 <script src="scripts/demos/compose-message.js?v=p17"></script>
+<script src="scripts/demos/suspend.js?v=p17"></script>
+<script src="scripts/demos/watch-and-digest.js?v=p17"></script>
+<script src="scripts/demos/teammate-claim.js?v=p17"></script>
+<script src="scripts/demos/distribute-pack.js?v=p17"></script>
+<script src="scripts/demos/triage-failures.js?v=p17"></script>
+<script src="scripts/demos/acting-as-sp.js?v=p17"></script>
+<script src="scripts/demos/pitstop-scope.js?v=p17"></script>
 <script src="scripts/demos/index.js?v=p17"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>

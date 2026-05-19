@@ -56,7 +56,7 @@ test('submitAgreementDraft creates a pending agreement, deletes the draft, and c
   assert.equal(workspace.agreementDrafts[draft.draftId], undefined);
   assert.equal(workspace.agreements[result.agreementId].state, 'pending');
   assert.equal(workspace.inboxItems[result.inboxItemId].bucket, 'mine');
-  assert.match(workspace.inboxItems[result.inboxItemId].title, /awaiting review/);
+  assert.match(workspace.inboxItems[result.inboxItemId].title, /awaiting (their )?review/);
 });
 
 /* ---------- Agreement state transitions (suspend / resume / revoke) ---------- */

@@ -418,6 +418,7 @@ const DATA_ELEMENTS_BY_DEX = {
     groupCount:  12,
     headline: {
       kind: 'pack',
+      id: 'vessel-arrival',
       name: 'Vessel arrival pack',
       blurb: 'Curated Data element pack — flows together when a vessel arrives. Maintained by SGTradex admins.',
       snapshotLabel: 'Snapshot · 4 elements (deselect any)',
@@ -430,8 +431,8 @@ const DATA_ELEMENTS_BY_DEX = {
     },
     groups: [
       { name: 'Trade documents', count: 14, open: true, elements: [
-        { kind: 'leaf', name: 'Bill of Lading',        version: 'v2.1', icon: 'file-text' },
-        { kind: 'pack', name: 'Vessel arrival pack',   active: true },
+        { kind: 'leaf', id: 'bill-of-lading', name: 'Bill of Lading',        version: 'v2.1', icon: 'file-text' },
+        { kind: 'pack', id: 'vessel-arrival', name: 'Vessel arrival pack',   active: true },
         { kind: 'leaf', name: 'Cargo manifest',        version: 'v3.0', icon: 'file-text' },
         { kind: 'leaf', name: 'Certificate of origin', version: 'v1.4', icon: 'file-text' },
         { kind: 'pack', name: 'Pre-shipment documents' }

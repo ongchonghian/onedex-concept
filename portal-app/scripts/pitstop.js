@@ -566,6 +566,17 @@ function inferScopeSuggestion(orgId, dexId, elementId, direction) {
    by the renderers (renderActingAsPitstopChip, renderScopeCaptureStep, etc.). */
 function applyMpScenario(scenarioKey, btn) {
   if (!MP_SCENARIOS[scenarioKey]) return;
+
+  // Restore any demo-driven chipVisibility stash before applying. The
+  // pitstop-scope demo flow sets _chipVisibilityStash on scenario B so that
+  // the mutation (first-time → auto-filled) doesn't persist across flows for
+  // the rest of the browser session. Same save-restore pattern as _fStash for
+  // PITSTOP_ELEMENT_SCOPE (scenario F) below.
+  if (MP_SCENARIOS[scenarioKey]._chipVisibilityStash !== undefined) {
+    MP_SCENARIOS[scenarioKey].chipVisibility = MP_SCENARIOS[scenarioKey]._chipVisibilityStash;
+    delete MP_SCENARIOS[scenarioKey]._chipVisibilityStash;
+  }
+
   activeMpScenario = scenarioKey;
   const scenario = MP_SCENARIOS[scenarioKey];
 
@@ -889,7 +900,7 @@ function renderScopeCaptureStep() {
     const suggestedMark = isSuggested
       ? `<div class="sc-suggested-pill" style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 8px;background:var(--theme-95);color:var(--theme-20);border-radius:10px;font-size:11px;font-weight:500"><i class="ti ti-sparkles" style="font-size:11px"></i>Suggested — ${suggestion.reason}</div>`
       : '';
-    return `<label class="sc-checkbox-row" data-suggested="${isSuggested ? '1' : '0'}">
+    return `<label class="sc-checkbox-row" data-demo="wizard.scope-option" data-pitstop-id="${p.id}" data-suggested="${isSuggested ? '1' : '0'}">
       <input type="checkbox" value="${p.id}" ${checked ? 'checked' : ''} onchange="onScopeCaptureChange()" aria-label="Use ${p.name} for ${displayName}${isSuggested ? ' — suggested based on your past choices' : ''}">
       <div class="sc-body">
         <div class="sc-name">${p.name}</div>
