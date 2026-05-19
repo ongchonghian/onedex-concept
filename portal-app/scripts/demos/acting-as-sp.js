@@ -18,7 +18,7 @@
 (function (window) {
   'use strict';
 
-  // Pat (pat@crimsonlogic.com) is the canonical sp-operator persona per state.js:330.
+  // Chou (chou@crimsonlogic.com) is the canonical sp-operator persona per state.js:330.
   // CrimsonLogic acts as Maersk (data owner) to transmit Container Bookings to Cosco.
   // Agreement AGR-2026-04711 from the pat-crimsonlogic-tx-D fixture in workspace-fixtures.js.
   const APPOINTED_AGREEMENT_ID = 'AGR-2026-04711';
@@ -31,7 +31,7 @@
     durationSec: 50,
 
     seed: (workspace) => {
-      // Pat is the canonical sp-operator user. dexId is 'tx' (SGTradex).
+      // Chou is the canonical sp-operator user. dexId is 'tx' (SGTradex).
       // setActivePersona sets workspace.meta.activeUserId = 'pat' so
       // currentScene() resolves to pat-crimsonlogic-tx-D.
       if (typeof window.setActivePersona === 'function') {
@@ -51,7 +51,7 @@
     },
 
     steps: [
-      // ---- Open the Maersk-appointed Agreement under Pat's seat ----
+      // ---- Open the Maersk-appointed Agreement under Chou's seat ----
       { action: 'goto', target: 'detail' },
       { action: 'expect', target: '.screen[data-screen="detail"].active [data-demo="detail.appointment-banner"]' },
 
