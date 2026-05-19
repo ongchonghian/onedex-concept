@@ -1098,7 +1098,8 @@ function renderInboxCardHTML(item, opts) {
     ? 'btn-secondary'
     : (cta === 'review' || cta === 'approve-network' || cta === 'review-org' ? 'btn-primary' : 'btn-secondary');
   const buttonLabel = isClaim ? 'Claim' : (item.btn || 'Open');
-  const buttonHandler = isClaim ? 'openClaim()' : actionHandler;
+  const safeItemId = item.inboxItemId ? escAttr(item.inboxItemId) : '';
+  const buttonHandler = isClaim ? `openClaim('${safeItemId}')` : actionHandler;
   const cardClick = item.sourceType === 'message' && safeMessageId
     ? `openMessageFromInbox('${safeMessageId}', false)`
     : "goto('detail')";
@@ -1129,7 +1130,7 @@ function renderInboxCardHTML(item, opts) {
     actionChip + sourceIcon + dexChip + dirChip +
     `<div class="body"><div class="title">${ageDot}${titleLink}</div><div class="meta">${item.meta || ''}</div></div>` +
     dueChip +
-    `<button type="button" class="${buttonClass}"${ctaAttr} onclick="${buttonHandler}">${buttonLabel}</button>` +
+    `<button type="button" class="${buttonClass}"${isClaim ? ' data-cta="claim"' : ctaAttr} onclick="${buttonHandler}">${buttonLabel}</button>` +
     `</div>`;
 }
 
@@ -3879,7 +3880,8 @@ function showOffDexBlocked(opts) {
   openOverlay('off-dex-blocked');
 }
 function openExtend(cp) { if (cp) document.getElementById('extend-cp').textContent = cp; openOverlay('extend-modal'); }
-function openClaim()   { openOverlay('claim-modal'); }
+let _pendingClaimItemId = null;
+function openClaim(itemId)   { _pendingClaimItemId = itemId || null; openOverlay('claim-modal'); }
 function openApprove() { openOverlay('approve-modal'); }
 function openJoin()    { openOverlay('join-modal'); }
 function openTemplate(){ openOverlay('template-modal'); }
@@ -7645,7 +7647,25 @@ function confirmExtend() {
   }, 100);
 }
 
-function confirmClaim() { closeOverlay('claim-modal'); toast('Claimed · moved to your Mine stack'); }
+function confirmClaim() {
+  closeOverlay('claim-modal');
+  // Mutate the workspace so the item visibly moves from team to mine,
+  // matching the Step 4 rationale ("The item lives in Mine until Marcus
+  // completes or releases it"). Mirrors the bucket-flip in runBundleBulkAction
+  // (app.js:1468) — same pattern, single item.
+  const itemId = _pendingClaimItemId;
+  _pendingClaimItemId = null;
+  if (itemId && typeof ensureWorkspaceLoaded === 'function') {
+    const ws = ensureWorkspaceLoaded();
+    if (ws && ws.inboxItems && ws.inboxItems[itemId]) {
+      ws.inboxItems[itemId].bucket = 'mine';
+      ws.inboxItems[itemId].surfacedAt = new Date().toISOString();
+      if (typeof writeWorkspaceSnapshot === 'function') writeWorkspaceSnapshot(ws);
+    }
+  }
+  if (typeof refreshInboxSurfaces === 'function') refreshInboxSurfaces();
+  toast('Claimed · moved to your Mine stack');
+}
 function confirmApprove() { closeOverlay('approve-modal'); toast('Agreement accepted · data flow starting'); goto('detail'); startDataFlowSim(); }
 function useTemplate(name) {
   closeOverlay('template-modal');

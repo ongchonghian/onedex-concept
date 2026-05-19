@@ -97,7 +97,7 @@
         dwell: 4400 },
 
       // ---- Open the claim modal ----
-      { action: 'click', target: `.screen[data-screen="inbox-tx"].active [data-inbox-item-id="${TEAM_ITEM_ID}"] button`, dwell: 700 },
+      { action: 'click', target: `.screen[data-screen="inbox-tx"].active [data-inbox-item-id="${TEAM_ITEM_ID}"] [data-cta="claim"]`, dwell: 700 },
       { action: 'expect', target: '#claim-modal [data-demo="inbox.claim-modal.confirm"]' },
 
       { action: 'annotate',
