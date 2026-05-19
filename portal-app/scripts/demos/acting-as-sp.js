@@ -1,6 +1,6 @@
 /* ============================================================
    DEMOS — flow #11: Acting as service provider
-   Per ADR 0034. Pat works for CrimsonLogic, a service provider
+   Per ADR 0034. Chou works for CrimsonLogic, a service provider
    Maersk has appointed to compose Container Booking Messages on its
    behalf to Cosco. He sends a booking acting for Maersk; the audit
    trail names both identities.
@@ -26,7 +26,7 @@
   const actingAsSp = {
     id: 'acting-as-sp',
     title: 'Acting as service provider',
-    description: "Pat works for CrimsonLogic, a service provider Maersk has appointed. He composes a Container Booking from Maersk's Agreement with Cosco — the composer names the org Pat is acting for, and the audit records both identities.",
+    description: "Chou works for CrimsonLogic, a service provider Maersk has appointed. He composes a Container Booking from Maersk's Agreement with Cosco — the composer names the org Chou is acting for, and the audit records both identities.",
     adrs: ['0007', '0024', '0021'],
     durationSec: 50,
 
@@ -58,7 +58,7 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="detail"].active [data-demo="detail.appointment-banner"]',
         label: 'Step 1 of 5 — Acting for Maersk, not as Maersk',
-        rationale: "This Agreement belongs to Maersk, not to CrimsonLogic — Maersk's appointment gives Pat the right to compose under it. The portal names that relationship up top, so Pat can't lose track of whose data he's about to send.",
+        rationale: "This Agreement belongs to Maersk, not to CrimsonLogic — Maersk's appointment gives Chou the right to compose under it. The portal names that relationship up top, so Chou can't lose track of whose data he's about to send.",
         dwell: 4800 },
 
       // ---- Open the composer via the agreed-upon scenario ----
@@ -68,7 +68,7 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="compose"].active [data-demo="composer.acting-as-chip"]',
         label: 'Step 2 of 5 — The chip names whose seat',
-        rationale: "The composer carries an Acting-as banner naming Maersk. Pat cannot accidentally send this as a CrimsonLogic Message — the system binds the seat to the appointment, not to whoever happens to be logged in.",
+        rationale: "The composer carries an Acting-as banner naming Maersk. Chou cannot accidentally send this as a CrimsonLogic Message — the system binds the seat to the appointment, not to whoever happens to be logged in.",
         dwell: 4600 },
 
       // ---- Step through the high-stakes wizard ----
@@ -83,7 +83,7 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="message-detail"].active [data-demo="message.audit.acting-as-row"]',
         label: 'Step 3 of 5 — Two identities, one Message',
-        rationale: "The audit row carries both names — Pat as the operator who pressed Submit, and Maersk as the data owner whose Agreement authorised the send. Compliance reads it as Maersk's Message, traceable to Pat as the operator who transmitted it.",
+        rationale: "The audit row carries both names — Chou as the operator who pressed Submit, and Maersk as the data owner whose Agreement authorised the send. Compliance reads it as Maersk's Message, traceable to Chou as the operator who transmitted it.",
         dwell: 4800 },
 
       { action: 'annotate',
