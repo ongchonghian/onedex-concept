@@ -1243,6 +1243,7 @@
       <button data-flow="pull" onclick="setMessageFlow('pull', this)">PULL (in flight)</button>
       <button data-flow="store" onclick="setMessageFlow('store', this)">STORE (failed · expired)</button>
       <button data-flow="acked" onclick="setMessageFlow('acked', this)">PUSH (acknowledged)</button>
+      <button data-flow="sp-send" onclick="setMessageFlow('sp-send', this)">PUSH · SP acting-as</button>
     </div>
   </div>
 
@@ -1455,7 +1456,7 @@
   </div>
 
   <!-- Acting-as banner — surfaces when operator is SP composing on data-owner's behalf (ADR 0024) -->
-  <div class="compose-acting-banner" id="compose-acting-banner" hidden role="status" aria-live="polite">
+  <div class="compose-acting-banner" id="compose-acting-banner" data-demo="composer.acting-as-chip" hidden role="status" aria-live="polite">
     <i class="ti ti-user-share" aria-hidden="true"></i>
     <div class="banner-body">
       <p><strong>Acting as Maersk Logistics</strong> · this Message will be composed on Maersk's behalf via your Service-Provider role</p>
@@ -2365,7 +2366,7 @@
           <li class="step mid" aria-current="step"><div class="step-row"><span class="dot curr" aria-hidden="true"></span><span class="step-label">Active</span></div><p class="step-time">21 Mar · Maersk accepted</p></li>
           <li class="step end"><div class="step-row"><span class="dot future" aria-hidden="true"></span><span class="step-label muted">Ends</span></div><p class="step-time">30 Sep · expires</p></li>
         </ol>
-        <div class="nudge" id="detail-nudge" role="status">
+        <div class="nudge" id="detail-nudge" data-demo="detail.appointment-banner" role="status">
           <i class="ti ti-clock" aria-hidden="true"></i>
           <p>Expires in 9 days. Extend before 30 Sep to avoid the 7-day grace window.</p>
           <button class="btn-secondary" onclick="openExtend('Maersk Logistics')">Extend now</button>
@@ -3998,6 +3999,7 @@
 <script src="scripts/demos/teammate-claim.js?v=p17"></script>
 <script src="scripts/demos/distribute-pack.js?v=p17"></script>
 <script src="scripts/demos/triage-failures.js?v=p17"></script>
+<script src="scripts/demos/acting-as-sp.js?v=p17"></script>
 <script src="scripts/demos/index.js?v=p17"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>

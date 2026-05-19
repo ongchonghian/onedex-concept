@@ -4756,6 +4756,51 @@ const MESSAGE_FLOWS = {
       { dot: 'green', who: 'Pitstop',        text: 'Payload encrypted and transmitted to Maersk via TLS 1.3',                                                when: '14:14 SGT · automated' },
       { dot: 'tx',    who: 'Marcus Ong',     text: 'Created the message via Composer · idempotency key <code>idem_b7e3f221</code>',                          when: '14:14 SGT · request_id req_b7e3f221' }
     ]
+  },
+  /* sp-send — CrimsonLogic (Pat) transmits a Container Booking to Cosco
+     acting as Maersk. Audit activity records both operator and delegating
+     owner per ADR 0024 §SP-acting-as. The acting-as row carries actingAs:true
+     so the renderer tags it with data-demo="message.audit.acting-as-row". */
+  'sp-send': {
+    title: 'Container Booking → Cosco Shipping (acting as Maersk)',
+    msgId: 'MSG-2026-118622',
+    status: { label: 'Acknowledged', cls: 'active' },
+    owner: null,
+    retryTooltip: 'Re-send Container Booking to Cosco · creates a new Message (this one is already acknowledged)',
+    flowHint: 'PUSH flow · 4 stages · SP acting-as · acknowledged',
+    banner: { visible: false },
+    timeline: [
+      { label: 'Queued',       state: 'done', time: '10:22:01 SGT · created by CrimsonLogic (acting as Maersk)' },
+      { label: 'Sent',         state: 'done', time: '10:22:02 SGT' },
+      { label: 'Delivered',    state: 'done', time: '10:22:03 SGT · Cosco pitstop' },
+      { label: 'Acknowledged', state: 'done', time: '10:22:04 SGT · Cosco system confirmed', current: true, end: true }
+    ],
+    parties: {
+      sender:   { role: 'Sender · Service Provider (acting as Maersk)', name: 'CrimsonLogic Pte Ltd',         meta: 'SP acting as Maersk Logistics · UEN 198803003E' },
+      receiver: { role: 'Receiver · Counterparty',                      name: 'Cosco Shipping Lines (SG)',    meta: 'Carrier · UEN 199001234A · acknowledged' }
+    },
+    agreement: { id: 'AGR-2026-04711', title: 'Transmit Container Booking to Cosco (acting as Maersk)', meta: 'Active · SP-delegated · Maersk is data owner, CrimsonLogic transmits · 48 bookings this week' },
+    payload: {
+      visible: true,
+      summary: 'JSON · 3.1 KB · encrypted in transit (TLS 1.3) · at rest (AES-256)',
+      body: '<span class="key">"messageId"</span>: <span class="str">"MSG-2026-118622"</span>,\n<span class="key">"agreementId"</span>: <span class="str">"AGR-2026-04711"</span>,\n<span class="key">"dataElement"</span>: { <span class="key">"id"</span>: <span class="str">"de_container_booking"</span>, <span class="key">"version"</span>: <span class="str">"v1.8"</span> },\n<span class="key">"composedBy"</span>: { <span class="key">"userId"</span>: <span class="str">"pat@crimsonlogic.com"</span>, <span class="key">"org"</span>: <span class="str">"CrimsonLogic Pte Ltd"</span> },\n<span class="key">"actingAsOrg"</span>: <span class="str">"Maersk Logistics"</span>,\n<span class="key">"booking"</span>: {\n  <span class="key">"vesselImo"</span>: <span class="str">"IMO9395044"</span>,\n  <span class="key">"pol"</span>: <span class="str">"SGSIN"</span>,\n  <span class="key">"pod"</span>: <span class="str">"CNSHA"</span>,\n  <span class="key">"etd"</span>: <span class="str">"2026-05-21"</span>,\n  <span class="key">"containerCount"</span>: <span class="num">3</span>\n}'
+    },
+    metadata: {
+      'Message ID':           'MSG-2026-118622',
+      'Idempotency key':      'idem_cl_8b2e44',
+      'Size':                 '3.1 KB',
+      'Encryption (transit)': 'TLS 1.3 · ECDHE-RSA-AES256',
+      'Encryption (rest)':    'AES-256-GCM · key #kms_2026_q2',
+      'Composed by':          'Pat Chou (CrimsonLogic)',
+      'Acting as':            'Maersk Logistics (data owner)',
+      'Acknowledged':         '10:22:04.088 SGT (T+3s)'
+    },
+    activity: [
+      { dot: 'green', who: 'Cosco system',     text: 'Booking acknowledged · ack hash <code>5f2a83c1</code> · final status: <strong>Acknowledged</strong>',    when: '10:22 SGT · automated' },
+      { dot: 'green', who: 'Cosco pitstop',    text: 'Payload received · 200 OK · idempotency key stored',                                                      when: '10:22 SGT · automated' },
+      { dot: 'green', who: 'CL-Shipping',      text: 'Payload encrypted and transmitted to Cosco via TLS 1.3',                                                  when: '10:22 SGT · automated' },
+      { dot: 'tx',    who: 'Pat Chou',         text: 'Composed via Composer · acting as <strong>Maersk Logistics</strong> · idempotency key <code>idem_cl_8b2e44</code>', when: '10:22 SGT · request_id req_cl_8b2e44', actingAs: true }
+    ]
   }
 };
 
@@ -4909,7 +4954,8 @@ function setMessageFlow(flow, btn) {
       activityList.innerHTML = data.activity.map(ev => {
         const colorStyle = (ev.dot && ev.dot !== 'tx' && dotColor[ev.dot]) ? ' style="background:' + dotColor[ev.dot] + '"' : '';
         const cls = ev.dot === 'tx' ? 'ev-dot tx' : 'ev-dot';
-        return '<li class="ev"><span class="' + cls + '"' + colorStyle + ' aria-hidden="true"></span>'
+        const demoAttr = ev.actingAs ? ' data-demo="message.audit.acting-as-row"' : '';
+        return '<li class="ev"' + demoAttr + '><span class="' + cls + '"' + colorStyle + ' aria-hidden="true"></span>'
           + '<div class="ev-body"><p><strong>' + ev.who + '</strong> ' + ev.text + '</p>'
           + '<p class="ev-time"><time>' + ev.when + '</time></p></div></li>';
       }).join('');
