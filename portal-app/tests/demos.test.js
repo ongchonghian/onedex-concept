@@ -39,6 +39,7 @@ const SCRIPT_PATHS = [
   'scripts/demos/cross-dex.js',
   'scripts/demos/compose-message.js',
   'scripts/demos/suspend.js',
+  'scripts/demos/watch-and-digest.js',
 ];
 
 /* JSDOM's runScripts: 'outside-only' does NOT wire inline onclick="..."
@@ -61,7 +62,13 @@ function wireInlineOnclickHandlers(window) {
       // effects (e.g. the cp-row's setTimeout(goto('detail'), 600) that
       // belongs only to the wiz-inactive fallback path).
       if (el.onclick) return;
-      try { window.eval(code); }
+      try {
+        // Use Function() so `this` inside the onclick body refers to the
+        // clicked element (matching browser behaviour). window.eval(code) bound
+        // `this` to the global, which broke handlers like toggleAgreementWatch(this).
+        const fn = window.eval(`(function(){${code}})`);
+        fn.call(el);
+      }
       catch (err) { console.error('inline onclick eval failed:', code, err.message); }
     });
   });
