@@ -7,8 +7,6 @@
    · #detail-watch-toggle              (grandfathered stable id)
    · [data-msg-id="MSG-1240"]           Failed PSA Bunker delivery on an
                                         unwatched Agreement (AGR-2026-04822)
-   · [data-msg-id="MSG-1230"]           Failed ABC Logistics customs digest
-                                        on a separate unwatched Agreement
 
    ADRs demonstrated: 0023 (message notification cadence),
    0021 (message lifecycle)
@@ -22,14 +20,14 @@
     title: 'Watch and digest',
     description: "Marcus toggles Watch on a time-sensitive Agreement so failures and acknowledgements ping his inbox immediately. Routine failures elsewhere stay quiet — they roll into the twice-daily digest.",
     adrs: ['0023', '0021'],
-    durationSec: 40,
+    durationSec: 30,
 
     seed: (workspace) => {
       // Default workspace fixtures carry the PSA Mass Flow Meter Receipt
       // Agreement (AGR-2026-04829) as the detail seed, with Watch OFF.
-      // Two Failed Messages on separate unwatched Agreements (MSG-1240 on
-      // AGR-2026-04822, MSG-1230 on AGR-2026-04501) are already present in
-      // the messages list. Pin Marcus on SGTradex.
+      // One Failed Message on an unwatched Agreement (MSG-1240 on
+      // AGR-2026-04822) is already present in the messages list.
+      // Pin Marcus on SGTradex.
       if (typeof window.setActivePersona === 'function') {
         window.setActivePersona(workspace, { userId: 'marcus', dexId: 'tx' });
       }
