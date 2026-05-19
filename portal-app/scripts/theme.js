@@ -23,11 +23,30 @@ function switchDex(dex, opts) {
   //     modal even when a colleague exists, so the user explicitly confirms the
   //     active-user change. The CTA reads "Switch to {colleague} ({DEX})".
   if (typeof resolveActiveUserId === 'function' && currentPersona !== 'platform-admin') {
+    // Identity reads go through the workspace registry (cloned from state.js
+    // fixtures by seedReferenceCollections) when available; fall back to the
+    // global constants for test harnesses that don't load the workspace
+    // stack. Same pattern as access.js's _refUsers / _refOrgs.
+    const lookupUser = (id) => {
+      if (typeof getUser === 'function') {
+        const u = getUser(id);
+        if (u) return u;
+      }
+      return (typeof USERS !== 'undefined') ? USERS[id] : null;
+    };
+    const lookupOrg = (id) => {
+      if (typeof getOrg === 'function') {
+        const o = getOrg(id);
+        if (o) return o;
+      }
+      return (typeof ORGS !== 'undefined') ? ORGS[id] : null;
+    };
+
     const wouldBeUser = resolveActiveUserId(currentPersona, dex);
     const wouldBePinned = (typeof pinnedActiveUserId === 'string') ? pinnedActiveUserId : null;
     const defaultUserId = (typeof PERSONA_TO_USER !== 'undefined') ? PERSONA_TO_USER[currentPersona] : null;
-    const defaultUser = defaultUserId && USERS[defaultUserId];
-    const homeOrg = defaultUser && ORGS[defaultUser.primaryOrgId];
+    const defaultUser = defaultUserId && lookupUser(defaultUserId);
+    const homeOrg = defaultUser && lookupOrg(defaultUser.primaryOrgId);
     const homeDex = homeOrg && homeOrg.primaryDexId;
 
     if (!wouldBeUser && homeDex && homeDex !== dex) {
@@ -45,7 +64,7 @@ function switchDex(dex, opts) {
       // Cross-link entry that would silently change the active user — surface
       // an explicit CTA so the user confirms the swap.
       if (typeof showOffDexBlocked === 'function') {
-        const colleague = USERS[wouldBeUser];
+        const colleague = lookupUser(wouldBeUser);
         showOffDexBlocked({ targetDex: dex, targetDexLabel: config.label, colleagueUserId: wouldBeUser, colleagueName: colleague ? colleague.name : '' });
         return;
       }
@@ -64,9 +83,7 @@ function switchDex(dex, opts) {
     patchWorkspaceMeta({ activeDexId: dex });
   }
   themeInboxContent(dex);
-  // Keep any active flow ribbon copy aligned with the new DEX (e.g. "First-time user:
-  // you're a new admin on SGBuildex ..." after switching from SGTradex). No-op if no flow active.
-  if (typeof refreshFlowRibbon === 'function') refreshFlowRibbon();
+  // Flow-ribbon refresh removed in Phase 5 of ADR 0034 alongside the rail.
   // Active user can change on DEX switch (Marcus on TX → Alice on BX), so re-apply
   // persona chrome (workspace pill sub-label, avatar cross-fade, profile menu).
   if (typeof applyPersonaChrome === 'function') applyPersonaChrome();

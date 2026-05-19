@@ -1,0 +1,387 @@
+/* ============================================================
+   DEMOS — auto-demo runner overlays.
+   Per ADR 0034. Tokens-only — no hard-coded colours.
+
+   All demo surfaces sit on --z-demo (defined in tokens.css)
+   so they overlay every other surface: toast, modal, side panel.
+   ============================================================ */
+
+/* ---------- Launcher pill (next to .demo-tools-trigger) ----------
+   Same shape + position philosophy as the demo-tools trigger so
+   they read as a paired set of opt-in prototype affordances. */
+.demos-trigger {
+  position: fixed;
+  right: 134px;            /* sits to the LEFT of .demo-tools-trigger (right: 20px) */
+  bottom: 20px;
+  z-index: 1200;
+  border: 1px solid var(--theme-50);
+  background: var(--theme-50);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: var(--shadow-popover);
+}
+.demos-trigger:hover { filter: brightness(1.08); }
+.demos-trigger .ti { font-size: 14px; }
+
+/* ---------- Demos panel ----------
+   Mirrors .demo-tools-drawer dimensions but anchored to the
+   left of where the demo-tools-drawer would open. */
+.demos-panel {
+  position: fixed;
+  right: 134px;
+  bottom: 72px;
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(70vh, 760px);
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid var(--g-90);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+  box-shadow: var(--shadow-modal);
+  display: none;
+  z-index: 1199;
+}
+body.demos-panel-open .demos-panel { display: block; }
+
+.demos-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.demos-panel-head strong {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--g-10);
+}
+.demos-panel-head .demos-panel-sub {
+  font-size: 11px;
+  color: var(--g-50);
+  margin-top: 2px;
+}
+
+.demos-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demo-card {
+  border: 1px solid var(--g-90);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--surface, #fff);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.demo-card-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--g-10);
+}
+.demo-card-desc {
+  font-size: 12px;
+  color: var(--g-40);
+  line-height: 1.5;
+}
+.demo-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.demo-adr-chip {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  background: var(--theme-95);
+  color: var(--theme-30);
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+.demo-duration {
+  font-size: 11px;
+  color: var(--g-50);
+  margin-left: auto;
+}
+.demo-play-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+  background: var(--theme-50);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.demo-play-btn:hover { filter: brightness(1.08); }
+
+/* ---------- Pre-flight modal ---------- */
+.demo-preflight-veil {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 30, 0.45);
+  z-index: var(--z-demo);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.demo-preflight-veil.is-open { display: flex; }
+
+.demo-preflight-card {
+  width: min(480px, calc(100vw - 32px));
+  background: var(--surface, #fff);
+  border-radius: 16px;
+  border: 1px solid var(--g-90);
+  box-shadow: var(--shadow-modal);
+  padding: 22px;
+}
+.demo-preflight-eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--theme-50);
+  font-weight: 500;
+}
+.demo-preflight-title {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--g-10);
+  margin: 6px 0 8px;
+}
+.demo-preflight-desc {
+  font-size: 13px;
+  color: var(--g-30);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.demo-preflight-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.demo-preflight-notice {
+  font-size: 12px;
+  color: var(--g-40);
+  background: var(--g-98);
+  border: 1px solid var(--g-90);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+.demo-preflight-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ---------- Fake cursor ----------
+   Mounted in #demo-cursor-root. position: fixed so it floats above
+   page content regardless of scroll. */
+.demo-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  z-index: var(--z-demo);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+  transition: transform var(--motion-base) cubic-bezier(0.22, 0.61, 0.36, 1);
+  display: none;
+}
+.demo-cursor.is-active { display: block; }
+
+.demo-cursor-ripple {
+  position: fixed;
+  pointer-events: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--theme-50);
+  z-index: var(--z-demo);
+  animation: demoRipple 480ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+@keyframes demoRipple {
+  0%   { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(3.2); opacity: 0; }
+}
+
+/* ---------- Callout bubble ---------- */
+.demo-callout {
+  position: fixed;
+  z-index: var(--z-demo);
+  max-width: 320px;
+  background: #1f2229;
+  color: #f0f1f4;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-modal);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity var(--motion-base), transform var(--motion-base);
+  pointer-events: none;
+  display: none;
+}
+.demo-callout.is-active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+.demo-callout-label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.demo-callout-rationale {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #c8ccd4;
+}
+.demo-callout-tail {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #1f2229;
+  transform: rotate(45deg);
+}
+
+/* ---------- Control bar ---------- */
+.demo-control-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  z-index: var(--z-demo);
+  background: #1f2229;
+  color: #f0f1f4;
+  border-radius: 999px;
+  padding: 8px 14px;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-modal);
+  transition: transform var(--motion-base);
+  min-width: 320px;
+}
+.demo-control-bar.is-active {
+  display: flex;
+  transform: translateX(-50%) translateY(0);
+}
+.demo-progress-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.demo-progress-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(240, 241, 244, 0.25);
+}
+.demo-progress-dot.is-done { background: rgba(240, 241, 244, 0.55); }
+.demo-progress-dot.is-current { background: #fff; width: 8px; height: 8px; }
+.demo-step-label {
+  font-size: 12px;
+  color: #c8ccd4;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.demo-ctrl-btn {
+  background: transparent;
+  border: 1px solid rgba(240, 241, 244, 0.3);
+  color: #f0f1f4;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.demo-ctrl-btn:hover { background: rgba(240, 241, 244, 0.1); }
+.demo-ctrl-btn .ti { font-size: 12px; }
+
+.demo-speed {
+  background: transparent;
+  border: 1px solid rgba(240, 241, 244, 0.3);
+  color: #f0f1f4;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.demo-speed option { color: #1f2229; }
+
+/* ---------- Expect failure overlay ---------- */
+.demo-error-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 30, 0.6);
+  z-index: var(--z-demo);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.demo-error-overlay.is-active { display: flex; }
+.demo-error-card {
+  max-width: 460px;
+  background: var(--surface, #fff);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--red-90, #e9b9b9);
+}
+.demo-error-card h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--red-30, #7c1f1f);
+}
+.demo-error-card code {
+  display: block;
+  background: var(--g-98);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin: 8px 0;
+  word-break: break-all;
+}
+.demo-error-card p {
+  font-size: 13px;
+  color: var(--g-30);
+  line-height: 1.5;
+  margin: 0 0 10px;
+}
+.demo-error-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* ---------- Completion toast (uses existing .toast styles via class chain) ---------- */
+.toast.demo-complete .ti { color: var(--green-50, #2c8a4a); }

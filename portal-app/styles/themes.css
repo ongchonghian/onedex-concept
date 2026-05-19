@@ -14,6 +14,7 @@ body.theme-tx {
   --theme-90: var(--tx-90);
   --theme-95: var(--tx-95);
   --theme-98: var(--tx-98);
+  --theme-on-tint: var(--tx-on-tint);
   /* SGTradex 20 = #4e0058 */
   --theme-tint-rgb: 78, 0, 88;
 }
@@ -26,6 +27,7 @@ body.theme-bx {
   --theme-90: var(--bx-90);
   --theme-95: var(--bx-95);
   --theme-98: var(--bx-98);
+  --theme-on-tint: var(--bx-on-tint);
   /* SGBuildex 20 = #00266d */
   --theme-tint-rgb: 0, 38, 109;
 }
@@ -38,6 +40,7 @@ body.theme-hx {
   --theme-90: var(--hx-90);
   --theme-95: var(--hx-95);
   --theme-98: var(--hx-98);
+  --theme-on-tint: var(--hx-on-tint);
   /* SGHealthdex 20 = #003c32 */
   --theme-tint-rgb: 0, 60, 50;
 }
@@ -77,6 +80,15 @@ body.dark {
   --hx-95: #053f37;
   --hx-98: #042e29;
 
+  /* Flip ONLY the "text on tinted bg" tokens, not --*-20 itself. --*-20 is
+     still used as a deep-brand BACKGROUND in places (e.g. .suggest-card.primary,
+     .chip-dark-tx); flipping --*-20 would inadvertently invert those surfaces.
+     Components that need brand-coloured text on a (now-dark) brand tint read
+     from --*-on-tint, which flips here to the pale end of the ramp. */
+  --tx-on-tint: var(--tx-90);
+  --bx-on-tint: var(--bx-90);
+  --hx-on-tint: var(--hx-90);
+
   /* Semantic ramps softened for dark backgrounds */
   --red-98:    #3a0f0a;
   --red-95:    #4d1612;
@@ -86,6 +98,33 @@ body.dark {
   --yellow-95: #5a4a12;
   --blue-98:   #0a1f3a;
   --blue-95:   #112f5a;
+  /* Text-end of green ramp also needs to lighten so completion rows
+     (background: --green-98) keep contrast against --green-50 text. */
+  --green-50:  #4ade80;
+
+  /* Inverted text — rebinds so chips with solid --g-10 fills stay readable
+     (in dark mode --g-10 is near-white, so text must be dark). */
+  --text-inverted: var(--surface);
+
+  /* Borders + shadows participate in the theme flip. Light mode uses
+     rgba(20, 24, 30, …) (a dark tint on light surfaces); in dark mode that
+     becomes invisible, so we use a light tint for borders and a stronger
+     black for shadows (real shadows on dark UI are darker, not lighter). */
+  --border-subtle: rgba(240, 241, 244, 0.12);
+
+  --shadow-1:               0 0 0 0.5px rgba(0, 0, 0, 0.5);
+  --shadow-popover:         0 8px 24px rgba(0, 0, 0, 0.55);
+  --shadow-modal:           0 12px 32px rgba(0, 0, 0, 0.65);
+  --shadow-card-rest:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 0 0 0.5px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-card-hero:
+    0 0 0 0.5px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 18px 36px -12px rgba(0, 0, 0, 0.55);
 }
 
 /* Apply surface-canvas to body in dark mode */

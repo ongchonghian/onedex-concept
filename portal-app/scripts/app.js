@@ -257,14 +257,12 @@ const WIZ_INITIAL = {
 };
 
 function resetApp() {
-  // 1. Flow + wizard — no confirmation dialogs (this is a designer-tool chokepoint).
-  //    wizardCancel() prompts confirm() which would block the rail click, so we
+  // 1. Wizard — no confirmation dialogs (this is a designer-tool chokepoint).
+  //    wizardCancel() prompts confirm() which would block the click, so we
   //    replicate its post-confirm work inline (showWizardChrome(false) + exitFlow)
   //    without the prompt.
   if (typeof showWizardChrome === 'function') showWizardChrome(false);
-  if (typeof flowActive !== 'undefined' && flowActive && typeof exitFlow === 'function') {
-    exitFlow();
-  }
+  if (typeof exitFlow === 'function') exitFlow();
   // Reset the wiz state object so the next startWizard begins cleanly. Field-by-field
   // assignment (rather than wiz = { … }) preserves identity for any code holding a
   // long-lived reference to the wiz object.
@@ -993,29 +991,74 @@ function renderMessageDetailFromWorkspace() {
    The renderer is intentionally tolerant of missing optional fields — items
    minted by submitAgreementDraft (post-wizard) only carry title/meta/bucket
    and still render as a plain card with an "Open" affordance. */
+/* ageClassFromSurfacedAt — buckets the item's age (now - surfacedAt) into
+   three triage states so the renderer can emit a coloured glyph.
+     fresh   < 8h  (green)
+     warming 8–24h (amber)
+     stale   > 24h (red)
+   Items lacking surfacedAt default to fresh — better to under-warn than
+   over-warn when data is missing. */
+function ageClassFromSurfacedAt(surfacedAt) {
+  if (!surfacedAt) return 'age-fresh';
+  const ageMs = Date.now() - new Date(surfacedAt).getTime();
+  if (Number.isNaN(ageMs) || ageMs < 0) return 'age-fresh';
+  const ageHours = ageMs / 3600000;
+  if (ageHours < 8) return 'age-fresh';
+  if (ageHours < 24) return 'age-warming';
+  return 'age-stale';
+}
+
+/* formatCompactAge — short numeric age label paired with the age dot.
+   Operators don't need precision; they need scan-friendly chunks: "<1h",
+   "3h", "1d", "2w". Pairs with the coloured dot so the meaning of the colour
+   is self-evident on first read (no legend required). */
+function formatCompactAge(surfacedAt) {
+  if (!surfacedAt) return '—';
+  const ageMs = Date.now() - new Date(surfacedAt).getTime();
+  if (Number.isNaN(ageMs) || ageMs < 0) return '—';
+  const ageHours = ageMs / 3600000;
+  if (ageHours < 1) return '<1h';
+  if (ageHours < 24) return Math.floor(ageHours) + 'h';
+  const ageDays = ageHours / 24;
+  if (ageDays < 14) return Math.floor(ageDays) + 'd';
+  const ageWeeks = ageDays / 7;
+  return Math.floor(ageWeeks) + 'w';
+}
+
+/* inboxFilterCategoryForItem — maps an item's action onto one of the four
+   filter-chip buckets. Items that don't match a known action fall under
+   'agreement' (the safe default for the generic Open affordance). */
+function inboxFilterCategoryForItem(item) {
+  const action = item.action || '';
+  if (action === 'review' || action === 'approve-network' || action === 'review-org') return 'approval';
+  if (action === 'extend' || action === 'renew' || action === 'renew-strict') return 'renewal';
+  if (action === 'retry-message' || action === 'view-message') return 'issue';
+  return 'agreement';
+}
+
 function renderInboxCardHTML(item) {
   const dex = item.dexId || 'tx';
   const dexLabel = ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dex] || 'SGTradex');
   if (item.completion) {
-    return `<div class="inbox-card completion">` +
-      `<i class="ti ti-check" style="font-size:16px;color:var(--green-50);flex-shrink:0" aria-hidden="true"></i>` +
-      `<div class="body"><div class="title">${item.title || ''}</div><div class="meta">${item.meta || ''}</div></div>` +
-      `</div>`;
+    // Completion rows are now rendered by the completion ribbon (renderInboxCompletionHTML),
+    // not as inbox-stack cards. This branch stays as a safety net for any caller
+    // that still hands a completion item to this function.
+    return renderInboxCompletionHTML(item);
   }
   const dirChip = item.dir === 'in'
-    ? `<span class="dir-chip in" title="Incoming data request"><i class="ti ti-download"></i>Incoming request</span>`
+    ? `<span class="dir-chip in"><i class="ti ti-download" aria-hidden="true"></i>Incoming request</span>`
     : item.dir === 'out'
-      ? `<span class="dir-chip out" title="Outgoing data request"><i class="ti ti-upload"></i>Outgoing request</span>`
+      ? `<span class="dir-chip out"><i class="ti ti-upload" aria-hidden="true"></i>Outgoing request</span>`
       : '';
-  const dexChip = `<span class="dex-chip ${dex}"><span class="dex-dot"></span>${dexLabel}</span>`;
+  const dexChip = `<span class="dex-chip ${dex}"><span class="dex-dot" aria-hidden="true"></span>${dexLabel}</span>`;
   // Action button — map (action, btn) onto the existing click handlers so
   // behaviour matches the static fixture. Unknown actions get a generic
   // toast so the card stays clickable.
-  const safeBtn = escAttr(item.btn || 'Open');
   const safeMessageId = item.messageId ? escAttr(item.messageId) : '';
+  const safeCounterparty = escAttr(item.counterpartyName || item.counterpartyOrgId || '');
   let actionHandler = `toast('Opening ${escAttr(item.title || 'item')}')`;
   if (item.action === 'review') actionHandler = 'openApprove()';
-  else if (item.action === 'extend') actionHandler = "openExtend('Cosco Shipping')";
+  else if (item.action === 'extend') actionHandler = `openExtend('${safeCounterparty}')`;
   else if (item.action === 'open' || item.action === 'open-de-promotion') actionHandler = `toast('Opening ${escAttr(item.title || 'item')}')`;
   else if (item.action === 'renew' || item.action === 'renew-strict') actionHandler = `toast('Renewing ${escAttr(item.title || 'item')}')`;
   else if (item.action === 'approve-network') actionHandler = 'openApprove()';
@@ -1028,17 +1071,44 @@ function renderInboxCardHTML(item) {
   const buttonClass = item.bucket === 'team' || item.btn === 'Claim'
     ? 'btn-secondary'
     : (item.action === 'review' || item.action === 'approve-network' || item.action === 'review-org' ? 'btn-primary' : 'btn-secondary');
-  const buttonStyle = buttonClass === 'btn-primary' ? ' style="padding:5px 10px;font-size:11px"' : '';
   const buttonLabel = isClaim ? 'Claim' : (item.btn || 'Open');
   const buttonHandler = isClaim ? 'openClaim()' : actionHandler;
   const cardClick = item.derivedFrom === 'message' && safeMessageId
     ? `openMessageFromInbox('${safeMessageId}', false)`
     : "goto('detail')";
-  return `<div class="inbox-card${item.bucket === 'team' ? ' team' : ''}" onclick="${cardClick}">` +
+  // Stamp data-agreement-id / data-msg-id on the card so cross-screen
+  // highlight handoffs (highlightAgreementRows / highlightMessageRows)
+  // can find the inbox card after navigation.
+  const agrIdAttr = item.agreementId ? ` data-agreement-id="${escAttr(item.agreementId)}"` : '';
+  const msgIdAttr = safeMessageId ? ` data-msg-id="${escAttr(safeMessageId)}"` : '';
+  const ageClass = ageClassFromSurfacedAt(item.surfacedAt);
+  const ageLabel = formatCompactAge(item.surfacedAt);
+  const ageTooltip = {
+    'age-fresh': 'Surfaced recently — within 8 hours',
+    'age-warming': 'Surfaced 8–24 hours ago — getting older',
+    'age-stale': 'Surfaced more than 24 hours ago — needs attention'
+  }[ageClass] || '';
+  const ageDot = `<span class="age-pill ${ageClass}" title="${ageTooltip}"><span class="age-pill-dot" aria-hidden="true"></span>${ageLabel}</span>`;
+  // Stretched-link: the title becomes a real <a> whose ::after pseudo-element
+  // covers the card. Keyboard users tab to the title link; sighted users can
+  // still click anywhere on the card body. The action button sits at z-index 2
+  // so it remains independently activatable.
+  const titleLink = `<a class="card-link" href="#" onclick="event.preventDefault(); ${cardClick}; return false;">${item.title || ''}</a>`;
+  return `<div class="inbox-card${item.bucket === 'team' ? ' team' : ''}"${agrIdAttr}${msgIdAttr}>` +
     dexChip +
     dirChip +
-    `<div class="body"><div class="title">${item.title || ''}</div><div class="meta">${item.meta || ''}</div></div>` +
-    `<button class="${buttonClass}"${buttonStyle} onclick="event.stopPropagation(); ${buttonHandler}">${buttonLabel}</button>` +
+    `<div class="body"><div class="title">${ageDot}${titleLink}</div><div class="meta">${item.meta || ''}</div></div>` +
+    `<button type="button" class="${buttonClass}" onclick="${buttonHandler}">${buttonLabel}</button>` +
+    `</div>`;
+}
+
+/* renderInboxCompletionHTML — completion echo rows are rendered into the
+   completion ribbon (above Mine), not the team stack. Compact one-liner. */
+function renderInboxCompletionHTML(item) {
+  return `<div class="completion-row">` +
+    `<i class="ti ti-check" aria-hidden="true"></i>` +
+    `<span class="title">${item.title || ''}</span>` +
+    `<span class="meta">${item.meta || ''}</span>` +
     `</div>`;
 }
 
@@ -1111,6 +1181,86 @@ function renderPackDetailFromWorkspace() {
   SCREEN_RENDERERS['pack-detail']([parentRow].concat(memberRows));
 }
 
+/* Inbox category filter — 'all' | 'approval' | 'agreement' | 'renewal' | 'issue'.
+   Per-screen state lives on each inbox <section>'s dataset so /portal/tradex and
+   /portal/all maintain independent selections without colliding through a
+   single global. */
+function getInboxFilter(screen) {
+  return (screen && screen.dataset && screen.dataset.inboxFilter) || 'all';
+}
+function setInboxFilter(category, btn) {
+  const screen = btn && btn.closest ? btn.closest('section.screen') : null;
+  if (!screen) return;
+  screen.dataset.inboxFilter = category;
+  screen.querySelectorAll('.filter-chips button[data-inbox-filter]').forEach((b) => {
+    const active = b.getAttribute('data-inbox-filter') === category;
+    b.setAttribute('aria-pressed', active ? 'true' : 'false');
+    b.classList.toggle('solid', active);
+    b.classList.toggle('muted', !active);
+  });
+  // Re-render with the new filter. The screen's data-screen attribute is the
+  // canonical key for the renderer.
+  renderInboxFromWorkspace(screen.getAttribute('data-screen'));
+}
+window.setInboxFilter = setInboxFilter;
+
+function applyInboxFilter(items, category) {
+  if (!category || category === 'all') return items;
+  return items.filter((it) => inboxFilterCategoryForItem(it) === category);
+}
+
+/* Sort actionable items by surfacedAt ascending — oldest first.
+   Drives age-based triage: items at the top of each accordion are the ones
+   you've had longest, matching the visual age glyph. */
+function sortInboxByAge(items) {
+  return items.slice().sort((a, b) => {
+    const ta = new Date(a.surfacedAt || a.createdAt || 0).getTime();
+    const tb = new Date(b.surfacedAt || b.createdAt || 0).getTime();
+    return ta - tb;
+  });
+}
+
+/* Cross-DEX render: group items by dexId within each bucket, prepend a
+   section header per DEX so the operator can scan by DEX without losing the
+   union view. Returns the rendered HTML string. */
+function renderInboxStackHTML(items, opts) {
+  const isCrossDex = !!(opts && opts.crossDex);
+  if (!isCrossDex || items.length === 0) {
+    return items.map(renderInboxCardHTML).join('');
+  }
+  const byDex = items.reduce((acc, it) => {
+    const d = it.dexId || 'tx';
+    (acc[d] = acc[d] || []).push(it);
+    return acc;
+  }, {});
+  const DEX_ORDER = ['tx', 'bx', 'hx'];
+  const DEX_LABELS = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' };
+  return DEX_ORDER
+    .filter((d) => byDex[d] && byDex[d].length)
+    .map((d) => {
+      const rows = byDex[d].map(renderInboxCardHTML).join('');
+      const count = byDex[d].length;
+      return `<div class="cross-dex-section" data-dex="${d}">` +
+        `<div class="cross-dex-section-header"><span class="dex-chip ${d}"><span class="dex-dot" aria-hidden="true"></span>${DEX_LABELS[d]}</span><span class="cross-dex-count">${count} item${count === 1 ? '' : 's'}</span></div>` +
+        rows +
+        `</div>`;
+    })
+    .join('');
+}
+
+/* refreshInboxSurfaces — re-render every inbox screen so a newly persisted
+   Agreement or Failed Message surfaces immediately, even if the user is
+   currently sitting on the inbox while a doctor/composer/wizard creates
+   the record. Cheap — each call is a workspace read + a DOM swap. */
+function refreshInboxSurfaces() {
+  if (typeof renderInboxFromWorkspace !== 'function') return;
+  ['inbox-tx', 'inbox-bx', 'inbox-hx', 'inbox-all'].forEach((name) => {
+    if (document.querySelector(`.screen[data-screen="${name}"]`)) {
+      renderInboxFromWorkspace(name);
+    }
+  });
+}
+
 function renderInboxFromWorkspace(screenName) {
   if (typeof listInboxItemsForUserAndDex !== 'function') return;
   // Inbox materialisation can resolve closed items or surface new failed
@@ -1125,31 +1275,106 @@ function renderInboxFromWorkspace(screenName) {
   if (!screen) return;
 
   const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
-  // Cross-DEX view unions the per-DEX lists so the derivation (failed
-  // messages + pending agreements) is honoured uniformly, instead of reading
-  // workspace.inboxItems directly (which would skip derived rows).
-  const items = isCrossDex
+  const allItems = isCrossDex
     ? ['tx', 'bx', 'hx'].reduce((acc, d) => acc.concat(listInboxItemsForUserAndDex(userId, d)), [])
     : listInboxItemsForUserAndDex(userId, dex);
 
-  // Honour the global "Show closed" toggle here too — completion rows are the
-  // inbox's analogue. Items past completion auto-disappear; we always render
-  // them in the prototype so the visual cadence is preserved.
-  const mine = items.filter((i) => i.bucket === 'mine');
-  const team = items.filter((i) => i.bucket === 'team');
+  // Completion echoes live in their own ribbon above Mine — ADR 0008 says they
+  // linger ~5 min for social proof. Split them out before bucket filtering.
+  const actionable = allItems.filter((i) => !i.completion);
+  const completions = allItems.filter((i) => i.completion);
 
-  const stacks = screen.querySelectorAll('.inbox-stack');
-  if (stacks[0]) stacks[0].innerHTML = mine.map(renderInboxCardHTML).join('');
-  if (stacks[1]) stacks[1].innerHTML = team.map(renderInboxCardHTML).join('');
+  // Apply category filter to actionable items. Completion ribbon is not filtered
+  // (it's an awareness band, not a triage queue).
+  const filter = getInboxFilter(screen);
+  const filteredActionable = applyInboxFilter(actionable, filter);
 
-  // Update count badges in the sidebar + summary line at the top.
+  const mine = sortInboxByAge(filteredActionable.filter((i) => i.bucket === 'mine'));
+  const team = sortInboxByAge(filteredActionable.filter((i) => i.bucket === 'team'));
+
+  // Render into the new data-attribute-keyed stacks (no more positional lookups).
+  const mineStack = screen.querySelector('[data-inbox-stack="mine"]');
+  const teamStack = screen.querySelector('[data-inbox-stack="team"]');
+  if (mineStack) mineStack.innerHTML = renderInboxStackHTML(mine, { crossDex: isCrossDex });
+  if (teamStack) teamStack.innerHTML = renderInboxStackHTML(team, { crossDex: isCrossDex });
+
+  // Completion ribbon — visible only when there is at least one completion echo.
+  const ribbon = screen.querySelector('[data-inbox-completion-ribbon]');
+  const ribbonList = screen.querySelector('[data-inbox-completion-list]');
+  const ribbonCount = screen.querySelector('[data-completion-count]');
+  if (ribbon && ribbonList) {
+    if (completions.length > 0) {
+      ribbonList.innerHTML = completions.map(renderInboxCompletionHTML).join('');
+      ribbon.hidden = false;
+      if (ribbonCount) ribbonCount.textContent = `${completions.length} just completed`;
+    } else {
+      ribbon.hidden = true;
+      ribbonList.innerHTML = '';
+    }
+  }
+
+  // Filter-chip counts derive from the un-filtered actionable set so the chip
+  // labels always show "how many of this category exist", not "how many under
+  // the current filter".
+  const categoryCounts = actionable.reduce((acc, it) => {
+    const cat = inboxFilterCategoryForItem(it);
+    acc[cat] = (acc[cat] || 0) + 1;
+    return acc;
+  }, {});
+  const totalActionable = actionable.length;
+  screen.querySelectorAll('.filter-chips button[data-inbox-filter]').forEach((b) => {
+    const cat = b.getAttribute('data-inbox-filter');
+    const count = cat === 'all' ? totalActionable : (categoryCounts[cat] || 0);
+    const countEl = b.querySelector('[data-count]');
+    if (countEl) countEl.textContent = String(count);
+  });
+
+  // Bucket section counts.
+  const mineCount = screen.querySelector('[data-mine-count]');
+  const teamCount = screen.querySelector('[data-team-count]');
+  if (mineCount) mineCount.textContent = `${mine.length} item${mine.length === 1 ? '' : 's'}`;
+  if (teamCount) teamCount.textContent = `${team.length} item${team.length === 1 ? '' : 's'} · anyone can claim`;
+
+  // Empty state — shown when the actionable set (post-filter) is empty AND
+  // there are no completion echoes either. The accordions hide via CSS so the
+  // empty-state card stands alone.
+  const emptyEl = screen.querySelector('[data-inbox-empty]');
+  const mineSection = screen.querySelector('[data-inbox-mine]');
+  const teamSection = screen.querySelector('[data-inbox-team]');
+  const isEmpty = mine.length === 0 && team.length === 0 && completions.length === 0;
+  if (emptyEl) emptyEl.hidden = !isEmpty;
+  if (mineSection) mineSection.hidden = isEmpty;
+  if (teamSection) teamSection.hidden = isEmpty;
+
+  // Lede summary + sidebar badge.
   const lede = screen.querySelector('main.content > p.lede');
-  if (lede) lede.textContent = `${mine.length + team.length} items waiting`;
-  const summaries = screen.querySelectorAll('details.group-block summary .sub');
-  if (summaries[0]) summaries[0].textContent = `${mine.length} item${mine.length === 1 ? '' : 's'}`;
-  if (summaries[1]) summaries[1].textContent = `${team.length} item${team.length === 1 ? '' : 's'} · anyone can claim`;
+  if (lede) {
+    const total = mine.length + team.length;
+    lede.textContent = isEmpty
+      ? 'Nothing pending'
+      : `${total} item${total === 1 ? '' : 's'} waiting${filter !== 'all' ? ` · filtered to ${filter}s` : ''}`;
+  }
   const sidebarBadge = screen.querySelector('.sidebar .side-link.active .count-badge');
-  if (sidebarBadge) sidebarBadge.textContent = String(mine.length + team.length);
+  if (sidebarBadge) sidebarBadge.textContent = String(actionable.length);
+}
+
+/* Bind filter-chip clicks once on DOMContentLoaded. Delegated via the screen
+   so dynamically-injected screens (if any) still work. */
+function bindInboxFilterChips() {
+  document.querySelectorAll('section.screen[data-screen^="inbox-"] .filter-chips').forEach((chipBar) => {
+    chipBar.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-inbox-filter]');
+      if (!btn) return;
+      setInboxFilter(btn.getAttribute('data-inbox-filter'), btn);
+    });
+  });
+}
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindInboxFilterChips);
+  } else {
+    bindInboxFilterChips();
+  }
 }
 
 /* renderDraftsFromSeed(seed) — replaces every `.draft-row` in the drafts screen
@@ -1295,12 +1520,13 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
   const tbody = document.querySelector('.screen[data-screen="agreements"] .agr-list-table tbody');
   if (!tbody) return;
 
-  const actionBtn = (kind, cpName) => {
+  const actionBtn = (kind, cpName, rowId) => {
     const cp = escAttr(cpName || '');
+    const idArg = rowId ? `'${escAttr(rowId)}'` : 'null';
     switch (kind) {
       case 'extend':       return `<button onclick="event.stopPropagation(); openExtend('${cp}')" title="Extend"><i class="ti ti-clock-play"></i></button>`;
       case 'revoke':       return `<button onclick="event.stopPropagation(); openRevoke('${cp}')" title="Revoke"><i class="ti ti-x"></i></button>`;
-      case 'withdraw':     return `<button onclick="event.stopPropagation(); toast('Withdrawn invitation','warn')" title="Withdraw"><i class="ti ti-x"></i></button>`;
+      case 'withdraw':     return `<button onclick="event.stopPropagation(); openWithdraw('${cp}', ${idArg})" title="Withdraw"><i class="ti ti-x"></i></button>`;
       case 'view-audit':   return `<button onclick="event.stopPropagation(); toast('Opened ended-Agreement audit (read-only)')" title="View audit"><i class="ti ti-eye"></i></button>`;
       case 'send-pack':    return `<button onclick="event.stopPropagation(); toast('Opens Composer in pack mode · dispatches 1 Message per member')" title="Send pack now"><i class="ti ti-send"></i></button>`;
       case 'revoke-pack':  return `<button onclick="event.stopPropagation(); toast('Revoke pack — fans out to all 4 members')" title="Revoke pack"><i class="ti ti-x"></i></button>`;
@@ -1335,8 +1561,9 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
 
   tbody.innerHTML = seed.map(row => {
     if (row.kind === 'pack-parent') {
-      const actionsHtml = (row.actions || []).map(a => actionBtn(a, row.name)).join('');
-      return `<tr class="pack-parent" onclick="goto('pack-detail')">` +
+      const actionsHtml = (row.actions || []).map(a => actionBtn(a, row.name, row.id)).join('');
+      const packIdAttr = row.id ? ` data-agreement-id="${escAttr(row.id)}"` : '';
+      return `<tr class="pack-parent"${packIdAttr} onclick="goto('pack-detail')">` +
         `<td><div class="cp-cell"><i class="ti ti-chevron-down pack-toggle" aria-hidden="true"></i><div class="pack-ic"><i class="ti ti-stack-2"></i></div>` +
           `<div><div class="cp-name">${row.name || ''} <span class="pack-tag">${row.packTag || 'PACK'}</span></div><div style="font-size:11px;color:var(--g-50)">${row.childCount || 0} Agreements · ${row.cpCount || 0} counterparties</div></div></div></td>` +
         `<td>${elementCell(row.element)}</td>` +
@@ -1349,11 +1576,12 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
     const cls = row.kind === 'pack-member' ? 'pack-member' : '';
     const cpCellExtra = row.kind === 'pack-member' ? ' pack-member-cell' : '';
     const cp = row.cp || {};
-    const actionsHtml = (row.actions || []).map(a => actionBtn(a, cp.name)).join('');
+    const actionsHtml = (row.actions || []).map(a => actionBtn(a, cp.name, row.id)).join('');
     const openHandler = row.id
       ? `openAgreementDetail('${escAttr(row.id)}')`
       : `goto('detail')`;
-    return `<tr class="${cls}" onclick="${openHandler}">` +
+    const idAttr = row.id ? ` data-agreement-id="${escAttr(row.id)}"` : '';
+    return `<tr class="${cls}"${idAttr} onclick="${openHandler}">` +
       `<td><div class="cp-cell${cpCellExtra}"><div class="cp-avatar">${cp.initials || ''}</div>` +
         `<div><div class="cp-name">${cp.name || ''}</div><div style="font-size:11px;color:var(--g-50)">${cp.role || ''} · ${cp.dex || ''}</div></div></div></td>` +
       `<td>${elementCell(row.element)}</td>` +
@@ -1817,10 +2045,11 @@ function renderDataElementsCatalogFromDex(dexCode) {
         : `<span class="complexity-pill ${r.complexity || 'high-stakes'}" role="button" tabindex="0" title="Click to toggle simple ↔ high-stakes (admin only)" onclick="event.stopPropagation(); typeof toggleDeComplexity === 'function' && toggleDeComplexity(this, '${(r.name || '').replace(/'/g, "\\'")}')">${r.complexity || 'high-stakes'}</span>`;
       const usagePct = isPack ? 55 : 50 + Math.floor((r.name || '').length * 3) % 45;
       const usageMeta = isPack ? `in ${1 + ((r.name || '').length % 4)} Agreements` : `${10 + ((r.name || '').length % 30)} orgs`;
+      const safeName = (r.name || '').replace(/'/g, "\\'");
       const actionBtn = isPack
-        ? `<button onclick="event.stopPropagation(); typeof toast === 'function' && toast('Edit group members (admin only)')" title="Edit"><i class="ti ti-edit"></i></button>`
-        : `<button onclick="event.stopPropagation(); typeof toast === 'function' && toast('Impact analysis')" title="Impact analysis"><i class="ti ti-chart-bar"></i></button>`;
-      const clickHandler = `typeof toast === 'function' && toast('Opening ${(r.name || '').replace(/'/g, "\\'")} detail')`;
+        ? `<button onclick="event.stopPropagation(); openDataElementDetail('${safeName}')" title="Open pack detail"><i class="ti ti-chart-bar"></i></button>`
+        : `<button onclick="event.stopPropagation(); openDataElementDetail('${safeName}')" title="Impact analysis"><i class="ti ti-chart-bar"></i></button>`;
+      const clickHandler = `openDataElementDetail('${safeName}')`;
       return `<tr onclick="${clickHandler}">` +
         `<td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-${iconKind}" style="font-size:16px;color:${iconColor}"></i><div>${nameCell}</div></div></td>` +
         `<td>${versionCell}</td>` +
@@ -1839,6 +2068,345 @@ function renderDataElementsCatalogFromDex(dexCode) {
     const shown = (tbody && tbody.querySelectorAll('tr').length) || 0;
     foot.textContent = `Showing ${shown} of ${reg.totalCount} elements · filtered by Active`;
   }
+}
+
+/* ---------- Data element detail ----------
+   openDataElementDetail(name) is the entry point invoked from the catalog
+   row click + the row-actions "impact analysis" button. It resolves the
+   element from DATA_ELEMENTS_BY_DEX on the active DEX, falls back to a
+   name-based stub for legacy static rows whose names don't appear in the
+   registry, then paints `.screen[data-screen="data-element-detail"]` and
+   navigates there. */
+
+// Known data elements with rich (per-element) detail. Anything not listed
+// here renders with synthesized defaults derived from the element name + DEX
+// registry entry. This is illustrative — production would source from the
+// DEX admin catalog, not from a literal here.
+const DE_DETAIL_BY_NAME = {
+  'Bill of Lading': {
+    elementId: 'de_bill_of_lading',
+    blurb: 'Bill of Lading (B/L) — transport document issued by a carrier to acknowledge receipt of cargo. Used as a contract of carriage, a receipt for shipment, and a document of title.',
+    versions: [
+      { v: 'v2.1', state: 'Active',     released: '12 Jan 2026', breaking: false, usage: '612 msgs/day' },
+      { v: 'v2.0', state: 'Deprecated', released: '04 Aug 2024', breaking: true,  usage: '41 msgs/day · 4 orgs migrating' },
+      { v: 'v1.4', state: 'Deprecated', released: '22 Mar 2023', breaking: false, usage: '6 msgs/day · 1 org' },
+      { v: 'v2.2', state: 'Draft',      released: '— (preview)',  breaking: false, usage: 'Not in use' }
+    ],
+    agreements: [
+      { cp: 'Maersk Logistics', cpInitials: 'Mk', agrId: 'AGR-2026-04829', dir: 'Outbound', status: 'Active', last: '14 min ago · Acknowledged' },
+      { cp: 'PSA International', cpInitials: 'PS', agrId: 'AGR-2026-04610', dir: 'Outbound', status: 'Active', last: '31 min ago · Acknowledged' },
+      { cp: 'CrimsonLogic',     cpInitials: 'CL', agrId: 'AGR-2026-04501', dir: 'Outbound (via SP)', status: 'Active', last: '2 days ago · Delivered' },
+      { cp: 'ABC Logistics',    cpInitials: 'AB', agrId: 'AGR-2026-04822', dir: 'Inbound',  status: 'Pending', last: '— · awaiting acceptance' }
+    ],
+    impact: { orgs: 42, agreements: 7, msgsPerDay: 612, breakingMigrators: 4 },
+    schema: '{\n  "messageId":        "string · MSG-yyyy-NNNNNN",\n  "agreementId":      "string · AGR-yyyy-NNNNNN",\n  "dataElement":      { "id": "de_bill_of_lading", "version": "v2.1" },\n  "vessel":  { "name": "string", "imo": "string", "voyage": "string" },\n  "cargo":   { "commodity": "string", "grossKg": "number", "containers": "number" },\n  "routing": { "pol": "string · UN/LOCODE", "pod": "string · UN/LOCODE", "etd": "ISO-8601 date" },\n  "ackHash": "string · sha256 short-digest"\n}',
+    activity: [
+      { dot: 'green',  who: 'SGTradex admin (Lin Mei)', text: 'Promoted <strong>v2.1</strong> to Active · v2.0 marked Deprecated · 42 orgs notified',                                      when: '12 Jan 2026 · 10:04 SGT' },
+      { dot: 'yellow', who: 'SGTradex admin (Lin Mei)', text: 'Posted breaking-change notice for v2.1 · 30-day migration window opened',                                                    when: '12 Dec 2025 · 14:22 SGT' },
+      { dot: 'tx',     who: 'SGTradex admin (Lin Mei)', text: 'Registered <strong>v2.2 Draft</strong> for community review · feedback channel open until 30 Jun',                          when: '02 Apr 2026 · 09:12 SGT' }
+    ]
+  },
+  'Cargo manifest': {
+    elementId: 'de_cargo_manifest',
+    blurb: 'Cargo manifest — itemised list of every cargo unit aboard a vessel for a given voyage. Required by customs and port authorities at arrival and departure.',
+    versions: [
+      { v: 'v3.0', state: 'Active',     released: '02 Sep 2025', breaking: true,  usage: '287 msgs/day' },
+      { v: 'v2.5', state: 'Deprecated', released: '17 Feb 2024', breaking: false, usage: '11 msgs/day' }
+    ],
+    agreements: [
+      { cp: 'Maersk Logistics', cpInitials: 'Mk', agrId: 'AGR-2026-04611', dir: 'Outbound', status: 'Active', last: '18 min ago · Delivered' },
+      { cp: 'CrimsonLogic',     cpInitials: 'CL', agrId: 'AGR-2026-04722', dir: 'Outbound (via SP)', status: 'Active', last: 'Yesterday · Acknowledged' }
+    ],
+    impact: { orgs: 31, agreements: 5, msgsPerDay: 287, breakingMigrators: 0 },
+    schema: '{\n  "messageId":   "string",\n  "agreementId": "string",\n  "dataElement": { "id": "de_cargo_manifest", "version": "v3.0" },\n  "voyage":      { "vesselImo": "string", "voyageNo": "string", "etd": "ISO-8601" },\n  "lines":       [ { "containerNo": "string", "commodity": "string", "grossKg": "number", "hsCode": "string" } ]\n}',
+    activity: [
+      { dot: 'green', who: 'SGTradex admin (Lin Mei)', text: 'Promoted <strong>v3.0</strong> to Active · breaking change · 31 orgs notified · 30-day migration window',                  when: '02 Sep 2025 · 11:30 SGT' },
+      { dot: 'tx',    who: 'System',                   text: 'Retired <strong>v1.x</strong> family · all consumers migrated · audit retained',                                            when: '02 Sep 2025 · 11:30 SGT' }
+    ]
+  },
+  'ETA': {
+    elementId: 'de_eta',
+    blurb: 'Estimated time of arrival — projected berth-arrival timestamp for a vessel. Frequently updated; pulled by port operators and downstream logistics planners.',
+    versions: [
+      { v: 'v2.0', state: 'Active',     released: '14 Oct 2025', breaking: false, usage: '1.2k msgs/day' },
+      { v: 'v1.3', state: 'Deprecated', released: '06 Jan 2024', breaking: false, usage: '38 msgs/day · 3 orgs' }
+    ],
+    agreements: [
+      { cp: 'PSA International', cpInitials: 'PS', agrId: 'AGR-2026-04610', dir: 'Outbound', status: 'Active', last: '31 min ago · Acknowledged' }
+    ],
+    impact: { orgs: 58, agreements: 12, msgsPerDay: 1200, breakingMigrators: 0 },
+    schema: '{\n  "messageId":   "string",\n  "agreementId": "string",\n  "dataElement": { "id": "de_eta", "version": "v2.0" },\n  "vesselImo":   "string",\n  "berthCode":   "string",\n  "etaUtc":      "ISO-8601 timestamp",\n  "confidence":  "high | medium | low"\n}',
+    activity: [
+      { dot: 'green', who: 'SGTradex admin', text: 'Promoted <strong>v2.0</strong> to Active · added confidence enum · backwards-compatible',                                              when: '14 Oct 2025 · 09:15 SGT' }
+    ]
+  },
+  'Certificate of origin': {
+    elementId: 'de_certificate_of_origin',
+    blurb: 'Country-of-origin attestation — issued or counter-signed by a chamber of commerce to certify where goods were produced. Required for preferential-tariff claims.',
+    versions: [
+      { v: 'v1.4', state: 'Active', released: '11 Jul 2024', breaking: false, usage: '89 msgs/day' },
+      { v: 'v1.5', state: 'Draft',  released: '— (preview)',  breaking: false, usage: 'Not in use · community review' }
+    ],
+    agreements: [
+      { cp: 'ABC Logistics', cpInitials: 'AB', agrId: 'AGR-2026-05012', dir: 'Outbound', status: 'Active', last: '4h ago · Acknowledged' }
+    ],
+    impact: { orgs: 17, agreements: 3, msgsPerDay: 89, breakingMigrators: 0 },
+    schema: '{\n  "messageId":   "string",\n  "agreementId": "string",\n  "dataElement": { "id": "de_certificate_of_origin", "version": "v1.4" },\n  "exporter":    { "name": "string", "uen": "string" },\n  "origin":      { "country": "string · ISO-3166-1 alpha-2", "criterion": "string" },\n  "goods":       [ { "hsCode": "string", "description": "string", "quantity": "number" } ],\n  "chamberSig":  "string · sha256"\n}',
+    activity: [
+      { dot: 'tx', who: 'SGTradex admin', text: 'Registered <strong>v1.5 Draft</strong> · adds chamber-signature field · feedback open until 15 Jun', when: '02 May 2026 · 16:48 SGT' }
+    ]
+  },
+  'Bunker delivery confirmation': {
+    elementId: 'de_bunker_delivery',
+    blurb: 'Tripartite delivery attestation — vessel-receiver, bunker barge, and supplier confirm a fuel-delivery transaction. Currently in pre-production review.',
+    versions: [
+      { v: 'v0.9', state: 'Draft', released: '— (preview)', breaking: false, usage: 'Not yet in use · in DSV pipeline' }
+    ],
+    agreements: [],
+    impact: { orgs: 0, agreements: 0, msgsPerDay: 0, breakingMigrators: 0 },
+    schema: '{\n  "messageId":   "string",\n  "agreementId": "string",\n  "dataElement": { "id": "de_bunker_delivery", "version": "v0.9" },\n  "vessel":      { "imo": "string", "berth": "string" },\n  "delivery":    { "fuelType": "VLSFO | MGO | LSMGO", "quantityMt": "number", "ts": "ISO-8601" },\n  "signatures":  [ "string · vesselSig", "string · bargeSig", "string · supplierSig" ]\n}',
+    activity: [
+      { dot: 'tx', who: 'SGTradex admin (Lin Mei)', text: 'Registered draft schema · awaiting DSV-pipeline review before promotion', when: '14 Apr 2026 · 09:00 SGT' }
+    ]
+  },
+  'Vessel arrival pack': {
+    elementId: 'de_pack_vessel_arrival',
+    isPack: true,
+    blurb: 'Curated SGTradex pack (per ADR 0013 §Packs) — flows together when a vessel arrives. Maintained by SGTradex admins. Mutating pack members does NOT retroactively affect Agreements created before the change.',
+    versions: [
+      { v: 'Mutable group', state: 'Active', released: '14 Mar 2024 (created)', breaking: false, usage: '28 orgs · in 7 Agreements' }
+    ],
+    agreements: [
+      { cp: 'Pack distribution', cpInitials: 'VA', agrId: 'PACK-2026-0044', dir: 'Pack', status: 'Active', last: 'See pack detail page' }
+    ],
+    impact: { orgs: 28, agreements: 7, msgsPerDay: 0, breakingMigrators: 0 },
+    schema: '{\n  "kind":       "pack",\n  "packId":     "de_pack_vessel_arrival",\n  "members":    [\n    { "id": "de_eta",                "version": "v2.0" },\n    { "id": "de_vessel_particulars", "version": "v1.5" },\n    { "id": "de_crew_list",          "version": "v1.2" },\n    { "id": "de_cargo_manifest",     "version": "v3.0" }\n  ],\n  "snapshotAt": "captured at Agreement creation — future pack edits do not retroactively apply"\n}',
+    activity: [
+      { dot: 'green', who: 'SGTradex admin (Lin Mei)', text: 'Updated pack member <strong>Cargo manifest</strong> v2.5 → v3.0 · existing Agreements keep their snapshot', when: '02 Sep 2025 · 11:30 SGT' },
+      { dot: 'tx',    who: 'SGTradex admin',           text: 'Created the pack with 4 initial members',                                                                  when: '14 Mar 2024 · 09:00 SGT' }
+    ]
+  }
+};
+
+function findDataElementInRegistry(name, dexCode) {
+  if (typeof DATA_ELEMENTS_BY_DEX === 'undefined') return null;
+  const reg = DATA_ELEMENTS_BY_DEX[dexCode];
+  if (!reg || !Array.isArray(reg.groups)) return null;
+  for (const g of reg.groups) {
+    for (const e of (g.elements || [])) {
+      if (e.name === name) return { element: e, group: g.name };
+    }
+  }
+  return null;
+}
+
+function buildDataElementDetail(name, dexCode) {
+  const dexLabel = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dexCode] || 'SGTradex';
+  const known = DE_DETAIL_BY_NAME[name];
+  const registry = findDataElementInRegistry(name, dexCode);
+
+  // Synthesize a stub for names not in DE_DETAIL_BY_NAME (e.g., Subcontractor
+  // Onboarding on SGBuildex). The stub still produces a coherent detail page
+  // so every catalog row navigates somewhere meaningful instead of toasting.
+  const isPack = known ? !!known.isPack : (registry && registry.element.kind === 'pack');
+  const version = known
+    ? (known.versions[0] && known.versions[0].v) || (isPack ? 'Mutable group' : 'v1.0')
+    : (registry && registry.element.version) || (isPack ? 'Mutable group' : 'v1.0');
+  const category = registry ? registry.group : (isPack ? 'Curated pack' : 'Catalog element');
+  const elementId = known
+    ? known.elementId
+    : 'de_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+
+  const fallbackVersions = isPack
+    ? [{ v: 'Mutable group', state: 'Active', released: '— (registry)', breaking: false, usage: 'See pack detail' }]
+    : [{ v: version, state: 'Active', released: '— (registry)', breaking: false, usage: 'Illustrative — not tracked in prototype' }];
+
+  return {
+    name,
+    elementId,
+    dexCode,
+    dexLabel,
+    isPack,
+    category,
+    version,
+    blurb: known ? known.blurb : (isPack
+      ? 'Curated ' + dexLabel + ' pack. Members snapshot at Agreement creation; pack edits don\'t retroactively affect existing Agreements.'
+      : dexLabel + ' data element. Detail beyond name + version isn\'t recorded in this prototype — production would source from the DEX admin catalog.'),
+    versions: known ? known.versions : fallbackVersions,
+    agreements: known ? known.agreements : [],
+    impact: known ? known.impact : { orgs: 0, agreements: 0, msgsPerDay: 0, breakingMigrators: 0 },
+    schema: known ? known.schema : '{\n  "messageId":   "string",\n  "agreementId": "string",\n  "dataElement": { "id": "' + elementId + '", "version": "' + version + '" }\n  // Full schema not captured in prototype\n}',
+    activity: known ? known.activity : [
+      { dot: 'tx', who: dexLabel + ' admin', text: 'Element registered in the catalog (illustrative)', when: '— · prototype' }
+    ]
+  };
+}
+
+function renderDataElementDetail(detail) {
+  const screen = document.querySelector('.screen[data-screen="data-element-detail"]');
+  if (!screen || !detail) return;
+
+  // Header
+  const h1 = document.getElementById('de-detail-h1');
+  if (h1) h1.textContent = detail.isPack ? 'Pack · ' + detail.name : 'Data element · ' + detail.name;
+  const title = document.getElementById('de-detail-title');
+  if (title) title.textContent = detail.name;
+  const sub = document.getElementById('de-detail-sub');
+  if (sub) sub.textContent = detail.blurb;
+  const idEl = document.getElementById('de-detail-id');
+  if (idEl) idEl.textContent = detail.elementId;
+
+  // DEX chip
+  const dexChip = document.getElementById('de-detail-dex-chip');
+  if (dexChip) {
+    dexChip.className = 'dex-chip ' + detail.dexCode;
+    dexChip.innerHTML = '<span class="dex-dot"></span>' + detail.dexLabel;
+  }
+
+  // Kind pill (PACK or version badge)
+  const kindPill = document.getElementById('de-detail-kind-pill');
+  if (kindPill) {
+    if (detail.isPack) {
+      kindPill.className = 'version-badge active';
+      kindPill.textContent = 'PACK';
+    } else {
+      kindPill.className = 'version-badge active';
+      kindPill.textContent = detail.version;
+    }
+  }
+
+  // Tiles
+  const deprecatedCt = detail.versions.filter(v => v.state === 'Deprecated').length;
+  const draftCt      = detail.versions.filter(v => v.state === 'Draft').length;
+  const verTile = document.getElementById('de-detail-tile-version');
+  if (verTile) verTile.textContent = detail.isPack ? 'Mutable' : detail.version;
+  const verSub = document.getElementById('de-detail-tile-version-sub');
+  if (verSub) {
+    const extras = [];
+    if (deprecatedCt) extras.push(deprecatedCt + ' deprecated');
+    if (draftCt) extras.push(draftCt + ' draft');
+    verSub.textContent = extras.length ? '+ ' + extras.join(' · ') : (detail.isPack ? 'Members snapshot at Agreement creation' : 'No prior versions');
+  }
+
+  const orgsTile = document.getElementById('de-detail-tile-orgs');
+  if (orgsTile) orgsTile.textContent = detail.impact.orgs + ' org' + (detail.impact.orgs === 1 ? '' : 's');
+  const orgsSub = document.getElementById('de-detail-tile-orgs-sub');
+  if (orgsSub) {
+    const parts = [];
+    if (detail.impact.msgsPerDay) parts.push(detail.impact.msgsPerDay.toLocaleString() + ' msgs / day');
+    if (detail.impact.agreements) parts.push(detail.impact.agreements + ' active Agreement' + (detail.impact.agreements === 1 ? '' : 's'));
+    orgsSub.textContent = parts.length ? parts.join(' · ') : 'Not yet in use';
+  }
+
+  const complexity = (detail.isPack ? 'mixed' : (detail.versions[0] && detail.versions[0].state === 'Draft' ? 'simple' : 'high-stakes'));
+  const cxTile = document.getElementById('de-detail-tile-complexity');
+  if (cxTile) cxTile.textContent = complexity;
+  const cxSub = document.getElementById('de-detail-tile-complexity-sub');
+  if (cxSub) {
+    cxSub.innerHTML = detail.isPack
+      ? 'Inherited from member elements at compose time'
+      : (complexity === 'high-stakes'
+          ? '3-step wizard at compose time (per <a class="ov-link" href="#" onclick="event.preventDefault(); openAdrPanel(\'0025\',\'Compose complexity\',\'agr\')">ADR 0025</a>)'
+          : 'Single-page form at compose time (per <a class="ov-link" href="#" onclick="event.preventDefault(); openAdrPanel(\'0025\',\'Compose complexity\',\'agr\')">ADR 0025</a>)');
+  }
+
+  const catTile = document.getElementById('de-detail-tile-category');
+  if (catTile) catTile.textContent = detail.category;
+  const catSub = document.getElementById('de-detail-tile-category-sub');
+  if (catSub) catSub.textContent = 'Curated by ' + detail.dexLabel + ' admins';
+
+  // Status pill — reflect first version's state for non-pack, Active for pack
+  const statusPill = document.getElementById('de-detail-status-pill');
+  if (statusPill) {
+    const firstState = detail.isPack ? 'Active' : (detail.versions[0] && detail.versions[0].state) || 'Active';
+    const cls = firstState.toLowerCase();
+    statusPill.className = 'status-pill ' + (cls === 'draft' ? 'pending' : cls === 'deprecated' ? 'ended' : 'active');
+    statusPill.innerHTML = '<span class="dot"></span>' + firstState;
+  }
+
+  // Versions tbody
+  const vTbody = document.getElementById('de-detail-versions-tbody');
+  if (vTbody) {
+    if (!detail.versions.length) {
+      vTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--g-50);padding:24px">No versions recorded.</td></tr>';
+    } else {
+      vTbody.innerHTML = detail.versions.map(v => {
+        const stateCls = v.state.toLowerCase() === 'active' ? 'active'
+                      : v.state.toLowerCase() === 'draft' ? 'draft'
+                      : v.state.toLowerCase() === 'deprecated' ? 'deprecated'
+                      : 'ended';
+        const isActive = v.state === 'Active';
+        const action = isActive
+          ? '<button onclick="event.stopPropagation(); toast(\'Version is already Active — no promote action available\')" title="Promoted"><i class="ti ti-check"></i></button>'
+          : (v.state === 'Draft'
+              ? '<button onclick="event.stopPropagation(); toast(\'Promote ' + v.v + ' → Active (admin only)\')" title="Promote draft"><i class="ti ti-arrow-up"></i></button>'
+              : '<button onclick="event.stopPropagation(); toast(\'Migration tracking for ' + v.v + ' consumers\')" title="Migration tracking"><i class="ti ti-arrows-right-left"></i></button>');
+        return '<tr>'
+          + '<td><code class="agr-mono">' + v.v + '</code></td>'
+          + '<td><span class="version-badge ' + stateCls + '">' + v.state + '</span></td>'
+          + '<td>' + v.released + '</td>'
+          + '<td>' + (v.breaking ? '<span style="color:var(--red-50);font-weight:500">Breaking</span>' : '<span style="color:var(--g-50)">No</span>') + '</td>'
+          + '<td><span style="font-size:11px;color:var(--g-50)">' + v.usage + '</span></td>'
+          + '<td class="row-actions">' + action + '</td>'
+          + '</tr>';
+      }).join('');
+    }
+  }
+
+  // Schema preview
+  const schemaEl = document.getElementById('de-detail-schema');
+  if (schemaEl) schemaEl.textContent = detail.schema;
+
+  // Agreements tbody
+  const aTbody = document.getElementById('de-detail-agreements-tbody');
+  if (aTbody) {
+    if (!detail.agreements.length) {
+      aTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--g-50);padding:24px">Not yet referenced by any Agreement.</td></tr>';
+    } else {
+      aTbody.innerHTML = detail.agreements.map(a => {
+        const isPackRow = a.dir === 'Pack';
+        const navTarget = isPackRow ? 'pack-detail' : 'detail';
+        const statusCls = a.status === 'Active' ? 'active' : a.status === 'Pending' ? 'pending' : 'ended';
+        return '<tr onclick="goto(\'' + navTarget + '\')">'
+          + '<td><div class="cp-cell"><div class="cp-avatar">' + a.cpInitials + '</div><div><div class="cp-name">' + a.cp + '</div><div style="font-size:11px;color:var(--g-50)">' + (isPackRow ? 'Pack (per ADR 0027)' : 'Counterparty') + '</div></div></div></td>'
+          + '<td><code class="agr-mono">' + a.agrId + '</code></td>'
+          + '<td>' + a.dir + '</td>'
+          + '<td><span class="status-cell ' + statusCls + '"><span class="dot"></span>' + a.status + '</span></td>'
+          + '<td><span style="font-size:11px;color:var(--g-50)">' + a.last + '</span></td>'
+          + '<td class="row-actions"><button onclick="event.stopPropagation(); goto(\'' + navTarget + '\')" title="Open"><i class="ti ti-arrow-right"></i></button></td>'
+          + '</tr>';
+      }).join('');
+    }
+  }
+
+  // Impact tiles
+  const impactTiles = document.getElementById('de-detail-impact-tiles');
+  if (impactTiles) {
+    impactTiles.innerHTML =
+      '<div class="pack-tile"><p class="t-label">Consumer orgs</p><p class="t-num">' + detail.impact.orgs + '</p><p class="t-sub">Will receive promote / retire notifications</p></div>'
+      + '<div class="pack-tile"><p class="t-label">Active Agreements</p><p class="t-num">' + detail.impact.agreements + '</p><p class="t-sub">Reference this element today</p></div>'
+      + '<div class="pack-tile"><p class="t-label">Messages / day</p><p class="t-num">' + (detail.impact.msgsPerDay ? detail.impact.msgsPerDay.toLocaleString() : '—') + '</p><p class="t-sub">7-day rolling average</p></div>'
+      + '<div class="pack-tile"><p class="t-label">Mid-migration</p><p class="t-num' + (detail.impact.breakingMigrators ? ' green' : '') + '">' + detail.impact.breakingMigrators + '</p><p class="t-sub">Orgs still on deprecated versions</p></div>';
+  }
+
+  // Activity
+  const actList = document.getElementById('de-detail-activity');
+  if (actList) {
+    actList.innerHTML = detail.activity.map(ev => {
+      const dotStyle = ev.dot === 'tx' ? '' : ('background:var(--' + ev.dot + '-50)');
+      return '<li class="ev">'
+        + '<span class="ev-dot' + (ev.dot === 'tx' ? ' tx' : '') + '"' + (dotStyle ? ' style="' + dotStyle + '"' : '') + ' aria-hidden="true"></span>'
+        + '<div class="ev-body"><p><strong>' + ev.who + '</strong> · ' + ev.text + '</p><p class="ev-time"><time>' + ev.when + '</time></p></div>'
+        + '</li>';
+    }).join('');
+  }
+}
+
+function openDataElementDetail(name) {
+  const dex = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const detail = buildDataElementDetail(name, dex);
+  renderDataElementDetail(detail);
+  goto('data-element-detail');
 }
 
 /* ---------- renderDataPickerFromDex ----------
@@ -1901,14 +2469,17 @@ function renderDataPickerFromDex(dexCode) {
       const v = e.version ? ` · <span class="v">${e.version}</span>` : '';
       return `<label class="snapshot-row"><i class="ti ti-square-check-filled"></i><span class="nm">${e.name}${v}</span></label>`;
     }).join('');
+    // No inline "Continue to counterparty" — forward navigation is owned by
+    // the global wizard-foot's Next button (wizardNext, which handles the
+    // pack-aware diversion to pack-fork). Avoids the duplicate footer-rail
+    // CTAs that previously sat side-by-side at the bottom of this step.
     detail.innerHTML =
       `<div class="picker-detail-head"><i class="ti ti-${headIcon}"></i><span class="name">${h.name}</span>${pill}</div>` +
       `<p style="font-size:12px;color:var(--g-50);line-height:1.5">${h.blurb || ''}</p>` +
       `<p class="snapshot-label">${snapshotLabel}</p>` +
       `<div class="snapshot-list">${snapshotRows}</div>` +
       (isPack ? `<button class="add-individual"><i class="ti ti-plus"></i>Add individual elements</button>` : '') +
-      `<p class="snapshot-info"><i class="ti ti-info-circle"></i>The snapshot is captured at Agreement creation. Future edits to this pack won't affect Agreements created today.</p>` +
-      `<button class="btn-primary" style="margin-top:14px;width:100%;justify-content:center" onclick="goto('${isPack ? 'pack-fork' : 'cp-picker'}')">Continue to counterparty <i class="ti ti-arrow-right"></i></button>`;
+      `<p class="snapshot-info"><i class="ti ti-info-circle"></i>The snapshot is captured at Agreement creation. Future edits to this pack won't affect Agreements created today.</p>`;
   }
 }
 
@@ -2108,10 +2679,6 @@ function applyScene(scene) {
     goto(scene.screen);
   }
 
-  // 11. Optional flow.
-  if (scene.flow && typeof runFlow === 'function') {
-    runFlow(scene.flow);
-  }
 }
 /* Position a fixed-positioned popover anchored to a trigger element.
  * `align` is 'left' (popover's left edge aligns with trigger's left)
@@ -2242,6 +2809,268 @@ function openJoin()    { openOverlay('join-modal'); }
 function openTemplate(){ openOverlay('template-modal'); }
 function openImpersonate() { openOverlay('impersonate-modal'); }
 function openGlossary(){ openOverlay('glossary-modal'); }
+
+/* ---------- Register new data element (admin) ---------- */
+function openRegisterDataElement() {
+  // Reset fields each open so reopening doesn't show last attempt's values.
+  const ids = ['register-de-name', 'register-de-category', 'register-de-description', 'register-de-version', 'register-de-complexity'];
+  const defaults = { 'register-de-version': 'v0.1', 'register-de-complexity': 'high-stakes' };
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (id in defaults) el.value = defaults[id];
+    else el.value = '';
+  });
+  updateRegisterDePreview();
+  openOverlay('register-de-modal');
+  setTimeout(() => { const f = document.getElementById('register-de-name'); if (f) f.focus(); }, 50);
+}
+
+function updateRegisterDePreview() {
+  const name = (document.getElementById('register-de-name') || {}).value || 'Element name';
+  const cat  = (document.getElementById('register-de-category') || {}).value || 'uncategorised';
+  const ver  = (document.getElementById('register-de-version') || {}).value || 'v0.1';
+  const previewName = document.getElementById('register-de-preview-name');
+  const previewMeta = document.getElementById('register-de-preview-meta');
+  const previewVer  = document.getElementById('register-de-preview-version');
+  if (previewName) previewName.textContent = name.trim() || 'Element name';
+  if (previewMeta) previewMeta.textContent = 'Draft · ' + cat;
+  if (previewVer)  previewVer.textContent = ver.trim() || 'v0.1';
+}
+
+function confirmRegisterDataElement() {
+  const name = ((document.getElementById('register-de-name') || {}).value || '').trim();
+  const cat  = ((document.getElementById('register-de-category') || {}).value || '').trim();
+  const desc = ((document.getElementById('register-de-description') || {}).value || '').trim();
+  const ver  = ((document.getElementById('register-de-version') || {}).value || 'v0.1').trim();
+  const cx   = ((document.getElementById('register-de-complexity') || {}).value || 'high-stakes').trim();
+
+  if (!name) {
+    if (typeof toast === 'function') toast('Element name is required', 'warn');
+    const f = document.getElementById('register-de-name'); if (f) f.focus();
+    return;
+  }
+  if (!cat) {
+    if (typeof toast === 'function') toast('Pick a category before submitting', 'warn');
+    const f = document.getElementById('register-de-category'); if (f) f.focus();
+    return;
+  }
+
+  // Persist the new element into DATA_ELEMENTS_BY_DEX so subsequent re-renders
+  // (which clobber any appended tbody rows) keep it visible. Illustrative
+  // only — production would POST to the DEX admin catalog API.
+  const dex = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  if (typeof DATA_ELEMENTS_BY_DEX !== 'undefined' && DATA_ELEMENTS_BY_DEX[dex]) {
+    const reg = DATA_ELEMENTS_BY_DEX[dex];
+    reg.groups = reg.groups || [];
+    let group = reg.groups.find(g => g.name === cat);
+    if (!group) {
+      group = { name: cat, count: 0, elements: [] };
+      reg.groups.push(group);
+      reg.groupCount = (reg.groupCount || reg.groups.length - 1) + 1;
+    }
+    group.elements = group.elements || [];
+    group.elements.unshift({ kind: 'leaf', name, version: ver, icon: 'file-text', complexity: cx, draft: true });
+    group.count = (group.count || 0) + 1;
+    reg.totalCount = (reg.totalCount || 0) + 1;
+  }
+
+  // Cache the rich detail for the just-registered element so the detail page
+  // shows the registrant's description rather than the generic stub.
+  if (typeof DE_DETAIL_BY_NAME === 'object' && !DE_DETAIL_BY_NAME[name]) {
+    DE_DETAIL_BY_NAME[name] = {
+      elementId: 'de_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''),
+      blurb: desc || (cat + ' data element · just registered as Draft.'),
+      versions: [{ v: ver, state: 'Draft', released: '— (just registered)', breaking: false, usage: 'Not yet in use' }],
+      agreements: [],
+      impact: { orgs: 0, agreements: 0, msgsPerDay: 0, breakingMigrators: 0 },
+      schema: '{\n  "messageId":   "string",\n  "agreementId": "string",\n  "dataElement": { "id": "de_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') + '", "version": "' + ver + '" }\n  // Schema not yet defined — pending admin review\n}',
+      activity: [{ dot: 'tx', who: ((typeof activeUserId === 'function') ? activeUserId() : 'You'), text: 'Registered <strong>' + name + '</strong> as Draft via the catalog', when: 'just now' }]
+    };
+  }
+
+  // Re-render the catalog so the new element shows up at the top of its group
+  // and the chip totals stay in sync with the registry.
+  if (typeof renderDataElementsCatalogFromDex === 'function') {
+    renderDataElementsCatalogFromDex(dex);
+  }
+
+  closeOverlay('register-de-modal');
+  if (typeof toast === 'function') toast(name + ' registered as Draft · DEX admins notified for promotion review');
+}
+
+/* ---------- Invite participant (admin) ---------- */
+function openInviteParticipant() {
+  ['invite-org-name', 'invite-uen', 'invite-contact-email', 'invite-message'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const role = document.getElementById('invite-role');
+  if (role) role.selectedIndex = 0;
+  openOverlay('invite-participant-modal');
+  setTimeout(() => { const f = document.getElementById('invite-org-name'); if (f) f.focus(); }, 50);
+}
+
+function confirmInviteParticipant() {
+  const name = ((document.getElementById('invite-org-name') || {}).value || '').trim();
+  const uen  = ((document.getElementById('invite-uen') || {}).value || '').trim();
+  const email = ((document.getElementById('invite-contact-email') || {}).value || '').trim();
+  const role = ((document.getElementById('invite-role') || {}).value || 'Carrier').trim();
+
+  if (!name) {
+    if (typeof toast === 'function') toast('Organisation name is required', 'warn');
+    const f = document.getElementById('invite-org-name'); if (f) f.focus();
+    return;
+  }
+  if (!email || !/^.+@.+\..+$/.test(email)) {
+    if (typeof toast === 'function') toast('Enter a valid contact email', 'warn');
+    const f = document.getElementById('invite-contact-email'); if (f) f.focus();
+    return;
+  }
+
+  // Derive an initials avatar from the org name (first letter of first two words).
+  const words = name.split(/\s+/).filter(Boolean);
+  const initials = ((words[0] || '?')[0] + ((words[1] || '')[0] || '')).toUpperCase().slice(0, 2);
+
+  const screen = document.querySelector('.screen[data-screen="participants"]');
+  const list = screen && screen.querySelector('.list-frame > div[style*="flex-direction:column"]');
+  if (list) {
+    const escName = name.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const escMeta = (role + (uen ? ' · UEN ' + uen.replace(/&/g, '&amp;').replace(/</g, '&lt;') : '') + ' · invited just now · awaiting onboarding').toString();
+    const card = document.createElement('div');
+    card.className = 'participant-card';
+    card.setAttribute('onclick', "toast('Pending KYC — profile opens once onboarding completes')");
+    card.innerHTML =
+      '<div class="cp-avatar" style="width:44px;height:44px;font-size:13px">' + initials + '</div>' +
+      '<div class="pc-body">' +
+        '<div class="pc-name">' + escName + '</div>' +
+        '<div class="pc-meta">' + escMeta + '</div>' +
+        '<div class="pc-usecases"><span class="uc-pill">Invitation sent</span></div>' +
+      '</div>' +
+      '<div class="pc-status">' +
+        '<span class="status-cell pending"><span class="dot"></span>Pending KYC</span>' +
+        '<span class="joined">Invited just now</span>' +
+      '</div>';
+    list.insertBefore(card, list.firstChild);
+    bumpParticipantsCount(1, 1);
+  }
+
+  closeOverlay('invite-participant-modal');
+  if (typeof toast === 'function') toast('Invitation sent to ' + email + ' · ' + name + ' appears as Pending KYC');
+}
+
+function bumpParticipantsCount(deltaShown, deltaTotal) {
+  const shownEl = document.getElementById('participants-shown-count');
+  const totalEl = document.getElementById('participants-total-count');
+  if (shownEl) shownEl.textContent = String((parseInt(shownEl.textContent, 10) || 0) + deltaShown);
+  if (totalEl && deltaTotal) totalEl.textContent = String((parseInt(totalEl.textContent, 10) || 0) + deltaTotal);
+  const allChip = document.querySelector('.screen[data-screen="participants"] .list-toolbar .filter-chips .chip.solid');
+  if (allChip && deltaTotal) {
+    const m = (allChip.textContent || '').match(/(\d+)/);
+    if (m) allChip.textContent = 'All · ' + (parseInt(m[1], 10) + deltaTotal);
+  }
+}
+
+/* ---------- Load more participants ----------
+   Reveals additional fixture orgs each click. When the seed pool runs out,
+   the link disables and shows the catalog is exhausted. */
+const PARTICIPANTS_MORE_POOL = [
+  { name: 'Hin Leong Insurance',           initials: 'HL', role: 'Insurance broker', uen: '199234567B', joined: 'Joined 02 Feb 2024',  ucs: ['Vessel arrival'] },
+  { name: 'ICA Singapore',                 initials: 'IC', role: 'Immigration',      uen: 'GOV-ICA',    joined: 'Joined 11 Aug 2022',  ucs: ['Crew list'] },
+  { name: 'TFG Marine Pte Ltd',            initials: 'TF', role: 'Bunker supplier',  uen: '201998123R', joined: 'Joined 19 Sep 2024',  ucs: ['Bunker requisition', 'Bunker delivery'] },
+  { name: 'PIL — Pacific Int. Lines',      initials: 'PI', role: 'Carrier',          uen: '196700185Z', joined: 'Joined 22 Mar 2023',  ucs: ['B/L sharing'] },
+  { name: 'BCA Singapore',                 initials: 'BC', role: 'Regulator (BX)',   uen: 'GOV-BCA',    joined: 'Joined 14 Apr 2026',  ucs: ['Cross-DEX'], dex: 'bx' },
+  { name: 'SingHealth',                    initials: 'Sg', role: 'Healthcare (HX)',  uen: 'CHA-2003-001', joined: 'Joined 09 Jan 2026', ucs: ['Referrals'], dex: 'hx' }
+];
+let _participantsMoreOffset = 0;
+const PARTICIPANTS_BATCH = 4;
+
+function loadMoreParticipants() {
+  const link = document.getElementById('participants-load-more');
+  if (!link) return;
+  const screen = document.querySelector('.screen[data-screen="participants"]');
+  const list = screen && screen.querySelector('.list-frame > div[style*="flex-direction:column"]');
+  if (!list) return;
+
+  const batch = PARTICIPANTS_MORE_POOL.slice(_participantsMoreOffset, _participantsMoreOffset + PARTICIPANTS_BATCH);
+  if (!batch.length) {
+    link.style.pointerEvents = 'none';
+    link.style.opacity = '0.5';
+    link.textContent = 'All loaded';
+    if (typeof toast === 'function') toast('All 42 participants loaded');
+    return;
+  }
+
+  batch.forEach(p => {
+    const ucs = (p.ucs || []).map(u => '<span class="uc-pill">' + u + '</span>').join('');
+    const dexChip = p.dex ? '<span class="dex-chip ' + p.dex + '"><span class="dex-dot"></span>' + ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[p.dex] || 'SGTradex') + '</span>' : '<span class="status-cell active"><span class="dot"></span>Active</span>';
+    const card = document.createElement('div');
+    card.className = 'participant-card';
+    card.setAttribute('onclick', "goto('detail')");
+    card.innerHTML =
+      '<div class="cp-avatar" style="width:44px;height:44px;font-size:13px">' + p.initials + '</div>' +
+      '<div class="pc-body">' +
+        '<div class="pc-name">' + p.name + '</div>' +
+        '<div class="pc-meta">' + p.role + ' · UEN ' + p.uen + '</div>' +
+        '<div class="pc-usecases">' + ucs + '</div>' +
+      '</div>' +
+      '<div class="pc-status">' + dexChip + '<span class="joined">' + p.joined + '</span></div>';
+    list.appendChild(card);
+  });
+  _participantsMoreOffset += batch.length;
+  bumpParticipantsCount(batch.length, 0);
+
+  if (_participantsMoreOffset >= PARTICIPANTS_MORE_POOL.length) {
+    link.style.pointerEvents = 'none';
+    link.style.opacity = '0.5';
+    link.textContent = 'All loaded';
+  }
+}
+/* Withdraw — the pending-side termination. Unlike revoke, there is no grace
+   window: the invitation simply disappears because the counterparty never
+   accepted. The modal asks for a single confirmation; no typing-the-name
+   gate because the blast radius is "an unanswered invite", not a live data
+   flow. */
+function openWithdraw(cp, agreementId) {
+  if (cp) {
+    const target = document.getElementById('withdraw-cp');
+    if (target) target.textContent = cp;
+    document.querySelectorAll('#withdraw-modal .withdraw-cp-mirror').forEach((el) => {
+      el.textContent = cp;
+    });
+  }
+  if (agreementId && typeof setSelectedAgreementId === 'function') {
+    setSelectedAgreementId(agreementId);
+  }
+  openOverlay('withdraw-modal');
+}
+function confirmWithdraw() {
+  const cpEl = document.getElementById('withdraw-cp');
+  const cp = cpEl ? cpEl.textContent : '';
+  closeOverlay('withdraw-modal');
+  const updated = withdrawCurrentAgreement();
+  if (updated) {
+    toast('Invitation withdrawn · ' + cp + ' notified', 'warn');
+    // Refresh the list so the row flips from "Pending · withdraw" to
+    // "Ended · Withdrawn · view-audit" without requiring navigation.
+    if (typeof renderAgreementsFromWorkspace === 'function') renderAgreementsFromWorkspace();
+  }
+}
+function withdrawCurrentAgreement() {
+  if (typeof getSelectedAgreementId !== 'function' || typeof withdrawAgreement !== 'function') return null;
+  const id = getSelectedAgreementId();
+  if (!id) return null;
+  const actor = (typeof activeUserId === 'function') ? activeUserId() : null;
+  try {
+    const updated = withdrawAgreement(id, actor);
+    if (typeof renderAgreementDetailFromWorkspace === 'function') renderAgreementDetailFromWorkspace();
+    return updated;
+  } catch (err) {
+    if (typeof toast === 'function') toast(_humanizeAgreementStateError(err), 'warn');
+    return null;
+  }
+}
+
 function openRevoke(cp) {
   if (cp) {
     document.getElementById('revoke-cp').textContent = cp;
@@ -2262,42 +3091,66 @@ function checkRevokeConfirm(input) {
 function confirmRevoke() {
   const cp = document.getElementById('revoke-cp').textContent;
   closeOverlay('revoke-modal');
+  // Persist to workspace; the re-render inside revokeCurrentAgreement calls
+  // renderAgreementDetailFromWorkspace → setDetailState('revoked') which
+  // injects the revoked banner, flips the status pill, hides the primary
+  // action button, and updates the timeline. The legacy applyRevokedState
+  // helper became redundant once that path landed and has been removed.
+  revokeCurrentAgreement();
   toast('Agreement revoked · ' + cp + ' notified · 7-day grace window started', 'warn');
   goto('detail');
-  setTimeout(() => applyRevokedState(cp), 100);
-}
-function applyRevokedState(cp) {
-  const detail = document.querySelector('.screen[data-screen="detail"] .detail-body');
-  if (!detail) return;
-  // Inject revoked banner
-  if (!detail.querySelector('.revoked-banner')) {
-    const b = document.createElement('div');
-    b.className = 'revoked-banner';
-    b.innerHTML = '<i class="ti ti-alert-octagon"></i><p>Revoked just now · grace period ends in 7 days · ' + cp + ' has been notified · reason logged in audit</p>';
-    detail.insertBefore(b, detail.firstChild);
-  }
-  // Update status pill in header
-  const pill = document.querySelector('.screen[data-screen="detail"] .status-pill');
-  if (pill) { pill.className = 'status-pill ended'; pill.innerHTML = '<span class="dot"></span>Ended · revoked'; }
-  // Update timeline: mark Ended as current with red dot
-  const tl = document.querySelector('.screen[data-screen="detail"] .timeline');
-  if (tl) {
-    const steps = tl.querySelectorAll('.step');
-    if (steps[1]) { const d = steps[1].querySelector('.dot'); if (d) d.className = 'dot done'; }
-    if (steps[2]) {
-      const d = steps[2].querySelector('.dot'); if (d) d.className = 'dot revoked';
-      const lbl = steps[2].querySelector('.step-label'); if (lbl) { lbl.textContent = 'Ended · revoked'; lbl.classList.remove('muted'); }
-      const tm = steps[2].querySelector('.step-time'); if (tm) tm.textContent = 'Just now · 7d grace';
-    }
-  }
-  // Hide the renewal nudge if visible
-  const nudge = document.querySelector('.screen[data-screen="detail"] .nudge');
-  if (nudge) nudge.style.display = 'none';
-  // Remove header Extend button — no longer applicable
-  const extendBtn = document.querySelector('.screen[data-screen="detail"] .title-row .btn-secondary');
-  if (extendBtn) extendBtn.style.display = 'none';
 }
 
+/* ---------- Workspace-backed Agreement state transitions ----------
+   Thin wrappers that find the currently-selected Agreement, hand off to the
+   workspace API, then refresh the detail page so the status pill / banners /
+   timeline reflect the new state. Errors bubble up as toasts — the workspace
+   API throws on truth-table violations (e.g., suspending a pending
+   Agreement) and we surface those instead of silently no-op'ing. */
+function suspendCurrentAgreement() {
+  if (typeof getSelectedAgreementId !== 'function' || typeof suspendAgreement !== 'function') return null;
+  const id = getSelectedAgreementId();
+  if (!id) return null;
+  const actor = (typeof activeUserId === 'function') ? activeUserId() : null;
+  try {
+    const updated = suspendAgreement(id, actor);
+    if (typeof renderAgreementDetailFromWorkspace === 'function') renderAgreementDetailFromWorkspace();
+    return updated;
+  } catch (err) {
+    if (typeof toast === 'function') toast(_humanizeAgreementStateError(err), 'warn');
+    return null;
+  }
+}
+
+function revokeCurrentAgreement(opts) {
+  if (typeof getSelectedAgreementId !== 'function' || typeof revokeAgreement !== 'function') return null;
+  const id = getSelectedAgreementId();
+  if (!id) return null;
+  const actor = (typeof activeUserId === 'function') ? activeUserId() : null;
+  try {
+    const updated = revokeAgreement(id, actor, opts || {});
+    if (typeof renderAgreementDetailFromWorkspace === 'function') renderAgreementDetailFromWorkspace();
+    return updated;
+  } catch (err) {
+    if (typeof toast === 'function') toast(_humanizeAgreementStateError(err), 'warn');
+    return null;
+  }
+}
+
+/* Translate the workspace API's machine-readable errors into a short toast
+   message. Keeps the wrapper functions honest about R1/R2 violations rather
+   than swallowing them. */
+function _humanizeAgreementStateError(err) {
+  const msg = (err && err.message) || '';
+  if (msg.startsWith('SUSPEND_REQUIRES_ACTIVE'))    return 'Only active Agreements can be suspended';
+  if (msg.startsWith('SUSPEND_ALREADY_SUSPENDED'))  return 'Agreement is already suspended';
+  if (msg.startsWith('RESUME_REQUIRES_ACTIVE'))     return 'Only active Agreements can be resumed';
+  if (msg.startsWith('RESUME_NOT_SUSPENDED'))       return 'Agreement is not suspended';
+  if (msg.startsWith('REVOKE_ALREADY_ENDED'))       return 'Agreement is already ended';
+  if (msg.startsWith('WITHDRAW_REQUIRES_PENDING'))  return 'Only pending Agreements can be withdrawn';
+  if (msg.startsWith('AGREEMENT_NOT_FOUND'))        return 'Agreement not found';
+  return 'Could not update Agreement state';
+}
 /* ---------- Drafts ---------- */
 function resumeDraft(name) {
   toast('Resuming draft: ' + name);
@@ -4089,6 +4942,15 @@ function composerSubmit() {
   btn.innerHTML = '<i class="ti ti-loader-2" style="animation: spin 1s linear infinite"></i> Submitting…';
   toast('Submission in progress · draft is in submission_pending state · 30-sec backoff per ADR 0024');
   setTimeout(() => {
+    // Persist a real workspace.messages record so any subsequent Failed
+    // transition surfaces in the inbox (ADR 0021 / 0023). Submitted via the
+    // composer = success path → status 'delivered', no inbox impact today;
+    // wires up the future-failure path. No-op if the agreement context isn't
+    // resolvable for this scenario (e.g. unseeded fixtures).
+    if (typeof recordComposerMessage === 'function') {
+      try { recordComposerMessage(cfg); } catch (e) { console.warn('composer record persist failed', e); }
+    }
+    if (typeof refreshInboxSurfaces === 'function') refreshInboxSurfaces();
     // Land on success screen
     goto('compose-success');
     // Reset submit button for next time
@@ -4308,7 +5170,6 @@ function renderGroupDetail(name) {
     <div class="snapshot-list">${elementsHtml}</div>
     <button class="add-individual"><i class="ti ti-plus" aria-hidden="true"></i>Add individual elements</button>
     <p class="snapshot-info"><i class="ti ti-info-circle" aria-hidden="true"></i>The snapshot is captured at Agreement creation. Future edits to this pack won't affect Agreements created today.</p>
-    <button class="btn-primary picker-continue" style="margin-top:14px;width:100%;justify-content:center">Continue to counterparty <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
   `;
 }
 
@@ -4345,7 +5206,6 @@ function renderElementDetail(name, version) {
     </div>
 
     <p class="snapshot-info"><i class="ti ti-info-circle" aria-hidden="true"></i>This Agreement will cover only this single element. The element's version is captured at creation — future version promotions won't apply to this Agreement.</p>
-    <button class="btn-primary picker-continue" style="margin-top:14px;width:100%;justify-content:center">Continue to counterparty <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
   `;
 }
 
@@ -4365,6 +5225,14 @@ function initializeWorkspaceApp() {
   if (workspace.meta.darkMode == null) {
     workspace.meta.darkMode = localStorage.getItem('dex-portal-dark') === '1';
     writeWorkspaceSnapshot(workspace);
+  }
+
+  // Push the workspace's Pitstop element-scope back into the script-level
+  // PITSTOP_ELEMENT_SCOPE global so reads from pitstop.js (settings render,
+  // doctor pickers) reflect user captures persisted in prior sessions
+  // instead of the pristine state.js fixtures.
+  if (typeof hydratePitstopElementScopeFromWorkspace === 'function') {
+    hydratePitstopElementScopeFromWorkspace();
   }
 
   applyDarkModePreference(workspace.meta.darkMode);
@@ -4847,6 +5715,10 @@ function doctorSpawnMessage() {
   if (typeof renderMessagesFromWorkspace === 'function') renderMessagesFromWorkspace();
   renderDoctorMessagesList();
   refreshDoctorAgreementPicker();
+  // Failed messages surface in the inbox per ADR 0021 / 0023 — refresh inbox
+  // surfaces so the new row appears immediately if the operator is sitting
+  // on the inbox screen while spawning from the Messages doctor.
+  if (typeof refreshInboxSurfaces === 'function') refreshInboxSurfaces();
   const statusLabel = doctorAxes.status === 'failed' && doctorAxes.owner
     ? `Failed · ${doctorAxes.owner}`
     : doctorAxes.status;
@@ -5123,7 +5995,436 @@ function agreementDoctorSpawn() {
   refreshDoctorAgreementPicker();
   refreshAgreementDoctorCounterpartyPicker();
   refreshMessagesDoctorSpawnState();
+  // Pending Agreements surface in the inbox per ADR 0007 / 0008 — refresh
+  // inbox surfaces so newly spawned Pending rows appear immediately.
+  if (typeof refreshInboxSurfaces === 'function') refreshInboxSurfaces();
   toast(toastMessage);
+}
+
+/* Sync wiz.de / wiz.isPack / wiz.deId from the data-picker tree's
+ * currently-active leaf. Called from startWizard so a fresh wizard run
+ * reflects the default selection (Vessel arrival pack on TX, the per-DEX
+ * headline element on BX/HX) instead of inheriting the previous run's
+ * picks. The leaf-click handler in the delegated picker listener keeps
+ * these in sync during a wizard run; this is just the initial seed.
+ *
+ * Falls back to the static defaults (Vessel arrival pack) when no leaf is
+ * marked active — preserves the historical behaviour where wiz.isPack=true
+ * matched the pre-rendered picker. */
+function resolveDataPickerDefaults() {
+  const activeLeaf = document.querySelector(
+    '.screen[data-screen="data-picker"] .picker-tree .leaf.active'
+  );
+  if (!activeLeaf) {
+    // Fall back to the static defaults — matches the index.html pre-render.
+    if (typeof wiz === 'object') {
+      wiz.de = 'Vessel arrival pack';
+      wiz.deDetail = 'Data element pack · 4 elements: ETA, Vessel particulars, Crew list, Cargo manifest';
+      wiz.isPack = true;
+      wiz.deId = null;
+    }
+    return;
+  }
+  // Pull the leaf's name (text nodes only) + pack-pill / version-tag.
+  let name = '';
+  Array.from(activeLeaf.childNodes).forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) name += node.textContent;
+  });
+  name = name.trim();
+  const isPack = !!activeLeaf.querySelector('.group-pill');
+  const versionTag = activeLeaf.querySelector('.v-tag');
+  const version = versionTag ? versionTag.textContent.trim() : '';
+
+  if (typeof wiz !== 'object') return;
+  wiz.de = name;
+  wiz.isPack = isPack;
+  wiz.deDetail = isPack
+    ? 'Data element pack · multi-counterparty capable (ADR 0027)'
+    : `Single element · ${version || 'current Active version'}`;
+  wiz.deId = (typeof elementIdFromName === 'function') ? elementIdFromName(name) : null;
+}
+
+/* "Element already in use" wizard prompt (ADR 0028 §What permits).
+   Called from wizardNext when the operator picks a data element on
+   data-picker. Fires when ANY prior fact exists about (org, element):
+     a) Pitstop scope already captured (the operator routed this element
+        before, even without making an agreement yet), OR
+     b) One or more workspace Agreement records exist for the same
+        (operatorOrgId, element name) — the operator has already created
+        an agreement involving this element.
+
+   The prompt asks whether the operator is editing an existing Agreement
+   (View existing → Agreements list) or genuinely creating a new one
+   (Continue → cp-picker). Returns true when the modal opened (caller
+   must suspend the wizard); false when no prompt fired (fall through to
+   default forward nav).
+
+   Single-Pitstop Orgs still skip the prompt when only (a) would have
+   matched — the scope is unambiguous on single-Pitstop and re-showing
+   it is noise. But (b) — existing agreements — fires regardless of
+   Pitstop count, because duplicate-agreement detection matters on every
+   Org. */
+function maybePromptScopeAlreadyExists(orgId, dexId, elementId, direction) {
+  // Resolve display strings up-front so both branches can stamp the modal.
+  const elementName = (typeof ELEMENT_CATALOGUE !== 'undefined' && ELEMENT_CATALOGUE[elementId])
+    || (wiz && wiz.de)
+    || elementId;
+  const orgName = (typeof getOrg === 'function' && getOrg(orgId) && getOrg(orgId).name)
+    || ((typeof ORGS !== 'undefined' && ORGS[orgId] && ORGS[orgId].name))
+    || orgId;
+
+  // Trigger (a): scope captured AND multi-Pitstop Org.
+  let scopePitstopNames = '';
+  if (typeof listOrgPitstops === 'function' && typeof getScopeSet === 'function') {
+    const pitstops = listOrgPitstops(orgId, dexId);
+    if (pitstops && pitstops.length >= 2) {
+      const scopeIds = getScopeSet(orgId, dexId, elementId, direction) || [];
+      scopePitstopNames = scopeIds
+        .map((pid) => (typeof getPitstopById === 'function' ? getPitstopById(pid) : null))
+        .filter(Boolean)
+        .map((p) => p.name)
+        .join(', ');
+    }
+  }
+
+  // Trigger (b): existing Agreements on this (operatorOrg, element name).
+  // Match by element NAME (the wizard works in display strings; the workspace
+  // dataElementSummary.name is the same string the picker tree shows).
+  let priorAgreementCount = 0;
+  let priorCounterpartyNames = [];
+  if (typeof listAgreementsForDex === 'function' && wiz && wiz.de) {
+    const matches = listAgreementsForDex(dexId).filter(
+      (agr) => agr.operatorOrgId === orgId
+        && agr.dataElementSummary
+        && agr.dataElementSummary.name === wiz.de
+    );
+    priorAgreementCount = matches.length;
+    // Dedup counterparty names so e.g. 3 amendments to the same agreement don't
+    // inflate the list.
+    const cpSet = {};
+    matches.forEach((m) => { if (m.counterpartyOrgName) cpSet[m.counterpartyOrgName] = true; });
+    priorCounterpartyNames = Object.keys(cpSet);
+  }
+
+  // Nothing to surface — fall through.
+  if (!scopePitstopNames && priorAgreementCount === 0) return false;
+
+  // Stash the resolved tuple so the modal CTAs can resume. The matchedIds
+  // list feeds highlightAgreementRows() on the View-existing CTA so the
+  // prior agreements that triggered the prompt pulse on the agreements list.
+  const matchedIds = (typeof listAgreementsForDex === 'function' && wiz && wiz.de)
+    ? listAgreementsForDex(dexId)
+        .filter((agr) => agr.operatorOrgId === orgId
+          && agr.dataElementSummary
+          && agr.dataElementSummary.name === wiz.de)
+        .map((agr) => agr.agreementId)
+    : [];
+  wiz.scopeExistsPending = { orgId, dexId, elementId, direction, matchedIds };
+
+  // Build the body copy. Both fragments are optional; we render whichever
+  // ones apply so a brand-new capture with no agreements vs an agreement
+  // with no scope yet both make sense.
+  const fragments = [];
+  if (scopePitstopNames) {
+    fragments.push(`Already routed through <strong>${escAttr(scopePitstopNames)}</strong>.`);
+  }
+  if (priorAgreementCount > 0) {
+    const cpFragment = priorCounterpartyNames.length
+      ? ` with <strong>${escAttr(priorCounterpartyNames.join(', '))}</strong>`
+      : '';
+    fragments.push(`You have <strong>${priorAgreementCount} existing Agreement${priorAgreementCount === 1 ? '' : 's'}</strong>${cpFragment}.`);
+  }
+
+  const elNameNode  = document.getElementById('scope-exists-element');
+  const elBodyNode  = document.getElementById('scope-exists-element-body');
+  const orgNode     = document.getElementById('scope-exists-org');
+  const pitstopNode = document.getElementById('scope-exists-pitstops');
+  if (elNameNode)  elNameNode.textContent  = elementName;
+  if (elBodyNode)  elBodyNode.textContent  = elementName;
+  if (orgNode)     orgNode.textContent     = orgName;
+  if (pitstopNode) {
+    // Use innerHTML because the fragments contain <strong> markup.
+    pitstopNode.innerHTML = fragments.join(' ');
+  }
+
+  openOverlay('scope-exists-modal');
+  return true;
+}
+
+/* Modal CTA — "View existing Agreements". Cancels the in-progress wizard
+   (its draft is auto-saved and reachable from the Drafts page) and routes
+   to the Agreements list. The pre-filter UX (filter by the picked element)
+   is a separate enhancement; for now the operator lands on the list and
+   can scan visually. */
+function scopeExistsGoToExisting() {
+  closeOverlay('scope-exists-modal');
+  const pending = wiz && wiz.scopeExistsPending;
+  const matchedIds = (pending && pending.matchedIds) || [];
+  if (wiz) wiz.scopeExistsPending = null;
+  if (typeof exitFlow === 'function') exitFlow();
+  if (typeof showWizardChrome === 'function') showWizardChrome(false);
+  if (typeof goto === 'function') goto('agreements');
+  if (typeof toast === 'function') {
+    toast('Wizard paused · draft saved · viewing existing Agreements');
+  }
+  if (matchedIds.length) highlightAgreementRows(matchedIds);
+}
+
+/* Modal CTA — "Create new Agreement". Resumes the wizard from where
+   wizardNext was suspended: advance past data-picker to cp-picker (the
+   normal next step when scope is already established). */
+function scopeExistsContinueNew() {
+  closeOverlay('scope-exists-modal');
+  if (wiz) wiz.scopeExistsPending = null;
+  // Advance the wizard one step — equivalent to falling through past the
+  // scope-capture interception that we just suspended for the prompt.
+  if (typeof wiz === 'object' && wiz.active) {
+    wiz.idx++;
+    if (typeof renderStepper === 'function') renderStepper();
+    if (typeof goto === 'function') goto(wizardSteps[wiz.idx].screen);
+    if (typeof syncWizardFoot === 'function') syncWizardFoot();
+  }
+}
+
+/* Pack-split-mapping duplicate detection (ADR 0028 §What permits, split
+   branch). The single-element / pack-same path is intercepted inside
+   wizardNext via maybePromptScopeAlreadyExists. The pack-split branch
+   jumps directly to wiz-terms via wizardJumpTo and bypasses that intercept,
+   so the equivalent per-member check is wired onto the "Continue to terms"
+   button (see index.html pack-split-mapping screen).
+
+   Reads element names from the static .ps-mapping-table rows (this screen
+   is a presentational demo — no JS-tracked assignments), then for each
+   element counts workspace agreements matching (operatorOrgId, element
+   name). Surfaces ALL conflicting members in one modal so the operator
+   sees the full picture before deciding. Returns true when the modal
+   opened (caller must skip the jump); false when no conflicts (fall
+   through to the original jump). */
+function maybePromptPackSplitConflicts() {
+  if (typeof listAgreementsForDex !== 'function') return false;
+  const orgId = (typeof currentOperatorOrgId === 'function') ? currentOperatorOrgId() : null;
+  const dexId = (typeof currentDexCode === 'function') ? currentDexCode() : null;
+  if (!orgId || !dexId) return false;
+
+  const elementNameNodes = document.querySelectorAll(
+    '.screen[data-screen="pack-split-mapping"] .ps-mapping-table .ps-elem-name'
+  );
+  if (!elementNameNodes.length) return false;
+
+  const allAgreements = listAgreementsForDex(dexId);
+  const conflicts = [];
+  const allMatchedIds = [];
+  elementNameNodes.forEach((node) => {
+    const name = node.textContent.trim();
+    if (!name) return;
+    const matches = allAgreements.filter(
+      (agr) => agr.operatorOrgId === orgId
+        && agr.dataElementSummary
+        && agr.dataElementSummary.name === name
+    );
+    if (matches.length === 0) return;
+    const cpSet = {};
+    matches.forEach((m) => {
+      if (m.counterpartyOrgName) cpSet[m.counterpartyOrgName] = true;
+      if (m.agreementId) allMatchedIds.push(m.agreementId);
+    });
+    conflicts.push({ name, count: matches.length, counterparties: Object.keys(cpSet) });
+  });
+
+  if (conflicts.length === 0) return false;
+
+  // Stash for the View-existing CTA — drives highlightAgreementRows() so
+  // the prior agreements that triggered this prompt pulse on the list.
+  window.__packSplitConflictsPendingIds = allMatchedIds;
+
+  const orgName = (typeof getOrg === 'function' && getOrg(orgId) && getOrg(orgId).name)
+    || ((typeof ORGS !== 'undefined' && ORGS[orgId] && ORGS[orgId].name))
+    || orgId;
+  const titleNode = document.getElementById('pack-split-conflicts-title');
+  const orgNode   = document.getElementById('pack-split-conflicts-org');
+  const listNode  = document.getElementById('pack-split-conflicts-list');
+  if (titleNode) {
+    titleNode.textContent = conflicts.length === 1
+      ? '1 element in this pack is already in use'
+      : `${conflicts.length} elements in this pack are already in use`;
+  }
+  if (orgNode) orgNode.textContent = orgName;
+  if (listNode) {
+    listNode.innerHTML = conflicts.map((c) => {
+      const cpFragment = c.counterparties.length
+        ? ` with <strong>${escAttr(c.counterparties.join(', '))}</strong>`
+        : '';
+      return `<li><strong>${escAttr(c.name)}</strong> · ${c.count} existing Agreement${c.count === 1 ? '' : 's'}${cpFragment}</li>`;
+    }).join('');
+  }
+
+  openOverlay('pack-split-conflicts-modal');
+  return true;
+}
+
+/* Pack-split conflicts CTA — "View existing Agreements". Exits the wizard
+   (draft is auto-saved) and routes to the Agreements list. Mirrors
+   scopeExistsGoToExisting for consistency. */
+function packSplitConflictsViewExisting() {
+  closeOverlay('pack-split-conflicts-modal');
+  const matchedIds = (window.__packSplitConflictsPendingIds || []).slice();
+  window.__packSplitConflictsPendingIds = null;
+  if (typeof exitFlow === 'function') exitFlow();
+  if (typeof showWizardChrome === 'function') showWizardChrome(false);
+  if (typeof goto === 'function') goto('agreements');
+  if (typeof toast === 'function') {
+    toast('Wizard paused · draft saved · viewing existing Agreements');
+  }
+  if (matchedIds.length) highlightAgreementRows(matchedIds);
+}
+
+/* Pack-split conflicts CTA — "Continue anyway". Closes the modal and
+   completes the original jump to wiz-terms that was deferred. */
+function packSplitConflictsContinue() {
+  closeOverlay('pack-split-conflicts-modal');
+  if (typeof toast === 'function') {
+    toast('Continue → terms · then review · then submit (creates 1 pack + 4 member Agreements)');
+  }
+  if (typeof wiz === 'object' && wiz.active && typeof wizardJumpTo === 'function') {
+    wiz.viaPackSplit = true;
+    wizardJumpTo(wizardSteps.findIndex((s) => s.screen === 'wiz-terms'));
+  } else if (typeof goto === 'function') {
+    goto('wiz-terms');
+  }
+}
+
+/* Pack-split conflicts CTA — "Edit assignments". Just closes the modal;
+   user stays on pack-split-mapping and can drop conflicting rows or
+   change counterparties. */
+function packSplitConflictsEdit() {
+  closeOverlay('pack-split-conflicts-modal');
+}
+
+/* ---------- Row highlight pulse — generic API ----------
+   Pulses one or more list items so the operator can spot what just
+   happened after navigation. Used by:
+     · duplicate-detection modals → highlight conflicting prior agreements
+     · wizard "Back to inbox"      → highlight the newly-created agreement
+     · ap-success "Back to inbox"  → highlight the just-accepted agreement
+   The pulse is defined in components.css (.row-highlight-pulse, 2-iter
+   ease-out, ~2.4s). Auto-cleans after 2.6s. Works on any element type
+   that carries the targeting attribute — <tr> for table rows, <div>
+   for inbox cards, etc. (see components.css for the selector rules).
+
+   highlightElements(selectors)
+     Lowest-level entry. selectors: string | string[]. Defers to rAF,
+     retries up to ~300ms if the list hasn't rendered yet, scrolls the
+     first match into view, auto-cleans the class after 2.6s. */
+function highlightElements(selectors) {
+  const selectorList = Array.isArray(selectors) ? selectors : [selectors];
+  if (!selectorList.length) return;
+  const apply = (attempt) => {
+    const seen = new Set();
+    const elements = [];
+    selectorList.forEach((sel) => {
+      document.querySelectorAll(sel).forEach((el) => {
+        if (!seen.has(el)) { seen.add(el); elements.push(el); }
+      });
+    });
+    if (elements.length === 0) {
+      // The destination list may not have rendered yet — retry up to ~300ms.
+      if (attempt < 3) setTimeout(() => apply(attempt + 1), 100);
+      return;
+    }
+    elements.forEach((el) => {
+      // Strip any prior pulse so re-firing restarts the animation cleanly.
+      el.classList.remove('row-highlight-pulse');
+      // Force a reflow so the re-added class restarts the animation.
+      void el.offsetWidth;
+      el.classList.add('row-highlight-pulse');
+    });
+    // Scroll the first match into view if it's offscreen.
+    if (typeof elements[0].scrollIntoView === 'function') {
+      elements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    // Auto-clean after the 2-iteration × 1.2s animation completes
+    // (+ a small buffer so the final keyframe state is reached).
+    setTimeout(() => {
+      elements.forEach((el) => el.classList.remove('row-highlight-pulse'));
+    }, 2600);
+  };
+  // Defer to the next frame so any pending render from a preceding
+  // goto() has flushed before we query the DOM.
+  requestAnimationFrame(() => apply(0));
+}
+
+/* Pulse rows for one or more agreement IDs. Targets any element with
+   a matching data-agreement-id attribute — covers both the agreements-
+   list <tr> rows and the inbox-card <div>s. Scopes the selector to
+   .screen.active so an inbox-card on a hidden screen doesn't pick up
+   the pulse when the user is actually on the agreements list (and
+   vice-versa). */
+function highlightAgreementRows(agreementIds) {
+  if (!Array.isArray(agreementIds) || !agreementIds.length) return;
+  highlightElements(
+    agreementIds.map((id) => `.screen.active [data-agreement-id="${cssEscapeId(id)}"]`)
+  );
+}
+
+/* Pulse rows for one or more message IDs (workspace MSG-… ids). The
+   messages-list renderer stamps data-msg-id on every row; the inbox
+   card stamps it too for message-derived items. */
+function highlightMessageRows(messageIds) {
+  if (!Array.isArray(messageIds) || !messageIds.length) return;
+  highlightElements(
+    messageIds.map((id) => `.screen.active [data-msg-id="${cssEscapeId(id)}"]`)
+  );
+}
+
+/* ---------- Pending-highlight bus ----------
+   Cross-screen handoff: a flow on screen A (wizard, approve, compose)
+   stashes the just-created/accepted/sent item id; the CTA that routes
+   to screen B (inbox, agreements list, messages) consumes the stash
+   and fires the highlight. Keeps the next-card buttons free of
+   per-flow inline knowledge of agreement IDs.
+
+   Two kinds: 'agreement' and 'message'. Each is single-shot — the
+   consumer clears the stash so a later unrelated navigation doesn't
+   accidentally re-fire the pulse. */
+function setPendingAgreementHighlight(agreementId) {
+  if (!agreementId) return;
+  window.__pendingHighlight = { kind: 'agreement', ids: [agreementId] };
+}
+function setPendingMessageHighlight(messageId) {
+  if (!messageId) return;
+  window.__pendingHighlight = { kind: 'message', ids: [messageId] };
+}
+function consumePendingHighlight() {
+  const pending = window.__pendingHighlight;
+  window.__pendingHighlight = null;
+  if (!pending || !pending.ids || !pending.ids.length) return;
+  if (pending.kind === 'message') highlightMessageRows(pending.ids);
+  else highlightAgreementRows(pending.ids);
+}
+
+/* Tiny helper — escapes characters that would break a CSS attribute-
+   selector when interpolated. Agreement IDs are simple (AGR-2026-04829)
+   but a defensive escape keeps us safe if the fixture shape ever
+   changes. */
+function cssEscapeId(id) {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(id);
+  return String(id).replace(/["\\]/g, '\\$&');
+}
+
+/* Settings → Pitstops "Reset Pitstop scopes" button (demo-only).
+   Clears captured element-scope entries from both workspace.pitstopElementScope
+   and the script-level PITSTOP_ELEMENT_SCOPE global, then re-renders the
+   Settings page so the toggles reflect the fixture defaults. Required
+   because workspace persistence (intentionally) survives reload — after
+   the operator captures scope once, the wizard's scope-capture step won't
+   fire again on that element without a reset. */
+function resetCapturedPitstopScopesFromSettings() {
+  if (typeof clearCapturedPitstopScopes !== 'function') return;
+  clearCapturedPitstopScopes();
+  if (typeof renderSettingsPitstops === 'function') renderSettingsPitstops();
+  if (typeof toast === 'function') {
+    toast('Pitstop scopes reset to seeded fixtures · multi-Pitstop scope-capture step will fire again');
+  }
 }
 
 function agreementDoctorClear() {
@@ -5253,7 +6554,7 @@ function confirmExtend() {
   toast('Agreement extended by ' + extendMonths + ' months · audit-logged');
   goto('detail');
   setTimeout(() => {
-    const body = document.querySelector('.screen[data-screen="detail"] .detail-body');
+    const body = document.getElementById('detail-body');
     if (body && !body.querySelector('.renewed-banner')) {
       const b = document.createElement('div');
       b.className = 'renewed-banner';
@@ -5265,7 +6566,6 @@ function confirmExtend() {
       if (k && k.textContent === 'Extended until') v.innerHTML = '30 Sep 2027 <span style="color:var(--g-50)">(2 extensions)</span>';
     });
   }, 100);
-  if (flowActive === 'extend') exitFlow();
 }
 
 function confirmClaim() { closeOverlay('claim-modal'); toast('Claimed · moved to your Mine stack'); }
@@ -5357,9 +6657,6 @@ function dismissMigration(btn) {
   const panel = btn.closest('.migration-panel');
   if (panel) panel.style.display = 'none';
   toast('Migration notice dismissed · glossary remains in footer');
-  if (flowActive === 'migration') {
-    setTimeout(() => { goto('inbox-tx'); toast('Welcome to the new portal — your Drafts are in the inbox'); exitFlow(); }, 800);
-  }
 }
 
 /* ---------- Cross-DEX warning acknowledge ---------- */
@@ -5439,16 +6736,10 @@ const SHELL_CONFIG = {
   'inbox-all':      { skip: true },
   'empty':          { skip: true },
 
-  // Concept-only reference screens — no shell (intentional)
-  'found':          { skip: true, reason: 'concept-reference' },
-  'sp-variants':    { skip: true, reason: 'concept-reference' },
-  'dropdown':       { skip: true, reason: 'concept-reference' },
-
   // Real app screens — inject shell with the relevant sidebar item active
   'overview':       { skip: true }, /* Stakeholder pitch brief — standalone, no portal shell */
   'adrs':           { skip: true }, /* ADRs index reference — standalone */
   'risks':          { skip: true }, /* Risk register reference — standalone */
-  'dashboard':      { sidebarActive: 'Inbox' }, /* Dashboard dropped from primary nav; falls back to Inbox highlight */
   'agreements':     { sidebarActive: 'Agreements' },
   'pack-detail':    { sidebarActive: 'Agreements' }, /* Agreement pack detail page per ADR 0027 — sits under Agreements in the in-app sidebar */
   'drafts':         { sidebarActive: 'Drafts' }, /* Drafts promoted to primary nav item per new IA */
@@ -5472,8 +6763,6 @@ const SHELL_CONFIG = {
   'ap-decide':      { sidebarActive: 'Inbox' },
   'ap-success':     { sidebarActive: 'Inbox' },
   'warn-inline':    { sidebarActive: 'Agreements' },
-  'warn-bulk':      { sidebarActive: 'Agreements' },
-  'warn-chip':      { sidebarActive: 'Inbox' },
   'migration':      { sidebarActive: 'Inbox' }
 };
 
@@ -5804,7 +7093,7 @@ function rebuildAllShells() {
         'Settings':      'settings'
       };
       if (SIDEBAR_ROUTES[label]) {
-        if (flowActive) exitFlow();
+        if (typeof exitFlow === 'function') exitFlow();
         goto(SIDEBAR_ROUTES[label]);
       } else {
         toast('Routing to ' + label + ' (placeholder)');
@@ -5995,6 +7284,121 @@ function _closeColleaguePopOnEsc(e) {
  * their home DEX (resolver picks them up). Platform-tier colleague → set
  * pinnedActiveUserId and re-render chrome. Reuses the 200ms avatar cross-fade
  * by routing through applyPersonaChrome. */
+/* switchToAccount(userId) — unified "Switch to" for every user in
+ * workspace.users. Generalises switchToColleague (same-org pin) to handle
+ * cross-org and cross-persona switches: pivots the persona category when
+ * the target's persona-target differs, then pins to the specific user
+ * (so non-default users in a category surface correctly), then navigates
+ * to the target's home DEX. The profile-menu "Switch to {Name}" rows
+ * route through this; switchToColleague is preserved for the legacy
+ * within-org popover that doesn't need the persona pivot. */
+function switchToAccount(userId) {
+  const lookup = (typeof getUser === 'function') ? (id) => getUser(id) : (id) => USERS[id];
+  const user = lookup(userId);
+  if (!user) return;
+
+  // 1. Persona-category pivot. Reverse-lookup the user in PERSONA_TO_USER —
+  //    if they're a persona default (Marcus / Pat / Sarah), use that persona;
+  //    otherwise pick a persona whose category matches the target user's
+  //    personaType (participant users land on the 'participant' category;
+  //    platform-tier users land on 'platform-admin').
+  let targetPersona = null;
+  if (typeof PERSONA_TO_USER !== 'undefined') {
+    for (const personaId of Object.keys(PERSONA_TO_USER)) {
+      if (PERSONA_TO_USER[personaId] === userId) { targetPersona = personaId; break; }
+    }
+  }
+  if (!targetPersona) {
+    targetPersona = (user.personaType === 'platform-admin') ? 'platform-admin' : 'participant';
+  }
+
+  if (targetPersona !== currentPersona && typeof switchPersona === 'function') {
+    // switchPersona clears pinnedActiveUserId and runs all the chrome
+    // refreshers. We pin in the next step if the target isn't the persona
+    // default.
+    switchPersona(targetPersona);
+  }
+
+  // 2. Pin to the specific user IF they aren't the persona default — the
+  //    resolver's same-org-colleague step won't otherwise pick them up.
+  const isPersonaDefault = (typeof PERSONA_TO_USER !== 'undefined') && PERSONA_TO_USER[targetPersona] === userId;
+  if (!isPersonaDefault) {
+    pinnedActiveUserId = userId;
+    if (typeof patchWorkspaceMeta === 'function') {
+      patchWorkspaceMeta({ activeUserId: userId });
+    }
+  } else {
+    pinnedActiveUserId = null;
+    if (typeof patchWorkspaceMeta === 'function') {
+      patchWorkspaceMeta({ activeUserId: userId });
+    }
+  }
+
+  // 3. Navigate to the user's home DEX so the chrome lands on a populated
+  //    surface (an account with no seat on the current DEX would otherwise
+  //    show empty states until the operator clicks the workspace pill).
+  const orgId = user.primaryOrgId;
+  const affLookup = (typeof getUserOrgAffiliation === 'function')
+    ? (uid, oid) => getUserOrgAffiliation(uid, oid)
+    : (uid, oid) => (typeof USER_ORG_AFFILIATIONS !== 'undefined' ? USER_ORG_AFFILIATIONS[`${uid}-${oid}`] : null);
+  const aff = orgId ? affLookup(userId, orgId) : null;
+  let homeDexCode = null;
+  if (aff && aff.dexRoles) {
+    const dexKeys = Object.keys(aff.dexRoles);
+    if (dexKeys.length) homeDexCode = dexKeys[0];
+  }
+  if (homeDexCode && typeof switchDex === 'function' && homeDexCode !== currentDexCode()) {
+    switchDex(homeDexCode, { silent: true });
+  } else {
+    // Same DEX (or platform-tier without a per-DEX seat) — just re-apply
+    // chrome so the avatar / role chip / sidebar reflect the pinned user.
+    if (typeof applyPersonaChrome === 'function') applyPersonaChrome();
+    if (typeof refreshRoleChips === 'function') refreshRoleChips();
+  }
+
+  // 4. Re-render the currently-visible page so its content reflects the new
+  //    active user.
+  refreshActiveScreenAfterAccountSwitch();
+
+  if (typeof toast === 'function') toast(`Switched to ${user.name}`);
+}
+
+/* Re-render the currently-visible page after an account / persona / DEX
+ * pivot so its content reflects the new active user.
+ *
+ * switchPersona / switchDex already refresh chrome (sidebar badges, inbox
+ * cards, role chips, doctor context). But page-level workspace renderers
+ * — drafts, agreements, messages, message-detail, agreement detail, packs
+ * — keep their stale tbody / cards until the operator navigates away and
+ * back. Without this call, switching from a TX user to an HX user on the
+ * Agreements page leaves TX agreement rows on screen.
+ *
+ * Routing through goto() re-runs the matching workspace renderer, which
+ * filters by the new activeUserId / activeDexId. Selected detail records
+ * (Agreement, Message) get cleared first because they belonged to the
+ * previous seat — the renderer would otherwise show a "not found" toast
+ * or render a foreign-DEX record. Drafts / Agreements / Messages / Inbox
+ * are user-or-DEX filtered, so they self-correct on re-render.
+ *
+ * Called from every account-switching entry point: switchToAccount (the
+ * unified profile-menu rows), switchToColleague (same-org popover +
+ * profile-menu "Switch colleague" group + off-DEX blocked modal CTA). */
+function refreshActiveScreenAfterAccountSwitch() {
+  if (typeof setSelectedAgreementId === 'function') setSelectedAgreementId(null);
+  if (typeof setSelectedMessageId === 'function')   setSelectedMessageId(null);
+  if (typeof document === 'undefined') return;
+  const activeScreen = document.querySelector('.screen.active');
+  const activeScreenName = activeScreen ? activeScreen.dataset.screen : null;
+  if (!activeScreenName || typeof goto !== 'function') return;
+  // Detail / message-detail with a cleared selection would render an empty
+  // state. Route those back to their list view so the new account lands on
+  // populated content; everything else re-renders in place.
+  let target = activeScreenName;
+  if (activeScreenName === 'detail')          target = 'agreements';
+  if (activeScreenName === 'message-detail')  target = 'messages';
+  goto(target);
+}
+
 function switchToColleague(userId) {
   if (!USERS[userId]) return;
   // Close the popover
@@ -6012,6 +7416,9 @@ function switchToColleague(userId) {
     pinnedActiveUserId = userId;
     if (typeof applyPersonaChrome === 'function') applyPersonaChrome();
     if (typeof refreshRoleChips === 'function') refreshRoleChips();
+    // Re-render the visible page so it reflects the new seat (was the bug
+    // where switching colleagues left the previous user's content on screen).
+    refreshActiveScreenAfterAccountSwitch();
     toast(`Now viewing as ${user.name} (platform-tier colleague)`);
     return;
   }
@@ -6027,9 +7434,15 @@ function switchToColleague(userId) {
   if (homeDexCode && typeof switchDex === 'function') {
     // switchDex re-applies chrome + role chip
     switchDex(homeDexCode);
+    // switchDex doesn't re-render the open page's main content — refresh
+    // explicitly so e.g. switching from Marcus (TX) to David (HX) on the
+    // Agreements page replaces TX rows with HX rows instead of leaving the
+    // stale TX list visible.
+    refreshActiveScreenAfterAccountSwitch();
   } else {
     // Fall back: just re-render with what we have
     if (typeof applyPersonaChrome === 'function') applyPersonaChrome();
+    refreshActiveScreenAfterAccountSwitch();
   }
 }
 
@@ -6108,25 +7521,46 @@ function syncProfilePersonaSwitchRow() {
     parent.insertBefore(sep, anchor);
   }
 
-  // ---------- Group 2 — Demo: switch persona category ----------
-  const heading2 = document.createElement('div');
-  heading2.className = 'profile-switcher-heading';
-  heading2.style.cssText = 'font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--g-50);padding:6px 12px 4px';
-  heading2.textContent = 'Demo: switch persona category';
-  parent.insertBefore(heading2, anchor);
+  // ---------- Group 2 — Switch to other accounts (cross-org / cross-persona) ----------
+  // Every workspace user the active operator can switch identity into, minus
+  // the same-org colleagues already listed above and the currently-active
+  // user. Each row says "Switch to {Name}" (uniform affordance with Group 1),
+  // surfaces the org as secondary copy, and routes through switchToAccount
+  // which handles the persona pivot + pin + DEX nav.
+  const allAccounts = (typeof listSwitchableAccounts === 'function') ? listSwitchableAccounts() : [];
+  const colleagueIds = new Set(colleagues.map(c => c.userId));
+  const otherAccounts = allAccounts.filter(a => !colleagueIds.has(a.userId));
 
-  const order = ['participant', 'sp-operator', 'platform-admin'];
-  order.filter(p => p !== currentPersona && PERSONAS[p]).forEach(personaId => {
-    const p = PERSONAS[personaId];
-    const isPlatform = personaId === 'platform-admin';
-    const icon = isPlatform ? 'eye' : 'user-share';
-    const row = document.createElement('div');
-    row.className = 'profile-item profile-persona-switch-row';
-    row.dataset.personaTarget = personaId;
-    row.innerHTML = `<i class="ti ti-${icon}"></i>View as ${p.name} <span style="color:var(--g-50);font-weight:400;margin-left:auto">${p.orgName}</span>`;
-    row.onclick = () => { closeProfile(); switchPersona(personaId); };
-    parent.insertBefore(row, anchor);
-  });
+  if (otherAccounts.length) {
+    const heading2 = document.createElement('div');
+    heading2.className = 'profile-switcher-heading';
+    heading2.style.cssText = 'font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--g-50);padding:6px 12px 4px';
+    heading2.textContent = 'Switch to account';
+    parent.insertBefore(heading2, anchor);
+
+    // Group platform-tier accounts at the bottom so the participant-side
+    // network (the bulk of demo accounts) leads, matching the rail/sidebar
+    // emphasis. Within each tier, sort by name for stable ordering.
+    const sorted = otherAccounts.slice().sort((a, b) => {
+      const tierRank = (acct) => acct.personaType === 'platform-admin' ? 1 : 0;
+      const tierDiff = tierRank(a) - tierRank(b);
+      if (tierDiff !== 0) return tierDiff;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+    sorted.forEach(acct => {
+      const isPlatform = acct.personaType === 'platform-admin';
+      const icon = isPlatform ? 'eye' : 'user-share';
+      const row = document.createElement('div');
+      row.className = 'profile-item profile-persona-switch-row';
+      row.dataset.personaTarget = acct.personaTarget || ''; // empty for non-default users
+      row.dataset.switchUserId = acct.userId;
+      const subText = acct.orgName + (acct.homeDexLabel ? ` · ${acct.homeDexLabel}` : '');
+      row.innerHTML = `<i class="ti ti-${icon}"></i>Switch to ${acct.name} <span style="color:var(--g-50);font-weight:400;margin-left:auto">${subText}</span>`;
+      row.onclick = () => { closeProfile(); switchToAccount(acct.userId); };
+      parent.insertBefore(row, anchor);
+    });
+  }
 }
 
 /* computeSidebarBadgeCounts — derive the Inbox + Drafts sidebar counts from
@@ -6245,7 +7679,7 @@ function buildPortalSidebarHtml(activeLabel, opts) {
 }
 
 function injectPortalShells() {
-  const reservedClasses = ['canvas-meta', 'canvas-tip', 'live-region', 'flow-ribbon', 'wizard-bar'];
+  const reservedClasses = ['canvas-meta', 'canvas-tip', 'live-region', 'wizard-bar'];
 
   document.querySelectorAll('.screen').forEach(screen => {
     const id = screen.dataset.screen;
@@ -6326,43 +7760,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // pages — hardcoded shells diverging from buildPortalTopbarHtml / buildPortalSidebarHtml.
   if (typeof rebuildAllShells === 'function') rebuildAllShells();
 
-  // Rail clicks — the outer rail is the canonical scene picker (Phase 3 of the
-  // rail-as-scene plan). Every nav-link and flow-link routes through this single
-  // delegated handler:
-  //   1. If the element carries data-scene-* attrs, the click declares a complete
-  //      scene tuple → applyScene() hard-resets the app and applies the scene.
-  //   2. Otherwise (prototype-meta items: overview, adrs, risks, found) the click
-  //      is a plain screen navigation → goto() runs unchanged.
-  // Either way `flowActive` is exited; this matches the prior behaviour where any
-  // rail click cleared the guided-flow ribbon.
-  function handleRailClick(el) {
-    if (typeof flowActive !== 'undefined' && flowActive && typeof exitFlow === 'function') {
-      exitFlow();
-    }
-    // Outer-rail highlight: only the clicked element gets .active. Removes
-    // .active from every other rail item first to handle the case where
-    // multiple items share data-screen (e.g., 4 inbox-tx rail items across
-    // Marcus / Pat / 2× Sarah scenes). Done BEFORE applyScene runs so the
-    // visual state is correct even if downstream code reads it.
-    document.querySelectorAll('.rail .nav-link, .rail .flow-link').forEach(item => {
-      item.classList.toggle('active', item === el);
-    });
-
-    const scene = (typeof readSceneFromAttrs === 'function') ? readSceneFromAttrs(el) : null;
-    // A scene is "active" if it declares any of the binding fields (user/dex/scenario/wizard/flow).
-    // Prototype-meta items have data-screen only and fall through to plain goto().
-    const hasSceneBinding = scene && (scene.user || scene.dex || scene.scenario || scene.wizard || scene.flow);
-    if (hasSceneBinding && typeof applyScene === 'function') {
-      applyScene(scene);
-    } else {
-      const screen = el.dataset.screen;
-      if (screen) goto(screen);
-    }
-  }
-  // Bind to every rail item — nav-link and flow-link both use this handler.
-  document.querySelectorAll('.rail .nav-link, .rail .flow-link').forEach(el => {
-    el.addEventListener('click', () => handleRailClick(el));
-  });
+  // Outer rail was retired in Phase 5 of ADR 0034. Navigation now happens
+  // via real product chrome (in-app sidebar, workspace pill, overview CTA
+  // pair) and via the auto-demo runner. The handleRailClick handler and
+  // `.rail .nav-link` / `.rail .flow-link` bindings used to live here.
 
   // Filter chip group toggling
   document.querySelectorAll('.filter-chips').forEach(group => {
@@ -6423,7 +7824,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'Settings': 'settings'
       };
       if (routes[label]) {
-        if (flowActive) exitFlow();
+        if (typeof exitFlow === 'function') exitFlow();
         goto(routes[label]);
       } else {
         toast('Routing to ' + label + ' (placeholder)');

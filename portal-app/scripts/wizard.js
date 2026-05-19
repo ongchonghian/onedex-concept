@@ -21,6 +21,19 @@ function showWizardChrome(show) {
   wiz.active = show;
 }
 
+/* exitFlow — wizard chrome cleanup. Historically lived in flows.js alongside
+   the rail-as-scene runFlow / setFlow machinery; that machinery was retired
+   in Phase 5 of ADR 0034. This stub preserves the name (still called from
+   wizard cancellation, modal confirmations, etc.) but does only the wizard
+   cleanup the outer rail no longer needs. */
+function exitFlow() {
+  if (typeof wiz !== 'undefined') {
+    wiz.active = false;
+    wiz.viaPackSplit = false;
+  }
+  document.body.classList.remove('in-wizard');
+}
+
 function ensureWizardDraft() {
   if (wiz.draftId) return wiz.draftId;
   const activeUser = typeof activeUserId === 'function' ? activeUserId() : 'marcus';
@@ -77,8 +90,26 @@ function startWizard(type, opts = {}) {
   wiz.viaPackSplit = false; // fresh wizard run — clear any stale pack-split memory
   // Clear element-picked state and the pitstop scope-capture stash so a fresh
   // run resolves from scratch rather than inheriting the previous run's picks.
+  // wiz.isPack defaults to true (matching the static picker's pre-selected
+  // Vessel arrival pack), but the resolveDataPickerDefaults() call below
+  // re-syncs everything from the picker tree's `.leaf.active` state so the
+  // wizard state matches what the user actually sees, not what a prior run
+  // left behind. Without this, picking a single element in one run then
+  // restarting the wizard would carry wiz.isPack=false into a fresh run
+  // where the default Vessel arrival pack is selected — pack-fork wouldn't
+  // fire, and the operator would skip into cp-picker on a pack pick.
   wiz.deId = null;
   wiz.scopeCapture = null;
+  wiz.scopeExistsPending = null;
+  // Re-sync wiz.de / wiz.isPack from the picker tree's active leaf ONLY for
+  // fresh runs starting from step 0. When the wizard resumes a draft
+  // (resumeDraftById passes startAt: 2), hydrateWizardFromDraft has already
+  // populated wiz.de / wiz.cp with the draft's values — overwriting them
+  // here would discard the resumed draft.
+  const startingFromStepZero = !opts.startAt;
+  if (startingFromStepZero && typeof resolveDataPickerDefaults === 'function') {
+    resolveDataPickerDefaults();
+  }
   wizardSteps = wiz.type === 'SERVICE_PROVIDER' ? WIZARD_STEPS_SP : WIZARD_STEPS_DIRECT;
   if (opts.template) wiz.idx = wizardSteps.length - 2; // jump to review
 
@@ -141,7 +172,7 @@ function wizardNext() {
   // Pack fork interception (ADR 0027): when advancing from data-picker with a Data element pack
   // selected, divert into the pack-fork screen so the operator can choose Same vs Split
   // counterparties. wiz.idx stays at data-picker; pack-fork's own buttons resume the flow:
-  //   · Same  → wizardNext() again (this branch falls through to cp-picker)
+  //   · Same  → wizardNext() again (this branch falls through to the duplicate check below)
   //   · Split → goto('pack-split-mapping') → wizardJumpTo(wiz-terms)
   const currentScreen = wizardSteps[wiz.idx] && wizardSteps[wiz.idx].screen;
   if (currentScreen === 'data-picker' && wiz.isPack) {
@@ -153,10 +184,11 @@ function wizardNext() {
     }
   }
 
-  // Pitstop scope-capture interception (ADR 0028): when advancing from data-picker on a
-  // multi-Pitstop Org with an unscoped element, divert into wiz-scope-capture so the
-  // operator establishes scope inline. Falls through to cp-picker once captured.
-  // Mirrors the pack-fork interception pattern. Single-Pitstop Orgs skip this entirely.
+  // Element-already-in-use check (ADR 0028 §What permits). Fires when the
+  // operator is about to advance past data-picker (single element) OR past
+  // pack-fork "Same counterparty" (pack with one counterparty for the whole
+  // pack). Without this here, the screenshot bug repeats: picking the same
+  // pack element twice creates duplicate Agreement-pack records.
   //
   // Resolution order (live-first):
   //   1. The element the operator just clicked in the picker (wiz.deId, set by the
@@ -165,11 +197,11 @@ function wizardNext() {
   //      maps from wiz.direction ('send' → operator produces, 'receive' → consumes).
   //   2. Scenario fallback — preserved so the authored scenario pills (A–F) still
   //      demo correctly when a user enters the wizard via a pre-staged scene.
-  //   3. Packs skip entirely; pack-fork is the next step for them, and scope-set
-  //      is captured per member element after split-mapping.
-  if (currentScreen === 'data-picker' && typeof shouldFireScopeCaptureStep === 'function' && !wiz.isPack) {
+  //   3. Split-mapping path: per-element duplicate-checking would need to
+  //      iterate the assigned counterparties; deferred to that screen.
+  if (currentScreen === 'data-picker') {
     const visibleScreen = document.querySelector('.screen.active')?.dataset.screen;
-    if (visibleScreen !== 'wiz-scope-capture' && visibleScreen !== 'pack-fork') {
+    if (visibleScreen !== 'wiz-scope-capture' && visibleScreen !== 'pack-split-mapping') {
       const scenario = (typeof MP_SCENARIOS !== 'undefined') ? MP_SCENARIOS[activeMpScenario] : null;
       const liveOrgId    = (typeof currentOperatorOrgId === 'function') ? currentOperatorOrgId() : null;
       const liveDexId    = (typeof currentDexCode      === 'function') ? currentDexCode()      : null;
@@ -180,11 +212,22 @@ function wizardNext() {
       const elementId = liveElementId || (scenario && scenario.element);
       const direction = wiz.direction === 'receive' ? 'consumes' : 'produces';
       if (orgId && dexId && elementId) {
-        const fires = shouldFireScopeCaptureStep(orgId, dexId, elementId, direction);
-        if (fires) {
-          // Stash the resolved tuple so the scope-capture renderer + confirm
-          // handler read identical values (avoids a second resolve that might
-          // diverge if MP_SCENARIOS were swapped mid-flow).
+        // Duplicate-prevention + scope-already-exists prompt. Runs for
+        // both single-element and pack-with-same-counterparty paths so
+        // packs can't bypass it (was the bug behind the 4-duplicate
+        // screenshot — pack agreements never reached this check).
+        if (typeof maybePromptScopeAlreadyExists === 'function'
+            && maybePromptScopeAlreadyExists(orgId, dexId, elementId, direction)) {
+          return;
+        }
+
+        // Pitstop scope-capture step (ADR 0028) — first-use only. Packs
+        // skip this entirely; scope is captured per member element after
+        // split-mapping. Single-Pitstop Orgs also skip it (their routing
+        // is unambiguous; no choice to make).
+        if (!wiz.isPack
+            && typeof shouldFireScopeCaptureStep === 'function'
+            && shouldFireScopeCaptureStep(orgId, dexId, elementId, direction)) {
           wiz.scopeCapture = { orgId, dexId, elementId, direction };
           goto('wiz-scope-capture');
           syncWizardFoot();
@@ -363,6 +406,12 @@ function submitWizard() {
     const agreement = getAgreementById(result.agreementId);
     setSelectedAgreementId(result.agreementId);
     wiz.draftId = null;
+    // Stash the new agreement's id so the success-screen "Back to inbox"
+    // CTA pulses the matching inbox card on landing (consumed via
+    // consumePendingHighlight()).
+    if (typeof setPendingAgreementHighlight === 'function') {
+      setPendingAgreementHighlight(agreement.agreementId);
+    }
 
     const cpShort = agreement.counterpartyOrgName.split(' ').slice(0, 2).join(' ');
     if (packCard) packCard.hidden = true;
@@ -385,6 +434,11 @@ function submitWizard() {
     if (metaText) metaText.innerHTML = '<strong>What happens next:</strong> ' + cpShort + ' has 30 days to accept. Reminders fire at 21 / 14 / 7 days. After acceptance, data flow begins within 5 minutes.';
     setTimeout(() => toast(agreement.agreementId + ' created · invitation sent to ' + agreement.counterpartyOrgName), 200);
   }
+
+  // Re-render every inbox screen so the new Pending Agreement appears
+  // immediately if the operator is sitting on the inbox in another tab/window
+  // — or pulses correctly when they hit "Back to inbox" from the success page.
+  if (typeof refreshInboxSurfaces === 'function') refreshInboxSurfaces();
 
   wiz.idx = wizardSteps.length - 1;
   renderStepper();

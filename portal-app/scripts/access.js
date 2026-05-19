@@ -236,6 +236,73 @@ function colleaguesForActiveUser() {
   return out;
 }
 
+/* Returns every other switchable user in workspace.users — i.e., the active
+   user's same-org colleagues PLUS users from other orgs (different participant
+   orgs and platform-tier admins). Drives the profile menu's "Switch to" list
+   which exposes every account, not just same-org colleagues.
+
+   Each row carries:
+     userId         — the workspace.users key (used by switchToAccount)
+     name, initials — display fields, cloned for safe rendering
+     orgId, orgName — surface the org affiliation so the menu can show the
+                      destination organisation as secondary copy
+     homeDexCode    — first DEX this user has a seat on; null for platform tier
+     homeDexLabel   — display label for homeDexCode
+     personaType    — 'participant' | 'platform-admin'; the renderer uses
+                      this to pick the right icon (eye for platform demos,
+                      user-share for participant accounts)
+     personaTarget  — the PERSONA_TO_USER reverse lookup result if this user
+                      is a persona default; null for non-default users.
+                      switchToAccount uses this to decide whether to call
+                      switchPersona or just set pinnedActiveUserId. */
+function listSwitchableAccounts() {
+  const users = _refUsers();
+  const orgs = _refOrgs();
+  const affiliations = _refAffiliations();
+  const activeUid = activeUserId();
+  if (!activeUid || !users[activeUid]) return [];
+
+  // Build a personaId by-userId reverse index so each account knows which
+  // persona category to pivot the chrome into (if any).
+  const personaTargetByUser = {};
+  if (typeof PERSONA_TO_USER !== 'undefined') {
+    Object.keys(PERSONA_TO_USER).forEach((personaId) => {
+      personaTargetByUser[PERSONA_TO_USER[personaId]] = personaId;
+    });
+  }
+
+  const out = [];
+  Object.keys(users).forEach((userId) => {
+    if (userId === activeUid) return;
+    const user = users[userId];
+    if (!user) return;
+    const orgId = user.primaryOrgId || null;
+    const org = orgId ? orgs[orgId] : null;
+    // Find the user's home DEX = first DEX their primary affiliation seats them on.
+    let homeDexCode = null;
+    if (orgId) {
+      const aff = affiliations[`${userId}-${orgId}`];
+      if (aff && aff.dexRoles) {
+        const dexKeys = Object.keys(aff.dexRoles);
+        if (dexKeys.length) homeDexCode = dexKeys[0];
+      }
+    }
+    const homeDexLabel = homeDexCode ? ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[homeDexCode] || homeDexCode) : null;
+    out.push({
+      userId,
+      name: user.name,
+      initials: user.initials,
+      orgId,
+      orgName: org ? org.name : '',
+      homeDexCode,
+      homeDexLabel,
+      personaType: user.personaType || 'participant',
+      personaTarget: personaTargetByUser[userId] || null
+    });
+  });
+  return out;
+}
+
 /* Returns a PERSONA-shaped descriptor for the active user — same fields the chrome
    reads from `PERSONAS[currentPersona]`, but resolved per (persona, DEX). Falls
    back to the persona's default descriptor when the resolver finds no user. */

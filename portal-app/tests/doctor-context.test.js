@@ -127,3 +127,4 @@ test('simulateAgreementRecord throws NO_ELIGIBLE_COUNTERPARTY when the operator 
     /NO_ELIGIBLE_COUNTERPARTY/
   );
 });
+
