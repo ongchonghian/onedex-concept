@@ -54,11 +54,9 @@
         dwell: 4400 },
 
       // ---- Open the pack-detail screen ----
-      // Navigate directly — the workspace-driven agreements list routes pack
-      // rows to Agreement detail; the pack-detail screen is reached from the
-      // "Part of pack" chip on that detail page. goto() here preserves the
-      // narrative without needing the double-hop in the headless smoke.
-      { action: 'goto', target: 'pack-detail' },
+      // Click the pack-parent row — app.js:2637 fires onclick="goto('pack-detail')"
+      // which lands us on the pack-detail screen directly.
+      { action: 'click', target: `.screen[data-screen="agreements"].active [data-agreement-id="${PACK_ID}"]`, dwell: 800 },
       { action: 'expect', target: '.screen[data-screen="pack-detail"].active [data-demo="pack-detail.members-table"]' },
 
       { action: 'annotate',
@@ -68,7 +66,8 @@
         dwell: 4600 },
 
       // ---- Send pack ----
-      // Annotate before clicking — Send pack navigates away to the composer.
+      // Annotate before clicking — the row-action Send-pack button fires a toast
+      // stub only (no navigation); we stay on pack-detail throughout.
       { action: 'annotate',
         anchor: '.screen[data-screen="pack-detail"].active [data-demo="pack.send-pack-btn"]',
         label: 'Step 4 of 4 — One gesture, four Messages',
@@ -77,8 +76,8 @@
 
       { action: 'click', target: '.screen[data-screen="pack-detail"].active [data-demo="pack.send-pack-btn"]', dwell: 800 },
 
-      // Terminal expect — Send pack navigates to compose; confirm we've landed there.
-      { action: 'expect', target: '.screen[data-screen="compose"].active' },
+      // Terminal expect — row-action Send-pack is a toast stub; we remain on pack-detail.
+      { action: 'expect', target: '.screen[data-screen="pack-detail"].active [data-demo="pack-detail.members-table"]' },
     ]
   };
 

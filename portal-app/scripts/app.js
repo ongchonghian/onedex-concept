@@ -774,7 +774,57 @@ function workspaceAgreementToDetailSeed(agreement) {
 }
 
 function renderAgreementsFromWorkspace() {
-  const rows = listAgreementsForDex(currentDexCode()).map(workspaceAgreementToAgreementsRow);
+  const dex = currentDexCode();
+  const flatAgreements = listAgreementsForDex(dex);
+
+  // Build pack-aware row list: pack-parent rows (from workspace.agreementPacks)
+  // group their members visually; flat agreements that are not pack members or
+  // pack stubs render as standalone rows. This ensures the workspace-driven
+  // agreements list matches the static-HTML prototype's pack grouping
+  // (ADR 0027) and that clicking a pack-parent row fires goto('pack-detail').
+  const packs = (typeof listAgreementPacksForDex === 'function')
+    ? listAgreementPacksForDex(dex)
+    : [];
+  const packMemberIdSet = new Set();
+  const packStubIdSet = new Set(); // pack-header stubs stored in agreements{}
+  packs.forEach((p) => {
+    packStubIdSet.add(p.packId);
+    (p.memberAgreementIds || []).forEach((id) => packMemberIdSet.add(id));
+  });
+
+  const rows = [];
+  packs.forEach((p) => {
+    // Pack-parent header row
+    rows.push({
+      kind: 'pack-parent',
+      id: p.packId,
+      name: p.name,
+      packTag: p.packTag,
+      childCount: p.childCount,
+      cpCount: p.cpCount,
+      element: p.element,
+      type: p.type,
+      status: p.status,
+      until: p.until,
+      actions: p.actions
+    });
+    // Pack-member rows — inline under the parent
+    (p.memberAgreementIds || []).forEach((memberId) => {
+      const agr = (typeof getAgreementById === 'function') ? getAgreementById(memberId) : null;
+      if (agr) {
+        const memberRow = workspaceAgreementToAgreementsRow(agr);
+        memberRow.kind = 'pack-member';
+        rows.push(memberRow);
+      }
+    });
+  });
+  // Append flat agreements that are not pack stubs or pack members
+  flatAgreements.forEach((agr) => {
+    if (packStubIdSet.has(agr.agreementId)) return; // skip pack-header stubs
+    if (packMemberIdSet.has(agr.agreementId)) return; // already emitted above
+    rows.push(workspaceAgreementToAgreementsRow(agr));
+  });
+
   SCREEN_RENDERERS['agreements'](rows);
   if (typeof renderDoctorAgreementsList === 'function') renderDoctorAgreementsList();
   if (typeof refreshDoctorAgreementPicker === 'function') refreshDoctorAgreementPicker();
@@ -1196,7 +1246,11 @@ function renderPackDetailFromWorkspace() {
   const memberRows = pack.memberAgreementIds
     .map((id) => getAgreementById(id))
     .filter(Boolean)
-    .map(workspaceAgreementToAgreementsRow);
+    .map((agr) => {
+      const row = workspaceAgreementToAgreementsRow(agr);
+      row.kind = 'pack-member';
+      return row;
+    });
   const parentRow = {
     kind: 'pack-parent',
     id: pack.packId,
@@ -2896,7 +2950,10 @@ SCREEN_RENDERERS['pack-detail'] = function renderPackDetailFromSeed(agreementsSe
         `<td><code class="agr-mono">${memberId}</code></td>` +
         `<td><span class="status-cell ${statusCls}"><span class="dot"></span>${status.label || ''}</span></td>` +
         `<td><span style="font-size:11px;color:var(--g-50)">Acknowledged · recent</span></td>` +
-        `<td class="row-actions"><button onclick="event.stopPropagation(); goto('detail')" title="Open"><i class="ti ti-arrow-right"></i></button></td>` +
+        `<td class="row-actions">` +
+          `<button data-demo="pack.send-pack-btn" onclick="event.stopPropagation(); toast('Opens Composer in pack mode · dispatches 1 Message per member')" title="Send pack now"><i class="ti ti-send"></i></button>` +
+          `<button onclick="event.stopPropagation(); goto('detail')" title="Open"><i class="ti ti-arrow-right"></i></button>` +
+        `</td>` +
       `</tr>`;
     }).join('');
   }

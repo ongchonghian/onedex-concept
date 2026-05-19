@@ -50,10 +50,21 @@ const SCRIPT_PATHS = [
  * the smoke needs the same. Walk every [onclick] node after scripts are
  * loaded and install the attribute's body as an addEventListener handler
  * that evaluates in the window's vm context where startWizard, goto, etc.
- * are defined. */
+ * are defined.
+ *
+ * Dynamic elements (e.g. pack-parent rows rendered by renderAgreementsListFromSeed
+ * via tbody.innerHTML) arrive after the initial walk. A MutationObserver
+ * covers them so click() on dynamically created rows fires their inline
+ * onclick the same way a real browser would. A WeakSet guards against
+ * double-wiring the same element if it is ever removed and re-inserted. */
 function wireInlineOnclickHandlers(window) {
-  window.document.querySelectorAll('[onclick]').forEach((el) => {
+  const wired = new WeakSet();
+
+  function wireOne(el) {
+    if (wired.has(el)) return;
     const code = el.getAttribute('onclick');
+    if (!code) return;
+    wired.add(el);
     el.addEventListener('click', () => {
       // Production browsers: setting .onclick via JS supersedes the inline
       // attribute. JSDOM under runScripts: 'outside-only' doesn't parse the
@@ -73,7 +84,25 @@ function wireInlineOnclickHandlers(window) {
       }
       catch (err) { console.error('inline onclick eval failed:', code, err.message); }
     });
+  }
+
+  window.document.querySelectorAll('[onclick]').forEach(wireOne);
+
+  // MutationObserver: catch elements inserted dynamically (e.g. tbody rows
+  // rebuilt by renderAgreementsListFromSeed). Walk every added node subtree
+  // and wire any [onclick] descendants the same way.
+  const observer = new window.MutationObserver((mutations) => {
+    for (const mut of mutations) {
+      for (const node of mut.addedNodes) {
+        if (node.nodeType !== 1) continue; // elements only
+        if (node.hasAttribute && node.hasAttribute('onclick')) wireOne(node);
+        if (node.querySelectorAll) {
+          node.querySelectorAll('[onclick]').forEach(wireOne);
+        }
+      }
+    }
   });
+  observer.observe(window.document.body, { childList: true, subtree: true });
 }
 
 function loadDemoWindow() {
