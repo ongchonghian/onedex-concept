@@ -66,6 +66,8 @@
       // ---- Narrow to Your action only ----
       { action: 'click', target: '[data-demo="messages.failed-popup.owner-theirs"] input[type="checkbox"]', dwell: 400 },
       { action: 'click', target: '[data-demo="messages.failed-popup.owner-expired"] input[type="checkbox"]', dwell: 400 },
+      { action: 'click', target: '[data-demo="messages.failed-popup.done-btn"]', dwell: 500 },
+      { action: 'expect', target: `.screen[data-screen="messages"].active [data-msg-id="${RETRY_MSG_ID}"]` },
 
       { action: 'annotate',
         anchor: `.screen[data-screen="messages"].active [data-msg-id="${RETRY_MSG_ID}"]`,
