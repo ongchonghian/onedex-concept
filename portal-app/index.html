@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=1200, initial-scale=1">
 <title>Dex Portal — Prototype</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="styles/tokens.css?v=p11">
-<link rel="stylesheet" href="styles/themes.css?v=p11">
-<link rel="stylesheet" href="styles/base.css?v=p11">
-<link rel="stylesheet" href="styles/components.css?v=p11">
-<link rel="stylesheet" href="styles/layout.css?v=p11">
-<link rel="stylesheet" href="styles/screens.css?v=p11">
-<link rel="stylesheet" href="styles/demos.css?v=p11">
+<link rel="stylesheet" href="styles/tokens.css?v=p17">
+<link rel="stylesheet" href="styles/themes.css?v=p17">
+<link rel="stylesheet" href="styles/base.css?v=p17">
+<link rel="stylesheet" href="styles/components.css?v=p17">
+<link rel="stylesheet" href="styles/layout.css?v=p17">
+<link rel="stylesheet" href="styles/screens.css?v=p17">
+<link rel="stylesheet" href="styles/demos.css?v=p17">
 </head>
 <body>
 
@@ -531,7 +531,7 @@
   <div class="canvas-meta"><span class="meta-label">Wizard step</span><h1>Data element picker — browse + groups + search fallback</h1><span class="adr-tag">ADR 0013</span></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Browse-primary. Groups are first-class. Snapshot semantics protect existing Agreements.</div></div>
   <div class="picker-frame">
-    <div class="picker-search"><i class="ti ti-search"></i><input type="text" placeholder="Search data elements on SGTradex"><span class="meta">189 elements · 12 groups</span></div>
+    <div class="picker-search"><i class="ti ti-search"></i><input type="text" data-dex-suffix-placeholder="Search data elements on" placeholder="Search data elements on SGTradex"><span class="meta">189 elements · 12 groups</span></div>
     <div class="picker-grid">
       <div class="picker-tree">
         <details open>
@@ -822,7 +822,7 @@
   <div class="canvas-meta"><span class="meta-label">Wizard step</span><h1>Counterparty picker — hybrid with use-case-enrolment readiness</h1><span class="adr-tag">ADR 0014</span></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Click <em>Maersk</em> or <em>Acme Construction (SGBuildex)</em> to fire the cross-DEX warning.</div></div>
   <div class="picker-frame">
-    <div class="picker-search"><i class="ti ti-search"></i><input type="text" placeholder="Search counterparties on SGTradex (name, UEN, trading alias)"></div>
+    <div class="picker-search"><i class="ti ti-search"></i><input type="text" data-dex-suffix-placeholder="Search counterparties on" data-dex-suffix-tail=" (name, UEN, trading alias)" placeholder="Search counterparties on SGTradex (name, UEN, trading alias)"></div>
     <div class="picker-toolbar">
       <span class="chip solid">Any type</span><span class="chip muted">Carrier</span><span class="chip muted">Shipper</span><span class="chip muted">Service provider</span>
       <span class="chip tx" style="font-weight:500"><i class="ti ti-check" style="font-size:12px"></i>Ready for B/L sharing</span>
@@ -1509,7 +1509,7 @@
         <span class="idem-key" id="compose-idem-key" title="Idempotency key — generated at draft-open, threaded through Submit + Retry per ADR 0021/0024">key: idem_a7f3c91d</span>
       </div>
       <div class="title-row">
-        <h2 id="compose-title">Bill of Lading → Maersk Logistics</h2>
+        <h2 id="compose-title" data-composer-default-hero>Compose Message</h2>
         <span class="complexity-pill high-stakes" id="compose-complexity-pill" title="Data element compose_complexity attribute per ADR 0025">high-stakes</span>
         <a class="cancel" onclick="composerCancel()" title="Your draft is auto-saved · decay-with-pin lifecycle per ADR 0024 (auto-purge on Agreement-end or 30-day inactivity, whichever first)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();composerCancel()}"><i class="ti ti-x" aria-hidden="true"></i>Cancel</a>
       </div>
@@ -2087,13 +2087,13 @@
     <section class="ov-cta-pair" aria-labelledby="ov-cta-h2">
       <p class="ov-eyebrow"><b>Try it</b></p>
       <h2 id="ov-cta-h2">You've seen the why. Here's the what.</h2>
-      <p class="ov-cta-lede">Step into the prototype as one of Cosco Shipping's admins — explore freely, or watch a guided demo of how the new portal feels in motion.</p>
+      <p class="ov-cta-lede" data-onboarding-overlay-lede>Step into the prototype as one of Cosco Shipping's admins — explore freely, or watch a guided demo of how the new portal feels in motion.</p>
       <div class="ov-cta-grid">
         <a class="ov-cta-card primary" href="#" role="button" onclick="event.preventDefault(); goto('inbox-tx');">
           <div class="ov-cta-icon"><i class="ti ti-arrow-right" aria-hidden="true"></i></div>
           <div class="ov-cta-body">
             <p class="ov-cta-title">See it in motion</p>
-            <p class="ov-cta-desc">Sign in as Marcus, an Organisation Admin for Cosco on SGTradex. Click through inboxes, Agreements, the lifecycle states. Reset anytime from the corner.</p>
+            <p class="ov-cta-desc" data-onboarding-overlay-desc>Sign in as Marcus, an Organisation Admin for Cosco on SGTradex. Click through inboxes, Agreements, the lifecycle states. Reset anytime from the corner.</p>
           </div>
         </a>
         <a class="ov-cta-card secondary" href="#" role="button" onclick="event.preventDefault(); if (typeof openDemosPanel === 'function') openDemosPanel();">
@@ -2426,11 +2426,8 @@
       <!-- Activity -->
       <section aria-labelledby="activity-h" id="section-activity">
         <p class="section-label" id="activity-h">Activity</p>
-        <ol class="activity" aria-label="Audit log, most recent first">
-          <li class="ev"><span class="ev-dot tx" aria-hidden="true"></span><div class="ev-body"><p><strong>Marcus Ong</strong> extended the Agreement by 6 months</p><p class="ev-time"><time datetime="2026-05-12T14:23+08:00">2 days ago · 14:23 SGT</time></p></div></li>
-          <li class="ev"><span class="ev-dot bx" aria-hidden="true"></span><div class="ev-body"><p><strong>Maersk Logistics</strong> began consuming the data feed</p><p class="ev-time"><time datetime="2026-03-21T09:15+08:00">21 Mar · 09:15 SGT · automated</time></p></div></li>
-          <li class="ev"><span class="ev-dot green" aria-hidden="true"></span><div class="ev-body"><p><strong>Granger (Maersk)</strong> accepted the Agreement</p><p class="ev-time"><time datetime="2026-03-21T09:12+08:00">21 Mar · 09:12 SGT</time></p></div></li>
-          <li class="ev"><span class="ev-dot muted" aria-hidden="true"></span><div class="ev-body"><p><strong>Marcus Ong</strong> created the Agreement and sent the invitation</p><p class="ev-time"><time datetime="2026-03-14T11:08+08:00">14 Mar · 11:08 SGT</time></p></div></li>
+        <ol class="activity" aria-label="Audit log, most recent first" data-agreement-activity-log="AGR-2026-04829">
+          <!-- Populated by hydrateAgreementActivityLog(). See Issue 0011 stage 1e. -->
         </ol>
         <p style="font-size:11px;color:var(--g-50);margin:10px 0 0;text-align:center" id="audit-foot">
           <button onclick="expandAudit(event)" aria-expanded="false" aria-controls="section-activity" style="background:transparent;border:none;color:var(--g-50);text-decoration:underline;cursor:pointer;font-family:inherit;font-size:11px">Show full audit log (24 entries)</button>
@@ -2527,7 +2524,7 @@
 
 <!-- ============ Data elements registry ============ -->
 <section class="screen" data-screen="data-elements">
-  <div class="canvas-meta"><span class="meta-label">Catalog</span><h1>Data elements on SGTradex</h1><span class="adr-tag">ADR 0013</span></div>
+  <div class="canvas-meta"><span class="meta-label">Catalog</span><h1 data-list-page-title="Data elements on">Data elements on SGTradex</h1><span class="adr-tag">ADR 0013</span></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Per-DEX-admin-curated catalog (per ADR 0013). Click a row to see versions, schema, usage stats, and impact analysis.</div></div>
 
   <div class="list-frame">
@@ -2718,7 +2715,7 @@
 
 <!-- ============ Participants directory ============ -->
 <section class="screen" data-screen="participants">
-  <div class="canvas-meta"><span class="meta-label">People &amp; orgs</span><h1>Participants on SGTradex</h1></div>
+  <div class="canvas-meta"><span class="meta-label">People &amp; orgs</span><h1 data-list-page-title="Participants on">Participants on SGTradex</h1></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>All orgs onboarded to SGTradex. Click a card to see the org profile, their team, the Agreements they have with you, and which use cases they're enrolled in.</div></div>
 
   <!-- Wrap toolbar + card list in .list-frame so this list-shaped screen matches
@@ -2841,7 +2838,7 @@
 
 <!-- ============ Agreements list page ============ -->
 <section class="screen" data-screen="agreements">
-  <div class="canvas-meta"><span class="meta-label">Agreements</span><h1>Agreements on SGTradex</h1><span class="adr-tag">ADR 0004</span></div>
+  <div class="canvas-meta"><span class="meta-label">Agreements</span><h1 data-list-page-title="Agreements on">Agreements on SGTradex</h1><span class="adr-tag">ADR 0004</span></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Click any row to land on its detail page. Use the row "···" menu to extend or revoke without opening detail.</div></div>
 
   <div class="list-frame">
@@ -3048,10 +3045,8 @@
       <!-- Pack-level audit trail -->
       <p class="section-label" style="margin-top:24px">Pack activity</p>
       <p class="pack-audit-note">Per ADR 0027, the pack carries a thin audit (created · revoked · sent) — full per-Message detail lives on each member Agreement. Sample events:</p>
-      <ol class="activity">
-        <li class="ev"><span class="ev-dot" style="background:var(--green-50)" aria-hidden="true"></span><div class="ev-body"><p><strong>Marcus Ong</strong> sent pack · 4 Messages dispatched (1 per member Agreement) · idempotency keys recorded per Message</p><p class="ev-time"><time>22 Apr 2026 · 14:18 SGT</time></p></div></li>
-        <li class="ev"><span class="ev-dot" style="background:var(--green-50)" aria-hidden="true"></span><div class="ev-body"><p>All 4 member Agreements transitioned to <strong>Active</strong> (last acceptance: Hin Leong Insurance)</p><p class="ev-time"><time>14 Mar 2026 · 16:42 SGT</time></p></div></li>
-        <li class="ev"><span class="ev-dot tx" aria-hidden="true"></span><div class="ev-body"><p><strong>Marcus Ong</strong> created the pack via the split-counterparties wizard fork · 4 Agreements created in one transaction</p><p class="ev-time"><time>14 Mar 2026 · 11:14 SGT</time></p></div></li>
+      <ol class="activity" data-agreement-activity-log="pack:vessel-arrival-distribution">
+        <!-- Populated by hydrateAgreementActivityLog(). See Issue 0011 stage 1e. -->
       </ol>
 
     </section>
@@ -3150,10 +3145,9 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" data-settings-other-dex-memberships>
           <h3>Other DEX memberships</h3>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span></span><span class="s-v"><strong>SGBuildex-Main</strong> · single-Pitstop Org on SGBuildex · 6 users · 12 elements scoped</span><span class="s-action"><a role="button" tabindex="0" onclick="openPitstopConfig('cosco-bx-main')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">Configure</a></span></div>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip hx"><span class="dex-dot"></span>SGHealthdex</span></span><span class="s-v"><strong>SGHealthdex-Main</strong> · single-Pitstop Org on SGHealthdex · 4 users · 8 elements scoped</span><span class="s-action"><a role="button" tabindex="0" onclick="openPitstopConfig('cosco-hx-main')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">Configure</a></span></div>
+          <!-- Populated by hydrateSettingsOtherDexMembershipsChrome(). See Issue 0011. -->
         </div>
 
         <div class="pitstops-info-callout">
@@ -3252,19 +3246,17 @@
         <h2>Account</h2>
         <p class="pane-lede">Your profile information and the role you hold across each DEX.</p>
 
-        <div class="settings-section">
+        <div class="settings-section" data-settings-profile>
           <h3>Profile</h3>
-          <div class="settings-row"><span class="s-k">Name</span><span class="s-v">Marcus Ong</span><span class="s-action"><a onclick="toast('Edit profile (mock)')">Edit</a></span></div>
-          <div class="settings-row"><span class="s-k">Email</span><span class="s-v">marcus.ong@cosco.com.sg</span><span class="s-action"><a onclick="toast('Email change requires verification')">Change</a></span></div>
-          <div class="settings-row"><span class="s-k">Organisation</span><span class="s-v">Cosco Shipping (SG) Pte Ltd · UEN 199001234A</span><span class="s-action"></span></div>
-          <div class="settings-row"><span class="s-k">User since</span><span class="s-v">14 Mar 2024</span><span class="s-action"></span></div>
+          <div class="settings-row"><span class="s-k">Name</span><span class="s-v" data-settings-profile-name>Marcus Ong</span><span class="s-action"><a onclick="toast('Edit profile (mock)')">Edit</a></span></div>
+          <div class="settings-row"><span class="s-k">Email</span><span class="s-v" data-settings-profile-email>marcus.ong@cosco.com.sg</span><span class="s-action"><a onclick="toast('Email change requires verification')">Change</a></span></div>
+          <div class="settings-row"><span class="s-k">Organisation</span><span class="s-v" data-settings-profile-organisation>Cosco Shipping (SG) Pte Ltd · UEN 199001234A</span><span class="s-action"></span></div>
+          <div class="settings-row"><span class="s-k">User since</span><span class="s-v" data-settings-profile-user-since>14 Mar 2024</span><span class="s-action"></span></div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" data-settings-dex-roles>
           <h3>Roles by DEX</h3>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span></span><span class="s-v">Admin User · can create Agreements + manage relationships · joined 14 Mar 2024</span><span class="s-action"></span></div>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span></span><span class="s-v">Operation User · Pitstop runtime + data ops only · joined 22 Aug 2025</span><span class="s-action"></span></div>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip hx"><span class="dex-dot"></span>SGHealthdex</span></span><span class="s-v">Super Admin · governance + user management within Cosco · joined 09 Jan 2026</span><span class="s-action"></span></div>
+          <!-- Populated by hydrateSettingsDexRolesChrome(). See Issue 0011 stage 1c. -->
         </div>
       </div>
 
@@ -3343,9 +3335,11 @@
 
 <!-- ===== Shared popovers (positioned via JS, work across all injected shells) ===== -->
 <div class="switcher-pop" hidden id="switcher-pop" role="menu" aria-label="Workspace switcher">
-  <div class="switcher-item tx active" role="menuitem" onclick="switchDex('tx')"><span class="ws-tile">Tx</span><div><div class="label">SGTradex</div><div class="role">Admin User · 12 items waiting</div></div><i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:14px"></i></div>
-  <div class="switcher-item bx" role="menuitem" onclick="switchDex('bx')"><span class="ws-tile">Bx</span><div><div class="label">SGBuildex</div><div class="role">Operation User · 4 items waiting</div></div><span style="margin-left:auto;width:6px;height:6px;background:var(--red-50);border-radius:50%"></span></div>
-  <div class="switcher-item hx" role="menuitem" onclick="switchDex('hx')"><span class="ws-tile">Hx</span><div><div class="label">SGHealthdex</div><div class="role">Super Admin · 3 items waiting</div></div></div>
+  <div data-dex-switcher-rows>
+    <div class="switcher-item tx active" role="menuitem" onclick="switchDex('tx')"><span class="ws-tile">Tx</span><div><div class="label">SGTradex</div><div class="role">Admin User · 12 items waiting</div></div><i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:14px"></i></div>
+    <div class="switcher-item bx" role="menuitem" onclick="switchDex('bx')"><span class="ws-tile">Bx</span><div><div class="label">SGBuildex</div><div class="role">Operation User · 4 items waiting</div></div><span style="margin-left:auto;width:6px;height:6px;background:var(--red-50);border-radius:50%"></span></div>
+    <div class="switcher-item hx" role="menuitem" onclick="switchDex('hx')"><span class="ws-tile">Hx</span><div><div class="label">SGHealthdex</div><div class="role">Super Admin · 3 items waiting</div></div></div>
+  </div>
   <div class="dropdown-divider"></div>
   <div class="switcher-item all" role="menuitem" onclick="goto('inbox-all')"><span class="ws-tile"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="1" y="1" width="5" height="5" rx="1" fill="#363941"/><rect x="8" y="1" width="5" height="5" rx="1" fill="#60636b"/><rect x="1" y="8" width="5" height="5" rx="1" fill="#60636b"/><rect x="8" y="8" width="5" height="5" rx="1" fill="#363941"/></svg></span><div><div class="label">All DEXes</div><div class="role">21 items across 3 DEXes</div></div></div>
   <div class="dropdown-divider"></div>
@@ -3385,7 +3379,7 @@
 
 <div class="imp-banner" id="imp-banner">
   <i class="ti ti-eye lead"></i>
-  <span class="imp-text">Viewing as participant on SGTradex · all actions tagged in the audit log under impersonation</span>
+  <span class="imp-text" data-impersonation-banner-text>Viewing as participant on SGTradex · all actions tagged in the audit log under impersonation</span>
   <span class="imp-time" id="imp-time">02:00</span>
   <button class="imp-end" onclick="endImpersonation()">End session</button>
 </div>
@@ -3507,7 +3501,7 @@
 </div>
 
 <div class="overlay-veil" id="join-modal" hidden>
-  <div class="overlay-card"><div class="overlay-head"><div class="ic tx"><i class="ti ti-plus"></i></div><h4>Join another DEX</h4><button class="close" onclick="closeOverlay('join-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:14px">Your org is already on SGTradex, SGBuildex, and SGHealthdex.</p><div style="padding:12px 14px;background:var(--g-98);border-radius:var(--r-md);font-size:12px;color:var(--g-30);line-height:1.5"><i class="ti ti-info-circle" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--g-50)"></i>Joining a new DEX uses your existing org record — KYC fields pre-fill.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('join-modal')">Close</button></div></div>
+  <div class="overlay-card"><div class="overlay-head"><div class="ic tx"><i class="ti ti-plus"></i></div><h4>Join another DEX</h4><button class="close" onclick="closeOverlay('join-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:14px" data-join-dex-enrolled-line>Your org is already on SGTradex, SGBuildex, and SGHealthdex.</p><div style="padding:12px 14px;background:var(--g-98);border-radius:var(--r-md);font-size:12px;color:var(--g-30);line-height:1.5"><i class="ti ti-info-circle" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--g-50)"></i>Joining a new DEX uses your existing org record — KYC fields pre-fill.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('join-modal')">Close</button></div></div>
 </div>
 
 <div class="overlay-veil" id="template-modal" hidden>
@@ -3718,7 +3712,7 @@
 </div>
 
 <div class="overlay-veil" id="impersonate-modal" hidden>
-  <div class="overlay-card"><div class="overlay-head"><div class="ic warn"><i class="ti ti-eye"></i></div><h4>View as participant on SGTradex</h4><button class="close" onclick="closeOverlay('impersonate-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5;margin-bottom:10px">You'll see exactly what a participant on SGTradex sees. Any action you take will be tagged in the audit log as performed under impersonation.</p><div style="padding:10px 12px;background:var(--yellow-98);border:0.5px solid var(--yellow-95);border-radius:var(--r-md);font-size:11px;color:var(--g-30);line-height:1.5"><i class="ti ti-shield-lock" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--yellow-50)"></i>Auto-ends after 30 minutes. Surface banner persists for the duration.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('impersonate-modal')">Cancel</button><button class="btn-primary" onclick="closeOverlay('impersonate-modal'); startImpersonation()">Start session</button></div></div>
+  <div class="overlay-card"><div class="overlay-head"><div class="ic warn"><i class="ti ti-eye"></i></div><h4 data-impersonation-modal-title>View as participant on SGTradex</h4><button class="close" onclick="closeOverlay('impersonate-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5;margin-bottom:10px" data-impersonation-modal-body>You'll see exactly what a participant on SGTradex sees. Any action you take will be tagged in the audit log as performed under impersonation.</p><div style="padding:10px 12px;background:var(--yellow-98);border:0.5px solid var(--yellow-95);border-radius:var(--r-md);font-size:11px;color:var(--g-30);line-height:1.5"><i class="ti ti-shield-lock" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--yellow-50)"></i>Auto-ends after 30 minutes. Surface banner persists for the duration.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('impersonate-modal')">Cancel</button><button class="btn-primary" onclick="closeOverlay('impersonate-modal'); startImpersonation()">Start session</button></div></div>
 </div>
 
 <div class="search-overlay" id="search-overlay" hidden>
@@ -3977,28 +3971,28 @@
      defined elsewhere. Per ADR 0028 the multi-Pitstop layer is a parallel concern
      hooking into existing surfaces — keeping it as the final layer makes the dependency
      direction explicit. ===== -->
-<script src="scripts/state.js?v=p11"></script>
-<script src="scripts/access.js?v=p11"></script>
-<script src="scripts/workspace-storage.js?v=p11"></script>
+<script src="scripts/state.js?v=p17"></script>
+<script src="scripts/access.js?v=p17"></script>
+<script src="scripts/workspace-storage.js?v=p17"></script>
 <!-- workspace-fixtures.js — scene/inbox/MP fixture data extracted from state.js
      in Phase 7. Must load before workspace-bootstrap.js (which dereferences
      SCENE_SEEDS / INBOX_BY_DEX) but order vs. state.js doesn't matter — all
      references are guarded with `typeof X !== 'undefined'`. -->
-<script src="scripts/workspace-fixtures.js?v=p11"></script>
-<script src="scripts/workspace-bootstrap.js?v=p11"></script>
-<script src="scripts/workspace.js?v=p11"></script>
-<script src="scripts/components.js?v=p11"></script>
-<script src="scripts/theme.js?v=p11"></script>
-<script src="scripts/wizard.js?v=p11"></script>
-<script src="scripts/app.js?v=p11"></script>
+<script src="scripts/workspace-fixtures.js?v=p17"></script>
+<script src="scripts/workspace-bootstrap.js?v=p17"></script>
+<script src="scripts/workspace.js?v=p17"></script>
+<script src="scripts/components.js?v=p17"></script>
+<script src="scripts/theme.js?v=p17"></script>
+<script src="scripts/wizard.js?v=p17"></script>
+<script src="scripts/app.js?v=p17"></script>
 <!-- Auto-demo runner (ADR 0034) — load order: runtime first, then each flow self-registers, then the launcher reads the registry. -->
-<script src="scripts/demos/runtime.js?v=p11"></script>
-<script src="scripts/demos/first-agreement.js?v=p11"></script>
-<script src="scripts/demos/extend.js?v=p11"></script>
-<script src="scripts/demos/approve.js?v=p11"></script>
-<script src="scripts/demos/cross-dex.js?v=p11"></script>
-<script src="scripts/demos/compose-message.js?v=p11"></script>
-<script src="scripts/demos/index.js?v=p11"></script>
+<script src="scripts/demos/runtime.js?v=p17"></script>
+<script src="scripts/demos/first-agreement.js?v=p17"></script>
+<script src="scripts/demos/extend.js?v=p17"></script>
+<script src="scripts/demos/approve.js?v=p17"></script>
+<script src="scripts/demos/cross-dex.js?v=p17"></script>
+<script src="scripts/demos/compose-message.js?v=p17"></script>
+<script src="scripts/demos/index.js?v=p17"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>
 <script src="scripts/pitstop.js"></script>

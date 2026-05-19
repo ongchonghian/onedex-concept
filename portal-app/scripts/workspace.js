@@ -220,8 +220,16 @@ function listInboxItemsForUserAndDex(userId, dexId) {
     });
     Object.assign(workspace.inboxItems, fresh);
   }
+  // Issue 0011 Phase 2 — filter by `requires` so platform-tier items gated
+  // by an elevated role (e.g. PLATFORM_INBOX's `requires: 'Super SGTradex
+  // Admin'` DE-promotion items) don't surface for the base role. The
+  // legacy themeInboxContent applied this filter as `roleVisible`; now
+  // every consumer of inbox items inherits it. Participant items have no
+  // `requires`, so the filter is a no-op for them.
+  const activeRole = (typeof PLATFORM_INBOX !== 'undefined' && PLATFORM_INBOX && PLATFORM_INBOX.role) || null;
   return Object.values(workspace.inboxItems)
-    .filter((item) => item.ownerUserId === userId && item.dexId === dexId);
+    .filter((item) => item.ownerUserId === userId && item.dexId === dexId)
+    .filter((item) => !item.requires || item.requires === activeRole);
 }
 
 function getAgreementById(agreementId) {

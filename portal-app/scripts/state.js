@@ -121,7 +121,7 @@ const ORGS = {
   // Operator orgs (an active persona can work for one of these). Each carries
   // `primaryDexId` — the org's home DEX (used by ADR 0012 cross-DEX machinery
   // + the chrome's workspace-pill DEX dot fallback at /portal/all).
-  cosco:        { name: 'Cosco Shipping',     short: 'Cosco',        initials: 'Cs', tier: 'participant', primaryDexId: 'tx' },
+  cosco:        { name: 'Cosco Shipping',     short: 'Cosco',        initials: 'Cs', tier: 'participant', primaryDexId: 'tx', legalName: 'Cosco Shipping (SG) Pte Ltd', uen: '199001234A' },
   crimsonlogic: { name: 'CrimsonLogic',       short: 'CrimsonLogic', initials: 'CL', tier: 'participant', primaryDexId: 'tx' },
   // 'SGTradex' (capital D) is a literal carryover from the prior PERSONAS literal to
   // keep profile-row + "View as…" display strings byte-identical through Phase 1.
@@ -210,8 +210,9 @@ const USERS = {
 const USER_ORG_AFFILIATIONS = {
   'marcus-cosco': {
     status:    'active',
-    startDate: '2023-08-22',
-    dexRoles:  { tx: 'Admin User' }                      // BX (Issue 0002) + HX (Issue 0003) stripped
+    startDate: '2024-03-14',                             // Issue 0011 — surfaced via Settings → "User since"
+    dexRoles:  { tx: 'Admin User' },                     // BX (Issue 0002) + HX (Issue 0003) stripped
+    dexJoinDates: { tx: '2024-03-14' }                   // Per-DEX role start; surfaced in Settings → Roles by DEX
   },
   'alice-cosco': {                                       // Issue 0002 — Cosco BX operator
     status:    'active',
@@ -307,6 +308,20 @@ const ORG_DEX_MEMBERSHIPS = {
   'polyclinic-bedok-hx':     { joinedDate: '2024-06-21', status: 'active' }   // Polyclinic Bedok — HX screening submitter
   // PCL pending membership lands when the platform-admin onboarding demo is wired.
   // SGTradex is platform tier — has no DEX memberships (it governs every DEX).
+};
+
+/* ---------- Role scope descriptions ----------
+   Per-role human-readable scope summary surfaced by the Settings → Roles by DEX
+   hydrator (Issue 0011 stage 1c). Keyed by the role string from
+   USER_ORG_AFFILIATIONS.dexRoles or platformRole. Adding a new role? Add a
+   description here so the row reads "Role · scope · joined date". Missing
+   keys gracefully drop the middle clause. */
+const ROLE_SCOPE_DESCRIPTIONS = {
+  'Admin User':       'can create Agreements + manage relationships',
+  'Operation User':   'Pitstop runtime + data ops only',
+  'Super Admin':      'governance + user management within Cosco',
+  'Reader':           'read-only access to scoped Pitstops',
+  'SGTradex Admin':   'platform-tier governance · cross-DEX scope'
 };
 
 const PERSONA_TO_USER = {
@@ -514,14 +529,21 @@ const DATA_ELEMENTS_BY_DEX = {
    SG-Finance, SG-Trade — plus one retired (SG-Logistics-Old) so scenario E
    has historical Messages to reference. Single-Pitstop on SGBuildex/SGHealthdex
    confirms the "no complexity tax for single-Pitstop users" guarantee. */
+/* userCount + elementsScopedCount are the values surfaced by the Settings →
+   Other DEX memberships hydrator (Issue 0011 stage 1b). They live on the
+   record so chrome can derive from data — the prototype keeps the demo-
+   flavoured larger numbers (6 / 12, 4 / 8) here rather than counting users
+   from the small test fixture (USER_PITSTOP_ROLES has only a handful of
+   demo users; truth-counting would render "1 user" which misrepresents a
+   production Pitstop). */
 const PITSTOPS_BY_ORG = {
   'cosco': [
-    { id: 'cosco-tx-ops',     name: 'SG-Logistics',     dexId: 'tx', orgId: 'cosco', retired: false },
-    { id: 'cosco-tx-finance', name: 'SG-Finance',       dexId: 'tx', orgId: 'cosco', retired: false },
-    { id: 'cosco-tx-trade',   name: 'SG-Trade',         dexId: 'tx', orgId: 'cosco', retired: false },
-    { id: 'cosco-tx-old',     name: 'SG-Logistics-Old', dexId: 'tx', orgId: 'cosco', retired: true, retiredAt: '2026-03-04' },
-    { id: 'cosco-bx-main',    name: 'SGBuildex-Main',     dexId: 'bx', orgId: 'cosco', retired: false },
-    { id: 'cosco-hx-main',    name: 'SGHealthdex-Main',   dexId: 'hx', orgId: 'cosco', retired: false }
+    { id: 'cosco-tx-ops',     name: 'SG-Logistics',     dexId: 'tx', orgId: 'cosco', retired: false, userCount: 14, elementsScopedCount: 18 },
+    { id: 'cosco-tx-finance', name: 'SG-Finance',       dexId: 'tx', orgId: 'cosco', retired: false, userCount: 8,  elementsScopedCount: 7 },
+    { id: 'cosco-tx-trade',   name: 'SG-Trade',         dexId: 'tx', orgId: 'cosco', retired: false, userCount: 5,  elementsScopedCount: 4 },
+    { id: 'cosco-tx-old',     name: 'SG-Logistics-Old', dexId: 'tx', orgId: 'cosco', retired: true, retiredAt: '2026-03-04', userCount: 0, elementsScopedCount: 0 },
+    { id: 'cosco-bx-main',    name: 'SGBuildex-Main',     dexId: 'bx', orgId: 'cosco', retired: false, userCount: 6, elementsScopedCount: 12 },
+    { id: 'cosco-hx-main',    name: 'SGHealthdex-Main',   dexId: 'hx', orgId: 'cosco', retired: false, userCount: 4, elementsScopedCount: 8 }
   ],
   'psa': [
     { id: 'psa-tx-main', name: 'PSA-SGTradex', dexId: 'tx', orgId: 'psa', retired: false }

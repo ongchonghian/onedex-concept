@@ -26,19 +26,30 @@
    org onboarding KYC, Data Element promotions (Super SGTradex Admin only),
    network setup, cross-org user provisioning. Mirrors the items the admin-ui
    admin branch surfaces (Navigation/index.js:135-140 + maker-checker matrix). */
+/* PLATFORM_INBOX — Sarah's cross-DEX governance work. Materialised into
+   workspace.inboxItems at bootstrap (Issue 0011 Phase 2) so the
+   platform-admin persona renders through the same banded + bundled path
+   as participant personas (ADR 0036). Each item carries an explicit
+   `dexId` reflecting the DEX context the work belongs to:
+     - KYC reviews → subject org's primaryDexId
+     - DE promotions → element's home DEX
+     - Network/org admissions → target DEX
+     - Certificate renewals → DEX named in the work
+   The fixture is otherwise the same shape as participant INBOX_BY_DEX
+   entries (intent / sourceType / dueAt per ADR 0035 Phase 1). */
 const PLATFORM_INBOX = {
   count: 9, mineCount: 4, teamCount: 5,
   role: 'SGTradex Admin', // promote to 'Super SGTradex Admin' to unlock DE.Create work
   mine: [
-    { title: 'Pacific Container Lines — onboarding KYC review', meta: 'Org onboarding · KYC submitted 3d ago · awaiting your decision', btn: 'Review', cta: 'review-org', intent: 'decide', sourceType: 'governance' },
-    { title: 'Acme Construction → SGBuildex · network admission', meta: 'Cross-DEX admission request · 2 of 3 platform admins approved', btn: 'Approve', cta: 'approve-network', intent: 'decide', sourceType: 'governance' },
-    { title: 'Promote Bill of Lading v2.1 → Active (SGTradex)', meta: 'Data element governance · drafted by Kagura · review window closes today', btn: 'Open', cta: 'open-de-promotion', intent: 'decide', sourceType: 'governance', requires: 'Super SGTradex Admin' },
-    { title: 'Issue SGHealthdex network certificate renewal', meta: 'Network · current cert expires in 21d · renewal SOP applies', btn: 'Renew', cta: 'renew-network', intent: 'confirm', sourceType: 'governance' }
+    { dexId: 'tx', title: 'Pacific Container Lines — onboarding KYC review', meta: 'Org onboarding · KYC submitted 3d ago · awaiting your decision', btn: 'Review', cta: 'review-org', intent: 'decide', sourceType: 'governance' },
+    { dexId: 'bx', title: 'Acme Construction → SGBuildex · network admission', meta: 'Cross-DEX admission request · 2 of 3 platform admins approved', btn: 'Approve', cta: 'approve-network', intent: 'decide', sourceType: 'governance' },
+    { dexId: 'tx', title: 'Promote Bill of Lading v2.1 → Active (SGTradex)', meta: 'Data element governance · drafted by Kagura · review window closes today', btn: 'Open', cta: 'open-de-promotion', intent: 'decide', sourceType: 'governance', requires: 'Super SGTradex Admin' },
+    { dexId: 'hx', title: 'Issue SGHealthdex network certificate renewal', meta: 'Network · current cert expires in 21d · renewal SOP applies', btn: 'Renew', cta: 'renew-network', intent: 'confirm', sourceType: 'governance' }
   ],
   team: [
-    { title: 'Onboard 4 SGBuildex contractor orgs — batch KYC', meta: 'Org onboarding · queued by automation · 2 admins eligible', btn: 'Claim', intent: 'decide', sourceType: 'governance' },
-    { title: 'Lesley approved Greater Bay Logistics org admin role', meta: 'Completed 12 min ago · disappears from inbox in 3 min', completion: true },
-    { title: 'Maersk requested SP appointment authority on SGTradex', meta: 'Service-Provider authorisation · pending platform sign-off', btn: 'Claim', intent: 'decide', sourceType: 'governance' }
+    { dexId: 'bx', title: 'Onboard 4 SGBuildex contractor orgs — batch KYC', meta: 'Org onboarding · queued by automation · 2 admins eligible', btn: 'Claim', intent: 'decide', sourceType: 'governance' },
+    { dexId: 'tx', title: 'Lesley approved Greater Bay Logistics org admin role', meta: 'Completed 12 min ago · disappears from inbox in 3 min', completion: true },
+    { dexId: 'tx', title: 'Maersk requested SP appointment authority on SGTradex', meta: 'Service-Provider authorisation · pending platform sign-off', btn: 'Claim', intent: 'decide', sourceType: 'governance' }
   ]
 };
 /* ---------- Per-DEX inbox data ----------
@@ -1091,6 +1102,34 @@ const SCENE_SEEDS = {
 };
 
 
+/* ---------- Agreement-level activity log seed (Issue 0011 stage 1e) ----------
+   Powers the detail-page audit trail (".activity" <ol> on Agreement detail +
+   Pack detail screens). Per-entry shape:
+     actorUserId?:        userId resolved via USERS[id].name; renders as <strong>Name</strong>
+     actorDisplayOrg?:    optional org suffix when actorUserId present ("Granger (Maersk)")
+     actorOrgOnly?:       use when the actor is the counterparty org itself, no user
+     bodyHtml:            predicate text (or full sentence when actor is absent);
+                          may contain inline <strong>/<em>
+     dotKind:             'tx' | 'bx' | 'hx' | 'muted' | 'green' | inline style override
+     datetime?:           ISO timestamp for <time datetime=...>
+     humanTime:           visible time string
+   Marcus's previously-stale BX/HX rows on Settings (see Issue 0011 stage 1c)
+   don't affect this seed — these entries reflect what happened on the
+   Agreement timeline, where Marcus is the actor on TX. */
+const AGREEMENT_ACTIVITY_LOG_BY_AGREEMENT = {
+  'AGR-2026-04829': [
+    { actorUserId: 'marcus',                    bodyHtml: 'extended the Agreement by 6 months',                    dotKind: 'tx',    datetime: '2026-05-12T14:23+08:00', humanTime: '2 days ago · 14:23 SGT' },
+    { actorOrgOnly: 'Maersk Logistics',         bodyHtml: 'began consuming the data feed',                         dotKind: 'bx',    datetime: '2026-03-21T09:15+08:00', humanTime: '21 Mar · 09:15 SGT · automated' },
+    { actorUserId: 'lars', actorDisplayOrg: 'Maersk', bodyHtml: 'accepted the Agreement',                          dotKind: 'green', datetime: '2026-03-21T09:12+08:00', humanTime: '21 Mar · 09:12 SGT' },
+    { actorUserId: 'marcus',                    bodyHtml: 'created the Agreement and sent the invitation',         dotKind: 'muted', datetime: '2026-03-14T11:08+08:00', humanTime: '14 Mar · 11:08 SGT' }
+  ],
+  'pack:vessel-arrival-distribution': [
+    { actorUserId: 'marcus',                    bodyHtml: 'sent pack · 4 Messages dispatched (1 per member Agreement) · idempotency keys recorded per Message', dotKind: 'green-50',                                        humanTime: '22 Apr 2026 · 14:18 SGT' },
+    {                                           bodyHtml: 'All 4 member Agreements transitioned to <strong>Active</strong> (last acceptance: Hin Leong Insurance)', dotKind: 'green-50',                                     humanTime: '14 Mar 2026 · 16:42 SGT' },
+    { actorUserId: 'marcus',                    bodyHtml: 'created the pack via the split-counterparties wizard fork · 4 Agreements created in one transaction', dotKind: 'tx',                                              humanTime: '14 Mar 2026 · 11:14 SGT' }
+  ]
+};
+
 /* Expose the fixture blocks on `window` so workspace-bootstrap.js can read
    them across script boundaries. The runtime touches these names exactly
    four times: buildWorkspaceFromFixtures iterates UNIFIED_SEED_SCENES, then
@@ -1100,6 +1139,7 @@ const SCENE_SEEDS = {
    admin's cross-org inbox surface (themeInboxContent in theme.js). */
 window.PLATFORM_INBOX = PLATFORM_INBOX;
 window.INBOX_BY_DEX = INBOX_BY_DEX;
+window.AGREEMENT_ACTIVITY_LOG_BY_AGREEMENT = AGREEMENT_ACTIVITY_LOG_BY_AGREEMENT;
 window.MP_SCENARIOS = MP_SCENARIOS;
 window.activeMpScenario = activeMpScenario;
 window.SCENE_SEEDS = SCENE_SEEDS;

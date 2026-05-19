@@ -1919,6 +1919,350 @@ function activeUserEnrolledDexes(userId) {
 }
 window.activeUserEnrolledDexes = activeUserEnrolledDexes;
 
+/* ============================================================================
+ * Portal-wide chrome hydrators (Issue 0011)
+ * ----------------------------------------------------------------------------
+ * Each de-hardcoded surface gets its own per-surface hydrator that swaps the
+ * literal markup for active-context values from USERS / ORGS / resolveSeat /
+ * ORG_DEX_MEMBERSHIPS / workspace queries. The fan-out wiring runs them all
+ * via runPortalChromeHydrators() — called from applyPersonaChrome() and the
+ * DEX-switch path so persona / DEX changes re-render every hydrated surface
+ * without a page reload.
+ *
+ * Naming convention: hydrate<Surface>Chrome().
+ * Register each new hydrator both here (via window.<name>) and in CONTEXT.md's
+ * "Reusable components — single source of truth" table.
+ * ============================================================================ */
+
+/* hydratePickerDexSuffixChrome — swaps the DEX-name suffix in any picker
+   placeholder that opted in with data-dex-suffix-placeholder="<prefix>".
+   Example: <input data-dex-suffix-placeholder="Search data elements on"> →
+   "Search data elements on SGTradex". Optional data-dex-suffix-tail appends
+   after the DEX label for placeholders with a trailing clause. */
+function hydratePickerDexSuffixChrome() {
+  const dexId = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[dexId]) || 'SGTradex';
+  document.querySelectorAll('[data-dex-suffix-placeholder]').forEach((el) => {
+    const prefix = el.getAttribute('data-dex-suffix-placeholder') || '';
+    const tail = el.getAttribute('data-dex-suffix-tail') || '';
+    el.setAttribute('placeholder', `${prefix} ${dexLabel}${tail}`);
+  });
+}
+window.hydratePickerDexSuffixChrome = hydratePickerDexSuffixChrome;
+
+/* hydrateListPageTitlesChrome — fills H1 page titles on the data-elements /
+   participants / agreements list screens. Markup opts in with
+   data-list-page-title="<prefix>" and the hydrator substitutes
+   "<prefix> <DEX label>". The H1 sits inside .canvas-meta but is real chrome —
+   only the sibling .meta-label / .adr-tag pills are dev annotations. */
+function hydrateListPageTitlesChrome() {
+  const dexId = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[dexId]) || 'SGTradex';
+  document.querySelectorAll('[data-list-page-title]').forEach((el) => {
+    const prefix = el.getAttribute('data-list-page-title') || '';
+    el.textContent = `${prefix} ${dexLabel}`;
+  });
+}
+window.hydrateListPageTitlesChrome = hydrateListPageTitlesChrome;
+
+/* hydrateImpersonationChrome — fills the "View as participant on <DEX>" banner
+   (top-of-page when impersonation is active) and the impersonation modal
+   header + body that introduce the session. Both reference the active DEX
+   so persona's view-as-participant journey reads truthfully. */
+function hydrateImpersonationChrome() {
+  const dexId = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[dexId]) || 'SGTradex';
+  const banner = document.querySelector('[data-impersonation-banner-text]');
+  if (banner) {
+    banner.textContent = `Viewing as participant on ${dexLabel} · all actions tagged in the audit log under impersonation`;
+  }
+  const modalTitle = document.querySelector('[data-impersonation-modal-title]');
+  if (modalTitle) modalTitle.textContent = `View as participant on ${dexLabel}`;
+  const modalBody = document.querySelector('[data-impersonation-modal-body]');
+  if (modalBody) {
+    modalBody.textContent = `You'll see exactly what a participant on ${dexLabel} sees. Any action you take will be tagged in the audit log as performed under impersonation.`;
+  }
+}
+window.hydrateImpersonationChrome = hydrateImpersonationChrome;
+
+/* hydrateJoinDexModalChrome — fills the "Your org is already on <DEX list>"
+   line in the Join-another-DEX modal. List of enrolled DEXes derives from
+   ORG_DEX_MEMBERSHIPS for the active user's primary org. Falls back to the
+   default three-DEX listing if state is unavailable. */
+function hydrateJoinDexModalChrome() {
+  const line = document.querySelector('[data-join-dex-enrolled-line]');
+  if (!line) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const enrolled = (typeof activeUserEnrolledDexes === 'function')
+    ? activeUserEnrolledDexes(userId)
+    : ['tx', 'bx', 'hx'];
+  const labels = enrolled.map((d) => (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[d]) || d.toUpperCase());
+  let listText;
+  if (labels.length === 0) listText = 'not yet enrolled in any DEX';
+  else if (labels.length === 1) listText = labels[0];
+  else if (labels.length === 2) listText = `${labels[0]} and ${labels[1]}`;
+  else listText = `${labels.slice(0, -1).join(', ')}, and ${labels[labels.length - 1]}`;
+  line.textContent = enrolled.length
+    ? `Your org is already on ${listText}.`
+    : `Your org is ${listText}.`;
+}
+window.hydrateJoinDexModalChrome = hydrateJoinDexModalChrome;
+
+/* hydrateSettingsOtherDexMembershipsChrome — re-renders the Settings →
+   "Other DEX memberships" section under the active user's primary org.
+   Each row shows the Pitstop's home DEX chip, name, topology (single- vs
+   multi-Pitstop Org), user count, and elements-scoped count — values pulled
+   from PITSTOPS_BY_ORG record fields (see state.js for why those counts
+   live on the record rather than being derived from the demo-sized user
+   table). Persona switches automatically re-render this surface via
+   runPortalChromeHydrators(). */
+function hydrateSettingsOtherDexMembershipsChrome() {
+  const host = document.querySelector('[data-settings-other-dex-memberships]');
+  if (!host) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const user = (typeof USERS !== 'undefined' && USERS) ? USERS[userId] : null;
+  const orgId = user && user.primaryOrgId;
+  const org = (orgId && typeof ORGS !== 'undefined' && ORGS) ? ORGS[orgId] : null;
+  const homeDex = org && org.primaryDexId;
+  const pitstops = (orgId && typeof PITSTOPS_BY_ORG !== 'undefined' && PITSTOPS_BY_ORG[orgId])
+    ? PITSTOPS_BY_ORG[orgId]
+    : [];
+  const otherDexPitstops = pitstops.filter((p) => p && !p.retired && p.dexId && p.dexId !== homeDex);
+  // Group by DEX so multi-Pitstop orgs render once per Pitstop but topology
+  // reflects the per-DEX count.
+  const byDex = {};
+  otherDexPitstops.forEach((p) => { (byDex[p.dexId] = byDex[p.dexId] || []).push(p); });
+  const heading = '<h3>Other DEX memberships</h3>';
+  if (otherDexPitstops.length === 0) {
+    host.innerHTML = heading + '<p class="s-empty" style="font-size:12px;color:var(--g-50)">Your org isn\'t a member of any DEX outside its home DEX.</p>';
+    return;
+  }
+  const rows = otherDexPitstops.map((p) => {
+    const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[p.dexId]) || p.dexId.toUpperCase();
+    const cohort = byDex[p.dexId] || [];
+    const topology = cohort.length === 1 ? 'single-Pitstop Org' : 'multi-Pitstop Org';
+    const userCount = (typeof p.userCount === 'number') ? p.userCount : 0;
+    const elemCount = (typeof p.elementsScopedCount === 'number') ? p.elementsScopedCount : 0;
+    const handler = `openPitstopConfig('${escAttr(p.id)}')`;
+    return `<div class="settings-row"><span class="s-k"><span class="dex-chip ${escAttr(p.dexId)}"><span class="dex-dot"></span>${escAttr(dexLabel)}</span></span><span class="s-v"><strong>${escAttr(p.name)}</strong> · ${escAttr(topology)} on ${escAttr(dexLabel)} · ${userCount} users · ${elemCount} elements scoped</span><span class="s-action"><a role="button" tabindex="0" onclick="${handler}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">Configure</a></span></div>`;
+  }).join('');
+  host.innerHTML = heading + rows;
+}
+window.hydrateSettingsOtherDexMembershipsChrome = hydrateSettingsOtherDexMembershipsChrome;
+
+/* hydrateOnboardingOverlayChrome — fills the prototype-entry overlay's
+   lede ("Step into the prototype as one of <Org>'s admins") and the
+   primary-CTA description ("Sign in as <Name>, an <Role> for <Org> on
+   <DEX>") so reviewers entering as a non-default persona see the right
+   identity introduced. Falls back to the original Marcus/Cosco/SGTradex
+   sentence if state is missing. */
+function hydrateOnboardingOverlayChrome() {
+  const lede = document.querySelector('[data-onboarding-overlay-lede]');
+  const desc = document.querySelector('[data-onboarding-overlay-desc]');
+  if (!lede && !desc) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const dexId = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[dexId]) || 'SGTradex';
+  const user = (typeof USERS !== 'undefined' && USERS) ? USERS[userId] : null;
+  const firstName = user && user.name ? String(user.name).split(/\s+/)[0] : 'the operator';
+  const orgId = user && user.primaryOrgId;
+  const org = (orgId && typeof ORGS !== 'undefined' && ORGS) ? ORGS[orgId] : null;
+  const orgShort = (org && (org.short || org.name)) || 'your org';
+  const orgName = (org && org.name) || orgShort;
+  const seat = (typeof resolveSeat === 'function') ? resolveSeat(userId, dexId) : null;
+  const role = seat && seat.role ? seat.role : 'an operator';
+  if (lede) lede.textContent = `Step into the prototype as one of ${orgName}'s admins — explore freely, or watch a guided demo of how the new portal feels in motion.`;
+  if (desc) desc.textContent = `Sign in as ${firstName}, an ${role} for ${orgShort} on ${dexLabel}. Click through inboxes, Agreements, the lifecycle states. Reset anytime from the corner.`;
+}
+window.hydrateOnboardingOverlayChrome = hydrateOnboardingOverlayChrome;
+
+/* hydrateSettingsProfileChrome — fills the four rows under Settings → Profile
+   (Name / Email / Organisation / User since) from active user + active org
+   record. Organisation reads legalName + uen if present on the ORGS record,
+   else falls back to the display name alone. */
+function hydrateSettingsProfileChrome() {
+  const host = document.querySelector('[data-settings-profile]');
+  if (!host) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const user = (typeof USERS !== 'undefined' && USERS) ? USERS[userId] : null;
+  const orgId = user && user.primaryOrgId;
+  const org = (orgId && typeof ORGS !== 'undefined' && ORGS) ? ORGS[orgId] : null;
+  const affiliation = (orgId && typeof USER_ORG_AFFILIATIONS !== 'undefined') ? USER_ORG_AFFILIATIONS[`${userId}-${orgId}`] : null;
+  const nameEl = host.querySelector('[data-settings-profile-name]');
+  if (nameEl) nameEl.textContent = (user && user.name) || '—';
+  const emailEl = host.querySelector('[data-settings-profile-email]');
+  if (emailEl) emailEl.textContent = (user && user.email) || '—';
+  const orgEl = host.querySelector('[data-settings-profile-organisation]');
+  if (orgEl) {
+    if (org && org.legalName && org.uen) orgEl.textContent = `${org.legalName} · UEN ${org.uen}`;
+    else if (org && org.name) orgEl.textContent = org.name;
+    else orgEl.textContent = '—';
+  }
+  const sinceEl = host.querySelector('[data-settings-profile-user-since]');
+  if (sinceEl) sinceEl.textContent = (affiliation && affiliation.startDate)
+    ? formatHumanDate(affiliation.startDate)
+    : '—';
+}
+window.hydrateSettingsProfileChrome = hydrateSettingsProfileChrome;
+
+/* hydrateSettingsDexRolesChrome — re-renders the Settings → "Roles by DEX"
+   section. Each row represents one DEX where the active user holds a seat
+   (per resolveSeat). For platform-tier users, every enrolled DEX renders
+   uniformly via platformRole. Surface is data-truth: if Marcus's BX/HX
+   seats were stripped (Issues 0002 + 0003), only TX renders — the prior
+   markup that showed all three rows was stale relative to the affiliation
+   table. */
+function hydrateSettingsDexRolesChrome() {
+  const host = document.querySelector('[data-settings-dex-roles]');
+  if (!host) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const user = (typeof USERS !== 'undefined' && USERS) ? USERS[userId] : null;
+  const orgId = user && user.primaryOrgId;
+  const affiliation = (orgId && typeof USER_ORG_AFFILIATIONS !== 'undefined') ? USER_ORG_AFFILIATIONS[`${userId}-${orgId}`] : null;
+  const dexJoinDates = (affiliation && affiliation.dexJoinDates) || {};
+  const candidateDexes = (typeof activeUserEnrolledDexes === 'function') ? activeUserEnrolledDexes(userId) : ['tx', 'bx', 'hx'];
+  const rows = candidateDexes.map((d) => {
+    const seat = (typeof resolveSeat === 'function') ? resolveSeat(userId, d) : null;
+    if (!seat || !seat.role) return null;
+    const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[d]) || d.toUpperCase();
+    const scope = (typeof ROLE_SCOPE_DESCRIPTIONS !== 'undefined' && ROLE_SCOPE_DESCRIPTIONS[seat.role]) || '';
+    const joined = dexJoinDates[d] ? ` · joined ${formatHumanDate(dexJoinDates[d])}` : '';
+    const valueText = scope ? `${seat.role} · ${scope}${joined}` : `${seat.role}${joined}`;
+    return `<div class="settings-row"><span class="s-k"><span class="dex-chip ${escAttr(d)}"><span class="dex-dot"></span>${escAttr(dexLabel)}</span></span><span class="s-v">${escAttr(valueText)}</span><span class="s-action"></span></div>`;
+  }).filter(Boolean);
+  const heading = '<h3>Roles by DEX</h3>';
+  if (rows.length === 0) {
+    host.innerHTML = heading + '<p class="s-empty" style="font-size:12px;color:var(--g-50)">No active DEX roles for this user.</p>';
+    return;
+  }
+  host.innerHTML = heading + rows.join('');
+}
+window.hydrateSettingsDexRolesChrome = hydrateSettingsDexRolesChrome;
+
+/* hydrateDexSwitcherChrome — re-renders the DEX switcher rows
+   (#switcher-pop > [data-dex-switcher-rows]) for the active user. Each row
+   shows the DEX tile + name + per-DEX role + waiting-items count (derived
+   from workspace.inboxItems via listInboxItemsForUserAndDex). Active DEX
+   gets the check mark; non-active enrolled DEXes get the unread dot when
+   they have items waiting. */
+function hydrateDexSwitcherChrome() {
+  const host = document.querySelector('[data-dex-switcher-rows]');
+  if (!host) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const activeDex = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const enrolled = (typeof activeUserEnrolledDexes === 'function') ? activeUserEnrolledDexes(userId) : ['tx', 'bx', 'hx'];
+  const tile = (d) => ({ tx: 'Tx', bx: 'Bx', hx: 'Hx' }[d] || d.toUpperCase());
+  const rows = enrolled.map((d) => {
+    const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[d]) || d.toUpperCase();
+    const seat = (typeof resolveSeat === 'function') ? resolveSeat(userId, d) : null;
+    const role = seat && seat.role ? seat.role : '';
+    let waitingCount = 0;
+    if (typeof listInboxItemsForUserAndDex === 'function') {
+      waitingCount = listInboxItemsForUserAndDex(userId, d).filter((i) => !i.completion).length;
+    }
+    const isActive = d === activeDex;
+    const cls = `switcher-item ${escAttr(d)}${isActive ? ' active' : ''}`;
+    const trailing = isActive
+      ? `<i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:14px"></i>`
+      : (waitingCount > 0 ? `<span style="margin-left:auto;width:6px;height:6px;background:var(--red-50);border-radius:50%"></span>` : '');
+    const roleClause = role ? `${escAttr(role)} · ${waitingCount} item${waitingCount === 1 ? '' : 's'} waiting` : `${waitingCount} item${waitingCount === 1 ? '' : 's'} waiting`;
+    return `<div class="${cls}" role="menuitem" onclick="switchDex('${escAttr(d)}')"><span class="ws-tile">${escAttr(tile(d))}</span><div><div class="label">${escAttr(dexLabel)}</div><div class="role">${roleClause}</div></div>${trailing}</div>`;
+  });
+  host.innerHTML = rows.join('');
+}
+window.hydrateDexSwitcherChrome = hydrateDexSwitcherChrome;
+
+/* hydrateComposerDefaultHero — pulls the composer's initial H2 from the
+   default compose scenario's title rather than carrying it as a markup
+   literal. `setComposerScenario()` overwrites this H2 every time the
+   composer screen is opened — but the literal in HTML was still a
+   hardcoded "Element → Counterparty" string. Now it derives. */
+function hydrateComposerDefaultHero() {
+  const el = document.querySelector('[data-composer-default-hero]');
+  if (!el) return;
+  if (typeof COMPOSE_SCENARIOS === 'undefined') return;
+  const defaultScenario = (typeof composerState !== 'undefined' && composerState && composerState.scenario) || 'push-high-stakes';
+  const cfg = COMPOSE_SCENARIOS[defaultScenario] || COMPOSE_SCENARIOS['push-high-stakes'];
+  if (cfg && cfg.title) el.textContent = cfg.title;
+}
+window.hydrateComposerDefaultHero = hydrateComposerDefaultHero;
+
+/* hydrateAgreementActivityLog — renders every `[data-agreement-activity-log]`
+   <ol> on the page from workspace.agreementActivityLog[agreementId]. Each
+   entry resolves its actor display from USERS[actorUserId] (with optional
+   "(actorDisplayOrg)" suffix) or actorOrgOnly when the actor is the org
+   itself. Issue 0011 stage 1e converted these from hand-authored seed
+   markup to workspace state. */
+function hydrateAgreementActivityLog() {
+  const containers = document.querySelectorAll('[data-agreement-activity-log]');
+  if (!containers.length) return;
+  const workspace = (typeof getWorkspace === 'function') ? getWorkspace() : null;
+  const log = (workspace && workspace.agreementActivityLog) || (typeof AGREEMENT_ACTIVITY_LOG_BY_AGREEMENT !== 'undefined' ? AGREEMENT_ACTIVITY_LOG_BY_AGREEMENT : {});
+  const users = (workspace && workspace.users) || (typeof USERS !== 'undefined' ? USERS : {});
+  containers.forEach((host) => {
+    const agreementId = host.getAttribute('data-agreement-activity-log');
+    const entries = log[agreementId] || [];
+    if (!entries.length) {
+      host.innerHTML = '<li class="ev"><span class="ev-dot muted" aria-hidden="true"></span><div class="ev-body"><p style="color:var(--g-50)">No activity yet.</p></div></li>';
+      return;
+    }
+    host.innerHTML = entries.map((e) => {
+      const dotClass = ['tx','bx','hx','green','muted'].includes(e.dotKind) ? `ev-dot ${e.dotKind}` : 'ev-dot';
+      const dotStyle = (e.dotKind && !['tx','bx','hx','green','muted'].includes(e.dotKind))
+        ? ` style="background:var(--${escAttr(e.dotKind)})"`
+        : '';
+      let actorHtml = '';
+      if (e.actorUserId) {
+        const user = users[e.actorUserId];
+        const name = (user && user.name) || e.actorUserId;
+        actorHtml = e.actorDisplayOrg
+          ? `<strong>${escAttr(name)} (${escAttr(e.actorDisplayOrg)})</strong> `
+          : `<strong>${escAttr(name)}</strong> `;
+      } else if (e.actorOrgOnly) {
+        actorHtml = `<strong>${escAttr(e.actorOrgOnly)}</strong> `;
+      }
+      const timeHtml = e.datetime
+        ? `<time datetime="${escAttr(e.datetime)}">${escAttr(e.humanTime || '')}</time>`
+        : `<time>${escAttr(e.humanTime || '')}</time>`;
+      return `<li class="ev"><span class="${dotClass}"${dotStyle} aria-hidden="true"></span><div class="ev-body"><p>${actorHtml}${e.bodyHtml || ''}</p><p class="ev-time">${timeHtml}</p></div></li>`;
+    }).join('');
+  });
+}
+window.hydrateAgreementActivityLog = hydrateAgreementActivityLog;
+
+/* formatHumanDate — small "YYYY-MM-DD" → "14 Mar 2024" helper used by
+   the profile + DEX-role hydrators. Local utility; not exposed globally. */
+function formatHumanDate(iso) {
+  if (!iso || typeof iso !== 'string') return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const day = parseInt(m[3], 10);
+  const month = months[parseInt(m[2], 10) - 1] || m[2];
+  return `${day} ${month} ${m[1]}`;
+}
+
+/* runPortalChromeHydrators — single fan-out called whenever persona / DEX /
+   workspace context changes. Each per-surface hydrator is invoked
+   independently so a missing data-* anchor on one surface doesn't block the
+   others. Surfaces guarded inside hydrateInboxAllChrome / hydrateEmptyHero
+   are intentionally NOT re-run here — they're tied to specific screens and
+   have their own re-render triggers. */
+function runPortalChromeHydrators() {
+  try { hydratePickerDexSuffixChrome(); } catch (e) { /* surface-isolated */ }
+  try { hydrateListPageTitlesChrome(); } catch (e) {}
+  try { hydrateImpersonationChrome(); } catch (e) {}
+  try { hydrateJoinDexModalChrome(); } catch (e) {}
+  try { hydrateSettingsOtherDexMembershipsChrome(); } catch (e) {}
+  try { hydrateOnboardingOverlayChrome(); } catch (e) {}
+  try { hydrateSettingsProfileChrome(); } catch (e) {}
+  try { hydrateSettingsDexRolesChrome(); } catch (e) {}
+  try { hydrateDexSwitcherChrome(); } catch (e) {}
+  try { hydrateComposerDefaultHero(); } catch (e) {}
+  try { hydrateAgreementActivityLog(); } catch (e) {}
+}
+window.runPortalChromeHydrators = runPortalChromeHydrators;
+
 function renderInboxFromWorkspace(screenName) {
   if (typeof listInboxItemsForUserAndDex !== 'function') return;
   // Inbox materialisation can resolve closed items or surface new failed
@@ -7725,9 +8069,14 @@ function switchPersona(personaId) {
   applyPersonaChrome();
   refreshRoleChips(); // also re-runs capability gates + sidebar visibility
 
-  // Inbox content swap — participant DEX-scoped inbox or PLATFORM_INBOX cross-org work
-  if (typeof themeInboxContent === 'function') {
-    themeInboxContent(personaId === 'platform-admin' ? 'tx' : currentDexCode());
+  // Inbox content swap — Issue 0011 Phase 2 routes platform-admin to
+  // inbox-all (cross-DEX aggregator). Sarah's PLATFORM_INBOX is now
+  // workspace-resident, so renderInboxFromWorkspace handles her items the
+  // same way it handles Marcus's participant items.
+  if (personaId === 'platform-admin' && typeof goto === 'function') {
+    goto('inbox-all');
+  } else if (typeof themeInboxContent === 'function') {
+    themeInboxContent(currentDexCode());
   }
   // Re-hydrate dynamic chrome that's outside the inbox renderer's reach
   // (welcome heading, role/DEX lede, org+count copy on the empty hero;
@@ -7821,7 +8170,15 @@ function rebuildAllShells() {
       };
       if (SIDEBAR_ROUTES[label]) {
         if (typeof exitFlow === 'function') exitFlow();
-        goto(SIDEBAR_ROUTES[label]);
+        // Issue 0011 Phase 2 — platform-admin's Inbox is fundamentally
+        // cross-DEX (Sarah's governance work spans all three DEXes per
+        // PLATFORM_INBOX materialisation), so route her to inbox-all
+        // instead of the per-DEX inbox-tx surface.
+        let target = SIDEBAR_ROUTES[label];
+        if (label === 'Inbox' && typeof currentPersona !== 'undefined' && currentPersona === 'platform-admin') {
+          target = 'inbox-all';
+        }
+        goto(target);
       } else {
         toast('Routing to ' + label + ' (placeholder)');
       }
@@ -7904,6 +8261,11 @@ function applyPersonaChrome() {
   // Rail caption suffix — names the active user so the demo controller and audience
   // never wonder who's on stage (ADR 0030 Q9-g).
   updateRailCaptionWithActiveUser(active);
+
+  // Issue 0011 — fan out to every per-surface chrome hydrator so the DEX-name
+  // suffixes, list-page H1s, impersonation copy, and join-DEX modal all
+  // re-render against the active persona / DEX.
+  if (typeof runPortalChromeHydrators === 'function') runPortalChromeHydrators();
 }
 
 /* Writes the active user's first name + a colleague-switch chevron next to the
@@ -8567,7 +8929,12 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       if (routes[label]) {
         if (typeof exitFlow === 'function') exitFlow();
-        goto(routes[label]);
+        // Issue 0011 Phase 2 — platform-admin → inbox-all (see other call site above).
+        let target = routes[label];
+        if (label === 'Inbox' && typeof currentPersona !== 'undefined' && currentPersona === 'platform-admin') {
+          target = 'inbox-all';
+        }
+        goto(target);
       } else {
         toast('Routing to ' + label + ' (placeholder)');
       }
