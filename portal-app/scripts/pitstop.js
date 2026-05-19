@@ -52,6 +52,133 @@ function _pitstopMruMap() {
   }
   return (typeof pitstopMru !== 'undefined') ? pitstopMru : {};
 }
+
+/* ---------- Workspace-backed element-scope accessors ----------
+   Per-org-per-DEX-per-element-per-direction Pitstop scope sets live on
+   workspace.pitstopElementScope (seeded by seedReferenceCollections from
+   PITSTOP_ELEMENT_SCOPE). Two writers mutate scope today:
+     - persistScopeCapture (wizard first-use capture, ADR 0028 §Capture)
+     - togglePitstopScope (Settings page toggle)
+   Both must mirror to BOTH stores so:
+     a) workspace.pitstopElementScope survives reload (via persistWorkspace)
+     b) the script-level global stays consistent with the in-memory reads
+        scattered across pitstop.js (getScopeSet, the settings render path,
+        the doctor's eligibility pickers).
+   On bootstrap (initializeWorkspaceApp), hydratePitstopElementScopeFromWorkspace
+   pushes workspace → global so reload starts with the user's persisted
+   captures rather than the pristine state.js fixtures. */
+function _pitstopElementScopeMap() {
+  if (typeof getWorkspace === 'function') {
+    try {
+      const ws = getWorkspace();
+      if (ws && ws.pitstopElementScope) return ws.pitstopElementScope;
+    } catch (_) { /* fall through to global */ }
+  }
+  return (typeof PITSTOP_ELEMENT_SCOPE !== 'undefined') ? PITSTOP_ELEMENT_SCOPE : {};
+}
+
+function _writePitstopElementScope(orgId, dexId, elementId, direction, pitstopIds) {
+  const slice = (pitstopIds || []).slice();
+  // Write to workspace first (persistence layer).
+  const wsMap = _pitstopElementScopeMap();
+  if (!wsMap[orgId]) wsMap[orgId] = {};
+  if (!wsMap[orgId][dexId]) wsMap[orgId][dexId] = {};
+  if (!wsMap[orgId][dexId][elementId]) wsMap[orgId][dexId][elementId] = {};
+  wsMap[orgId][dexId][elementId][direction] = slice;
+  // Mirror to the script-level global so in-memory reads from pitstop.js
+  // (getScopeSet, the settings render path, doctor pickers) see the change
+  // immediately, even if they don't go through the workspace accessor.
+  if (typeof PITSTOP_ELEMENT_SCOPE !== 'undefined' && PITSTOP_ELEMENT_SCOPE !== wsMap) {
+    if (!PITSTOP_ELEMENT_SCOPE[orgId]) PITSTOP_ELEMENT_SCOPE[orgId] = {};
+    if (!PITSTOP_ELEMENT_SCOPE[orgId][dexId]) PITSTOP_ELEMENT_SCOPE[orgId][dexId] = {};
+    if (!PITSTOP_ELEMENT_SCOPE[orgId][dexId][elementId]) PITSTOP_ELEMENT_SCOPE[orgId][dexId][elementId] = {};
+    PITSTOP_ELEMENT_SCOPE[orgId][dexId][elementId][direction] = slice.slice();
+  }
+  if (typeof persistWorkspace === 'function') {
+    try { persistWorkspace(); } catch (_) { /* best-effort */ }
+  }
+}
+
+/* Pristine snapshot of the state.js fixture, captured at script load
+   BEFORE any persistScopeCapture / togglePitstopScope writes mutate the
+   live PITSTOP_ELEMENT_SCOPE global. clearCapturedPitstopScopes uses this
+   as the canonical fixture to reset both stores. Without the snapshot,
+   reading PITSTOP_ELEMENT_SCOPE at reset time would already include user
+   captures and the reset would be a no-op. */
+const _PITSTOP_ELEMENT_SCOPE_FIXTURE = (typeof PITSTOP_ELEMENT_SCOPE !== 'undefined')
+  ? JSON.parse(JSON.stringify(PITSTOP_ELEMENT_SCOPE))
+  : {};
+
+/* Reset workspace + global Pitstop element-scope to the state.js fixture
+   defaults — the demo escape hatch. After a session captures scope for an
+   element (via the wizard's first-use step or the Settings page toggle),
+   the workspace persists it, so the next demo of multi-Pitstop scope-
+   capture wouldn't fire. This helper restores the original fixture in both
+   stores so demoing the multi-Pitstop capture flow works again. Exposed
+   on window for the doctor / Settings reset button to call.
+
+   Idempotent. Safe to call when no captures exist (no-ops). */
+function clearCapturedPitstopScopes() {
+  if (typeof getWorkspace !== 'function') return;
+  let workspace = null;
+  try { workspace = getWorkspace(); } catch (_) { return; }
+  if (!workspace) return;
+
+  // Pristine fixture captured at script load — clone so we don't share
+  // refs with either store (mutations to workspace shouldn't leak back
+  // into the snapshot, and the snapshot itself stays immutable).
+  const fixture = JSON.parse(JSON.stringify(_PITSTOP_ELEMENT_SCOPE_FIXTURE));
+
+  // 1. Replace workspace.pitstopElementScope wholesale with the fixture.
+  //    Object.keys()-then-delete preserves the same object reference so
+  //    accessors that captured it earlier keep working.
+  const wsScope = workspace.pitstopElementScope || {};
+  Object.keys(wsScope).forEach((k) => { delete wsScope[k]; });
+  Object.assign(wsScope, JSON.parse(JSON.stringify(fixture)));
+
+  // 2. Re-sync the script-level global the same way — wipe and re-fill.
+  if (typeof PITSTOP_ELEMENT_SCOPE !== 'undefined') {
+    Object.keys(PITSTOP_ELEMENT_SCOPE).forEach((k) => {
+      // _fStash is a runtime stash that doesn't belong in the fixture set;
+      // preserve it so the F-scenario demo state isn't accidentally wiped.
+      if (k === '_fStash') return;
+      delete PITSTOP_ELEMENT_SCOPE[k];
+    });
+    Object.assign(PITSTOP_ELEMENT_SCOPE, JSON.parse(JSON.stringify(fixture)));
+  }
+
+  if (typeof persistWorkspace === 'function') {
+    try { persistWorkspace(); } catch (_) { /* best-effort */ }
+  }
+}
+
+/* One-shot bootstrap helper: copy workspace.pitstopElementScope back into
+   the script-level PITSTOP_ELEMENT_SCOPE so reads through the global
+   reflect the user's persisted captures after a reload. Idempotent — only
+   copies leaf-level direction arrays the workspace declares; doesn't
+   destroy state.js fixture defaults the workspace hasn't touched. */
+function hydratePitstopElementScopeFromWorkspace() {
+  if (typeof getWorkspace !== 'function' || typeof PITSTOP_ELEMENT_SCOPE === 'undefined') return;
+  let ws = null;
+  try { ws = getWorkspace(); } catch (_) { return; }
+  const wsScope = ws && ws.pitstopElementScope;
+  if (!wsScope) return;
+  Object.keys(wsScope).forEach((orgId) => {
+    const byDex = wsScope[orgId] || {};
+    Object.keys(byDex).forEach((dexId) => {
+      const byEl = byDex[dexId] || {};
+      Object.keys(byEl).forEach((elementId) => {
+        const byDir = byEl[elementId] || {};
+        Object.keys(byDir).forEach((direction) => {
+          if (!PITSTOP_ELEMENT_SCOPE[orgId]) PITSTOP_ELEMENT_SCOPE[orgId] = {};
+          if (!PITSTOP_ELEMENT_SCOPE[orgId][dexId]) PITSTOP_ELEMENT_SCOPE[orgId][dexId] = {};
+          if (!PITSTOP_ELEMENT_SCOPE[orgId][dexId][elementId]) PITSTOP_ELEMENT_SCOPE[orgId][dexId][elementId] = {};
+          PITSTOP_ELEMENT_SCOPE[orgId][dexId][elementId][direction] = (byDir[direction] || []).slice();
+        });
+      });
+    });
+  });
+}
 function _readPitstopMru(operatorId, elementId, direction) {
   const map = _pitstopMruMap();
   return (((map[operatorId] || {})[elementId] || {})[direction]) || null;
@@ -168,10 +295,9 @@ function shouldFireScopeCaptureStep(operatorOrgId, dexId, elementId, direction) 
 const SCOPE_CAPTURE_AUDIT = [];
 
 function persistScopeCapture(operatorOrgId, dexId, elementId, direction, pitstopIds, via) {
-  if (!PITSTOP_ELEMENT_SCOPE[operatorOrgId]) PITSTOP_ELEMENT_SCOPE[operatorOrgId] = {};
-  if (!PITSTOP_ELEMENT_SCOPE[operatorOrgId][dexId]) PITSTOP_ELEMENT_SCOPE[operatorOrgId][dexId] = {};
-  if (!PITSTOP_ELEMENT_SCOPE[operatorOrgId][dexId][elementId]) PITSTOP_ELEMENT_SCOPE[operatorOrgId][dexId][elementId] = {};
-  PITSTOP_ELEMENT_SCOPE[operatorOrgId][dexId][elementId][direction] = pitstopIds.slice();
+  // Workspace-backed write (survives reload). Falls back to the global when
+  // workspace stack isn't loaded (e.g., pitstop-settings test harness).
+  _writePitstopElementScope(operatorOrgId, dexId, elementId, direction, pitstopIds);
   SCOPE_CAPTURE_AUDIT.push({
     ts: Date.now(),
     operatorOrgId, dexId, elementId, direction,
@@ -1340,17 +1466,19 @@ function togglePitstopScope(pitstopId, elementId, direction, shouldEnable) {
   const ps = getPitstopById(pitstopId);
   if (!ps || ps.retired) return;
 
-  if (!PITSTOP_ELEMENT_SCOPE[ps.orgId]) PITSTOP_ELEMENT_SCOPE[ps.orgId] = {};
-  if (!PITSTOP_ELEMENT_SCOPE[ps.orgId][ps.dexId]) PITSTOP_ELEMENT_SCOPE[ps.orgId][ps.dexId] = {};
-  if (!PITSTOP_ELEMENT_SCOPE[ps.orgId][ps.dexId][elementId]) PITSTOP_ELEMENT_SCOPE[ps.orgId][ps.dexId][elementId] = {};
-  if (!PITSTOP_ELEMENT_SCOPE[ps.orgId][ps.dexId][elementId][direction]) PITSTOP_ELEMENT_SCOPE[ps.orgId][ps.dexId][elementId][direction] = [];
+  // Read current bucket through the workspace accessor, mutate the slice,
+  // then commit via _writePitstopElementScope which mirrors to both stores
+  // and persists. (The Settings UI flow can fire many toggles in a row;
+  // each write persists, which is fine — the snapshot is small.)
+  const current = (((_pitstopElementScopeMap()[ps.orgId] || {})[ps.dexId] || {})[elementId] || {})[direction] || [];
+  const hasPitstop = current.includes(pitstopId);
 
-  const bucket = PITSTOP_ELEMENT_SCOPE[ps.orgId][ps.dexId][elementId][direction];
-  const hasPitstop = bucket.includes(pitstopId);
+  let next = current;
+  if (shouldEnable && !hasPitstop) next = current.concat([pitstopId]);
+  if (!shouldEnable && hasPitstop) next = current.filter(id => id !== pitstopId);
 
-  if (shouldEnable && !hasPitstop) bucket.push(pitstopId);
-  if (!shouldEnable && hasPitstop) {
-    PITSTOP_ELEMENT_SCOPE[ps.orgId][ps.dexId][elementId][direction] = bucket.filter(id => id !== pitstopId);
+  if (next !== current) {
+    _writePitstopElementScope(ps.orgId, ps.dexId, elementId, direction, next);
   }
 
   appendPitstopActivity(pitstopId, {

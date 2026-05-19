@@ -147,16 +147,30 @@ function submitAgreementDraft(draftId) {
     updatedAt: new Date().toISOString()
   };
 
+  const isInbound = draft.direction === 'receive';
+  const elementName = (draft.dataElement && draft.dataElement.name) || draft.dataElement || 'Agreement';
+  const nowISO = new Date().toISOString();
   workspace.inboxItems[inboxItemId] = {
     inboxItemId,
     agreementId,
     ownerUserId: draft.operatorId,
     dexId: draft.dexId,
     bucket: 'mine',
-    title: `Your Agreement with ${draft.counterparty.name} is awaiting review`,
-    meta: 'Sent just now · pending counterparty action',
+    title: isInbound
+      ? `${draft.counterparty.name} invited you to share ${elementName}`
+      : `Your Agreement with ${draft.counterparty.name} is awaiting their review`,
+    meta: isInbound
+      ? 'Invitation · awaiting your response'
+      : 'Sent just now · pending counterparty acceptance',
+    btn: isInbound ? 'Review' : 'Open',
+    action: isInbound ? 'review' : 'open-agreement',
+    dir: isInbound ? 'in' : 'out',
+    completion: false,
+    counterpartyOrgId,
+    counterpartyName: draft.counterparty.name,
     status: 'open',
-    createdAt: new Date().toISOString()
+    createdAt: nowISO,
+    surfacedAt: nowISO
   };
 
   delete workspace.agreementDrafts[draftId];
@@ -216,6 +230,136 @@ function setSelectedAgreementId(agreementId) {
 
 function getSelectedAgreementId() {
   return selectedAgreementId;
+}
+
+/* ---------- Agreement state transitions (ADR 0007 truth table) ----------
+   Four operator-facing transitions; each enforces the truth-table rules
+   defined above (R1 endedReason on ended only, R2 suspended on active only)
+   and stamps an activity entry so audit can trace the action.
+
+   suspendAgreement(id, actorUserId)   → state stays 'active', suspended=true.
+                                         Throws if state !== 'active' or
+                                         agreement is already suspended.
+   resumeAgreement(id, actorUserId)    → state stays 'active', suspended=false.
+                                         Throws if state !== 'active' or not
+                                         currently suspended.
+   withdrawAgreement(id, actorUserId)  → state→'ended', endedReason='WITHDRAWN'.
+                                         The pending-side termination — the
+                                         operator pulls back an invitation the
+                                         counterparty has not yet accepted.
+                                         Throws if state !== 'pending' (active
+                                         agreements use revokeAgreement; ended
+                                         records cannot be re-ended).
+   revokeAgreement(id, actorUserId, opts)
+                                       → state→'ended', endedReason chosen
+                                         from { REVOKED_BY_INITIATOR,
+                                         REVOKED_BY_COUNTERPARTY } based on
+                                         whether the actor's primary org
+                                         matches the operatorOrgId. Throws if
+                                         state is already 'ended'. opts.reason
+                                         can override the inferred reason
+                                         (must be a valid VALID_ENDED_REASONS
+                                         value).
+
+   Each returns a CLONE of the updated agreement so callers can't mutate the
+   stored record. Each calls persistWorkspace() so reload preserves the
+   transition. */
+function _requireAgreement(workspace, agreementId) {
+  const agreement = workspace.agreements[agreementId];
+  if (!agreement) throw new Error(`AGREEMENT_NOT_FOUND:${agreementId}`);
+  return agreement;
+}
+
+function _appendAgreementActivity(agreement, kind, actorUserId, extra) {
+  const entry = Object.assign(
+    { kind, actorUserId: actorUserId || null, ts: new Date().toISOString() },
+    extra || {}
+  );
+  agreement.activity = (agreement.activity || []).concat([entry]);
+  agreement.updatedAt = entry.ts;
+}
+
+function suspendAgreement(agreementId, actorUserId) {
+  const workspace = ensureWorkspaceLoaded();
+  const agreement = _requireAgreement(workspace, agreementId);
+  if (agreement.state !== 'active') {
+    throw new Error(`SUSPEND_REQUIRES_ACTIVE:state=${agreement.state}`);
+  }
+  if (agreement.suspended === true) {
+    throw new Error('SUSPEND_ALREADY_SUSPENDED');
+  }
+  agreement.suspended = true; // R2 satisfied — state is 'active'.
+  _appendAgreementActivity(agreement, 'agreement-suspended', actorUserId);
+  persistWorkspace();
+  return clone(agreement);
+}
+
+function resumeAgreement(agreementId, actorUserId) {
+  const workspace = ensureWorkspaceLoaded();
+  const agreement = _requireAgreement(workspace, agreementId);
+  if (agreement.state !== 'active') {
+    throw new Error(`RESUME_REQUIRES_ACTIVE:state=${agreement.state}`);
+  }
+  if (agreement.suspended !== true) {
+    throw new Error('RESUME_NOT_SUSPENDED');
+  }
+  agreement.suspended = false;
+  _appendAgreementActivity(agreement, 'agreement-resumed', actorUserId);
+  persistWorkspace();
+  return clone(agreement);
+}
+
+/* Map an actor's primary org → the right REVOKE_BY_* reason. When the actor
+   sits in the operator's org, this is initiator-side revocation; otherwise
+   we attribute it to the counterparty side. Falls back to INITIATOR when the
+   actor or their primary org can't be resolved — preserves prior intent
+   ("operator revoked the agreement they signed") without misattributing. */
+function _inferRevokeReason(workspace, agreement, actorUserId) {
+  if (!actorUserId) return 'REVOKED_BY_INITIATOR';
+  const user = workspace.users && workspace.users[actorUserId];
+  const actorOrgId = user && user.primaryOrgId;
+  if (!actorOrgId) return 'REVOKED_BY_INITIATOR';
+  if (actorOrgId === agreement.operatorOrgId) return 'REVOKED_BY_INITIATOR';
+  if (actorOrgId === agreement.counterpartyOrgId) return 'REVOKED_BY_COUNTERPARTY';
+  // Unrelated org (platform-tier admin, regulator) — bucket to initiator so
+  // the truth table stays well-formed; audit trail still names the actor.
+  return 'REVOKED_BY_INITIATOR';
+}
+
+function withdrawAgreement(agreementId, actorUserId) {
+  const workspace = ensureWorkspaceLoaded();
+  const agreement = _requireAgreement(workspace, agreementId);
+  if (agreement.state !== 'pending') {
+    throw new Error(`WITHDRAW_REQUIRES_PENDING:state=${agreement.state}`);
+  }
+  agreement.state = 'ended';
+  agreement.endedReason = 'WITHDRAWN';
+  _appendAgreementActivity(agreement, 'agreement-withdrawn', actorUserId, { endedReason: 'WITHDRAWN' });
+  persistWorkspace();
+  return clone(agreement);
+}
+
+function revokeAgreement(agreementId, actorUserId, opts) {
+  const workspace = ensureWorkspaceLoaded();
+  const agreement = _requireAgreement(workspace, agreementId);
+  if (agreement.state === 'ended') {
+    throw new Error(`REVOKE_ALREADY_ENDED:reason=${agreement.endedReason || 'unknown'}`);
+  }
+  const options = opts || {};
+  let endedReason = options.reason;
+  if (endedReason && !VALID_ENDED_REASONS.includes(endedReason)) {
+    throw new Error(`REVOKE_INVALID_REASON:${endedReason}`);
+  }
+  if (!endedReason) endedReason = _inferRevokeReason(workspace, agreement, actorUserId);
+
+  agreement.state = 'ended';
+  agreement.endedReason = endedReason;
+  // R2: suspended must NOT be true on non-active states — clear it on the
+  // active→ended transition (the audit entry preserves the prior context).
+  if (agreement.suspended === true) agreement.suspended = false;
+  _appendAgreementActivity(agreement, 'agreement-revoked', actorUserId, { endedReason });
+  persistWorkspace();
+  return clone(agreement);
 }
 
 /* ---------------- Messages (ADR 0020 / 0021 / 0003) ----------------
@@ -661,6 +805,100 @@ function simulateMessageRecord(options = {}) {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     spawnedByDoctor: true
+  };
+
+  workspace.messages[messageId] = record;
+  persistWorkspace();
+  return clone(record);
+}
+
+/* recordComposerMessage — persist a real Message record when the operator
+   submits via the in-app Composer. Without this, "Send Message" was a pure
+   UI mock and the resulting Message never reached workspace.messages — so
+   if it ever transitions to Failed (via the Messages doctor, future retry
+   simulation, etc.) the materialiser has nothing to surface in the inbox.
+
+   Default status is 'delivered' (success path matching the compose-success
+   screen). Callers can override status/owner via opts (e.g. when wiring
+   composer scenarios that model failure inline).
+
+   Returns the persisted record (cloned), or null if the agreement context
+   isn't found. The status of `delivered` keeps it out of the inbox — only
+   failed messages surface there per ADR 0021 / 0023. */
+function recordComposerMessage(scenarioConfig, opts) {
+  const workspace = ensureWorkspaceLoaded();
+  const cfg = scenarioConfig || {};
+  const overrides = opts || {};
+  const agreementId = overrides.agreementId || cfg.agreement;
+  if (!agreementId) return null;
+  const agreement = workspace.agreements[agreementId];
+  if (!agreement) return null;
+
+  const dexId = agreement.dexId || workspace.meta.activeDexId;
+  const userId = workspace.meta.activeUserId;
+  const userOrgId = (typeof USERS !== 'undefined' && USERS[userId])
+    ? USERS[userId].primaryOrgId
+    : agreement.operatorOrgId;
+
+  const status = overrides.status || 'delivered';
+  let owner = null;
+  if (status === 'failed') {
+    owner = overrides.owner || 'mine';
+  }
+
+  const seq = (Object.keys(workspace.messages).length + 1).toString().padStart(4, '0');
+  const messageId = overrides.messageId || `MSG-${dexId.toUpperCase()}-${seq}`;
+  const nowISO = new Date().toISOString();
+  const counterpartyOrgName = agreement.counterpartyOrgName || 'Counterparty';
+  const flow = overrides.flow || 'push';
+
+  const errorLine = (status === 'failed' && owner === 'mine')
+    ? 'Submit retry needed — see Message detail for diagnostic'
+    : null;
+
+  const record = {
+    messageId,
+    dexId,
+    direction: 'sent',
+    flow,
+    status,
+    owner,
+    closed: false,
+    closedAt: null,
+    closedBy: null,
+    closeReason: null,
+    closeReasonText: null,
+    retryCount: 0,
+    idempotencyKey: cfg.idemKey || `idem_${messageId.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
+    operatorOrgId: userOrgId,
+    agreementId,
+    counterpartyOrgId: agreement.counterpartyOrgId,
+    counterparty: {
+      name: counterpartyOrgName,
+      initials: counterpartyOrgName.split(' ').map((p) => p[0]).join('').slice(0, 2)
+    },
+    pitstop: null,
+    element: {
+      name: (agreement.dataElementSummary && agreement.dataElementSummary.name) || cfg.title || 'Message',
+      version: (agreement.dataElementSummary && agreement.dataElementSummary.detail) || cfg.snapshot || ''
+    },
+    errorLine,
+    errorIcon: errorLine ? 'x-circle' : null,
+    timeDisplay: 'just now',
+    newArrival: status === 'in-flight' || status === 'delivered',
+    queued: status === 'in-flight',
+    actions: status === 'failed'
+      ? (owner === 'mine' ? ['retry'] : ['view'])
+      : ['view'],
+    activity: [{
+      kind: 'composer-submitted',
+      ts: nowISO,
+      actorUserId: userId,
+      note: 'Submitted via Composer'
+    }],
+    createdAt: nowISO,
+    updatedAt: nowISO,
+    spawnedByDoctor: false
   };
 
   workspace.messages[messageId] = record;
@@ -1319,6 +1557,10 @@ window.listInboxItemsForUserAndDex = listInboxItemsForUserAndDex;
 window.getAgreementById = getAgreementById;
 window.setSelectedAgreementId = setSelectedAgreementId;
 window.getSelectedAgreementId = getSelectedAgreementId;
+window.suspendAgreement = suspendAgreement;
+window.resumeAgreement = resumeAgreement;
+window.withdrawAgreement = withdrawAgreement;
+window.revokeAgreement = revokeAgreement;
 window.listMessagesForDex = listMessagesForDex;
 window.getMessageById = getMessageById;
 window.setSelectedMessageId = setSelectedMessageId;
@@ -1329,6 +1571,7 @@ window.closeMessageRecord = closeMessageRecord;
 window.getShowClosedMessagesPref = getShowClosedMessagesPref;
 window.setShowClosedMessagesPref = setShowClosedMessagesPref;
 window.simulateMessageRecord = simulateMessageRecord;
+window.recordComposerMessage = recordComposerMessage;
 window.deleteMessageRecord = deleteMessageRecord;
 window.clearSimulatedMessages = clearSimulatedMessages;
 window.simulateAgreementRecord = simulateAgreementRecord;

@@ -31,7 +31,7 @@
   gap: 5px;
   padding: 5px 10px;
   background: var(--surface);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
   border: 0.5px solid var(--theme-90);
   border-radius: 5px;
   font-size: 11px;
@@ -58,7 +58,7 @@
 .btn-deliberate {
   padding: 7px 14px;
   background: var(--surface);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
   border: 0.5px solid var(--theme-90);
   border-radius: var(--r-md);
   font-size: var(--fs-meta);
@@ -108,13 +108,18 @@
   height: 28px;
   border-radius: 50%;
   background: var(--theme-95);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: var(--fw-medium);
   flex-shrink: 0;
+  /* Reset user-agent <button> chrome — .avatar can be either a div or a button. */
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
   /* Issue 0002 / ADR 0030 Q9-b — 200ms cross-fade when the active user changes
      on persona switch or DEX switch. .avatar-fading class is added by
      applyPersonaChrome() for 100ms (fade out), then content swaps, then class
@@ -187,7 +192,7 @@
   height: 22px;
   border-radius: 50%;
   background: var(--theme-95);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -206,9 +211,9 @@
   background: var(--g-95);
   color: var(--g-30);
 }
-.colleague-dex-chip.tx { background: var(--tx-95); color: var(--tx-20); }
-.colleague-dex-chip.bx { background: var(--bx-95); color: var(--bx-20); }
-.colleague-dex-chip.hx { background: var(--hx-95); color: var(--hx-20); }
+.colleague-dex-chip.tx { background: var(--tx-95); color: var(--tx-on-tint); }
+.colleague-dex-chip.bx { background: var(--bx-95); color: var(--bx-on-tint); }
+.colleague-dex-chip.hx { background: var(--hx-95); color: var(--hx-on-tint); }
 .colleague-dex-chip .dex-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .colleague-platform-pill {
   font-size: 10px;
@@ -244,11 +249,11 @@
   transition: background var(--motion-fast) var(--easing);
 }
 .chip:hover:not(.solid) { background: var(--g-90); }
-.chip.solid { background: var(--g-10); color: #ffffff; font-weight: var(--fw-medium); }
+.chip.solid { background: var(--g-10); color: var(--text-inverted); font-weight: var(--fw-medium); }
 .chip.muted { background: var(--g-95); color: var(--g-30); }
-.chip.tx { background: var(--tx-95); color: var(--tx-20); }
-.chip.bx { background: var(--bx-95); color: var(--bx-20); }
-.chip.hx { background: var(--hx-95); color: var(--hx-20); }
+.chip.tx { background: var(--tx-95); color: var(--tx-on-tint); }
+.chip.bx { background: var(--bx-95); color: var(--bx-on-tint); }
+.chip.hx { background: var(--hx-95); color: var(--hx-on-tint); }
 .chip .dex-dot { width: 5px; height: 5px; border-radius: 50%; }
 
 /* ---------- DEX chip — record-level identifier ---------- */
@@ -264,11 +269,11 @@
   line-height: 1;
 }
 .dex-chip .dex-dot { width: 6px; height: 6px; border-radius: 50%; }
-.dex-chip.tx { background: var(--tx-95); color: var(--tx-20); }
+.dex-chip.tx { background: var(--tx-95); color: var(--tx-on-tint); }
 .dex-chip.tx .dex-dot { background: var(--tx-50); }
-.dex-chip.bx { background: var(--bx-95); color: var(--bx-20); }
+.dex-chip.bx { background: var(--bx-95); color: var(--bx-on-tint); }
 .dex-chip.bx .dex-dot { background: var(--bx-40); }
-.dex-chip.hx { background: var(--hx-95); color: var(--hx-20); }
+.dex-chip.hx { background: var(--hx-95); color: var(--hx-on-tint); }
 .dex-chip.hx .dex-dot { background: var(--hx-40); }
 
 /* ---------- DEX-user role chip (Admin / Participant / Super-admin) ---------- */
@@ -299,7 +304,7 @@
 .role-chip[data-role="admin-user"],
 .role-chip[data-role="etr-user"] {
   background: var(--theme-95);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
   border-color: var(--theme-90);
 }
 .role-chip[data-role="admin-user"] i,
@@ -322,12 +327,12 @@
 .role-chip[data-role="super-sgtradex-admin"],
 .role-chip[data-role="sgtradex-admin"] {
   background: rgba(166, 20, 185, 0.08);
-  color: #6b1280;
+  color: var(--tx-on-tint);
   border-color: rgba(166, 20, 185, 0.18);
 }
 .role-chip[data-role="super-admin"] i,
 .role-chip[data-role="super-sgtradex-admin"] i,
-.role-chip[data-role="sgtradex-admin"] i { color: #a614b9; }
+.role-chip[data-role="sgtradex-admin"] i { color: var(--tx-50); }
 
 /* Platform-tier roles get an extra glyph weight to signal cross-org reach. */
 .role-chip[data-role="super-sgtradex-admin"]::after,
@@ -347,7 +352,7 @@
    to match the platform-tier role chip palette. */
 .workspace-pill.is-platform {
   background: rgba(166, 20, 185, 0.08);
-  color: #6b1280;
+  color: var(--tx-on-tint);
   border-color: rgba(166, 20, 185, 0.18);
 }
 .workspace-pill.is-platform::before {
@@ -356,7 +361,7 @@
   width: 14px;
   height: 14px;
   margin-right: 6px;
-  background: linear-gradient(135deg, #a614b9 0%, #6b1280 100%);
+  background: var(--tx-50);
   border-radius: 3px;
   flex-shrink: 0;
 }
@@ -371,7 +376,7 @@ body.persona-platform-admin #switcher-pop .switcher-item:not(.all):not(:last-chi
 /* Platform-admin avatar — purple tint to signal elevated tier */
 body.persona-platform-admin .avatar[data-profile-btn] {
   background: rgba(166, 20, 185, 0.12);
-  color: #6b1280;
+  color: var(--tx-on-tint);
 }
 
 /* Sidebar "Limited view" pill — appears at the top of every sidebar when the active
@@ -387,8 +392,8 @@ body.persona-platform-admin .avatar[data-profile-btn] {
   border: 0.5px solid rgba(166, 20, 185, 0.18);
   border-radius: var(--r-md);
 }
-.sidebar-limited-pill > i { font-size: 14px; color: #a614b9; flex-shrink: 0; margin-top: 1px; }
-.sidebar-limited-pill .pill-title { font-size: 10px; font-weight: var(--fw-medium); letter-spacing: 0.05em; text-transform: uppercase; color: #6b1280; margin-bottom: 3px; }
+.sidebar-limited-pill > i { font-size: 14px; color: var(--tx-50); flex-shrink: 0; margin-top: 1px; }
+.sidebar-limited-pill .pill-title { font-size: 10px; font-weight: var(--fw-medium); letter-spacing: 0.05em; text-transform: uppercase; color: var(--tx-on-tint); margin-bottom: 3px; }
 .sidebar-limited-pill .pill-body { font-size: 11px; color: var(--g-30); line-height: 1.45; }
 
 /* Ops-only banner — appears in the inbox when the active role is Operation User
@@ -425,7 +430,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
 .profile-role-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .profile-role-label { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--g-50); font-weight: var(--fw-medium); }
 .profile-role-value { font-size: 13px; color: var(--g-10); font-weight: var(--fw-medium); }
-.profile-role-link { font-size: 11px; color: var(--theme-20); cursor: pointer; text-decoration: underline; flex-shrink: 0; }
+.profile-role-link { font-size: 11px; color: var(--theme-on-tint); cursor: pointer; text-decoration: underline; flex-shrink: 0; }
 
 /* ---------- Direction chip (incoming / outgoing data request) ---------- */
 /* Sits alongside .dex-chip on inbox cards to disambiguate the request direction
@@ -446,7 +451,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
 .dir-chip i { font-size: 11px; line-height: 1; }
 .dir-chip.in { background: var(--g-95); color: var(--g-30); }
 .dir-chip.in i { color: var(--g-50); }
-.dir-chip.out { background: var(--theme-95); color: var(--theme-20); }
+.dir-chip.out { background: var(--theme-95); color: var(--theme-on-tint); }
 .dir-chip.out i { color: var(--theme-30); }
 
 /* ---------- Ready / Invitation pills ---------- */
@@ -493,7 +498,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
   font-weight: var(--fw-medium);
   cursor: pointer;
   background: var(--theme-95);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
   border: 0.5px solid var(--theme-90);
 }
 .workspace-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--theme-50); }
@@ -515,7 +520,12 @@ body.persona-platform-admin .avatar[data-profile-btn] {
   max-width: 240px;
   flex: 1;
   cursor: pointer;
+  /* Reset user-agent <button> chrome. */
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
 }
+.search-pill:focus-visible { outline: 2px solid var(--theme-50); outline-offset: 2px; }
 .search-pill i { font-size: 14px; color: var(--g-50); }
 .search-pill span { font-size: var(--fs-meta); color: var(--g-70); }
 .search-pill kbd {
@@ -528,10 +538,51 @@ body.persona-platform-admin .avatar[data-profile-btn] {
   font-family: var(--font-mono);
 }
 
+/* ---------- Row highlight pulse (reusable) ----------
+   Draws attention to a list item the user was just routed to — e.g.
+   the prior agreements that matched a duplicate-detection prompt
+   (scope-exists-modal, pack-split-conflicts-modal), the newly-created
+   agreement when "Back to inbox" lands the operator on the inbox, a
+   just-sent message on the messages list, etc. Two-iteration ease-out
+   pulse so the highlight decays naturally (per userinterface-wiki
+   easing-natural-decay) rather than ping-ponging linearly. Auto-cleaned
+   from the DOM by highlightElements() in app.js after ~2.6s.
+
+   Selector strategy:
+     · .row-highlight-pulse on any element animates background-color
+       directly (works for divs, inbox-cards, etc).
+     · <tr> elements animate via children <td> because tr backgrounds
+       are unreliable across engines; the tr itself opts out. */
+@keyframes row-highlight-pulse {
+  0%   { background-color: rgba(0, 114, 229, 0.18); box-shadow: inset 3px 0 0 0 var(--blue-50, #0072e5); }
+  100% { background-color: transparent;             box-shadow: inset 3px 0 0 0 rgba(0, 114, 229, 0); }
+}
+.row-highlight-pulse {
+  animation: row-highlight-pulse 1.2s ease-out 2;
+}
+tr.row-highlight-pulse {
+  animation: none;
+}
+tr.row-highlight-pulse > td {
+  animation: row-highlight-pulse 1.2s ease-out 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .row-highlight-pulse,
+  tr.row-highlight-pulse > td {
+    animation: none;
+    background-color: rgba(0, 114, 229, 0.10);
+    box-shadow: inset 3px 0 0 0 var(--blue-50, #0072e5);
+  }
+  tr.row-highlight-pulse {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
 /* ---------- Toast tray ---------- */
 .toast-tray {
   position: fixed;
-  bottom: var(--sp-6);
+  bottom: calc(var(--sp-6) + 56px); /* clear the demo-tools pill */
   right: var(--sp-6);
   z-index: var(--z-toast);
   display: flex;
@@ -541,7 +592,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
 }
 .toast {
   background: var(--g-10);
-  color: #ffffff;
+  color: var(--text-inverted);
   padding: 10px 14px;
   border-radius: var(--r-md);
   font-size: var(--fs-meta);
@@ -604,7 +655,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
   justify-content: center;
   flex-shrink: 0;
 }
-.overlay-head .ic.tx { background: var(--theme-95); color: var(--theme-20); }
+.overlay-head .ic.tx { background: var(--theme-95); color: var(--theme-on-tint); }
 .overlay-head .ic.warn { background: var(--yellow-98); color: var(--yellow-50); }
 .overlay-head .ic.green { background: var(--green-98); color: var(--green-50); }
 .overlay-head h4 { font-size: var(--fs-body); font-weight: var(--fw-medium); flex: 1; }
@@ -618,6 +669,40 @@ body.persona-platform-admin .avatar[data-profile-btn] {
   gap: var(--sp-2);
   justify-content: flex-end;
 }
+
+/* ---------- Modal form rows (label-on-top) ----------
+   Used by overlay-card forms that don't fit the page-level `.form-row`
+   200px-label grid (e.g. register-de, invite-participant). Scoped to a
+   different class name so it doesn't collide with the existing rule. */
+.mform-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.mform-row label { font-size: 12px; color: var(--g-30); font-weight: 500; }
+.mform-row input[type="text"],
+.mform-row input[type="email"],
+.mform-row select,
+.mform-row textarea {
+  width: 100%; padding: 8px 10px;
+  border: 0.5px solid var(--g-90); border-radius: var(--r-md);
+  font-family: inherit; font-size: 12px; color: var(--g-10);
+  background: var(--surface); outline: none;
+}
+.mform-row textarea { resize: vertical; min-height: 56px; line-height: 1.5; }
+.mform-row input:focus, .mform-row select:focus, .mform-row textarea:focus { border-color: var(--theme-50); }
+.mform-row.mform-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mform-row.mform-row-2 > div { display: flex; flex-direction: column; gap: 4px; }
+
+.form-preview {
+  margin-top: 6px; padding: 10px 12px;
+  background: var(--g-98); border-radius: var(--r-md);
+}
+.form-preview-label {
+  font-size: 10px; color: var(--g-50); text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: 8px;
+}
+.form-preview-row { display: flex; align-items: center; gap: 10px; }
+.form-preview-row > i { font-size: 16px; color: var(--g-50); }
+.form-preview-name { font-size: 12px; font-weight: 500; color: var(--g-10); }
+.form-preview-meta { font-size: 11px; color: var(--g-50); margin-top: 1px; }
+.form-preview-row .version-badge { margin-left: auto; }
 
 /* ---------- Dropdown popover ----------
    Positioned via JS (position: fixed) so a single instance
@@ -646,7 +731,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
   width: 32px;
   height: 32px;
   background: var(--theme-95);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
   border-radius: var(--r-md);
   display: flex;
   align-items: center;
@@ -700,7 +785,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
 .switcher-item.hx .ws-tile { background: var(--hx-40); }
 .switcher-item.all .ws-tile { background: var(--g-95); }
 .switcher-item .label { font-size: 13px; font-weight: var(--fw-medium); color: var(--g-10); }
-.switcher-item.active .label { color: var(--theme-20); }
+.switcher-item.active .label { color: var(--theme-on-tint); }
 .switcher-item .role { font-size: 11px; color: var(--g-50); margin-top: 1px; }
 .switcher-item.active .role { color: var(--theme-40); }
 
@@ -719,7 +804,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
 .popover[hidden] { display: none; }
 .popover-head { padding: 12px 14px; border-bottom: 0.5px solid var(--g-90); display: flex; align-items: center; }
 .popover-head h5 { font-size: 13px; font-weight: var(--fw-medium); flex: 1; }
-.popover-head a { font-size: 11px; color: var(--theme-20); cursor: pointer; }
+.popover-head a { font-size: 11px; color: var(--theme-on-tint); cursor: pointer; }
 .popover-list { max-height: 320px; overflow-y: auto; }
 .popover-item { display: flex; gap: 10px; padding: 10px 14px; border-bottom: 0.5px solid var(--g-95); cursor: pointer; }
 .popover-item:last-child { border-bottom: none; }
@@ -775,7 +860,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
   font-size: 11px;
   font-weight: var(--fw-medium);
   background: var(--theme-98);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
   border: 0.5px solid var(--theme-90);
   line-height: 1.3;
   white-space: nowrap;
@@ -878,7 +963,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
    DEX accent. The buttons themselves inherit the existing .state-switcher rules. */
 .state-switcher .mp-label {
   background: var(--theme-95);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
 }
 .mp-scenario-caption {
   margin: 6px 0 0;
@@ -995,7 +1080,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
 }
 .trace-pitstop-pair .tpp-side.producer {
   background: var(--theme-98);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
   border-color: var(--theme-90);
 }
 .trace-pitstop-pair .tpp-side.producer.retired {
@@ -1101,7 +1186,7 @@ body.persona-platform-admin .avatar[data-profile-btn] {
 .prototype-rail .pr-pill.active {
   background: var(--theme-95);
   border-color: var(--theme-80);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
   font-weight: var(--fw-medium);
 }
 .prototype-rail .pr-pill-sub { color: var(--g-50); font-weight: 400; font-size: 10px; }
@@ -1214,6 +1299,46 @@ body.demo-tools-open .demo-tools-drawer {
   gap: 6px;
 }
 .demo-tools-body .pr-glossary { margin-left: auto; }
+
+/* ---------- Reference section (ADR 0034) ----------
+   Sits at the top of the drawer body — return-visit access to the
+   stakeholder overview, ADRs index, and risk register. Separated from
+   the scenario / persona scaffolding below by a subtle bottom border. */
+.dt-reference {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 0.5px solid var(--g-90);
+}
+.dt-section-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--g-50);
+  margin: 0 0 8px;
+}
+.dt-ref-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dt-ref-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--g-10);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--motion-fast);
+}
+.dt-ref-link:hover { background: var(--g-98); }
+.dt-ref-link i { font-size: 15px; color: var(--g-50); flex: 0 0 auto; }
 
 /* ---------- Doctor disclosure (Phase 7+ progressive disclosure) ----------
    Each doctor is a <details> card. Collapsed by default; click summary to
@@ -1332,7 +1457,7 @@ body.demo-tools-open .demo-tools-drawer {
   height: 28px;
   border-radius: 50%;
   background: var(--theme-90);
-  color: var(--theme-20);
+  color: var(--theme-on-tint);
   font-size: 10px;
   font-weight: var(--fw-medium);
   flex-shrink: 0;
@@ -1368,7 +1493,7 @@ body.demo-tools-open .demo-tools-drawer {
   font-style: italic;
 }
 .demo-tools-body .pr-context-active   { color: var(--green-30, #166534); }
-.demo-tools-body .pr-context-platform { color: var(--theme-20); }
+.demo-tools-body .pr-context-platform { color: var(--theme-on-tint); }
 .demo-tools-body .pr-context-missing  { color: var(--red-30, #b91c1c); font-style: normal; font-weight: var(--fw-medium); }
 .demo-tools-body .pr-context-empty {
   font-size: 11px;

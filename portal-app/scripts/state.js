@@ -46,9 +46,6 @@ let wiz = {
   residency: 'standard'
 };
 
-/* ---------- Flow runner state ---------- */
-let flowActive = null;
-
 /* ---------- Impersonation session ---------- */
 let impSeconds = 0;
 let impInterval = null;

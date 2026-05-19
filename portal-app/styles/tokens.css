@@ -73,6 +73,24 @@
   --theme-95: var(--tx-95);
   --theme-98: var(--tx-98);
 
+  /* ---------- Per-brand "text on tinted bg" tokens ----------
+     The .dex-chip / .chip / .avatar / etc. pattern uses a tinted background
+     (--*-95) with brand-coloured text. In light mode the text needs to be
+     DEEP brand (--*-20). In dark mode the tint flips dark, so the text needs
+     to be PALE brand (--*-90). These tokens are rebound in themes.css and
+     replace the previous overload of --*-20 (which had to serve both
+     "deep-brand background" AND "text on tinted bg" — incompatible in dark
+     mode).
+
+     --theme-on-tint follows the active DEX theme. Use this on theme-anchored
+     surfaces. The per-brand variants (--tx-on-tint, etc.) are for surfaces
+     that intentionally pin to a specific DEX colour regardless of theme
+     (e.g. .dex-chip.bx in a TX-themed workspace). */
+  --tx-on-tint: var(--tx-20);
+  --bx-on-tint: var(--bx-20);
+  --hx-on-tint: var(--hx-20);
+  --theme-on-tint: var(--tx-on-tint);
+
   /* RGB triplet of --theme-20 for use inside rgba() — lets components tint
      shadows/halos with the active DEX colour at any opacity. Rebound per
      theme in themes.css. Default = SGTradex 20 (#4e0058). */
@@ -84,6 +102,12 @@
   --surface-sub: var(--g-98);      /* Sidebar bg, soft section bg */
   --surface-canvas: var(--g-98);   /* Page-level background */
   --surface-overlay: rgba(20, 24, 30, 0.45); /* Modal scrim */
+
+  /* Text colour for chips/pills that use a near-black solid fill (--g-10).
+     In light mode --g-10 is near-black, so this is white.
+     In dark mode --g-10 flips to near-white, so this rebinds to --surface
+     (the dark canvas colour) in themes.css to maintain contrast. */
+  --text-inverted: #ffffff;
 
   /* ---------- Radii ---------- */
   --r-sm: 4px;
@@ -184,6 +208,7 @@
   --z-search: 950;
   --z-toast: 1000;
   --z-banner: 995;
+  --z-demo: 1300;
 
   /* ---------- Motion ---------- */
   --motion-fast: 120ms;

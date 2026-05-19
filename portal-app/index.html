@@ -5,132 +5,20 @@
 <meta name="viewport" content="width=1200, initial-scale=1">
 <title>Dex Portal — Prototype</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="styles/tokens.css">
-<link rel="stylesheet" href="styles/themes.css">
-<link rel="stylesheet" href="styles/base.css">
-<link rel="stylesheet" href="styles/components.css">
-<link rel="stylesheet" href="styles/layout.css">
-<link rel="stylesheet" href="styles/screens.css">
+<link rel="stylesheet" href="styles/tokens.css?v=p11">
+<link rel="stylesheet" href="styles/themes.css?v=p11">
+<link rel="stylesheet" href="styles/base.css?v=p11">
+<link rel="stylesheet" href="styles/components.css?v=p11">
+<link rel="stylesheet" href="styles/layout.css?v=p11">
+<link rel="stylesheet" href="styles/screens.css?v=p11">
+<link rel="stylesheet" href="styles/demos.css?v=p11">
 </head>
 <body>
 
 <div class="app">
 
-<!-- ====================== RAIL ====================== -->
-<aside class="rail">
-  <div class="brand">
-    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
-      <rect x="2" y="2" width="7" height="7" rx="1.5" fill="#363941"/>
-      <rect x="13" y="2" width="7" height="7" rx="1.5" fill="#60636b"/>
-      <rect x="2" y="13" width="7" height="7" rx="1.5" fill="#60636b"/>
-      <rect x="13" y="13" width="7" height="7" rx="1.5" fill="#363941"/>
-    </svg>
-    <div>
-      <div class="brand-text">Dex Portal</div>
-      <div class="brand-sub">Concept prototype · refactored</div>
-    </div>
-  </div>
-
-  <!-- Rail IA mirrors the in-app sidebar's mental model (Work → Exchange → Directory) +
-       prototype-only sections at top (User flows) and bottom (Cross-DEX scenarios, Prototype & retired).
-       7 groups instead of the previous 10; no single-item groups; same vocabulary as the in-app surface. -->
-
-  <div class="group">
-    <div class="group-label">Concept brief</div>
-    <div class="nav-link active" data-screen="overview"><i class="ti ti-presentation"></i>Stakeholder pitch overview</div>
-  </div>
-
-  <div class="group">
-    <div class="group-label">Reference</div>
-    <div class="nav-link" data-screen="adrs"><i class="ti ti-stack"></i>ADRs index <span style="opacity:0.5;font-size:10px;margin-left:4px">28</span></div>
-    <div class="nav-link" data-screen="risks"><i class="ti ti-shield-exclamation"></i>Risk register <span style="opacity:0.5;font-size:10px;margin-left:4px">15</span></div>
-  </div>
-
-  <!-- User flows — each declares a complete scene (user, dex, scenario) plus the
-       flow it starts. Inline onclick is replaced by data-flow so the unified
-       rail-click handler in app.js can route all rail clicks through applyScene(). -->
-  <div class="group">
-    <div class="group-label">User flows</div>
-    <div class="flow-link" data-flow="first-agreement"><span class="flow-icon"><i class="ti ti-rocket"></i></span><span class="flow-text"><span class="flow-name">First-time user</span><br><span class="flow-steps">Create first Agreement · 5 steps</span></span></div>
-    <div class="flow-link" data-flow="extend"><span class="flow-icon"><i class="ti ti-clock-play"></i></span><span class="flow-text"><span class="flow-name">Extend before expiry</span><br><span class="flow-steps">Renewal flow · 3 steps</span></span></div>
-    <div class="flow-link" data-flow="approve"><span class="flow-icon"><i class="ti ti-check"></i></span><span class="flow-text"><span class="flow-name">Approve incoming</span><br><span class="flow-steps">Counterparty side · 3 steps</span></span></div>
-    <div class="flow-link" data-flow="cross-dex"><span class="flow-icon"><i class="ti ti-alert-triangle"></i></span><span class="flow-text"><span class="flow-name">Cross-DEX acknowledge</span><br><span class="flow-steps">Warning + audit · 4 steps</span></span></div>
-    <div class="flow-link" data-flow="migration"><span class="flow-icon"><i class="ti ti-history"></i></span><span class="flow-text"><span class="flow-name">Migration onboarding</span><br><span class="flow-steps">Legacy user · 3 steps</span></span></div>
-  </div>
-
-  <!-- Phase 7 — "Persona scenes" group retired. Persona impersonation now
-       happens through the topbar profile menu (real chrome) instead of an
-       outer-rail scene shortcut. -->
-
-  <!-- Work — the workspace is unified across DEXes; nav-links no longer
-       pin a (user, dex, scenario) tuple. The workspace pill switches DEX,
-       the profile menu switches persona. -->
-  <div class="group">
-    <div class="group-label">Work</div>
-    <div class="nav-link" data-screen="inbox-tx"><i class="ti ti-inbox"></i>Inbox · SGTradex</div>
-    <div class="nav-link" data-screen="inbox-all"><i class="ti ti-grid-dots"></i>Inbox · all DEXes</div>
-    <div class="nav-link" data-screen="drafts"><i class="ti ti-folders"></i>Drafts</div>
-    <div class="nav-link" data-screen="empty"><i class="ti ti-sparkles"></i>Empty state (new user)</div>
-  </div>
-
-  <!-- Agreements — wizard mid-step items navigate to a specific wizard step.
-       The active wizard flow + step is now driven by goto() reading the
-       screen id; no scene tuple required. -->
-  <div class="group">
-    <div class="group-label">Agreements</div>
-    <div class="nav-link" data-screen="agreements"><i class="ti ti-list"></i>Agreements list</div>
-    <div class="nav-link" data-screen="detail"><i class="ti ti-file-text"></i>Agreement detail</div>
-    <div class="nav-link" data-screen="pack-detail"><i class="ti ti-stack-2"></i>Pack detail (P27)</div>
-    <div class="nav-link" data-screen="data-picker"><i class="ti ti-database"></i>Wizard · Data element picker</div>
-    <div class="nav-link" data-screen="pack-fork"><i class="ti ti-arrows-split"></i>Wizard · Pack fork (P27)</div>
-    <div class="nav-link" data-screen="pack-split-mapping"><i class="ti ti-stack-2"></i>Wizard · Pack split mapping (P27)</div>
-    <div class="nav-link" data-screen="wiz-scope-capture"><i class="ti ti-map-pin"></i>Wizard · Pitstop scope capture (P28)</div>
-    <div class="nav-link" data-screen="cp-picker"><i class="ti ti-users"></i>Wizard · Counterparty picker</div>
-    <div class="nav-link" data-screen="sp-variants"><i class="ti ti-arrows-exchange"></i>Wizard · SP copy A/B/C</div>
-  </div>
-
-  <!-- Messages — all in Marcus's scenario-C scene. Composer's internal scenario
-       switcher (push/pull/etc) is orthogonal to the MP scenario A–F and resets
-       to push-high-stakes on every rail click via resetApp(). -->
-  <div class="group">
-    <div class="group-label">Messages</div>
-    <div class="nav-link" data-screen="messages"><i class="ti ti-mail-forward"></i>Messages list</div>
-    <div class="nav-link" data-screen="message-detail"><i class="ti ti-file-text"></i>Message detail</div>
-    <div class="nav-link" data-screen="compose"><i class="ti ti-pencil-plus"></i>Compose Message</div>
-    <div class="nav-link" data-screen="compose-success"><i class="ti ti-check"></i>Compose success</div>
-  </div>
-
-  <!-- Directory — read-only registries, Marcus / Cosco / SGTradex / C. -->
-  <div class="group">
-    <div class="group-label">Directory</div>
-    <div class="nav-link" data-screen="data-elements"><i class="ti ti-database"></i>Data elements</div>
-    <div class="nav-link" data-screen="participants"><i class="ti ti-users"></i>Participants</div>
-  </div>
-
-  <!-- Cross-DEX scenarios — warn-chip is the /all-view variant so it omits dex
-       (the chip surfaces cross-DEX context aggregated across all DEXes). -->
-  <div class="group">
-    <div class="group-label">Cross-DEX scenarios</div>
-    <div class="nav-link" data-screen="warn-inline"><i class="ti ti-alert-triangle"></i>Inline panel (wizard)</div>
-    <div class="nav-link" data-screen="warn-bulk"><i class="ti ti-alert-octagon"></i>Bulk modal</div>
-    <div class="nav-link" data-screen="warn-chip"><i class="ti ti-info-circle"></i>Inline chip (/all)</div>
-  </div>
-
-  <!-- Prototype & retired — foundations is prototype-meta (no scene). Migration,
-       settings, dashboard, dropdown all use Marcus's scenario-C scene. -->
-  <div class="group">
-    <div class="group-label">Prototype &amp; retired</div>
-    <div class="nav-link" data-screen="found"><i class="ti ti-palette"></i>Foundations · chips &amp; brand</div>
-    <div class="nav-link" data-screen="dropdown"><i class="ti ti-plus"></i>Dropdown expanded view</div>
-    <div class="nav-link" data-screen="migration"><i class="ti ti-history"></i>Migration banner</div>
-    <div class="nav-link" data-screen="settings"><i class="ti ti-settings"></i>Settings</div>
-    <div class="nav-link" data-screen="dashboard"><i class="ti ti-layout-dashboard"></i>Dashboard <span style="opacity:0.5;font-size:10px;margin-left:4px">retired</span></div>
-  </div>
-
-  <div class="footer-note">
-    Refactored prototype. Tokens in <code>styles/tokens.css</code>; components in <code>styles/components.css</code>; JS split by concern. See <code>README.md</code>.
-  </div>
-</aside>
+<!-- Outer rail retired in Phase 5 of ADR 0034. Navigation now happens
+     via real product chrome + the auto-demo runner. -->
 
 <!-- ====================== CANVAS ====================== -->
 <main class="canvas">
@@ -143,6 +31,16 @@
      Visually distinct from product chrome (dashed borders, PROTOTYPE label,
      muted background) so reviewers never confuse it for a real feature.
      Will be deleted in production builds. -->
+<!-- Auto-demo runner trigger (ADR 0034) — sits next to the Demo tools pill -->
+<button class="demos-trigger" type="button" aria-label="Open demos panel"><i class="ti ti-player-play"></i>Demos</button>
+<div id="demos-panel" class="demos-panel" role="region" aria-label="Auto-demo runner"></div>
+
+<!-- Mount points for the demo runtime overlays (cursor, callout, control bar, pre-flight modal) -->
+<div id="demo-cursor-root" aria-hidden="true"></div>
+<div id="demo-callout-root" aria-live="polite"></div>
+<div id="demo-control-bar-root" role="toolbar" aria-label="Demo controls"></div>
+<div id="demo-preflight-root"></div>
+
 <button class="demo-tools-trigger" type="button" onclick="toggleDemoTools()">Demo tools</button>
 
 <aside class="demo-tools-drawer" id="demo-tools-drawer" aria-label="Demo tools">
@@ -154,6 +52,23 @@
     </div>
   </div>
   <div class="demo-tools-body">
+    <!-- Reference section (ADR 0034) — return-visit access to pitch context.
+         Links navigate to existing screens; the drawer closes itself. -->
+    <section class="dt-reference" aria-label="Reference">
+      <p class="dt-section-label">Reference</p>
+      <div class="dt-ref-links">
+        <button type="button" class="dt-ref-link" onclick="goto('overview'); toggleDemoTools();">
+          <i class="ti ti-presentation" aria-hidden="true"></i><span>Stakeholder overview</span>
+        </button>
+        <button type="button" class="dt-ref-link" onclick="goto('adrs'); toggleDemoTools();">
+          <i class="ti ti-stack" aria-hidden="true"></i><span>ADRs index</span>
+        </button>
+        <button type="button" class="dt-ref-link" onclick="goto('risks'); toggleDemoTools();">
+          <i class="ti ti-shield-exclamation" aria-hidden="true"></i><span>Risk register</span>
+        </button>
+      </div>
+    </section>
+
     <aside class="prototype-rail" id="prototype-rail" role="toolbar" aria-label="Demo tools">
 
       <!-- Persona quick-switch — session-level meta control. Single row of
@@ -355,12 +270,6 @@
   </div>
 </aside>
 
-<div class="flow-ribbon" id="flow-ribbon">
-  <i class="ti ti-route"></i>
-  <p id="flow-ribbon-text"><strong>First-time user flow:</strong> create your first Agreement on SGTradex.</p>
-  <a class="exit-flow" onclick="exitFlow()">Exit flow</a>
-</div>
-
 <div class="wizard-bar" id="wizard-bar">
   <div class="top">
     <h2 id="wizard-title">Share data with a counterparty</h2>
@@ -369,43 +278,6 @@
   <div class="stepper" id="wizard-stepper"></div>
 </div>
 
-<!-- ============ Foundations ============ -->
-<section class="screen" data-screen="found">
-  <div class="canvas-meta"><span class="meta-label">Step 0</span><h1>Foundation — DEX chips and platform mark</h1><span class="adr-tag">ADR 0005</span><span class="adr-tag">P6-R2</span></div>
-  <div class="foundation-card">
-    <p class="h">Chip sizes at 12 / 16 / 24px — SGTradex, SGBuildex, SGHealthdex</p>
-    <div class="chip-row-grid">
-      <span class="lbl">SGTradex</span>
-      <div class="chip-row"><span class="chip-sm chip-tx"><span class="d"></span>SGTradex</span><span class="chip-md chip-tx"><span class="d"></span>SGTradex</span><span class="chip-lg chip-tx"><span class="d"></span>SGTradex</span></div>
-      <span class="lbl">SGBuildex</span>
-      <div class="chip-row"><span class="chip-sm chip-bx"><span class="d"></span>SGBuildex</span><span class="chip-md chip-bx"><span class="d"></span>SGBuildex</span><span class="chip-lg chip-bx"><span class="d"></span>SGBuildex</span></div>
-      <span class="lbl">SGHealthdex</span>
-      <div class="chip-row"><span class="chip-sm chip-hx"><span class="d"></span>SGHealthdex</span><span class="chip-md chip-hx"><span class="d"></span>SGHealthdex</span><span class="chip-lg chip-hx"><span class="d"></span>SGHealthdex</span></div>
-    </div>
-    <div class="dark-strip"><span class="chip-md chip-dark-tx"><span class="d"></span>SGTradex</span><span class="chip-md chip-dark-bx"><span class="d"></span>SGBuildex</span><span class="chip-md chip-dark-hx"><span class="d"></span>SGHealthdex</span></div>
-  </div>
-  <div class="foundation-card">
-    <p class="h">Platform mark (neutral chrome at /portal/all)</p>
-    <div class="brand-card">
-      <div class="logo-wrap">
-        <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-          <rect x="3" y="3" width="9" height="9" rx="2" fill="#363941"/><rect x="16" y="3" width="9" height="9" rx="2" fill="#60636b"/>
-          <rect x="3" y="16" width="9" height="9" rx="2" fill="#60636b"/><rect x="16" y="16" width="9" height="9" rx="2" fill="#363941"/>
-        </svg>
-        <span>Dex</span>
-      </div>
-      <div class="divider"></div>
-      <div><p class="meta-k">Accent</p><p class="meta-v">Charcoal <span class="swatch" style="background:#363941"></span></p></div>
-      <div><p class="meta-k">Sidebar tone</p><p class="meta-v">Mono glyphs</p></div>
-    </div>
-    <div class="ramps">
-      <div class="ramp"><p class="name">SGTradex</p><div class="swatches"><div style="background:#4e0058"></div><div style="background:#a614b9"></div><div style="background:#ffc9fd"></div><div style="background:#ffe7fb"></div></div></div>
-      <div class="ramp"><p class="name">SGBuildex</p><div class="swatches"><div style="background:#00266d"></div><div style="background:#0446c3"></div><div style="background:#abdaff"></div><div style="background:#e0f0ff"></div></div></div>
-      <div class="ramp"><p class="name">SGHealthdex</p><div class="swatches"><div style="background:#003c32"></div><div style="background:#006d5d"></div><div style="background:#8bf8e4"></div><div style="background:#c5fff1"></div></div></div>
-    </div>
-  </div>
-</section>
-
 <!-- ============ Inbox /portal/tradex ============ -->
 <section class="screen" data-screen="inbox-tx">
   <div class="canvas-meta"><span class="meta-label">Step 1a</span><h1>P5 Inbox — /portal/tradex/inbox</h1><span class="adr-tag">ADR 0003</span><span class="adr-tag">ADR 0006</span><span class="adr-tag">P5-R1</span></div>
@@ -413,13 +285,13 @@
 
   <div class="portal-frame">
     <div class="topbar">
-      <button class="workspace-pill" onclick="toggleSwitcher(event)"><span class="dot"></span>SGTradex<i class="ti ti-chevron-down" style="font-size:14px"></i></button>
-      <span class="role-chip" data-role="admin-user" title="Your role on this DEX (per dex-repo admin-corev2 Role enum). Admin User can create Agreements + manage relationships; cannot manage users. Per-DEX scope — you may hold a different role on SGBuildex / SGHealthdex."><i class="ti ti-id-badge-2"></i><span class="role-chip-label">Admin User</span></span>
-      <div class="search-pill" onclick="openSearch()"><i class="ti ti-search"></i><span>Search</span><kbd>⌘K</kbd></div>
+      <button class="workspace-pill" onclick="toggleSwitcher(event)" aria-label="Switch workspace (current: SGTradex)" aria-haspopup="true"><span class="dot" aria-hidden="true"></span>SGTradex<i class="ti ti-chevron-down" style="font-size:14px" aria-hidden="true"></i></button>
+      <span class="role-chip" data-role="admin-user" title="Your role on this DEX (per dex-repo admin-corev2 Role enum). Admin User can create Agreements + manage relationships; cannot manage users. Per-DEX scope — you may hold a different role on SGBuildex / SGHealthdex."><i class="ti ti-id-badge-2" aria-hidden="true"></i><span class="role-chip-label">Admin User</span></span>
+      <button type="button" class="search-pill" onclick="openSearch()" aria-label="Search across this workspace"><i class="ti ti-search" aria-hidden="true"></i><span>Search</span><kbd>⌘K</kbd></button>
       <div class="spacer"></div>
-      <button class="btn-primary" data-create-btn onclick="toggleDropdown(event)"><i class="ti ti-plus"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px"></i></button>
-      <button class="btn-ghost" data-notif-btn aria-label="Notifications" onclick="openNotif(event)"><i class="ti ti-bell"></i><span class="badge-dot"></span></button>
-      <div class="avatar" data-profile-btn onclick="openProfile(event)" style="cursor:pointer">MO</div>
+      <button class="btn-primary" data-create-btn onclick="toggleDropdown(event)" aria-haspopup="true"><i class="ti ti-plus" aria-hidden="true"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px" aria-hidden="true"></i></button>
+      <button class="btn-ghost" data-notif-btn aria-label="Notifications" onclick="openNotif(event)"><i class="ti ti-bell" aria-hidden="true"></i><span class="badge-dot" aria-hidden="true"></span></button>
+      <button type="button" class="avatar" data-profile-btn onclick="openProfile(event)" aria-label="Open profile menu">MO</button>
 
     </div>
 
@@ -433,53 +305,70 @@
              updateSidebarBadges() (workspace-derived); the static markup
              ships without counts so a pre-init paint doesn't flash stale
              fixture totals. -->
-        <div class="side-link active" data-screen-target="Inbox"><i class="ti ti-inbox"></i>Inbox</div>
-        <div class="side-link" data-screen-target="Drafts"><i class="ti ti-folders"></i>Drafts</div>
+        <div class="side-link active" data-screen-target="Inbox"><i class="ti ti-inbox" aria-hidden="true"></i>Inbox</div>
+        <div class="side-link" data-screen-target="Drafts"><i class="ti ti-folders" aria-hidden="true"></i>Drafts</div>
         <div class="side-divider" data-section-after="Work"></div>
         <p class="sec-label" data-section="Exchange">Exchange</p>
-        <div class="side-link" data-screen-target="Agreements"><i class="ti ti-file-text"></i>Agreements</div>
-        <div class="side-link" data-screen-target="Messages"><i class="ti ti-mail-forward"></i>Messages</div>
+        <div class="side-link" data-screen-target="Agreements"><i class="ti ti-file-text" aria-hidden="true"></i>Agreements</div>
+        <div class="side-link" data-screen-target="Messages"><i class="ti ti-mail-forward" aria-hidden="true"></i>Messages</div>
         <div class="side-divider" data-section-after="Exchange"></div>
         <p class="sec-label" data-section="Directory">Directory</p>
-        <div class="side-link" data-screen-target="Data elements"><i class="ti ti-database"></i>Data elements</div>
-        <div class="side-link" data-screen-target="Participants"><i class="ti ti-users"></i>Participants</div>
+        <div class="side-link" data-screen-target="Data elements"><i class="ti ti-database" aria-hidden="true"></i>Data elements</div>
+        <div class="side-link" data-screen-target="Participants"><i class="ti ti-users" aria-hidden="true"></i>Participants</div>
         <div class="side-footer">
           <div class="side-divider"></div>
-          <div class="side-link" data-screen-target="Settings"><i class="ti ti-settings"></i>Settings</div>
+          <div class="side-link" data-screen-target="Settings"><i class="ti ti-settings" aria-hidden="true"></i>Settings</div>
         </div>
       </nav>
 
       <main class="content">
         <h1>Inbox</h1>
-        <p class="lede">12 items waiting</p>
+        <!-- Lede is hydrated at runtime by renderInboxFromWorkspace().
+             Empty initial value prevents a stale "12 items waiting" flash. -->
+        <p class="lede" aria-live="polite"></p>
         <div class="ops-only-banner" hidden>
-          <i class="ti ti-shield-lock"></i>
+          <i class="ti ti-shield-lock" aria-hidden="true"></i>
           <div>
             <p class="ops-only-title">You're signed in as an <strong>Operation User</strong></p>
             <p class="ops-only-body">Your role is scoped to Pitstop runtime + data operations on this DEX. Creating new Agreements, managing users, and configuring relationships are reserved for Admin User or Super Admin roles. Ask your Super Admin to elevate your role if needed.</p>
           </div>
         </div>
-        <div class="filter-chips">
-          <span class="chip solid">All · 12</span><span class="chip muted">Approvals · 4</span><span class="chip muted">Agreements · 5</span><span class="chip muted">Renewals · 2</span><span class="chip muted">Issues · 1</span>
+        <!-- Filter chips are wired in app.js via setInboxFilter() — each chip is a
+             real button with aria-pressed + data-filter. Counts hydrate at runtime
+             to stay consistent with workspace state (never bake counts into HTML). -->
+        <div class="filter-chips" role="group" aria-label="Filter inbox by category">
+          <button type="button" class="chip solid" data-inbox-filter="all" aria-pressed="true">All · <span data-count>…</span></button>
+          <button type="button" class="chip muted" data-inbox-filter="approval" aria-pressed="false">Approvals · <span data-count>…</span></button>
+          <button type="button" class="chip muted" data-inbox-filter="agreement" aria-pressed="false">Agreements · <span data-count>…</span></button>
+          <button type="button" class="chip muted" data-inbox-filter="renewal" aria-pressed="false">Renewals · <span data-count>…</span></button>
+          <button type="button" class="chip muted" data-inbox-filter="issue" aria-pressed="false">Issues · <span data-count>…</span></button>
         </div>
 
-        <details class="group-block" open>
-          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">Mine</span><span class="sub">4 items</span></summary>
-          <div class="inbox-stack">
-            <div class="inbox-card" onclick="goto('detail')"><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="dir-chip in" title="Incoming data request — they want you to share with them"><i class="ti ti-download"></i>Incoming request</span><div class="body"><div class="title">Maersk wants to receive Bills of Lading from you</div><div class="meta">Invited 2h ago · waiting on you to accept or decline</div></div><button class="btn-primary" style="padding:5px 10px;font-size:11px" onclick="event.stopPropagation(); openApprove()">Review</button></div>
-            <div class="inbox-card" onclick="goto('detail')"><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="dir-chip out" title="Outgoing data request — you asked them; awaiting their decision"><i class="ti ti-upload"></i>Outgoing request</span><div class="body"><div class="title">Your ETA request to PSA — awaiting their decision</div><div class="meta">Sent 4h ago · 30-day window · pending PSA accept · auto-reminder at day 21</div></div><button class="btn-secondary neutral" onclick="event.stopPropagation(); toast('Opening outgoing request detail')">Open</button></div>
-            <div class="inbox-card" onclick="goto('detail')"><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><div class="body"><div class="title">Extend Agreement with Cosco before 30 Sep</div><div class="meta">Renewal · expires in 9 days · auto-extend disabled</div></div><button class="btn-secondary" onclick="event.stopPropagation(); openExtend('Cosco Shipping')">Extend 12mo</button></div>
-          </div>
+        <!-- Completion echo ribbon — lifted out of the team accordion (ADR 0008
+             completion echo). Lingers ~5 minutes per ADR 0008; collapsed by
+             default so it doesn't dilute the actionable density. -->
+        <details class="completion-ribbon" data-inbox-completion-ribbon hidden>
+          <summary><i class="ti ti-chevron-down chev" aria-hidden="true"></i><i class="ti ti-check ribbon-glyph" aria-hidden="true"></i><span class="ttl">Recently completed</span><span class="sub" data-completion-count>0</span></summary>
+          <div class="completion-list" data-inbox-completion-list></div>
         </details>
 
-        <details class="group-block" open>
-          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">My team's</span><span class="sub">8 items · anyone can claim</span></summary>
-          <div class="inbox-stack">
-            <div class="inbox-card team" onclick="goto('detail')"><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><div class="body"><div class="title">PSA bunker delivery — 3 contributor enrolments pending</div><div class="meta">Approval · oldest 4h ago · 3 admins eligible</div></div><button class="btn-secondary" onclick="event.stopPropagation(); openClaim()">Claim</button></div>
-            <div class="inbox-card completion"><i class="ti ti-check" style="font-size:16px;color:var(--green-50);flex-shrink:0" aria-hidden="true"></i><div class="body"><div class="title">Layla approved CrimsonLogic appointment for ABC Logistics</div><div class="meta">Completed 2 min ago · disappears from inbox in 3 min</div></div></div>
-            <div class="inbox-card team" onclick="goto('detail')"><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><div class="body"><div class="title">Review onboarding KYC for Pacific Container Lines</div><div class="meta">Approval · 1d ago · 3 admins eligible</div></div><button class="btn-secondary" onclick="event.stopPropagation(); openClaim()">Claim</button></div>
-          </div>
+        <details class="group-block" open data-inbox-mine>
+          <summary><i class="ti ti-chevron-down chev" aria-hidden="true"></i><span class="ttl">Mine</span><span class="sub" data-mine-count>…</span></summary>
+          <div class="inbox-stack" data-inbox-stack="mine"></div>
         </details>
+
+        <details class="group-block" open data-inbox-team>
+          <summary><i class="ti ti-chevron-down chev" aria-hidden="true"></i><span class="ttl">My team's</span><span class="sub" data-team-count>… · anyone can claim</span></summary>
+          <div class="inbox-stack" data-inbox-stack="team"></div>
+        </details>
+
+        <!-- Inline empty state — shown by renderInboxFromWorkspace when both
+             buckets and completion ribbon are empty. -->
+        <div class="inbox-empty" data-inbox-empty hidden>
+          <i class="ti ti-checkbox" aria-hidden="true"></i>
+          <p class="inbox-empty-title">You're caught up</p>
+          <p class="inbox-empty-body">Nothing in your queue or your team's. New items will appear here.</p>
+        </div>
       </main>
     </div>
   </div>
@@ -492,12 +381,12 @@
 
   <div class="portal-frame">
     <div class="topbar">
-      <button class="workspace-pill is-all" onclick="goto('inbox-tx')"><span class="dot-grid"><span class="dot-grid-row"><span class="dot-grid-cell"></span><span class="dot-grid-cell alt"></span></span><span class="dot-grid-row"><span class="dot-grid-cell alt"></span><span class="dot-grid-cell"></span></span></span>All DEXes<i class="ti ti-chevron-down" style="font-size:14px"></i></button>
-      <div class="search-pill" onclick="openSearch()"><i class="ti ti-search"></i><span>Search across DEXes</span><kbd>⌘K</kbd></div>
+      <button class="workspace-pill is-all" onclick="goto('inbox-tx')" aria-label="Switch workspace (current: All DEXes)" aria-haspopup="true"><span class="dot-grid" aria-hidden="true"><span class="dot-grid-row"><span class="dot-grid-cell"></span><span class="dot-grid-cell alt"></span></span><span class="dot-grid-row"><span class="dot-grid-cell alt"></span><span class="dot-grid-cell"></span></span></span>All DEXes<i class="ti ti-chevron-down" style="font-size:14px" aria-hidden="true"></i></button>
+      <button type="button" class="search-pill" onclick="openSearch()" aria-label="Search across DEXes"><i class="ti ti-search" aria-hidden="true"></i><span>Search across DEXes</span><kbd>⌘K</kbd></button>
       <div class="spacer"></div>
-      <button class="btn-primary neutral" onclick="toast('Pick a DEX to create on — switching to SGTradex'); setTimeout(() => { goto('inbox-tx'); toggleDropdown({stopPropagation:()=>{}}); }, 400)"><i class="ti ti-plus"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px"></i></button>
-      <button class="btn-ghost" data-notif-btn onclick="openNotif(event)"><i class="ti ti-bell"></i><span class="badge-dot"></span></button>
-      <div class="avatar neutral" data-profile-btn onclick="openProfile(event)" style="cursor:pointer">MO</div>
+      <button class="btn-primary neutral" onclick="toast('Pick a DEX to create on — switching to SGTradex'); setTimeout(() => { goto('inbox-tx'); toggleDropdown({stopPropagation:()=>{}}); }, 400)" aria-haspopup="true"><i class="ti ti-plus" aria-hidden="true"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px" aria-hidden="true"></i></button>
+      <button class="btn-ghost" data-notif-btn aria-label="Notifications" onclick="openNotif(event)"><i class="ti ti-bell" aria-hidden="true"></i><span class="badge-dot" aria-hidden="true"></span></button>
+      <button type="button" class="avatar neutral" data-profile-btn onclick="openProfile(event)" aria-label="Open profile menu">MO</button>
     </div>
     <div class="body">
       <nav class="sidebar">
@@ -589,25 +478,11 @@
         <a class="help-link" onclick="openGlossary()" style="cursor:pointer">What else can I do here?</a>
         <div class="suggest-grid">
           <a class="suggest-card" onclick="goto('inbox-tx')"><div class="ic-pill"><i class="ti ti-file-text"></i></div><p class="ttl">Review your org's Agreements</p><p class="desc">Cosco Shipping has 23 active Agreements on SGTradex. Get the lay of the land.</p><p class="more">View Agreements <i class="ti ti-arrow-right"></i></p></a>
-          <a class="suggest-card primary"><div class="ic-pill"><i class="ti ti-plus"></i></div><p class="ttl">Create your first Agreement</p><p class="desc">Set up data sharing with a counterparty, or appoint a service provider to act for you.</p><p class="more">Start now <i class="ti ti-arrow-right"></i></p></a>
+          <a class="suggest-card primary" onclick="startWizard('direct', { direction: 'send' })" style="cursor:pointer"><div class="ic-pill"><i class="ti ti-plus"></i></div><p class="ttl">Create your first Agreement</p><p class="desc">Set up data sharing with a counterparty, or appoint a service provider to act for you.</p><p class="more">Start now <i class="ti ti-arrow-right"></i></p></a>
         </div>
         <p style="font-size:11px;color:var(--g-70);margin:20px 0 0;max-width:480px;line-height:1.6">When items arrive, they'll appear above, split into <strong style="font-weight:500;color:var(--g-10)">Mine</strong> and <strong style="font-weight:500;color:var(--g-10)">My team's</strong>.</p>
       </main>
     </div>
-  </div>
-</section>
-
-<!-- ============ Dropdown (standalone) ============ -->
-<section class="screen" data-screen="dropdown">
-  <div class="canvas-meta"><span class="meta-label">Step 2 · P3</span><h1>+ New Agreement dropdown (expanded)</h1><span class="adr-tag">ADR 0004</span><span class="adr-tag">ADR 0018</span></div>
-  <div class="canvas-tip"><i class="ti ti-pointer"></i><div>The two entry points + conditional template item.</div></div>
-  <div style="display:inline-block"><div class="btn-primary"><i class="ti ti-plus"></i>New Agreement<i class="ti ti-chevron-up" style="font-size:12px"></i></div></div>
-  <div style="margin-top:6px;width:380px;background:#ffffff;border:0.5px solid var(--g-90);border-radius:var(--r-xl);padding:6px;box-shadow:var(--shadow-popover)">
-    <div class="dropdown-item" onclick="startWizard('direct', { direction: 'send' })"><div class="icon-bubble"><i class="ti ti-upload"></i></div><div><div class="label">Share data with a counterparty</div><div class="desc">Contributor side · you have the data and want to send it.</div></div></div>
-    <div class="dropdown-item" onclick="startWizard('direct', { direction: 'receive' })"><div class="icon-bubble"><i class="ti ti-download"></i></div><div><div class="label">Request data from a counterparty</div><div class="desc">Consumer side · you need data another org holds.</div></div></div>
-    <div class="dropdown-item" onclick="startWizard('sp')"><div class="icon-bubble"><i class="ti ti-users-group"></i></div><div><div class="label">Appoint a service provider</div><div class="desc">Authorise another org to send or receive data on your behalf.</div></div></div>
-    <div class="dropdown-divider"></div>
-    <div class="dropdown-item" onclick="openTemplate()"><div class="icon-bubble neutral"><i class="ti ti-template"></i></div><div><div class="label">Start from a template</div><div class="desc">4 available · pre-filled blueprint for repeat patterns.</div></div></div>
   </div>
 </section>
 
@@ -684,9 +559,10 @@
         </div>
         <button class="add-individual"><i class="ti ti-plus"></i>Add individual elements</button>
         <p class="snapshot-info"><i class="ti ti-info-circle"></i>The snapshot is captured at Agreement creation. Future edits to this pack won't affect Agreements created today.</p>
-        <!-- Routes to pack-fork when a pack is selected; pack-fork either continues to cp-picker (same counterparty)
-             or to pack-split-mapping (split across counterparties). Per ADR 0027. -->
-        <button class="btn-primary" style="margin-top:14px;width:100%;justify-content:center" onclick="goto('pack-fork')">Continue to counterparty <i class="ti ti-arrow-right"></i></button>
+        <!-- Forward navigation is owned by the global wizard-foot's Next
+             button (which calls wizardNext → pack-aware routing in
+             wizard.js). No inline "Continue to counterparty" here — that
+             produced a duplicate CTA with the foot. -->
       </div>
     </div>
   </div>
@@ -916,7 +792,7 @@
       <button class="btn-cancel" onclick="wiz.viaPackSplit = false; goto('pack-fork')"><i class="ti ti-arrow-left" style="font-size:12px"></i>Back</button>
       <div class="grow"></div>
       <span class="foot-hint">Assign all 4 elements before continuing · 3 of 4 done</span>
-      <button class="btn-primary" onclick="toast('Continue → terms · then review · then submit (creates 1 pack + 4 member Agreements)'); if (wiz.active) { wiz.viaPackSplit = true; wizardJumpTo(wizardSteps.findIndex(s => s.screen === 'wiz-terms')); } else { goto('wiz-terms'); }">Continue to terms <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
+      <button class="btn-primary" onclick="if (typeof maybePromptPackSplitConflicts === 'function' && maybePromptPackSplitConflicts()) return; toast('Continue → terms · then review · then submit (creates 1 pack + 4 member Agreements)'); if (wiz.active) { wiz.viaPackSplit = true; wizardJumpTo(wizardSteps.findIndex(s => s.screen === 'wiz-terms')); } else { goto('wiz-terms'); }">Continue to terms <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
     </footer>
   </div>
 </section>
@@ -943,17 +819,6 @@
       </div>
     </details>
     <p class="list-foot"><i class="ti ti-info-circle"></i>Ready = counterparty has enrolled in the same use case as your data element.</p>
-  </div>
-</section>
-
-<!-- ============ SP variants (test artefact) ============ -->
-<section class="screen" data-screen="sp-variants">
-  <div class="canvas-meta"><span class="meta-label">SP wizard · step 1</span><h1>Direction question — three candidate copy variants</h1><span class="adr-tag">ADR 0004</span><span class="adr-tag">P3-R2</span></div>
-  <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Test these 3 with 4–6 users (P3-R2 cheapest test). Winner becomes production copy.</div></div>
-  <div class="copy-variants">
-    <div class="variant-card"><p class="variant-tag">Variant A · Active voice</p><p class="variant-q">What should this service provider do on your behalf?</p><div class="variant-options"><label class="variant-opt"><span class="opt-head"><i class="ti ti-circle"></i><span>Send my data</span></span><span class="opt-desc">They forward it to a counterparty.</span></label><label class="variant-opt"><span class="opt-head"><i class="ti ti-circle"></i><span>Receive data for me</span></span><span class="opt-desc">They collect it from a counterparty.</span></label></div></div>
-    <div class="variant-card"><p class="variant-tag">Variant B · Direction-first</p><p class="variant-q">Which direction will data flow?</p><div class="variant-options"><label class="variant-opt"><span class="opt-head"><i class="ti ti-arrow-right"></i><span>Outbound</span></span><span class="opt-desc">From your org, via the SP, to a counterparty.</span></label><label class="variant-opt"><span class="opt-head"><i class="ti ti-arrow-left"></i><span>Inbound</span></span><span class="opt-desc">From a counterparty, via the SP, to your org.</span></label></div></div>
-    <div class="variant-card"><p class="variant-tag">Variant C · Concrete example</p><p class="variant-q">Pick the scenario that matches your setup</p><div class="variant-options single"><label class="variant-opt"><span class="opt-head"><i class="ti ti-circle"></i><span>"CrimsonLogic will send Bills of Lading to Maersk on our behalf"</span></span></label><label class="variant-opt"><span class="opt-head"><i class="ti ti-circle"></i><span>"CrimsonLogic will receive Bills of Lading from Maersk on our behalf"</span></span></label></div></div>
   </div>
 </section>
 
@@ -1031,7 +896,7 @@
 
     <div class="next-grid">
       <div class="next-card" id="s-view-card" onclick="goto('detail')"><i class="ti ti-file-text"></i><p class="t" id="s-view-title">View the Agreement</p><p class="d" id="s-view-desc">Open the detail page · track status as Maersk reviews.</p></div>
-      <div class="next-card" onclick="goto('inbox-tx'); exitFlow()"><i class="ti ti-inbox"></i><p class="t">Back to inbox</p><p class="d" id="s-inbox-desc">It'll appear in <strong>Mine</strong> until Maersk acts.</p></div>
+      <div class="next-card" onclick="goto('inbox-tx'); exitFlow(); if (typeof consumePendingHighlight === 'function') consumePendingHighlight()"><i class="ti ti-inbox"></i><p class="t">Back to inbox</p><p class="d" id="s-inbox-desc">It'll appear in <strong>Mine</strong> until Maersk acts.</p></div>
     </div>
     <div class="meta-info"><p id="s-meta-text"><strong>What happens next:</strong> Maersk has 30 days to accept. Reminders fire at 21 / 14 / 7 days. After acceptance, data flow begins within 5 minutes.</p></div>
   </div>
@@ -1058,7 +923,7 @@
   <div class="approve-frame">
     <p style="font-size:13px; color:var(--g-30); margin-bottom:14px">Pick one. Maersk is notified immediately either way. Audit-logged.</p>
     <div class="decision">
-      <div class="decision-card accept" onclick="startDataFlowSim(); setTimeout(() => goto('ap-success'), 2400)"><div class="dc-head"><i class="ti ti-check"></i><span>Accept</span></div><p class="dc-desc">Agreement transitions to ACTIVE. Data flow begins within 5 minutes.</p></div>
+      <div class="decision-card accept" onclick="startDataFlowSim(); if (typeof setPendingAgreementHighlight === 'function') setPendingAgreementHighlight('AGR-2026-04829'); setTimeout(() => goto('ap-success'), 2400)"><div class="dc-head"><i class="ti ti-check"></i><span>Accept</span></div><p class="dc-desc">Agreement transitions to ACTIVE. Data flow begins within 5 minutes.</p></div>
       <div class="decision-card changes" onclick="toast('Routed to changes-requested flow','warn')"><div class="dc-head"><i class="ti ti-edit"></i><span>Request changes</span></div><p class="dc-desc">Open a back-and-forth thread with Maersk before accepting.</p></div>
       <div class="decision-card decline" onclick="toast('Agreement declined · Maersk notified','warn'); exitFlow(); goto('inbox-tx')"><div class="dc-head"><i class="ti ti-x"></i><span>Decline</span></div><p class="dc-desc">Agreement ends with reason REJECTED.</p></div>
     </div>
@@ -1073,7 +938,7 @@
     <p class="agr-line"><code>AGR-2026-04829</code> · ACTIVE · data flow starting</p>
     <div class="next-grid">
       <div class="next-card" onclick="goto('detail'); exitFlow()"><i class="ti ti-file-text"></i><p class="t">View the Agreement</p><p class="d">See lifecycle, parties, terms, and audit trail.</p></div>
-      <div class="next-card" onclick="goto('inbox-tx'); exitFlow()"><i class="ti ti-inbox"></i><p class="t">Back to inbox</p><p class="d">Maersk's invitation has been cleared from your queue.</p></div>
+      <div class="next-card" onclick="goto('inbox-tx'); exitFlow(); if (typeof consumePendingHighlight === 'function') consumePendingHighlight()"><i class="ti ti-inbox"></i><p class="t">Back to inbox</p><p class="d">Maersk's invitation has been cleared from your queue.</p></div>
     </div>
     <div class="meta-info"><p><strong>What's happening behind the scenes:</strong> First B/L message expected within 5 minutes. Renewal reminder fires 30 days before expiry.</p></div>
   </div>
@@ -1784,8 +1649,8 @@
         </div>
         <div class="ov-stat">
           <p class="ov-stat-num">6 mo</p>
-          <p class="ov-stat-lbl">To first customer ship</p>
-          <p class="ov-stat-sub">Plus a separate post-rewrite roadmap that depends on platform-team work</p>
+          <p class="ov-stat-lbl">To first customer launch</p>
+          <p class="ov-stat-sub">Plus a separate post-launch roadmap that depends on supporting platform work</p>
         </div>
       </div>
     </header>
@@ -1895,8 +1760,8 @@
             <li><span class="step-tag">1</span><span>Check that the operator's organisation is permitted to send data on this network</span></li>
             <li><span class="step-tag">2</span><span>Pick a counterparty from the list of organisations this operator can act for</span></li>
             <li><span class="step-tag">3</span><span>Pick a data element (the type of record being sent)</span></li>
-            <li><span class="step-tag">4</span><span>The operator <em>has to know</em> which form page to use for that data element — routine documents and legally-transferable records use different modules</span></li>
-            <li><span class="step-tag">5</span><span>Fill the form on the right module · submit</span></li>
+            <li><span class="step-tag">4</span><span>The operator <em>has to know</em> which form page to use for that data element — routine documents and legally-transferable records sit on different pages</span></li>
+            <li><span class="step-tag">5</span><span>Fill the form on the right page · submit</span></li>
           </ol>
           <p class="ov-mental-implication"><i class="ti ti-arrow-right" aria-hidden="true"></i>Every send is an <strong>ad-hoc combination</strong>. The operator chooses every dimension each time, including which module to use. Nothing connects this send to a prior consent decision except a global permission.</p>
         </article>
@@ -2003,7 +1868,7 @@
         </div>
         <div class="ov-callout ov-callout-etr">
           <i class="ti ti-stack-2" aria-hidden="true"></i>
-          <p><strong>Legally-transferable records keep their own module.</strong> Electronic Trade Receipts (eBL, eBoL) are different from regular documents — they carry an endorsement chain, ownership records, and have unique operations (transfer · surrender · shred) beyond simple sending. The new portal preserves the dedicated module for those operations. The Composer covered above handles routine sending of all other documents, including Bills of Lading used as regular trade documents.</p>
+          <p><strong>Legally-transferable records keep their own workspace.</strong> Electronic Trade Receipts (eBL, eBoL) are different from regular documents — they carry an endorsement chain, ownership records, and have unique operations (transfer · surrender · shred) beyond simple sending. The new portal preserves the dedicated workspace for those operations. The Composer covered above handles routine sending of all other documents, including Bills of Lading used as regular trade documents.</p>
         </div>
       </div>
     </section>
@@ -2107,15 +1972,15 @@
 
     <!-- ROADMAP -->
     <section class="ov-section ov-roadmap ov-section--accent-grn ov-section--banded">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>06</b> What ships first vs what's deferred</p>
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>06</b> What launches first vs what's deferred</p>
       <h2>Honest scoping</h2>
       <p class="ov-section-lede">Several capabilities depend on supporting work that the platform team has not yet built. We design them now, document the plan, and ship them when the foundations are ready. Here is what each phase delivers.</p>
 
       <div class="ov-roadmap-grid">
         <div class="ov-roadmap-col ov-roadmap-v1">
           <header>
-            <span class="ov-roadmap-tag v1">First customer ship · 6 months</span>
-            <h3>Ships in the rewrite</h3>
+            <span class="ov-roadmap-tag v1">First customer launch · 6 months</span>
+            <h3>Included at launch</h3>
           </header>
           <ul>
             <li>One portal replacing today's two systems · sign-in unified · role-aware navigation</li>
@@ -2124,10 +1989,10 @@
             <li>Per-Message detail with live status timeline, a delivery-trace view that shows every step of the journey for diagnosis (without exposing the counterparty's data), retry, and close</li>
             <li>Bulk retry and bulk close for failed Messages — useful after an outage</li>
             <li>One Composer for sending data — automatically adds a review step for legally-significant documents</li>
-            <li>Draft auto-save — in-progress drafts are kept for 30 days (operators can pin one to hold it longer) and are stored encrypted</li>
+            <li>Draft auto-save — in-progress drafts are kept for 30 days (operators can pin one to hold it longer) and are stored securely</li>
             <li>Watch toggle for time-sensitive Agreements + twice-daily digest for routine failures</li>
             <li>Cross-network warnings when an action spans more than one regulated data exchange</li>
-            <li>Settings → Pitstops page for organisations running multiple operational deployments — set element scope, assign users, soft-retire decommissioned Pitstops while preserving audit history</li>
+            <li>Settings → Pitstops page for organisations running multiple operational sites — set element scope, assign users, retire decommissioned Pitstops while preserving audit history</li>
             <li>Inline Pitstop scope capture at first Agreement creation for multi-Pitstop organisations — wizard asks once, future Agreements reuse the choice silently; per-message override available via the Composer's <em>Send from</em> chip</li>
           </ul>
         </div>
@@ -2138,7 +2003,7 @@
           </header>
           <ul>
             <li>Letting two counterparties' systems negotiate when one upgrades its data schema (today, this is manual; the new capability needs platform-team work first)</li>
-            <li>Symmetric joint-state warning at Composer form-open — surfaces when the counterparty's organisation isn't currently routable for the chosen element. Reactive Failed signals cover this in v1; the predictive warning requires the consolidated platform DB so both sides' scope can be queried together (Phase 2 dependency)</li>
+            <li>Symmetric joint-state warning at Composer form-open — surfaces when the counterparty's organisation isn't currently routable for the chosen element. Reactive Failed signals cover this in v1; the predictive warning requires a shared platform layer so both sides' scope can be checked together (Phase 2 dependency)</li>
             <li>In-place Agreement amendments instead of revoke-and-recreate</li>
             <li>Bulk send (one message to many counterparties at once)</li>
             <li>Test mode — exercise the wire end-to-end without binding business effect</li>
@@ -2150,19 +2015,19 @@
           </ul>
         </div>
       </div>
-      <p class="ov-roadmap-footer">The deferred items all depend on a single common piece of platform infrastructure (a protocol that lets two counterparty systems coordinate on schema and intent). That work is on the platform team's roadmap as a separate effort; the rewrite design is ready to absorb it when it lands.</p>
+      <p class="ov-roadmap-footer">The deferred items all depend on one shared coordination layer — a way for two counterparties' systems to negotiate on schema and intent. That work sits on a separate roadmap; the design here is ready to fold it in when it arrives.</p>
     </section>
 
     <!-- MIGRATION REASSURANCE -->
     <section class="ov-section ov-migration ov-section--accent-ylw">
       <p class="ov-eyebrow ov-eyebrow-numbered"><b>07</b> What happens on rollout day</p>
       <h2>Existing operators get a soft landing</h2>
-      <p class="ov-section-lede">Migration is treated as a design problem, not an engineering throw-it-over-the-wall. Three things happen automatically so legacy users land productive — no parallel run, no manual cutover, no lost work.</p>
+      <p class="ov-section-lede">Migration is treated as a design problem, not an afterthought. Three things happen automatically so legacy users land productive — no parallel run, no manual cutover, no lost work.</p>
 
       <div class="ov-ba-callouts">
         <div class="ov-callout">
           <i class="ti ti-route" aria-hidden="true"></i>
-          <p><strong>Legacy URLs redirect to their new home.</strong> Bookmarks pointing at admin-ui or pitstop-ui resolve to the new portal screen automatically. No 404s; muscle-memory navigation keeps working until operators learn the new paths.</p>
+          <p><strong>Legacy URLs redirect to their new home.</strong> Bookmarks pointing at the legacy portals resolve to the new portal screen automatically. No broken links; muscle-memory navigation keeps working until operators learn the new paths.</p>
         </div>
         <div class="ov-callout">
           <i class="ti ti-folders" aria-hidden="true"></i>
@@ -2178,7 +2043,7 @@
     <!-- WHAT WE'D ASK FOR -->
     <section class="ov-section ov-asks ov-section--accent-red ov-section--banded">
       <p class="ov-eyebrow ov-eyebrow-numbered"><b>08</b> What we need from leadership</p>
-      <h2>Three calls before engineering starts the build</h2>
+      <h2>Three calls before the build begins</h2>
       <div class="ov-asks-grid">
         <div class="ov-ask">
           <span class="ov-ask-num">A</span>
@@ -2188,25 +2053,48 @@
         <div class="ov-ask">
           <span class="ov-ask-num">B</span>
           <h4>Confirm "revoke and recreate" is acceptable for schema changes</h4>
-          <p>If an Agreement's underlying data schema needs to change, the new portal asks both parties to formally revoke and re-create the Agreement on the new schema. In-place upgrades arrive later, when the platform team's cross-counterparty work is ready. We need leadership to confirm that's acceptable for customer launch.</p>
+          <p>If an Agreement's underlying data schema needs to change, the new portal asks both parties to formally revoke and re-create the Agreement on the new schema. In-place upgrades arrive later, once the cross-counterparty coordination layer is ready. We need leadership to confirm that's acceptable for customer launch.</p>
         </div>
         <div class="ov-ask">
           <span class="ov-ask-num">C</span>
-          <h4>Greenlight a one-week user-test round before engineering commits</h4>
-          <p>5–6 operators from current customer organisations, walked through 3 sample tasks each. The test validates the two biggest design hypotheses (the consolidated Messages page and the new Composer). Budget: about a week of design time plus an afternoon of operator sessions. The findings could shift design before the larger engineering investment begins.</p>
+          <h4>Greenlight a one-week user-test round before we commit to build</h4>
+          <p>5–6 operators from current customer organisations, walked through 3 sample tasks each. The test validates the two biggest design hypotheses (the consolidated Messages page and the new Composer). Budget: about a week of design time plus an afternoon of operator sessions. The findings could shift design before the larger build investment begins.</p>
         </div>
+      </div>
+    </section>
+
+    <!-- CTA PAIR — decision-framed entry into the prototype (ADR 0034) -->
+    <section class="ov-cta-pair" aria-labelledby="ov-cta-h2">
+      <p class="ov-eyebrow"><b>Try it</b></p>
+      <h2 id="ov-cta-h2">You've seen the why. Here's the what.</h2>
+      <p class="ov-cta-lede">Step into the prototype as one of Cosco Shipping's admins — explore freely, or watch a guided demo of how the new portal feels in motion.</p>
+      <div class="ov-cta-grid">
+        <a class="ov-cta-card primary" href="#" role="button" onclick="event.preventDefault(); goto('inbox-tx');">
+          <div class="ov-cta-icon"><i class="ti ti-arrow-right" aria-hidden="true"></i></div>
+          <div class="ov-cta-body">
+            <p class="ov-cta-title">See it in motion</p>
+            <p class="ov-cta-desc">Sign in as Marcus, an Organisation Admin for Cosco on SGTradex. Click through inboxes, Agreements, the lifecycle states. Reset anytime from the corner.</p>
+          </div>
+        </a>
+        <a class="ov-cta-card secondary" href="#" role="button" onclick="event.preventDefault(); if (typeof openDemosPanel === 'function') openDemosPanel();">
+          <div class="ov-cta-icon"><i class="ti ti-player-play" aria-hidden="true"></i></div>
+          <div class="ov-cta-body">
+            <p class="ov-cta-title">Run a demo</p>
+            <p class="ov-cta-desc">Watch a guided journey. Five short auto-demos walk through the flows the design decisions were made for. Pause or stop at any point.</p>
+          </div>
+        </a>
       </div>
     </section>
 
     <!-- FOOTER LINKS -->
     <footer class="ov-footer">
-      <p class="ov-footer-head">Engineering &amp; design reference</p>
-      <p class="ov-footer-intro">This brief is the strategic story for leadership. Every claim in it is backed by a longer engineering and design record — linked below for anyone (engineering leads, product reviewers, compliance officers) who wants to verify the trade-offs, see what was rejected, or onboard new team members. Stakeholders typically don't need to open these; they're available for due diligence.</p>
+      <p class="ov-footer-head">Design &amp; decisions reference</p>
+      <p class="ov-footer-intro">This brief is the strategic story for leadership. Every claim in it is backed by a longer design record — linked below for anyone (product reviewers, compliance officers, delivery leads) who wants to verify the trade-offs, see what was rejected, or onboard new team members. Stakeholders typically don't need to open these; they're available for due diligence.</p>
       <div class="ov-footer-links">
         <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('adrs')"><i class="ti ti-stack"></i><span><strong>Decision records</strong><span class="meta">26 structural decisions · each with options considered + trade-offs</span></span></a>
         <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('risks')"><i class="ti ti-shield-exclamation"></i><span><strong>Risk register</strong><span class="meta">10 design risks · with defined tests + planned mitigations</span></span></a>
         <a class="ov-footer-link" href="#" onclick="event.preventDefault(); toast('Opens portal_grilling_summary.md')"><i class="ti ti-file-text"></i><span><strong>Design grilling summary</strong><span class="meta">A walkthrough of every key design question that was raised, debated, and resolved</span></span></a>
-        <a class="ov-footer-link" href="#" onclick="event.preventDefault(); toast('Opens platform_rewrite_breakdown.md')"><i class="ti ti-list-numbers"></i><span><strong>Phase-by-phase delivery plan</strong><span class="meta">Engineering breakdown of what ships when and in what order</span></span></a>
+        <a class="ov-footer-link" href="#" onclick="event.preventDefault(); toast('Opens platform_rewrite_breakdown.md')"><i class="ti ti-list-numbers"></i><span><strong>Phase-by-phase delivery plan</strong><span class="meta">Delivery breakdown of what launches when and in what order</span></span></a>
       </div>
       <p class="ov-footer-meta">Draft for leadership review · May 2026 · we expect to refresh this after the user-test round outlined in ask C.</p>
     </footer>
@@ -2437,7 +2325,7 @@
           <button class="btn-ghost" id="detail-more-btn" onclick="toggleOverflowMenu(event)" aria-haspopup="menu" aria-expanded="false" aria-label="More actions"><i class="ti ti-dots" aria-hidden="true"></i></button>
           <div class="overflow-menu" id="detail-overflow-menu" hidden role="menu" aria-label="Agreement actions">
             <button role="menuitem" onclick="closeOverflowMenu(); openExtend('Maersk Logistics')"><i class="ti ti-clock-play" aria-hidden="true"></i>Extend</button>
-            <button role="menuitem" onclick="closeOverflowMenu(); toast('Agreement suspended','warn'); setDetailState('suspended')"><i class="ti ti-player-pause" aria-hidden="true"></i>Suspend</button>
+            <button role="menuitem" onclick="closeOverflowMenu(); if (suspendCurrentAgreement()) toast('Agreement suspended','warn');"><i class="ti ti-player-pause" aria-hidden="true"></i>Suspend</button>
             <button role="menuitem" onclick="closeOverflowMenu(); toast('Audit log exported as CSV (mock)')"><i class="ti ti-download" aria-hidden="true"></i>Export audit</button>
             <button role="menuitem" onclick="closeOverflowMenu(); toast('Link copied to clipboard (mock)')"><i class="ti ti-link" aria-hidden="true"></i>Copy link</button>
             <div class="menu-divider" role="separator"></div>
@@ -2592,37 +2480,6 @@
   </div>
 </section>
 
-<section class="screen" data-screen="warn-bulk">
-  <div class="canvas-meta"><span class="meta-label">Cross-DEX · Trigger C</span><h1>Bulk pre-commit modal</h1><span class="adr-tag">ADR 0012</span></div>
-  <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Mandatory acknowledgement checkbox before Continue activates.</div></div>
-  <div class="bulk-modal-veil">
-    <div class="bulk-modal">
-      <div class="bulk-head"><div class="ic"><i class="ti ti-alert-triangle"></i></div><div><h4>Extending 14 Agreements across multiple DEXes</h4><p class="sub">This action spans three DEXes, each with potentially different residency rules and notification cadences.</p></div></div>
-      <div class="bulk-body">
-        <div class="bulk-row"><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="lbl">9 Agreements · standard residency</span><a class="tx">Review</a></div>
-        <div class="bulk-row"><span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span><span class="lbl">4 Agreements · standard residency</span><a class="bx">Review</a></div>
-        <div class="bulk-row strict"><span class="dex-chip hx"><span class="dex-dot"></span>SGHealthdex</span><span class="lbl">1 Agreement · <strong>residency-strict</strong></span><span class="strict-note">Will be excluded</span></div>
-      </div>
-      <label class="bulk-ack"><input type="checkbox" onchange="toggleBulkAck(this)"><span>I understand this action spans multiple DEXes. The SGHealthdex Agreement will not be extended in this batch.</span></label>
-      <div class="bulk-foot"><button class="btn-cancel" onclick="toast('Bulk extension cancelled','warn'); goto('inbox-tx')">Cancel</button><button class="btn-disabled" id="bulk-cta" disabled onclick="if(!this.disabled) bulkProceed()">Extend 13 Agreements</button></div>
-    </div>
-  </div>
-</section>
-
-<section class="screen" data-screen="warn-chip">
-  <div class="canvas-meta"><span class="meta-label">Cross-DEX · Trigger E</span><h1>Inline chip on inbox card at /portal/all</h1><span class="adr-tag">ADR 0012</span></div>
-  <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Routine action; chip is informational, not blocking.</div></div>
-  <div style="background:#ffffff;border:0.5px solid var(--g-90);border-radius:var(--r-xl);padding:18px">
-    <div class="inbox-card" style="cursor:default">
-      <span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span>
-      <div class="body"><div class="title">Approve enrolment for Acme Construction</div><div class="meta">3h ago · 4 admins eligible</div></div>
-      <span class="acting-pill" onclick="toast('You acted on a SGBuildex item from /all · audit log records this','warn')"><i class="ti ti-info-circle"></i>Acting from /all</span>
-      <button class="btn-secondary" style="color:var(--bx-20);border-color:var(--bx-90)" onclick="toast('Enrolment approved · acted from /all · audit-logged'); goto('inbox-all')">Approve</button>
-    </div>
-    <p style="font-size:11px;color:var(--g-50);margin:12px 0 0;line-height:1.6">On click, the small chip expands into a tooltip explaining the cross-DEX context.</p>
-  </div>
-</section>
-
 <!-- ============ Migration ============ -->
 <section class="screen" data-screen="migration">
   <div class="canvas-meta"><span class="meta-label">Migration · first login post-cutover</span><h1>"What's changed" inline panel + migrated drafts notice</h1><span class="adr-tag">ADR 0017</span><span class="adr-tag">O-3</span><span class="adr-tag">O-4</span></div>
@@ -2648,73 +2505,6 @@
   <div class="redirect-foot"><i class="ti ti-arrow-bounce"></i>On the first 5 redirects from a legacy URL, a brief banner appears: <em>"This URL moved. You're now at /portal/tradex/approval-requests."</em> Dismissable.</div>
 </section>
 
-<!-- ============ Dashboard ============ -->
-<section class="screen" data-screen="dashboard">
-  <div class="canvas-meta"><span class="meta-label">Dashboard</span><h1>SGTradex overview · Cosco Shipping</h1></div>
-  <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Alternative to the inbox-first home — metrics and trends rather than a queue. Click any chart bar or recent item to drill in.</div></div>
-
-  <div class="metric-grid">
-    <div class="metric-card">
-      <p class="m-label">Active Agreements</p>
-      <p class="m-value">17</p>
-      <p class="m-trend up"><i class="ti ti-trending-up"></i>+3 this quarter</p>
-    </div>
-    <div class="metric-card">
-      <p class="m-label">Pending action</p>
-      <p class="m-value">4</p>
-      <p class="m-trend down"><i class="ti ti-trending-down"></i>2 down from yesterday</p>
-    </div>
-    <div class="metric-card">
-      <p class="m-label">Renewals due (30d)</p>
-      <p class="m-value">2</p>
-      <p class="m-trend flat"><i class="ti ti-minus"></i>Cosco · ABC Logistics</p>
-    </div>
-    <div class="metric-card">
-      <p class="m-label">Messages today</p>
-      <p class="m-value">847</p>
-      <p class="m-trend up"><i class="ti ti-trending-up"></i>+12% vs last week</p>
-    </div>
-  </div>
-
-  <div class="dash-grid">
-    <div class="dash-section">
-      <div class="ds-head"><h3>Message volume · last 7 days</h3><a onclick="toast('Routing to full analytics view')">View all →</a></div>
-      <div class="chart-mock">
-        <div class="bar" style="height:45%" title="Mon · 612 messages" onclick="toast('Mon: 612 messages')"><span class="bar-label">Mon</span></div>
-        <div class="bar" style="height:62%" title="Tue · 728 messages" onclick="toast('Tue: 728 messages')"><span class="bar-label">Tue</span></div>
-        <div class="bar" style="height:58%" title="Wed · 691 messages" onclick="toast('Wed: 691 messages')"><span class="bar-label">Wed</span></div>
-        <div class="bar" style="height:73%" title="Thu · 845 messages" onclick="toast('Thu: 845 messages')"><span class="bar-label">Thu</span></div>
-        <div class="bar" style="height:68%" title="Fri · 802 messages" onclick="toast('Fri: 802 messages')"><span class="bar-label">Fri</span></div>
-        <div class="bar" style="height:34%" title="Sat · 412 messages" onclick="toast('Sat: 412 messages')"><span class="bar-label">Sat</span></div>
-        <div class="bar active" style="height:75%" title="Today · 847 messages" onclick="toast('Today: 847 messages')"><span class="bar-label">Today</span></div>
-      </div>
-      <div class="chart-legend">
-        <span><span class="swatch" style="background:var(--theme-50)"></span>Outbound (sent)</span>
-        <span><span class="swatch" style="background:var(--theme-95)"></span>Bars normalised to weekly max</span>
-      </div>
-    </div>
-
-    <div class="dash-section">
-      <div class="ds-head"><h3>Recent activity</h3><a onclick="goto('detail')">View detail →</a></div>
-      <div class="recent-list">
-        <div class="recent-item" onclick="goto('detail')"><div class="r-ic green"><i class="ti ti-check"></i></div><div class="r-body"><p><strong>Granger (Maersk)</strong> accepted your Agreement</p><p class="r-time">21 Mar · 09:12 SGT</p></div></div>
-        <div class="recent-item" onclick="openExtend('Cosco Shipping')"><div class="r-ic yellow"><i class="ti ti-clock"></i></div><div class="r-body"><p>Agreement with <strong>Cosco</strong> expires in 9 days</p><p class="r-time">Today · 08:00 SGT</p></div></div>
-        <div class="recent-item" onclick="goto('inbox-tx')"><div class="r-ic tx"><i class="ti ti-users"></i></div><div class="r-body"><p><strong>3 contributor enrolments</strong> awaiting your approval</p><p class="r-time">Yesterday · 14:23 SGT</p></div></div>
-        <div class="recent-item" onclick="goto('detail')"><div class="r-ic bx"><i class="ti ti-arrow-down"></i></div><div class="r-body"><p><strong>Maersk</strong> received a batch of 142 B/Ls</p><p class="r-time">17 days ago · automated</p></div></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="dash-section" style="margin-top:var(--sp-3)">
-    <div class="ds-head"><h3>Top counterparties by volume</h3><a onclick="goto('participants')">View all participants →</a></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--sp-3)">
-      <div class="participant-card" onclick="goto('detail')"><div class="cp-avatar">Mk</div><div class="pc-body"><div class="pc-name">Maersk Logistics</div><div class="pc-meta">412 messages · 3 active</div></div></div>
-      <div class="participant-card" onclick="goto('detail')"><div class="cp-avatar">PS</div><div class="pc-body"><div class="pc-name">PSA International</div><div class="pc-meta">298 messages · 1 active</div></div></div>
-      <div class="participant-card" onclick="goto('detail')"><div class="cp-avatar">CS</div><div class="pc-body"><div class="pc-name">Cosco Shipping Lines</div><div class="pc-meta">137 messages · 1 active</div></div></div>
-    </div>
-  </div>
-</section>
-
 <!-- ============ Data elements registry ============ -->
 <section class="screen" data-screen="data-elements">
   <div class="canvas-meta"><span class="meta-label">Catalog</span><h1>Data elements on SGTradex</h1><span class="adr-tag">ADR 0013</span></div>
@@ -2727,7 +2517,7 @@
         <span class="chip solid">All · 189</span><span class="chip muted">Active · 156</span><span class="chip muted">Draft · 8</span><span class="chip muted">Deprecated · 21</span><span class="chip muted">Retired · 4</span>
       </div>
       <div class="grow"></div>
-      <button class="btn-primary" onclick="toast('Register new data element (admin only)')"><i class="ti ti-plus"></i>Register new</button>
+      <button class="btn-primary" onclick="openRegisterDataElement()"><i class="ti ti-plus"></i>Register new</button>
     </div>
 
     <div class="de-categories" style="padding:10px 18px;border-bottom:0.5px solid var(--g-90);background:var(--surface-sub);margin-bottom:0">
@@ -2742,16 +2532,16 @@
     <table class="list-table">
       <thead><tr><th>Element</th><th>Latest version</th><th>Category</th><th>Compose <i class="ti ti-info-circle" style="font-size:11px;vertical-align:-1px;color:var(--g-50)" title="compose_complexity attribute per ADR 0025 — selects single-page form (simple) vs 3-step wizard (high-stakes) at compose time. DEX admins click to toggle."></i></th><th>Used by</th><th>Status</th><th></th></tr></thead>
       <tbody>
-        <tr onclick="toast('Opening Bill of Lading detail')">
+        <tr onclick="openDataElementDetail('Bill of Lading')">
           <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:16px;color:var(--g-50)"></i><div><div style="font-weight:500">Bill of Lading</div><div style="font-size:11px;color:var(--g-50)">B/L document — sender to consignee</div></div></div></td>
           <td><span class="version-badge active">v2.1</span> <span style="font-size:11px;color:var(--g-50);margin-left:4px">+ 2 deprecated</span></td>
           <td>Trade documents</td>
           <td><span class="complexity-pill high-stakes" role="button" tabindex="0" onclick="event.stopPropagation(); toggleDeComplexity(this, 'Bill of Lading')" title="Click to toggle simple ↔ high-stakes (admin only) · changes future Compose sessions">high-stakes</span></td>
           <td><span class="usage-bar"><span class="fill" style="width:78%"></span></span><span style="font-size:11px;color:var(--g-50)">42 orgs · 612 msgs/day</span></td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
-          <td class="row-actions"><button onclick="event.stopPropagation(); toast('Impact analysis')" title="Impact analysis"><i class="ti ti-chart-bar"></i></button></td>
+          <td class="row-actions"><button onclick="event.stopPropagation(); openDataElementDetail('Bill of Lading')" title="Impact analysis"><i class="ti ti-chart-bar"></i></button></td>
         </tr>
-        <tr onclick="toast('Opening Vessel arrival pack group detail')">
+        <tr onclick="openDataElementDetail('Vessel arrival pack')">
           <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-stack" style="font-size:16px;color:var(--theme-50)"></i><div><div style="font-weight:500">Vessel arrival pack <span class="version-badge active" style="margin-left:6px">PACK</span></div><div style="font-size:11px;color:var(--g-50)">4 elements · ETA, particulars, crew, manifest</div></div></div></td>
           <td><span style="font-size:11px;color:var(--g-50)">Mutable group</span></td>
           <td>Trade documents</td>
@@ -2760,16 +2550,16 @@
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Edit group members (admin only)')" title="Edit"><i class="ti ti-edit"></i></button></td>
         </tr>
-        <tr onclick="toast('Opening Cargo manifest detail')">
+        <tr onclick="openDataElementDetail('Cargo manifest')">
           <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:16px;color:var(--g-50)"></i><div><div style="font-weight:500">Cargo manifest</div><div style="font-size:11px;color:var(--g-50)">Itemised shipment list</div></div></div></td>
           <td><span class="version-badge active">v3.0</span></td>
           <td>Trade documents</td>
           <td><span class="complexity-pill high-stakes" role="button" tabindex="0" onclick="event.stopPropagation(); toggleDeComplexity(this, 'Cargo manifest')" title="Click to toggle">high-stakes</span></td>
           <td><span class="usage-bar"><span class="fill" style="width:62%"></span></span><span style="font-size:11px;color:var(--g-50)">31 orgs · 287 msgs/day</span></td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
-          <td class="row-actions"><button onclick="event.stopPropagation(); toast('Impact analysis')" title="Impact analysis"><i class="ti ti-chart-bar"></i></button></td>
+          <td class="row-actions"><button onclick="event.stopPropagation(); openDataElementDetail('Cargo manifest')" title="Impact analysis"><i class="ti ti-chart-bar"></i></button></td>
         </tr>
-        <tr onclick="toast('Opening Certificate of origin detail')">
+        <tr onclick="openDataElementDetail('Certificate of origin')">
           <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:16px;color:var(--g-50)"></i><div><div style="font-weight:500">Certificate of origin</div><div style="font-size:11px;color:var(--g-50)">Country-of-origin attestation</div></div></div></td>
           <td><span class="version-badge active">v1.4</span> <span class="version-badge draft" style="margin-left:4px">v1.5</span></td>
           <td>Trade documents</td>
@@ -2778,7 +2568,7 @@
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Promote v1.5 → Active')" title="Promote draft"><i class="ti ti-arrow-up"></i></button></td>
         </tr>
-        <tr onclick="toast('Opening ETA detail')">
+        <tr onclick="openDataElementDetail('ETA')">
           <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:16px;color:var(--g-50)"></i><div><div style="font-weight:500">ETA</div><div style="font-size:11px;color:var(--g-50)">Estimated time of arrival</div></div></div></td>
           <td><span class="version-badge active">v2.0</span> <span class="version-badge deprecated" style="margin-left:4px">v1.x</span></td>
           <td>Logistics &amp; tracking</td>
@@ -2787,7 +2577,7 @@
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Migration tracking for v1→v2')" title="Migration tracking"><i class="ti ti-arrows-right-left"></i></button></td>
         </tr>
-        <tr onclick="toast('Opening Bunker delivery v0.9 (draft)')">
+        <tr onclick="openDataElementDetail('Bunker delivery confirmation')">
           <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:16px;color:var(--g-50)"></i><div><div style="font-weight:500">Bunker delivery confirmation</div><div style="font-size:11px;color:var(--g-50)">Tripartite delivery attestation · contributor flow</div></div></div></td>
           <td><span class="version-badge draft">v0.9</span></td>
           <td>Bunker &amp; fuel</td>
@@ -2800,9 +2590,109 @@
     </table>
 
     <div class="list-foot-paging">
-      <span>Showing 6 of 189 elements · filtered by Active</span>
-      <div class="pager-btns"><button disabled>‹ Prev</button><button>1</button><button>2</button><button>…</button><button>32</button><button>Next ›</button></div>
+      <span></span>
+      <div class="pager-btns"></div>
     </div>
+  </div>
+</section>
+
+<!-- ============ Data element detail page ============ -->
+<section class="screen" data-screen="data-element-detail" aria-labelledby="de-detail-title">
+  <div class="canvas-meta">
+    <span class="meta-label">Data element · per ADR 0013</span>
+    <h1 id="de-detail-h1">Data element</h1>
+    <span class="adr-tag">ADR 0013</span>
+  </div>
+  <div class="canvas-tip">
+    <i class="ti ti-pointer" aria-hidden="true"></i>
+    <div>Versions, schema, usage, and downstream impact for a single data element on the active DEX. Admin-only actions (promote draft · retire version · edit pack members) require the DEX admin seat.</div>
+  </div>
+
+  <div class="pack-frame">
+    <header class="pack-header">
+      <div class="pack-top-row">
+        <a role="button" tabindex="0" onclick="goto('data-elements')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" title="Back to Data elements catalog" style="margin-right:4px;color:var(--g-50);cursor:pointer"><i class="ti ti-arrow-left" aria-hidden="true"></i>Back to catalog</a>
+        <span class="dex-chip tx" id="de-detail-dex-chip"><span class="dex-dot"></span>SGTradex</span>
+        <span class="agr-id" id="de-detail-id">de_bill_of_lading</span>
+        <a class="view-as" role="button" tabindex="0" onclick="toast('Impact analysis report downloaded (CSV)')" title="Export impact-analysis CSV" style="color:var(--theme-20)"><i class="ti ti-download" aria-hidden="true"></i>Export impact CSV</a>
+      </div>
+      <div class="pack-title-row">
+        <h2 id="de-detail-title">Bill of Lading</h2>
+        <span id="de-detail-kind-pill" class="version-badge active">v2.1</span>
+        <span class="status-pill active" id="de-detail-status-pill"><span class="dot"></span>Active</span>
+      </div>
+      <p class="pack-sub" id="de-detail-sub">Maintained by SGTradex admins · curated catalog (per ADR 0013).</p>
+    </header>
+
+    <section class="pack-body">
+
+      <!-- Summary tiles -->
+      <div class="pack-summary-tiles">
+        <div class="pack-tile">
+          <p class="t-label">Latest version</p>
+          <p class="t-num" id="de-detail-tile-version">v2.1</p>
+          <p class="t-sub" id="de-detail-tile-version-sub">+ 2 deprecated</p>
+        </div>
+        <div class="pack-tile">
+          <p class="t-label">Used by</p>
+          <p class="t-num" id="de-detail-tile-orgs">42 orgs</p>
+          <p class="t-sub" id="de-detail-tile-orgs-sub">612 msgs / day · 7 active Agreements</p>
+        </div>
+        <div class="pack-tile">
+          <p class="t-label">Compose mode</p>
+          <p class="t-num" id="de-detail-tile-complexity" style="font-size:16px">high-stakes</p>
+          <p class="t-sub" id="de-detail-tile-complexity-sub">3-step wizard at compose time (per <a class="ov-link" href="#" onclick="event.preventDefault(); openAdrPanel('0025','Compose complexity','agr')">ADR 0025</a>)</p>
+        </div>
+        <div class="pack-tile">
+          <p class="t-label">Category</p>
+          <p class="t-num small" id="de-detail-tile-category">Trade documents</p>
+          <p class="t-sub" id="de-detail-tile-category-sub">Curated by SGTradex admins</p>
+        </div>
+      </div>
+
+      <!-- Versions table -->
+      <p class="section-label" style="margin-top:24px">Versions</p>
+      <div class="pack-members-frame">
+        <table class="pack-members-table">
+          <thead><tr><th>Version</th><th>State</th><th>Released</th><th>Breaking change</th><th>In use</th><th></th></tr></thead>
+          <tbody id="de-detail-versions-tbody">
+            <!-- Populated by renderDataElementDetail() -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Schema preview -->
+      <p class="section-label" style="margin-top:24px">Schema preview</p>
+      <p class="pack-audit-note">Reference payload structure for the latest active version. Full JSON Schema lives in the DEX admin tooling — this preview shows the canonical field shape operators see in Composer.</p>
+      <div class="pack-members-frame" style="padding:14px 18px;background:var(--surface-sub)">
+        <pre id="de-detail-schema" style="margin:0;font-family:var(--font-mono);font-size:11px;line-height:1.65;color:var(--g-20);white-space:pre-wrap;word-break:break-word"></pre>
+      </div>
+
+      <!-- Agreements using this element -->
+      <p class="section-label" style="margin-top:24px">Active Agreements referencing this element</p>
+      <div class="pack-members-frame">
+        <table class="pack-members-table">
+          <thead><tr><th>Counterparty</th><th>Agreement ID</th><th>Direction</th><th>Status</th><th>Last message</th><th></th></tr></thead>
+          <tbody id="de-detail-agreements-tbody">
+            <!-- Populated by renderDataElementDetail() -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Impact analysis -->
+      <p class="section-label" style="margin-top:24px">Impact analysis</p>
+      <p class="pack-audit-note">Where this element flows today. Promoting or retiring a version fans out a notification to every Org listed below (per ADR 0013 §Version lifecycle).</p>
+      <div class="pack-summary-tiles" id="de-detail-impact-tiles">
+        <!-- Populated by renderDataElementDetail() -->
+      </div>
+
+      <!-- Activity -->
+      <p class="section-label" style="margin-top:24px">Recent activity</p>
+      <ol class="activity" id="de-detail-activity">
+        <!-- Populated by renderDataElementDetail() -->
+      </ol>
+
+    </section>
   </div>
 </section>
 
@@ -2826,7 +2716,7 @@
       <span class="chip muted">Regulators · 5</span>
     </div>
     <div class="grow"></div>
-    <button class="btn-primary" onclick="toast('Invite participant (admin only)')"><i class="ti ti-mail"></i>Invite</button>
+    <button class="btn-primary" onclick="openInviteParticipant()"><i class="ti ti-mail"></i>Invite</button>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-3)">
@@ -2926,7 +2816,7 @@
   </div>
   </div><!-- /.list-frame -->
 
-  <p style="font-size:11px;color:var(--g-50);margin-top:18px;text-align:center">Showing 6 of 42 participants · <a onclick="toast('Loading more participants…')" style="color:var(--g-50);text-decoration:underline;cursor:pointer">Load more</a></p>
+  <p style="font-size:11px;color:var(--g-50);margin-top:18px;text-align:center" id="participants-foot">Showing <span id="participants-shown-count">6</span> of <span id="participants-total-count">42</span> participants · <a id="participants-load-more" onclick="loadMoreParticipants()" style="color:var(--g-50);text-decoration:underline;cursor:pointer">Load more</a></p>
 </section>
 
 <!-- ============ Agreements list page ============ -->
@@ -3003,7 +2893,7 @@
           <td><span style="display:inline-flex;align-items:center;gap:4px">Service-Provider <i class="ti ti-info-circle" style="font-size:12px;color:var(--g-50)" title="Appointed via CrimsonLogic"></i></span></td>
           <td><span class="status-cell pending"><span class="dot"></span>Pending</span></td>
           <td>Awaiting acceptance</td>
-          <td class="row-actions"><button onclick="event.stopPropagation(); toast('Withdrawn invitation','warn')" title="Withdraw"><i class="ti ti-x"></i></button></td>
+          <td class="row-actions"><button onclick="event.stopPropagation(); openWithdraw('PSA International', null)" title="Withdraw"><i class="ti ti-x"></i></button></td>
         </tr>
         <tr onclick="goto('detail')">
           <td><div class="cp-cell"><div class="cp-avatar">CL</div><div><div class="cp-name">CrimsonLogic</div><div style="font-size:11px;color:var(--g-50)">Service provider · SGTradex</div></div></div></td>
@@ -3033,10 +2923,8 @@
     </table>
 
     <div class="list-foot-paging">
-      <span>Showing 6 of 23 Agreements</span>
-      <div class="pager-btns">
-        <button disabled>‹ Prev</button><button>1</button><button>2</button><button>3</button><button>4</button><button>Next ›</button>
-      </div>
+      <span></span>
+      <div class="pager-btns"></div>
     </div>
   </div>
 </section>
@@ -3250,6 +3138,20 @@
 
         <div class="pitstops-info-callout">
           <p><i class="ti ti-info-circle" aria-hidden="true"></i><strong>Where Pitstop scope comes from:</strong> the platform captures scope <em>inline</em> at the moment you create your first Agreement involving a new element — see the wizard's scope-capture micro-step. This page is for adjusting that scope after the fact, or pre-configuring elements before they're used. Most operators never visit this page; admins use it when reorganising. Per <a href="#" onclick="event.preventDefault(); openAdrPanel('0028','Routing is not an Agreement property','agr')">ADR 0028 §What permits</a>.</p>
+        </div>
+
+        <!-- Demo-only escape hatch: captured scopes persist in the workspace
+             across sessions, so the wizard's scope-capture micro-step won't
+             fire again on the same element. This resets every element-scope
+             entry back to the seeded fixtures so the multi-Pitstop capture
+             flow can be re-demoed. -->
+        <div class="settings-section" style="margin-top:24px;padding-top:16px;border-top:0.5px dashed var(--g-90)">
+          <h3 style="font-size:12px;color:var(--g-50);font-weight:500;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em">Demo controls</h3>
+          <div class="settings-row">
+            <span class="s-k"><i class="ti ti-arrow-back-up" aria-hidden="true"></i> Reset Pitstop scopes</span>
+            <span class="s-v">Restore every element-scope entry to the seeded fixtures. Captured scopes from prior wizard runs or toggles on this page are cleared, so the multi-Pitstop scope-capture step fires again. Demo-only — not a production action.</span>
+            <span class="s-action"><button type="button" class="btn-secondary" onclick="resetCapturedPitstopScopesFromSettings()"><i class="ti ti-refresh" aria-hidden="true"></i>Reset</button></span>
+          </div>
         </div>
         </div>
 
@@ -3478,6 +3380,74 @@
      a same-org colleague (cross-link confirmation flow), and "Go to your home DEX"
      when the active persona category has no peer on the target DEX. Both render
      into #off-dex-message + #off-dex-cta via showOffDexBlocked() in app.js. -->
+<!-- Element-already-in-use prompt (ADR 0028 §What permits).
+     Fired from the wizard when the operator picks a data element on
+     data-picker AND there's a prior fact about (org, element) — either a
+     captured Pitstop scope or one or more existing Agreement records.
+     Surfaces what's already on file and lets the operator pick:
+       · View existing Agreements   → exit wizard, route to agreements list
+       · Create new Agreement       → continue to cp-picker
+     Earlier behaviour silently advanced (when scope was captured) or just
+     let the operator create a duplicate (when an agreement already
+     existed). Both cases now route through the same prompt. -->
+<div class="overlay-veil" id="scope-exists-modal" hidden>
+  <div class="overlay-card sm">
+    <div class="overlay-head">
+      <div class="ic" style="background:var(--blue-98,#eff7ff);color:var(--blue-50)"><i class="ti ti-info-circle"></i></div>
+      <h4><span id="scope-exists-element">This element</span> is already in use</h4>
+      <button class="close" onclick="closeOverlay('scope-exists-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="font-size:13px;color:var(--g-10);line-height:1.5">
+        <strong id="scope-exists-org">Your org</strong> has prior activity for
+        <strong id="scope-exists-element-body">this element</strong>:
+      </p>
+      <p id="scope-exists-pitstops" style="font-size:13px;color:var(--g-10);line-height:1.6;margin-top:8px">
+        <!-- Filled by maybePromptScopeAlreadyExists() — combines captured-scope
+             and existing-Agreement fragments as appropriate. -->
+      </p>
+      <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-top:10px">
+        Are you editing an existing Agreement, or creating a new one with a different counterparty?
+      </p>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="scopeExistsGoToExisting()"><i class="ti ti-list" aria-hidden="true"></i>View existing Agreements</button>
+      <button class="btn-primary" onclick="scopeExistsContinueNew()">Create new Agreement <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- Pack-split-mapping duplicate-detection modal (ADR 0028 §What permits,
+     split branch). The single-element / pack-same path is intercepted inside
+     wizardNext (see app.js maybePromptScopeAlreadyExists). The pack-split
+     branch jumps from pack-split-mapping → wiz-terms via wizardJumpTo, which
+     bypasses that intercept — so per-member duplicate detection lives on the
+     "Continue to terms" button. Lists every pack member that already has
+     prior agreement activity for the operator's org. -->
+<div class="overlay-veil" id="pack-split-conflicts-modal" hidden>
+  <div class="overlay-card sm">
+    <div class="overlay-head">
+      <div class="ic" style="background:var(--blue-98,#eff7ff);color:var(--blue-50)"><i class="ti ti-info-circle"></i></div>
+      <h4 id="pack-split-conflicts-title">Some elements in this pack are already in use</h4>
+      <button class="close" onclick="closeOverlay('pack-split-conflicts-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="font-size:13px;color:var(--g-10);line-height:1.5">
+        <strong id="pack-split-conflicts-org">Your org</strong> has prior activity for the following pack members:
+      </p>
+      <ul id="pack-split-conflicts-list" style="font-size:13px;color:var(--g-10);line-height:1.6;margin-top:10px;padding-left:18px"></ul>
+      <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-top:10px">
+        Continuing will create new Agreements alongside the existing ones. You can drop conflicting rows on the previous screen.
+      </p>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="packSplitConflictsViewExisting()"><i class="ti ti-list" aria-hidden="true"></i>View existing Agreements</button>
+      <button class="btn-cancel" onclick="packSplitConflictsEdit()"><i class="ti ti-arrow-left" aria-hidden="true"></i>Edit assignments</button>
+      <button class="btn-primary" onclick="packSplitConflictsContinue()">Continue anyway <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay-veil" id="off-dex-blocked" hidden>
   <div class="overlay-card sm">
     <div class="overlay-head">
@@ -3509,7 +3479,7 @@
 </div>
 
 <div class="overlay-veil" id="claim-modal" hidden>
-  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-hand-finger"></i></div><h4>Claim this item?</h4><button class="close" onclick="closeOverlay('claim-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5">It will move from <strong style="font-weight:500">My team's</strong> into <strong style="font-weight:500">Mine</strong>.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('claim-modal')">Not now</button><button class="btn-primary" onclick="confirmClaim()">Claim</button></div></div>
+  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-hand-finger" aria-hidden="true"></i></div><h4>Claim this item?</h4><button class="close" onclick="closeOverlay('claim-modal')" aria-label="Close"><i class="ti ti-x" aria-hidden="true"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5">This will remove the item from your teammates' queue. It moves from <strong style="font-weight:500">My team's</strong> into <strong style="font-weight:500">Mine</strong>, and only you will see it until you complete or release it.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('claim-modal')">Not now</button><button class="btn-primary" onclick="confirmClaim()">Claim</button></div></div>
 </div>
 
 <div class="overlay-veil" id="approve-modal" hidden>
@@ -3539,6 +3509,30 @@
     <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">DEX</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">A regulated data-exchange domain. URL-anchored at /portal/&lt;dex&gt;.</p></div>
     <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">Agreement Template</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">Org-scoped, DEX-scoped, mutable blueprint surfaced after ≥3 similar Agreements.</p></div>
   </div></div></div>
+</div>
+<div class="overlay-veil" id="withdraw-modal" hidden>
+  <div class="overlay-card">
+    <div class="overlay-head">
+      <div class="ic" style="background:var(--yellow-98);color:var(--yellow-30)"><i class="ti ti-arrow-back-up"></i></div>
+      <h4>Withdraw invitation to <span id="withdraw-cp">Counterparty</span>?</h4>
+      <button class="close" onclick="closeOverlay('withdraw-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <div class="revoke-impact">
+        <p>What happens on confirm:</p>
+        <ul>
+          <li><strong style="font-weight:500"><span class="withdraw-cp-mirror">Counterparty</span> is notified</strong> that the invitation was withdrawn before they could accept.</li>
+          <li>The Agreement moves to <strong style="font-weight:500">Ended</strong> with reason <code style="background:var(--g-95);padding:1px 5px;border-radius:3px;font-family:var(--font-mono);font-size:11px">WITHDRAWN</code>.</li>
+          <li>No data flow ever started, so there is no grace window and nothing to undo.</li>
+          <li>The record stays readable in the audit view; create a fresh Agreement to re-invite.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="closeOverlay('withdraw-modal')">Keep invitation</button>
+      <button class="btn-danger" onclick="confirmWithdraw()">Withdraw</button>
+    </div>
+  </div>
 </div>
 <div class="overlay-veil" id="revoke-modal" hidden>
   <div class="overlay-card">
@@ -3576,6 +3570,129 @@
     <div class="overlay-foot">
       <button class="btn-cancel" onclick="closeOverlay('revoke-modal')">Keep Agreement</button>
       <button class="btn-danger" id="revoke-confirm-btn" disabled onclick="confirmRevoke()">Revoke</button>
+    </div>
+  </div>
+</div>
+
+<!-- Register new data element (admin) -->
+<div class="overlay-veil" id="register-de-modal" hidden>
+  <div class="overlay-card">
+    <div class="overlay-head">
+      <div class="ic tx"><i class="ti ti-plus"></i></div>
+      <h4>Register a new data element <span style="font-size:11px;color:var(--g-50);font-weight:400;margin-left:6px">(admin only)</span></h4>
+      <button class="close" onclick="closeOverlay('register-de-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:12px">Drafts are visible only to DEX admins until promoted. Per <a href="#" onclick="event.preventDefault(); openAdrPanel('0013','Per-DEX-admin-curated data element catalog','agr')">ADR 0013</a>, every catalog entry needs a name, category, and an initial schema preview.</p>
+
+      <div class="mform-row">
+        <label for="register-de-name">Element name <span style="color:var(--red-50)">*</span></label>
+        <input id="register-de-name" type="text" placeholder="e.g. Bunker delivery confirmation" autocomplete="off" oninput="updateRegisterDePreview()">
+      </div>
+
+      <div class="mform-row">
+        <label for="register-de-category">Category <span style="color:var(--red-50)">*</span></label>
+        <select id="register-de-category" onchange="updateRegisterDePreview()">
+          <option value="">— Pick a category —</option>
+          <option>Trade documents</option>
+          <option>Logistics &amp; tracking</option>
+          <option>Bunker &amp; fuel</option>
+          <option>Finance &amp; invoicing</option>
+          <option>Customs &amp; regulatory</option>
+          <option>Subcontractor management</option>
+          <option>Site safety</option>
+          <option>Patient records</option>
+          <option>Lab &amp; imaging</option>
+        </select>
+      </div>
+
+      <div class="mform-row">
+        <label for="register-de-description">Short description</label>
+        <textarea id="register-de-description" rows="2" placeholder="One-line description shown under the element name in the catalog"></textarea>
+      </div>
+
+      <div class="mform-row mform-row-2">
+        <div>
+          <label for="register-de-version">Initial version</label>
+          <input id="register-de-version" type="text" value="v0.1" oninput="updateRegisterDePreview()">
+        </div>
+        <div>
+          <label for="register-de-complexity">Compose complexity</label>
+          <select id="register-de-complexity">
+            <option value="simple">Simple — single-page form</option>
+            <option value="high-stakes" selected>High-stakes — 3-step wizard</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-preview">
+        <p class="form-preview-label">Catalog preview</p>
+        <div class="form-preview-row">
+          <i class="ti ti-file-text" aria-hidden="true"></i>
+          <div>
+            <div class="form-preview-name" id="register-de-preview-name">Element name</div>
+            <div class="form-preview-meta" id="register-de-preview-meta">Draft · uncategorised</div>
+          </div>
+          <span class="version-badge draft" id="register-de-preview-version">v0.1</span>
+        </div>
+      </div>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="closeOverlay('register-de-modal')">Cancel</button>
+      <button class="btn-primary" id="register-de-submit" onclick="confirmRegisterDataElement()"><i class="ti ti-plus" aria-hidden="true"></i>Register as draft</button>
+    </div>
+  </div>
+</div>
+
+<!-- Invite participant (admin) -->
+<div class="overlay-veil" id="invite-participant-modal" hidden>
+  <div class="overlay-card">
+    <div class="overlay-head">
+      <div class="ic tx"><i class="ti ti-mail"></i></div>
+      <h4>Invite a participant <span style="font-size:11px;color:var(--g-50);font-weight:400;margin-left:6px">(admin only)</span></h4>
+      <button class="close" onclick="closeOverlay('invite-participant-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:12px">Sends an invitation email. The org appears as <strong style="color:var(--g-30);font-weight:500">Pending KYC</strong> in this directory until they complete onboarding.</p>
+
+      <div class="mform-row">
+        <label for="invite-org-name">Organisation name <span style="color:var(--red-50)">*</span></label>
+        <input id="invite-org-name" type="text" placeholder="e.g. Pacific Container Lines Pte Ltd" autocomplete="off">
+      </div>
+
+      <div class="mform-row mform-row-2">
+        <div>
+          <label for="invite-uen">UEN</label>
+          <input id="invite-uen" type="text" placeholder="e.g. 202118822F" autocomplete="off">
+        </div>
+        <div>
+          <label for="invite-role">Primary role</label>
+          <select id="invite-role">
+            <option>Carrier</option>
+            <option>Shipper</option>
+            <option>Forwarder</option>
+            <option>Service provider</option>
+            <option>Regulator</option>
+            <option>Contractor</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mform-row">
+        <label for="invite-contact-email">Primary contact email <span style="color:var(--red-50)">*</span></label>
+        <input id="invite-contact-email" type="email" placeholder="e.g. ops@pacificlines.example" autocomplete="off">
+      </div>
+
+      <div class="mform-row">
+        <label for="invite-message">Optional message</label>
+        <textarea id="invite-message" rows="2" placeholder="Short note included with the invitation email"></textarea>
+      </div>
+
+      <div style="padding:10px 12px;background:var(--g-98);border-radius:var(--r-md);font-size:11px;color:var(--g-30);line-height:1.5;margin-top:6px"><i class="ti ti-info-circle" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--g-50)"></i>An invitation also creates a one-time onboarding link valid for 14 days. KYC review is run by the SGTradex operations team — typically 1–3 business days.</div>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="closeOverlay('invite-participant-modal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmInviteParticipant()"><i class="ti ti-send" aria-hidden="true"></i>Send invitation</button>
     </div>
   </div>
 </div>
@@ -3840,22 +3957,30 @@
      defined elsewhere. Per ADR 0028 the multi-Pitstop layer is a parallel concern
      hooking into existing surfaces — keeping it as the final layer makes the dependency
      direction explicit. ===== -->
-<script src="scripts/state.js"></script>
-<script src="scripts/access.js"></script>
-<script src="scripts/workspace-storage.js"></script>
+<script src="scripts/state.js?v=p11"></script>
+<script src="scripts/access.js?v=p11"></script>
+<script src="scripts/workspace-storage.js?v=p11"></script>
 <!-- workspace-fixtures.js — scene/inbox/MP fixture data extracted from state.js
      in Phase 7. Must load before workspace-bootstrap.js (which dereferences
      SCENE_SEEDS / INBOX_BY_DEX) but order vs. state.js doesn't matter — all
      references are guarded with `typeof X !== 'undefined'`. -->
-<script src="scripts/workspace-fixtures.js"></script>
-<script src="scripts/workspace-bootstrap.js"></script>
-<script src="scripts/workspace.js"></script>
-<script src="scripts/components.js"></script>
-<script src="scripts/theme.js"></script>
-<script src="scripts/wizard.js"></script>
-<script src="scripts/flows.js"></script>
-<script src="scripts/app.js"></script>
+<script src="scripts/workspace-fixtures.js?v=p11"></script>
+<script src="scripts/workspace-bootstrap.js?v=p11"></script>
+<script src="scripts/workspace.js?v=p11"></script>
+<script src="scripts/components.js?v=p11"></script>
+<script src="scripts/theme.js?v=p11"></script>
+<script src="scripts/wizard.js?v=p11"></script>
+<script src="scripts/app.js?v=p11"></script>
+<!-- Auto-demo runner (ADR 0034) — load order: runtime first, then each flow self-registers, then the launcher reads the registry. -->
+<script src="scripts/demos/runtime.js?v=p11"></script>
+<script src="scripts/demos/first-agreement.js?v=p11"></script>
+<script src="scripts/demos/extend.js?v=p11"></script>
+<script src="scripts/demos/approve.js?v=p11"></script>
+<script src="scripts/demos/cross-dex.js?v=p11"></script>
+<script src="scripts/demos/compose-message.js?v=p11"></script>
+<script src="scripts/demos/index.js?v=p11"></script>
 <script src="scripts/search-and-filters.js"></script>
+<script src="scripts/pagination.js"></script>
 <script src="scripts/pitstop.js"></script>
 <!-- Seed authoring tooling — see docs/seed-authoring.md.
      · seed-doctor: opt-in validator (?doctor=1 in URL, or runSeedDoctor() in console).

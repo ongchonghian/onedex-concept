@@ -318,9 +318,16 @@ function messagesSeedToWorkspaceMessages(seed, meta, workspace) {
 
 function inboxSeedToWorkspaceItems(data, meta) {
   const items = {};
+  const now = Date.now();
   [['mine', data.mine || []], ['team', data.team || []]].forEach(([bucket, records]) => {
     records.forEach((item, index) => {
       const inboxItemId = `inbox-${meta.activeUserId}-${meta.activeDexId}-${bucket}-${index + 1}`;
+      // Synthetic surfacedAt: spread fixture items across 1h–28h to give the
+      // age glyph meaningful variance in the demo. Completion rows get a
+      // very recent age so they cluster as "just happened". Real materialised
+      // items use the source record's createdAt instead.
+      const offsetHours = item.completion ? 0.05 : (2 + index * 3);
+      const surfacedAt = new Date(now - offsetHours * 3600 * 1000).toISOString();
       items[inboxItemId] = {
         inboxItemId,
         agreementId: null,
@@ -344,8 +351,10 @@ function inboxSeedToWorkspaceItems(data, meta) {
         // some inbox items are renewals / claims / KYC reviews that don't
         // have a single counterparty.
         counterpartyOrgId: null,
+        counterpartyName: item.counterpartyName || null,
         status: item.completion ? 'closed' : 'open',
-        createdAt: new Date().toISOString()
+        createdAt: surfacedAt,
+        surfacedAt
       };
     });
   });
@@ -513,9 +522,11 @@ function materialiseInboxFromRecords(workspace, sceneMeta) {
         dir: m.direction === 'sent' ? 'out' : 'in',
         completion: false,
         counterpartyOrgId: m.counterpartyOrgId || null,
+        counterpartyName: cpName,
         status: 'open',
         derivedFrom: 'message',
-        createdAt: m.createdAt || new Date().toISOString()
+        createdAt: m.createdAt || new Date().toISOString(),
+        surfacedAt: m.createdAt || new Date().toISOString()
       };
     });
 
@@ -543,9 +554,11 @@ function materialiseInboxFromRecords(workspace, sceneMeta) {
         dir: isInbound ? 'in' : 'out',
         completion: false,
         counterpartyOrgId: a.counterpartyOrgId || null,
+        counterpartyName: cpName,
         status: 'open',
         derivedFrom: 'agreement',
-        createdAt: a.createdAt || new Date().toISOString()
+        createdAt: a.createdAt || new Date().toISOString(),
+        surfacedAt: a.createdAt || new Date().toISOString()
       };
     });
 

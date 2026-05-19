@@ -17,30 +17,54 @@ portal-app/
 │   ├── themes.css                 # 2. Theme overrides — rebinds --theme-* per DEX
 │   ├── base.css                   # 3. Reset, body, accessibility primitives
 │   ├── components.css             # 4. Reusable UI primitives (buttons, chips, cards, modals, popovers)
-│   ├── layout.css                 # 5. App shell, rail, canvas, portal-frame, sidebar
-│   └── screens.css                # 6. Screen-specific presentation
+│   ├── layout.css                 # 5. App shell, canvas, portal-frame, sidebar (single-column since ADR 0034 Phase 5)
+│   ├── screens.css                # 6. Screen-specific presentation
+│   └── demos.css                  # 7. Auto-demo runner styles (cursor, callout, control bar, pre-flight modal)
 └── scripts/
     ├── state.js                   # 1. Global state + constants (wizard tracks, inbox data, wiz object)
     ├── components.js              # 2. JS component factories — render*(data) → HTML string
     ├── theme.js                   # 3. Runtime DEX theming — switchDex + per-DEX inbox mutation
-    ├── wizard.js                  # 4. Multi-step wizard (state machine, stepper, prev/next, submit)
-    ├── flows.js                   # 5. Guided flow runners (runFlow, setFlow, exitFlow)
-    └── app.js                     # 6. Navigation, overlays, toasts, search, init bindings
+    ├── wizard.js                  # 4. Multi-step wizard (state machine, stepper, prev/next, submit, exitFlow stub)
+    ├── app.js                     # 5. Navigation, overlays, toasts, search, init bindings
+    └── demos/                     # 6. Auto-demo runner (ADR 0034)
+        ├── runtime.js                 # Sequencer + cursor + callout + control bar + pre-flight modal
+        ├── index.js                   # Launcher pill + Demos panel
+        ├── first-agreement.js         # Flow #1 — empty workspace → wizard → submit
+        ├── extend.js                  # Flow #2 — Active Agreement → Extend by 12 months
+        ├── approve.js                 # Flow #3 — incoming invitation → accept
+        ├── cross-dex.js               # Flow #4 — pick SGBuildex counterparty → cross-DEX warning
+        └── compose-message.js         # Flow #5 — Active Agreement → Compose → submit Message
 ```
 
 CSS and JS files are numbered (in code comments) by load order. `<link>` and `<script>` tags in `index.html` match this order.
+
+`flows.js` was retired in Phase 5 of [ADR 0034](../docs/adr/0034-prototype-to-functional-auto-demo-runner.md) when the outer rail and its `runFlow` / `setFlow` machinery were removed. Wizard-chrome cleanup (`exitFlow`) now lives in `wizard.js`.
 
 ---
 
 ## Local-first workspace runtime
 
-The refactored prototype now runs against a shared browser-local workspace stored in `localStorage["dex-portal-workspace"]`.
+The refactored prototype runs against a shared browser-local workspace stored in `localStorage["dex-portal-workspace"]`.
 
 - `workspace-storage.js` owns raw persistence
 - `workspace-bootstrap.js` owns reset and scene/fixture seeding
 - `workspace.js` owns live draft/agreement/inbox mutations
 
-Normal app surfaces read from the workspace. The old prototype rail remains available only through the `Demo tools` drawer, which can reset or reseed the workspace for review sessions.
+Normal app surfaces read from and mutate the workspace. The `Demo tools` drawer can reset or reseed the workspace for review sessions.
+
+---
+
+## Auto-demo runner
+
+The prototype carries five auto-demo flows that drive the live product through a guided journey, per [ADR 0034](../docs/adr/0034-prototype-to-functional-auto-demo-runner.md). A reviewer presses `▶ Demos` (next to the `Demo tools` pill at bottom-right), picks a flow, and watches an SVG cursor animate across the live DOM with anchored callouts.
+
+- **First Agreement** — new admin creates their first Agreement with PSA (~70s)
+- **Extend before expiry** — extend an Active Agreement by 12 months (~30s)
+- **Approve incoming** — accept Maersk's invitation from the inbox (~35s)
+- **Cross-DEX acknowledge** — pick Acme (SGBuildex-primary) and surface the warning (~40s)
+- **Compose Message** — send a Bill of Lading under an Active Agreement (~50s)
+
+Pause / Resume / Stop / speed controls sit in the bottom-center control bar. Each flow hard-resets the workspace to a flow-specific seed before play; post-flow state is left in place so reviewers can keep exploring.
 
 ---
 
@@ -122,14 +146,16 @@ These factories are pure (no DOM side effects). The caller inserts the returned 
 
 | File | Responsibility | Depends on |
 |---|---|---|
-| `state.js` | Constants (`WIZARD_STEPS_*`, `INBOX_BY_DEX`) + live state (`wiz`, `flowActive`, `impSeconds`, `extendMonths`, `cpCrossDex`) | Nothing |
+| `state.js` | Constants (`WIZARD_STEPS_*`, `INBOX_BY_DEX`) + live state (`wiz`, `impSeconds`, `extendMonths`, `cpCrossDex`) | Nothing |
 | `components.js` | Pure render functions | Nothing |
 | `theme.js` | `switchDex`, `themeInboxContent`, `updateActiveSwitcher`, `updatePillText` | `state.js`, `components.js`, `toast`, `toggleSwitcher` |
-| `wizard.js` | `startWizard`, `wizardNext/Prev/Cancel/JumpTo`, `renderStepper`, `syncWizardFoot`, `updateReviewSummary`, `submitWizard`, `pickDuration`, `pickSpDirection`, `pickSp` | `state.js`, `goto`, `toast`, `exitFlow` |
-| `flows.js` | `setFlow`, `exitFlow`, `runFlow` (5 guided journeys) | `state.js`, `goto`, `toast`, `startWizard` |
+| `wizard.js` | `startWizard`, `wizardNext/Prev/Cancel/JumpTo`, `renderStepper`, `syncWizardFoot`, `updateReviewSummary`, `submitWizard`, `pickDuration`, `pickSpDirection`, `pickSp`, `exitFlow` (wizard-chrome stub) | `state.js`, `goto`, `toast` |
 | `app.js` | Navigation (`goto`, popovers), overlays, toast, search, notif, profile, side panel, impersonation timer, data-flow sim, init bindings | All other modules |
+| `demos/runtime.js` | Demo sequencer (`runDemoFlow`, `stopDemoFlow`, `registerFlow`, `listDemoFlows`, `seedWorkspaceForFlow`); mounts cursor + callout + control bar | `state.js`, `app.js`, workspace modules |
+| `demos/<flow-id>.js` | Each registers a declarative flow via `registerFlow(spec)` | `demos/runtime.js` |
+| `demos/index.js` | Launcher pill + Demos panel | `demos/runtime.js` |
 
-**Load order in `index.html`:** state → components → theme → wizard → flows → app. Each script references only globals defined by an earlier script. No ES modules — works over `file://`.
+**Load order in `index.html`:** state → access → workspace-* → components → theme → wizard → app → demos/runtime → demos/<flow> ×5 → demos/index. Each script references only globals defined by an earlier script. No ES modules — works over `file://`.
 
 ---
 
@@ -142,9 +168,18 @@ These factories are pure (no DOM side effects). The caller inserts the returned 
 ## Adding a new screen
 
 1. Add a `<section class="screen" data-screen="my-screen">` to `index.html` inside `<main class="canvas">`.
-2. Add a `<div class="nav-link" data-screen="my-screen">` to the appropriate group in the rail.
+2. Register the screen in `SHELL_CONFIG` (in **`scripts/app.js`**) with the right `sidebarActive` value, or `{ skip: true }` if it has its own bespoke shell.
 3. If the screen needs unique styling, add a section to **`styles/screens.css`**. If it composes from existing components, no new CSS needed.
 4. Wire interactions in **`scripts/app.js`** within the `DOMContentLoaded` block.
+5. Reach the screen through real product nav (in-app sidebar, workspace pill, a CTA on another screen) or through a workspace-state trigger. The outer rail is gone — there is no "scene picker" shortcut.
+
+## Adding a new auto-demo flow
+
+1. Create `scripts/demos/<flow-id>.js` exporting a flow spec via `registerFlow({...})`. Required fields: `id`, `title`, `description`, `adrs`, `durationSec`, `seed`, `steps`.
+2. Each step uses one of: `goto`, `annotate`, `click`, `type`, `select`, `wait`, `expect`. Every `annotate` step **must** carry a `rationale` field (schema-enforced).
+3. Open the flow with an `expect` confirming the seed produced the right preconditions; close it with an `expect` on the terminal state.
+4. Add the script tag to `index.html` between `demos/runtime.js` and `demos/index.js`.
+5. Annotation copy is stakeholder-voiced — name people (Marcus, Cosco, PSA), describe business outcomes, no in-text ADR references, no schema jargon. See [ADR 0034](../docs/adr/0034-prototype-to-functional-auto-demo-runner.md).
 
 ## Adding a new theme (DEX)
 

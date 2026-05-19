@@ -1,105 +1,20 @@
 /* ============================================================
-   LAYOUT — app shell, rail, canvas, portal frame, sidebar.
+   LAYOUT — app shell, canvas, portal frame, sidebar.
    Composes components; doesn't define new visual primitives.
+
+   The outer rail (aside.rail + .nav-link / .flow-link) was retired
+   in Phase 5 of ADR 0034. Navigation now happens via real product
+   chrome (in-app sidebar, workspace pill, overview CTA pair) and
+   the auto-demo runner (▶ Demos pill). The app shell is now a
+   single full-width canvas column.
    ============================================================ */
 
 /* ---------- App shell ---------- */
 .app {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 1fr;
   height: 100vh;
   overflow: hidden;
-}
-@media (max-width: 1100px) {
-  .app { grid-template-columns: 200px 1fr; }
-}
-
-/* ---------- Screen-picker rail (left) ---------- */
-aside.rail {
-  background: #ffffff;
-  border-right: 0.5px solid var(--g-90);
-  overflow-y: auto;
-  padding: var(--sp-4) 0;
-}
-aside.rail .brand {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: 0 var(--sp-4) 14px;
-  border-bottom: 0.5px solid var(--g-90);
-}
-aside.rail .brand svg { flex-shrink: 0; }
-aside.rail .brand-text { font-size: 13px; font-weight: var(--fw-medium); }
-aside.rail .brand-sub { font-size: 11px; color: var(--g-50); }
-aside.rail .group { padding: var(--sp-3) 0 var(--sp-1); }
-aside.rail .group-label {
-  font-size: 10px;
-  font-weight: var(--fw-medium);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--g-70);
-  padding: 0 var(--sp-4) 6px;
-}
-aside.rail .nav-link {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: 6px var(--sp-4);
-  font-size: var(--fs-meta);
-  color: var(--g-30);
-  cursor: pointer;
-  border-left: 2px solid transparent;
-}
-aside.rail .nav-link:hover { background: var(--g-98); }
-aside.rail .nav-link.active {
-  background: var(--theme-95);
-  color: var(--theme-20);
-  border-left-color: var(--theme-50);
-  font-weight: var(--fw-medium);
-}
-aside.rail .nav-link i { font-size: 14px; color: var(--g-50); flex-shrink: 0; }
-aside.rail .nav-link.active i { color: var(--theme-50); }
-
-aside.rail .flow-link {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-4);
-  font-size: 11px;
-  color: var(--g-30);
-  cursor: pointer;
-}
-aside.rail .flow-link:hover { background: var(--g-98); }
-aside.rail .flow-link .flow-icon {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--theme-95);
-  color: var(--theme-20);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-aside.rail .flow-link .flow-icon i { font-size: 12px; }
-aside.rail .flow-link .flow-text { line-height: 1.3; }
-aside.rail .flow-link .flow-name { color: var(--g-10); font-weight: var(--fw-medium); }
-aside.rail .flow-link .flow-steps { font-size: 10px; color: var(--g-70); }
-
-aside.rail .footer-note {
-  padding: var(--sp-4);
-  border-top: 0.5px solid var(--g-90);
-  margin-top: var(--sp-3);
-  font-size: 11px;
-  color: var(--g-50);
-  line-height: 1.5;
-}
-aside.rail .footer-note code {
-  background: var(--g-95);
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 10px;
 }
 
 /* ---------- Canvas (main scroll area) ---------- */

@@ -435,8 +435,16 @@
       else if (agrStatusFilter === 'active' && statusText.indexOf('active') === -1) show = false;
       else if (agrStatusFilter === 'ended' && statusText.indexOf('ended') === -1) show = false;
       if (show && agrSearchQuery && text.indexOf(agrSearchQuery) === -1) show = false;
-      r.style.display = show ? '' : 'none';
+      // Filter hides via class so the paginator (pagination.js) can
+      // still detect row-set scope independently of its own page-hidden
+      // flag. CSS in screens.css maps both flags to display:none.
+      r.classList.toggle('is-filter-hidden', !show);
     });
+    var note = [];
+    if (agrStatusFilter !== 'all') note.push(agrStatusFilter);
+    if (agrSearchQuery) note.push('"' + agrSearchQuery + '"');
+    var pager = window.__pagers && window.__pagers.agreements;
+    if (pager) pager.refresh({ filterNote: note.join(' + '), resetPage: true });
   }
 
   function updateAgreementChipCounts() {
@@ -460,7 +468,12 @@
     setChip('ended', 'Ended · ' + counts.ended);
   }
 
-  /* ============ Inbox filter chips ============ */
+  /* ============ Inbox filter chips ============
+     The inbox filter system now lives in app.js (setInboxFilter +
+     renderInboxFromWorkspace) so it can re-render with sort, completion
+     splitting, and the new accessible <button data-inbox-filter> markup.
+     The legacy display:none-based filter was removed to avoid a name
+     collision (both files had applyInboxFilter) and a post-render clobber. */
 
   function categorizeInbox(item) {
     var a = item.action || '';
@@ -471,128 +484,13 @@
     return 'agreements';
   }
 
-  var inboxFilter = { 'inbox-tx': 'all', 'inbox-all': 'all' };
-
-  function attachInboxFilters() {
-    ['inbox-tx', 'inbox-all'].forEach(function (screenName) {
-      var screen = document.querySelector('.screen[data-screen="' + screenName + '"]');
-      if (!screen) return;
-      var chipBar = screen.querySelector('main.content > .filter-chips');
-      if (!chipBar || chipBar.dataset.wired === '1') return;
-      chipBar.dataset.wired = '1';
-      var chips = chipBar.querySelectorAll('.chip');
-      chips.forEach(function (c) {
-        var t = (c.textContent || '').toLowerCase().trim();
-        if (t.indexOf('all') === 0) c.dataset.filter = 'all';
-        else if (t.indexOf('sgtradex') === 0) c.dataset.filter = 'dex-tx';
-        else if (t.indexOf('sgbuildex') === 0) c.dataset.filter = 'dex-bx';
-        else if (t.indexOf('sghealthdex') === 0) c.dataset.filter = 'dex-hx';
-        else if (t.indexOf('approval') !== -1) c.dataset.filter = 'approvals';
-        else if (t.indexOf('agreement') !== -1) c.dataset.filter = 'agreements';
-        else if (t.indexOf('renewal') !== -1) c.dataset.filter = 'renewals';
-        else if (t.indexOf('issue') !== -1) c.dataset.filter = 'issues';
-        c.style.cursor = 'pointer';
-        c.addEventListener('click', function () {
-          inboxFilter[screenName] = c.dataset.filter || 'all';
-          chips.forEach(function (c2) {
-            c2.classList.toggle('solid', c2 === c);
-            c2.classList.toggle('muted', c2 !== c);
-          });
-          applyInboxFilter(screenName);
-        });
-      });
-    });
-  }
-
-  function inboxItemsForScreen(screenName) {
-    if (typeof listInboxItemsForUserAndDex !== 'function') return [];
-    var userId = activeUser();
-    if (screenName === 'inbox-all') {
-      return ['tx', 'bx', 'hx'].reduce(function (acc, d) {
-        return acc.concat(listInboxItemsForUserAndDex(userId, d));
-      }, []);
-    }
-    var dex = screenName.replace('inbox-', '') || 'tx';
-    return listInboxItemsForUserAndDex(userId, dex);
-  }
-
-  function applyInboxFilter(screenName) {
-    var screen = document.querySelector('.screen[data-screen="' + screenName + '"]');
-    if (!screen) return;
-    var filter = inboxFilter[screenName] || 'all';
-    var items = inboxItemsForScreen(screenName);
-    var mine = items.filter(function (i) { return i.bucket === 'mine'; });
-    var team = items.filter(function (i) { return i.bucket === 'team'; });
-    var stacks = screen.querySelectorAll('.inbox-stack');
-
-    function applyStack(stack, list) {
-      if (!stack) return 0;
-      var cards = stack.querySelectorAll('.inbox-card');
-      var visible = 0;
-      cards.forEach(function (card, idx) {
-        var item = list[idx];
-        if (!item) { card.style.display = ''; visible++; return; }
-        if (item.completion) { card.style.display = ''; visible++; return; }
-        var show = true;
-        if (filter === 'all') show = true;
-        else if (filter.indexOf('dex-') === 0) {
-          var wantDex = filter.replace('dex-', '');
-          if ((item.dexId || 'tx') !== wantDex) show = false;
-        } else if (categorizeInbox(item) !== filter) {
-          show = false;
-        }
-        card.style.display = show ? '' : 'none';
-        if (show) visible++;
-      });
-      return visible;
-    }
-
-    var mineVisible = applyStack(stacks[0], mine);
-    var teamVisible = applyStack(stacks[1], team);
-    var summaries = screen.querySelectorAll('details.group-block summary .sub');
-    if (summaries[0]) summaries[0].textContent = mineVisible + ' item' + (mineVisible === 1 ? '' : 's');
-    if (summaries[1]) summaries[1].textContent = teamVisible + ' item' + (teamVisible === 1 ? '' : 's') + ' · anyone can claim';
-  }
-
-  function updateInboxChipCounts(screenName) {
-    var screen = document.querySelector('.screen[data-screen="' + screenName + '"]');
-    if (!screen) return;
-    var items = inboxItemsForScreen(screenName).filter(function (i) { return !i.completion; });
-    var counts = {
-      all: items.length,
-      approvals: items.filter(function (i) { return categorizeInbox(i) === 'approvals'; }).length,
-      agreements: items.filter(function (i) { return categorizeInbox(i) === 'agreements'; }).length,
-      renewals: items.filter(function (i) { return categorizeInbox(i) === 'renewals'; }).length,
-      issues: items.filter(function (i) { return categorizeInbox(i) === 'issues'; }).length,
-      'dex-tx': items.filter(function (i) { return (i.dexId || 'tx') === 'tx'; }).length,
-      'dex-bx': items.filter(function (i) { return (i.dexId || 'tx') === 'bx'; }).length,
-      'dex-hx': items.filter(function (i) { return (i.dexId || 'tx') === 'hx'; }).length
-    };
-    var chipBar = screen.querySelector('main.content > .filter-chips');
-    if (!chipBar) return;
-    var labels = {
-      all: 'All',
-      approvals: 'Approvals',
-      agreements: 'Agreements',
-      renewals: 'Renewals',
-      issues: 'Issues',
-      'dex-tx': 'SGTradex',
-      'dex-bx': 'SGBuildex',
-      'dex-hx': 'SGHealthdex'
-    };
-    chipBar.querySelectorAll('.chip').forEach(function (c) {
-      var f = c.dataset.filter;
-      if (!f || labels[f] == null) return;
-      var dotSpan = c.querySelector('.dex-dot');
-      var dotHtml = dotSpan ? dotSpan.outerHTML : '';
-      var n = counts[f] != null ? counts[f] : 0;
-      c.innerHTML = dotHtml + labels[f] + ' · ' + n;
-    });
-    var lede = screen.querySelector('main.content > p.lede');
-    if (lede && screenName === 'inbox-tx') {
-      lede.textContent = counts.all + ' item' + (counts.all === 1 ? '' : 's') + ' waiting';
-    }
-  }
+  // Legacy attach/apply/updateCounts replaced by app.js's setInboxFilter +
+  // renderInboxFromWorkspace. These no-op stubs preserve the call sites
+  // (DOMContentLoaded + wrapRender hooks below) until those can be deleted
+  // in a follow-up. They intentionally do nothing.
+  function attachInboxFilters() {}
+  function applyInboxFilter() {}
+  function updateInboxChipCounts() {}
 
   /* ============ Participants directory — search + role chips ============ */
 
@@ -671,8 +569,8 @@
     var foot = document.querySelector('.screen[data-screen="participants"] p[style*="text-align:center"]');
     if (foot) {
       var total = cards.length;
-      foot.innerHTML = 'Showing ' + visible + ' of ' + total + ' participant' + (total === 1 ? '' : 's') +
-        ' · <a onclick="toast(\'Loading more participants…\')" style="color:var(--g-50);text-decoration:underline;cursor:pointer">Load more</a>';
+      foot.innerHTML = 'Showing <span id="participants-shown-count">' + visible + '</span> of <span id="participants-total-count">' + total + '</span> participant' + (total === 1 ? '' : 's') +
+        ' · <a id="participants-load-more" onclick="loadMoreParticipants()" style="color:var(--g-50);text-decoration:underline;cursor:pointer">Load more</a>';
     }
   }
 
@@ -776,7 +674,6 @@
 
   function applyDataElementsFilter() {
     var rows = deRows();
-    var visible = 0;
     rows.forEach(function (r) {
       var text = (r.textContent || '').toLowerCase();
       var statusCell = r.querySelector('.status-cell');
@@ -790,18 +687,16 @@
       if (deStatusFilter !== 'all' && statusText.indexOf(deStatusFilter) === -1) show = false;
       if (show && deCategoryFilter !== 'all' && categoryText.indexOf(deCategoryFilter) === -1) show = false;
       if (show && deSearchQuery && text.indexOf(deSearchQuery) === -1) show = false;
-      r.style.display = show ? '' : 'none';
-      if (show) visible++;
+      // Filter hides via class; the paginator owns the count text and
+      // the .is-page-hidden flag.
+      r.classList.toggle('is-filter-hidden', !show);
     });
-    var foot = document.querySelector('.screen[data-screen="data-elements"] .list-foot-paging span');
-    if (foot) {
-      var note = [];
-      if (deStatusFilter !== 'all') note.push(deStatusFilter);
-      if (deCategoryFilter !== 'all') note.push(deCategoryFilter);
-      if (deSearchQuery) note.push('"' + deSearchQuery + '"');
-      var suffix = note.length ? ' · filtered by ' + note.join(' + ') : '';
-      foot.textContent = 'Showing ' + visible + ' of ' + rows.length + ' elements' + suffix;
-    }
+    var note = [];
+    if (deStatusFilter !== 'all') note.push(deStatusFilter);
+    if (deCategoryFilter !== 'all') note.push(deCategoryFilter);
+    if (deSearchQuery) note.push('"' + deSearchQuery + '"');
+    var pager = window.__pagers && window.__pagers.dataElements;
+    if (pager) pager.refresh({ filterNote: note.join(' + '), resetPage: true });
   }
 
   function updateDataElementsChipCounts() {
