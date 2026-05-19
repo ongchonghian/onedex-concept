@@ -129,12 +129,19 @@ function updatePillText(label, dex) {
 }
 
 function themeInboxContent(dex) {
-  // Platform-admin persona overrides the per-DEX inbox with cross-org platform work
-  // (KYC reviews, DE promotions, org onboarding). Source: PLATFORM_INBOX in state.js.
+  // Issue 0011 Phase 2 retired the PLATFORM_INBOX short-circuit. Sarah's
+  // cross-DEX governance items are now materialised into workspace.inboxItems
+  // at bootstrap (per platformInboxSeedToWorkspaceItems) and render through
+  // renderInboxFromWorkspace alongside participant items. Her sidebar Inbox
+  // route changed to inbox-all so she sees the cross-DEX aggregator with
+  // ADR 0036 banding + bundling.
+  // This function still runs to update the inbox-tx native shell's badges /
+  // lede / filter chips for participant personas — platformMode is kept only
+  // as a defensive flag in case Sarah lands on inbox-tx directly.
   const platformMode = typeof currentPersona !== 'undefined' && currentPersona === 'platform-admin';
   let workspaceData = null;
 
-  if (!platformMode && typeof listInboxItemsForUserAndDex === 'function') {
+  if (typeof listInboxItemsForUserAndDex === 'function') {
     const activeUser = typeof activeUserId === 'function' ? activeUserId() : 'marcus';
     const items = listInboxItemsForUserAndDex(activeUser, dex);
     if (items.length) {
@@ -190,9 +197,13 @@ function themeInboxContent(dex) {
     sceneInbox = seedFor(currentScene(), 'inbox');
   }
 
-  const data = platformMode
-    ? Object.assign({}, PLATFORM_INBOX, { name: 'SGTradex Platform', chip: 'tx' /* visual fallback */ })
-    : (workspaceData || sceneInbox || INBOX_BY_DEX[dex] || INBOX_BY_DEX.tx);
+  // Issue 0011 Phase 2 — PLATFORM_INBOX short-circuit retired; Sarah now reads
+  // her items through workspaceData like every other persona. Fallback chain:
+  //   1. workspaceData built above (the canonical path)
+  //   2. scene-seeded inbox (Pat's CrimsonLogic seat, etc.)
+  //   3. INBOX_BY_DEX[dex] fixture (Marcus's home seat)
+  //   4. INBOX_BY_DEX.tx (last-resort default)
+  const data = workspaceData || sceneInbox || INBOX_BY_DEX[dex] || INBOX_BY_DEX.tx;
 
   // Role-gated visibility for platform-tier inbox items. Each PLATFORM_INBOX entry
   // may declare `requires: 'Super SGTradex Admin'` (or similar) — that item only

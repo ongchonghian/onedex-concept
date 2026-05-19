@@ -373,6 +373,55 @@ function inboxSeedToWorkspaceItems(data, meta) {
   return items;
 }
 
+/* platformInboxSeedToWorkspaceItems — Sarah's cross-DEX governance inbox.
+   Reads PLATFORM_INBOX.mine / .team and produces inbox items keyed by
+   `inbox-<ownerUserId>-<dexId>-<bucket>-<index>` so the items merge cleanly
+   into workspace.inboxItems alongside the per-DEX participant items.
+   ownerUserId is whichever platform-admin holds the seat in this snapshot
+   (Sarah by default; switchable via SCENE_SEEDS for the platform-admin
+   scenes). Each item carries its own dexId from the PLATFORM_INBOX fixture
+   so the cross-DEX render via renderInboxFromWorkspace surfaces the right
+   DEX chip for each row (Issue 0011 Phase 2). */
+function platformInboxSeedToWorkspaceItems(data, ownerUserId) {
+  const items = {};
+  if (!data || !ownerUserId) return items;
+  const now = Date.now();
+  [['mine', data.mine || []], ['team', data.team || []]].forEach(([bucket, records]) => {
+    records.forEach((item, index) => {
+      const dexId = item.dexId || 'tx';
+      const inboxItemId = `inbox-${ownerUserId}-${dexId}-${bucket}-${index + 1}`;
+      const offsetHours = item.completion ? 0.05 : (2 + index * 3);
+      const surfacedAt = new Date(now - offsetHours * 3600 * 1000).toISOString();
+      items[inboxItemId] = {
+        inboxItemId,
+        agreementId: null,
+        ownerUserId,
+        dexId,
+        bucket,
+        title: item.title,
+        meta: item.meta,
+        btn: item.btn || null,
+        cta: item.cta || item.action || null,
+        dir: item.dir || null,
+        completion: !!item.completion,
+        intent: item.intent || (item.completion ? null : 'decide'),
+        sourceType: item.sourceType || (item.completion ? null : 'governance'),
+        dueAt: item.dueAt || null,
+        counterpartyOrgId: null,
+        counterpartyName: item.counterpartyName || null,
+        // requires: role-gating preserved so the renderer can dim rows the
+        // current platformRole can't action (e.g. 'Super SGTradex Admin' DE
+        // promotions when Sarah is at base 'SGTradex Admin').
+        requires: item.requires || null,
+        status: item.completion ? 'closed' : 'open',
+        createdAt: surfacedAt,
+        surfacedAt
+      };
+    });
+  });
+  return items;
+}
+
 /* participantsSeedToWorkspaceItems — capture the SCENE_SEEDS[*].participants
    array verbatim into workspace.participants. We key by `<dexId>:<orgId>`
    when an orgId is declared on the seed so the relationship walks (org →
@@ -600,6 +649,15 @@ function buildWorkspaceFromScene(scene = {}) {
      resolver has an authoritative org registry to look up against. */
   seedReferenceCollections(workspace);
   mergeSceneIntoWorkspace(workspace, scene);
+  /* PLATFORM_INBOX materialisation (Issue 0011 Phase 2). Sarah's cross-DEX
+     governance items merge into workspace.inboxItems with their per-item
+     dexId. Once materialised, the platform-admin inbox renders through
+     renderInboxFromWorkspace and inherits the ADR 0036 banding + bundling
+     path that participant personas already use. The legacy
+     themeInboxContent platform-admin branch retires in the same change. */
+  if (typeof PLATFORM_INBOX !== 'undefined' && PLATFORM_INBOX) {
+    Object.assign(workspace.inboxItems, platformInboxSeedToWorkspaceItems(PLATFORM_INBOX, 'sarah'));
+  }
   return workspace;
 }
 
@@ -627,6 +685,13 @@ function buildWorkspaceFromFixtures() {
   UNIFIED_SEED_SCENES.forEach((scene) => {
     mergeSceneIntoWorkspace(workspace, scene);
   });
+  /* PLATFORM_INBOX materialisation (Issue 0011 Phase 2). Sarah's cross-DEX
+     governance items live on the workspace alongside participant items so
+     the platform-admin inbox renders through renderInboxFromWorkspace and
+     inherits ADR 0036 banding + bundling. */
+  if (typeof PLATFORM_INBOX !== 'undefined' && PLATFORM_INBOX) {
+    Object.assign(workspace.inboxItems, platformInboxSeedToWorkspaceItems(PLATFORM_INBOX, 'sarah'));
+  }
   return workspace;
 }
 
@@ -638,6 +703,7 @@ window.resolveCounterpartyOrgId = resolveCounterpartyOrgId;
 window.draftSeedToWorkspaceDraft = draftSeedToWorkspaceDraft;
 window.agreementRowToWorkspaceAgreement = agreementRowToWorkspaceAgreement;
 window.inboxSeedToWorkspaceItems = inboxSeedToWorkspaceItems;
+window.platformInboxSeedToWorkspaceItems = platformInboxSeedToWorkspaceItems;
 window.materialiseInboxFromRecords = materialiseInboxFromRecords;
 window.inferMessageFlow = inferMessageFlow;
 window.inferMessageStatus = inferMessageStatus;

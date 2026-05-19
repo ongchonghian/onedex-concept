@@ -8069,9 +8069,14 @@ function switchPersona(personaId) {
   applyPersonaChrome();
   refreshRoleChips(); // also re-runs capability gates + sidebar visibility
 
-  // Inbox content swap — participant DEX-scoped inbox or PLATFORM_INBOX cross-org work
-  if (typeof themeInboxContent === 'function') {
-    themeInboxContent(personaId === 'platform-admin' ? 'tx' : currentDexCode());
+  // Inbox content swap — Issue 0011 Phase 2 routes platform-admin to
+  // inbox-all (cross-DEX aggregator). Sarah's PLATFORM_INBOX is now
+  // workspace-resident, so renderInboxFromWorkspace handles her items the
+  // same way it handles Marcus's participant items.
+  if (personaId === 'platform-admin' && typeof goto === 'function') {
+    goto('inbox-all');
+  } else if (typeof themeInboxContent === 'function') {
+    themeInboxContent(currentDexCode());
   }
   // Re-hydrate dynamic chrome that's outside the inbox renderer's reach
   // (welcome heading, role/DEX lede, org+count copy on the empty hero;
@@ -8165,7 +8170,15 @@ function rebuildAllShells() {
       };
       if (SIDEBAR_ROUTES[label]) {
         if (typeof exitFlow === 'function') exitFlow();
-        goto(SIDEBAR_ROUTES[label]);
+        // Issue 0011 Phase 2 — platform-admin's Inbox is fundamentally
+        // cross-DEX (Sarah's governance work spans all three DEXes per
+        // PLATFORM_INBOX materialisation), so route her to inbox-all
+        // instead of the per-DEX inbox-tx surface.
+        let target = SIDEBAR_ROUTES[label];
+        if (label === 'Inbox' && typeof currentPersona !== 'undefined' && currentPersona === 'platform-admin') {
+          target = 'inbox-all';
+        }
+        goto(target);
       } else {
         toast('Routing to ' + label + ' (placeholder)');
       }
@@ -8916,7 +8929,12 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       if (routes[label]) {
         if (typeof exitFlow === 'function') exitFlow();
-        goto(routes[label]);
+        // Issue 0011 Phase 2 — platform-admin → inbox-all (see other call site above).
+        let target = routes[label];
+        if (label === 'Inbox' && typeof currentPersona !== 'undefined' && currentPersona === 'platform-admin') {
+          target = 'inbox-all';
+        }
+        goto(target);
       } else {
         toast('Routing to ' + label + ' (placeholder)');
       }

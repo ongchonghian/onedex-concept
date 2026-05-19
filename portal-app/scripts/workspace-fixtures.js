@@ -26,19 +26,30 @@
    org onboarding KYC, Data Element promotions (Super SGTradex Admin only),
    network setup, cross-org user provisioning. Mirrors the items the admin-ui
    admin branch surfaces (Navigation/index.js:135-140 + maker-checker matrix). */
+/* PLATFORM_INBOX — Sarah's cross-DEX governance work. Materialised into
+   workspace.inboxItems at bootstrap (Issue 0011 Phase 2) so the
+   platform-admin persona renders through the same banded + bundled path
+   as participant personas (ADR 0036). Each item carries an explicit
+   `dexId` reflecting the DEX context the work belongs to:
+     - KYC reviews → subject org's primaryDexId
+     - DE promotions → element's home DEX
+     - Network/org admissions → target DEX
+     - Certificate renewals → DEX named in the work
+   The fixture is otherwise the same shape as participant INBOX_BY_DEX
+   entries (intent / sourceType / dueAt per ADR 0035 Phase 1). */
 const PLATFORM_INBOX = {
   count: 9, mineCount: 4, teamCount: 5,
   role: 'SGTradex Admin', // promote to 'Super SGTradex Admin' to unlock DE.Create work
   mine: [
-    { title: 'Pacific Container Lines — onboarding KYC review', meta: 'Org onboarding · KYC submitted 3d ago · awaiting your decision', btn: 'Review', cta: 'review-org', intent: 'decide', sourceType: 'governance' },
-    { title: 'Acme Construction → SGBuildex · network admission', meta: 'Cross-DEX admission request · 2 of 3 platform admins approved', btn: 'Approve', cta: 'approve-network', intent: 'decide', sourceType: 'governance' },
-    { title: 'Promote Bill of Lading v2.1 → Active (SGTradex)', meta: 'Data element governance · drafted by Kagura · review window closes today', btn: 'Open', cta: 'open-de-promotion', intent: 'decide', sourceType: 'governance', requires: 'Super SGTradex Admin' },
-    { title: 'Issue SGHealthdex network certificate renewal', meta: 'Network · current cert expires in 21d · renewal SOP applies', btn: 'Renew', cta: 'renew-network', intent: 'confirm', sourceType: 'governance' }
+    { dexId: 'tx', title: 'Pacific Container Lines — onboarding KYC review', meta: 'Org onboarding · KYC submitted 3d ago · awaiting your decision', btn: 'Review', cta: 'review-org', intent: 'decide', sourceType: 'governance' },
+    { dexId: 'bx', title: 'Acme Construction → SGBuildex · network admission', meta: 'Cross-DEX admission request · 2 of 3 platform admins approved', btn: 'Approve', cta: 'approve-network', intent: 'decide', sourceType: 'governance' },
+    { dexId: 'tx', title: 'Promote Bill of Lading v2.1 → Active (SGTradex)', meta: 'Data element governance · drafted by Kagura · review window closes today', btn: 'Open', cta: 'open-de-promotion', intent: 'decide', sourceType: 'governance', requires: 'Super SGTradex Admin' },
+    { dexId: 'hx', title: 'Issue SGHealthdex network certificate renewal', meta: 'Network · current cert expires in 21d · renewal SOP applies', btn: 'Renew', cta: 'renew-network', intent: 'confirm', sourceType: 'governance' }
   ],
   team: [
-    { title: 'Onboard 4 SGBuildex contractor orgs — batch KYC', meta: 'Org onboarding · queued by automation · 2 admins eligible', btn: 'Claim', intent: 'decide', sourceType: 'governance' },
-    { title: 'Lesley approved Greater Bay Logistics org admin role', meta: 'Completed 12 min ago · disappears from inbox in 3 min', completion: true },
-    { title: 'Maersk requested SP appointment authority on SGTradex', meta: 'Service-Provider authorisation · pending platform sign-off', btn: 'Claim', intent: 'decide', sourceType: 'governance' }
+    { dexId: 'bx', title: 'Onboard 4 SGBuildex contractor orgs — batch KYC', meta: 'Org onboarding · queued by automation · 2 admins eligible', btn: 'Claim', intent: 'decide', sourceType: 'governance' },
+    { dexId: 'tx', title: 'Lesley approved Greater Bay Logistics org admin role', meta: 'Completed 12 min ago · disappears from inbox in 3 min', completion: true },
+    { dexId: 'tx', title: 'Maersk requested SP appointment authority on SGTradex', meta: 'Service-Provider authorisation · pending platform sign-off', btn: 'Claim', intent: 'decide', sourceType: 'governance' }
   ]
 };
 /* ---------- Per-DEX inbox data ----------
