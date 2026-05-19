@@ -2345,7 +2345,7 @@
           <button class="btn-ghost" id="detail-more-btn" onclick="toggleOverflowMenu(event)" aria-haspopup="menu" aria-expanded="false" aria-label="More actions"><i class="ti ti-dots" aria-hidden="true"></i></button>
           <div class="overflow-menu" id="detail-overflow-menu" hidden role="menu" aria-label="Agreement actions">
             <button role="menuitem" onclick="closeOverflowMenu(); openExtend('Maersk Logistics')"><i class="ti ti-clock-play" aria-hidden="true"></i>Extend</button>
-            <button role="menuitem" onclick="closeOverflowMenu(); if (suspendCurrentAgreement()) toast('Agreement suspended','warn');"><i class="ti ti-player-pause" aria-hidden="true"></i>Suspend</button>
+            <button role="menuitem" data-demo="agreement-actions.suspend" onclick="closeOverflowMenu(); if (suspendCurrentAgreement()) toast('Agreement suspended','warn');"><i class="ti ti-player-pause" aria-hidden="true"></i>Suspend</button>
             <button role="menuitem" onclick="closeOverflowMenu(); toast('Audit log exported as CSV (mock)')"><i class="ti ti-download" aria-hidden="true"></i>Export audit</button>
             <button role="menuitem" onclick="closeOverflowMenu(); toast('Link copied to clipboard (mock)')"><i class="ti ti-link" aria-hidden="true"></i>Copy link</button>
             <div class="menu-divider" role="separator"></div>
@@ -3993,6 +3993,7 @@
 <script src="scripts/demos/approve.js?v=p17"></script>
 <script src="scripts/demos/cross-dex.js?v=p17"></script>
 <script src="scripts/demos/compose-message.js?v=p17"></script>
+<script src="scripts/demos/suspend.js?v=p17"></script>
 <script src="scripts/demos/index.js?v=p17"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>

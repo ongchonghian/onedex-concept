@@ -38,6 +38,7 @@ const SCRIPT_PATHS = [
   'scripts/demos/approve.js',
   'scripts/demos/cross-dex.js',
   'scripts/demos/compose-message.js',
+  'scripts/demos/suspend.js',
 ];
 
 /* JSDOM's runScripts: 'outside-only' does NOT wire inline onclick="..."
