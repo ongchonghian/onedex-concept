@@ -342,6 +342,7 @@ The prototype has grown across many iterations and now carries a real risk of "d
 | List-page H1 titles (Data elements / Participants / Agreements) | `hydrateListPageTitlesChrome()` in `portal-app/scripts/app.js` | Walks `[data-list-page-title]` H1s (one per list screen). The sibling `.meta-label` + `.adr-tag` chips inside `.canvas-meta` are dev annotations and stay literal; only the H1 itself is real chrome. |
 | Impersonation banner + modal chrome | `hydrateImpersonationChrome()` in `portal-app/scripts/app.js` | Fills the top-of-page banner (`[data-impersonation-banner-text]`) and the impersonation modal title/body (`[data-impersonation-modal-*]`) with the active DEX label. |
 | Join-another-DEX modal enrolment line | `hydrateJoinDexModalChrome()` in `portal-app/scripts/app.js` | Fills `[data-join-dex-enrolled-line]` with a comma-and-Oxford-listed sentence of the active user's enrolled DEXes derived from `activeUserEnrolledDexes()`. |
+| Settings → Other DEX memberships rows | `hydrateSettingsOtherDexMembershipsChrome()` in `portal-app/scripts/app.js` | Re-renders `[data-settings-other-dex-memberships]` from `PITSTOPS_BY_ORG[primaryOrgId]` filtered to non-home DEXes. Each row reads name + topology + userCount + elementsScopedCount from the Pitstop record (those count fields live on the record because deriving from the demo-sized user table would render misleadingly small numbers). |
 
 **Surfaces that are deliberately NOT rebuilt** (and why — document any new exceptions here):
 

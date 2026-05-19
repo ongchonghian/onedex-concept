@@ -514,14 +514,21 @@ const DATA_ELEMENTS_BY_DEX = {
    SG-Finance, SG-Trade — plus one retired (SG-Logistics-Old) so scenario E
    has historical Messages to reference. Single-Pitstop on SGBuildex/SGHealthdex
    confirms the "no complexity tax for single-Pitstop users" guarantee. */
+/* userCount + elementsScopedCount are the values surfaced by the Settings →
+   Other DEX memberships hydrator (Issue 0011 stage 1b). They live on the
+   record so chrome can derive from data — the prototype keeps the demo-
+   flavoured larger numbers (6 / 12, 4 / 8) here rather than counting users
+   from the small test fixture (USER_PITSTOP_ROLES has only a handful of
+   demo users; truth-counting would render "1 user" which misrepresents a
+   production Pitstop). */
 const PITSTOPS_BY_ORG = {
   'cosco': [
-    { id: 'cosco-tx-ops',     name: 'SG-Logistics',     dexId: 'tx', orgId: 'cosco', retired: false },
-    { id: 'cosco-tx-finance', name: 'SG-Finance',       dexId: 'tx', orgId: 'cosco', retired: false },
-    { id: 'cosco-tx-trade',   name: 'SG-Trade',         dexId: 'tx', orgId: 'cosco', retired: false },
-    { id: 'cosco-tx-old',     name: 'SG-Logistics-Old', dexId: 'tx', orgId: 'cosco', retired: true, retiredAt: '2026-03-04' },
-    { id: 'cosco-bx-main',    name: 'SGBuildex-Main',     dexId: 'bx', orgId: 'cosco', retired: false },
-    { id: 'cosco-hx-main',    name: 'SGHealthdex-Main',   dexId: 'hx', orgId: 'cosco', retired: false }
+    { id: 'cosco-tx-ops',     name: 'SG-Logistics',     dexId: 'tx', orgId: 'cosco', retired: false, userCount: 14, elementsScopedCount: 18 },
+    { id: 'cosco-tx-finance', name: 'SG-Finance',       dexId: 'tx', orgId: 'cosco', retired: false, userCount: 8,  elementsScopedCount: 7 },
+    { id: 'cosco-tx-trade',   name: 'SG-Trade',         dexId: 'tx', orgId: 'cosco', retired: false, userCount: 5,  elementsScopedCount: 4 },
+    { id: 'cosco-tx-old',     name: 'SG-Logistics-Old', dexId: 'tx', orgId: 'cosco', retired: true, retiredAt: '2026-03-04', userCount: 0, elementsScopedCount: 0 },
+    { id: 'cosco-bx-main',    name: 'SGBuildex-Main',     dexId: 'bx', orgId: 'cosco', retired: false, userCount: 6, elementsScopedCount: 12 },
+    { id: 'cosco-hx-main',    name: 'SGHealthdex-Main',   dexId: 'hx', orgId: 'cosco', retired: false, userCount: 4, elementsScopedCount: 8 }
   ],
   'psa': [
     { id: 'psa-tx-main', name: 'PSA-SGTradex', dexId: 'tx', orgId: 'psa', retired: false }

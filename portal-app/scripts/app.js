@@ -2008,6 +2008,48 @@ function hydrateJoinDexModalChrome() {
 }
 window.hydrateJoinDexModalChrome = hydrateJoinDexModalChrome;
 
+/* hydrateSettingsOtherDexMembershipsChrome — re-renders the Settings →
+   "Other DEX memberships" section under the active user's primary org.
+   Each row shows the Pitstop's home DEX chip, name, topology (single- vs
+   multi-Pitstop Org), user count, and elements-scoped count — values pulled
+   from PITSTOPS_BY_ORG record fields (see state.js for why those counts
+   live on the record rather than being derived from the demo-sized user
+   table). Persona switches automatically re-render this surface via
+   runPortalChromeHydrators(). */
+function hydrateSettingsOtherDexMembershipsChrome() {
+  const host = document.querySelector('[data-settings-other-dex-memberships]');
+  if (!host) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const user = (typeof USERS !== 'undefined' && USERS) ? USERS[userId] : null;
+  const orgId = user && user.primaryOrgId;
+  const org = (orgId && typeof ORGS !== 'undefined' && ORGS) ? ORGS[orgId] : null;
+  const homeDex = org && org.primaryDexId;
+  const pitstops = (orgId && typeof PITSTOPS_BY_ORG !== 'undefined' && PITSTOPS_BY_ORG[orgId])
+    ? PITSTOPS_BY_ORG[orgId]
+    : [];
+  const otherDexPitstops = pitstops.filter((p) => p && !p.retired && p.dexId && p.dexId !== homeDex);
+  // Group by DEX so multi-Pitstop orgs render once per Pitstop but topology
+  // reflects the per-DEX count.
+  const byDex = {};
+  otherDexPitstops.forEach((p) => { (byDex[p.dexId] = byDex[p.dexId] || []).push(p); });
+  const heading = '<h3>Other DEX memberships</h3>';
+  if (otherDexPitstops.length === 0) {
+    host.innerHTML = heading + '<p class="s-empty" style="font-size:12px;color:var(--g-50)">Your org isn\'t a member of any DEX outside its home DEX.</p>';
+    return;
+  }
+  const rows = otherDexPitstops.map((p) => {
+    const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[p.dexId]) || p.dexId.toUpperCase();
+    const cohort = byDex[p.dexId] || [];
+    const topology = cohort.length === 1 ? 'single-Pitstop Org' : 'multi-Pitstop Org';
+    const userCount = (typeof p.userCount === 'number') ? p.userCount : 0;
+    const elemCount = (typeof p.elementsScopedCount === 'number') ? p.elementsScopedCount : 0;
+    const handler = `openPitstopConfig('${escAttr(p.id)}')`;
+    return `<div class="settings-row"><span class="s-k"><span class="dex-chip ${escAttr(p.dexId)}"><span class="dex-dot"></span>${escAttr(dexLabel)}</span></span><span class="s-v"><strong>${escAttr(p.name)}</strong> · ${escAttr(topology)} on ${escAttr(dexLabel)} · ${userCount} users · ${elemCount} elements scoped</span><span class="s-action"><a role="button" tabindex="0" onclick="${handler}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">Configure</a></span></div>`;
+  }).join('');
+  host.innerHTML = heading + rows;
+}
+window.hydrateSettingsOtherDexMembershipsChrome = hydrateSettingsOtherDexMembershipsChrome;
+
 /* runPortalChromeHydrators — single fan-out called whenever persona / DEX /
    workspace context changes. Each per-surface hydrator is invoked
    independently so a missing data-* anchor on one surface doesn't block the
@@ -2019,6 +2061,7 @@ function runPortalChromeHydrators() {
   try { hydrateListPageTitlesChrome(); } catch (e) {}
   try { hydrateImpersonationChrome(); } catch (e) {}
   try { hydrateJoinDexModalChrome(); } catch (e) {}
+  try { hydrateSettingsOtherDexMembershipsChrome(); } catch (e) {}
 }
 window.runPortalChromeHydrators = runPortalChromeHydrators;
 

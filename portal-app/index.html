@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=1200, initial-scale=1">
 <title>Dex Portal — Prototype</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="styles/tokens.css?v=p11">
-<link rel="stylesheet" href="styles/themes.css?v=p11">
-<link rel="stylesheet" href="styles/base.css?v=p11">
-<link rel="stylesheet" href="styles/components.css?v=p11">
-<link rel="stylesheet" href="styles/layout.css?v=p11">
-<link rel="stylesheet" href="styles/screens.css?v=p11">
-<link rel="stylesheet" href="styles/demos.css?v=p11">
+<link rel="stylesheet" href="styles/tokens.css?v=p12">
+<link rel="stylesheet" href="styles/themes.css?v=p12">
+<link rel="stylesheet" href="styles/base.css?v=p12">
+<link rel="stylesheet" href="styles/components.css?v=p12">
+<link rel="stylesheet" href="styles/layout.css?v=p12">
+<link rel="stylesheet" href="styles/screens.css?v=p12">
+<link rel="stylesheet" href="styles/demos.css?v=p12">
 </head>
 <body>
 
@@ -3150,10 +3150,9 @@
           </div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" data-settings-other-dex-memberships>
           <h3>Other DEX memberships</h3>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span></span><span class="s-v"><strong>SGBuildex-Main</strong> · single-Pitstop Org on SGBuildex · 6 users · 12 elements scoped</span><span class="s-action"><a role="button" tabindex="0" onclick="openPitstopConfig('cosco-bx-main')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">Configure</a></span></div>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip hx"><span class="dex-dot"></span>SGHealthdex</span></span><span class="s-v"><strong>SGHealthdex-Main</strong> · single-Pitstop Org on SGHealthdex · 4 users · 8 elements scoped</span><span class="s-action"><a role="button" tabindex="0" onclick="openPitstopConfig('cosco-hx-main')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">Configure</a></span></div>
+          <!-- Populated by hydrateSettingsOtherDexMembershipsChrome(). See Issue 0011. -->
         </div>
 
         <div class="pitstops-info-callout">
@@ -3977,28 +3976,28 @@
      defined elsewhere. Per ADR 0028 the multi-Pitstop layer is a parallel concern
      hooking into existing surfaces — keeping it as the final layer makes the dependency
      direction explicit. ===== -->
-<script src="scripts/state.js?v=p11"></script>
-<script src="scripts/access.js?v=p11"></script>
-<script src="scripts/workspace-storage.js?v=p11"></script>
+<script src="scripts/state.js?v=p12"></script>
+<script src="scripts/access.js?v=p12"></script>
+<script src="scripts/workspace-storage.js?v=p12"></script>
 <!-- workspace-fixtures.js — scene/inbox/MP fixture data extracted from state.js
      in Phase 7. Must load before workspace-bootstrap.js (which dereferences
      SCENE_SEEDS / INBOX_BY_DEX) but order vs. state.js doesn't matter — all
      references are guarded with `typeof X !== 'undefined'`. -->
-<script src="scripts/workspace-fixtures.js?v=p11"></script>
-<script src="scripts/workspace-bootstrap.js?v=p11"></script>
-<script src="scripts/workspace.js?v=p11"></script>
-<script src="scripts/components.js?v=p11"></script>
-<script src="scripts/theme.js?v=p11"></script>
-<script src="scripts/wizard.js?v=p11"></script>
-<script src="scripts/app.js?v=p11"></script>
+<script src="scripts/workspace-fixtures.js?v=p12"></script>
+<script src="scripts/workspace-bootstrap.js?v=p12"></script>
+<script src="scripts/workspace.js?v=p12"></script>
+<script src="scripts/components.js?v=p12"></script>
+<script src="scripts/theme.js?v=p12"></script>
+<script src="scripts/wizard.js?v=p12"></script>
+<script src="scripts/app.js?v=p12"></script>
 <!-- Auto-demo runner (ADR 0034) — load order: runtime first, then each flow self-registers, then the launcher reads the registry. -->
-<script src="scripts/demos/runtime.js?v=p11"></script>
-<script src="scripts/demos/first-agreement.js?v=p11"></script>
-<script src="scripts/demos/extend.js?v=p11"></script>
-<script src="scripts/demos/approve.js?v=p11"></script>
-<script src="scripts/demos/cross-dex.js?v=p11"></script>
-<script src="scripts/demos/compose-message.js?v=p11"></script>
-<script src="scripts/demos/index.js?v=p11"></script>
+<script src="scripts/demos/runtime.js?v=p12"></script>
+<script src="scripts/demos/first-agreement.js?v=p12"></script>
+<script src="scripts/demos/extend.js?v=p12"></script>
+<script src="scripts/demos/approve.js?v=p12"></script>
+<script src="scripts/demos/cross-dex.js?v=p12"></script>
+<script src="scripts/demos/compose-message.js?v=p12"></script>
+<script src="scripts/demos/index.js?v=p12"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>
 <script src="scripts/pitstop.js"></script>
