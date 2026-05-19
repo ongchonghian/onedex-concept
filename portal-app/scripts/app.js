@@ -2050,6 +2050,140 @@ function hydrateSettingsOtherDexMembershipsChrome() {
 }
 window.hydrateSettingsOtherDexMembershipsChrome = hydrateSettingsOtherDexMembershipsChrome;
 
+/* hydrateOnboardingOverlayChrome — fills the prototype-entry overlay's
+   lede ("Step into the prototype as one of <Org>'s admins") and the
+   primary-CTA description ("Sign in as <Name>, an <Role> for <Org> on
+   <DEX>") so reviewers entering as a non-default persona see the right
+   identity introduced. Falls back to the original Marcus/Cosco/SGTradex
+   sentence if state is missing. */
+function hydrateOnboardingOverlayChrome() {
+  const lede = document.querySelector('[data-onboarding-overlay-lede]');
+  const desc = document.querySelector('[data-onboarding-overlay-desc]');
+  if (!lede && !desc) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const dexId = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[dexId]) || 'SGTradex';
+  const user = (typeof USERS !== 'undefined' && USERS) ? USERS[userId] : null;
+  const firstName = user && user.name ? String(user.name).split(/\s+/)[0] : 'the operator';
+  const orgId = user && user.primaryOrgId;
+  const org = (orgId && typeof ORGS !== 'undefined' && ORGS) ? ORGS[orgId] : null;
+  const orgShort = (org && (org.short || org.name)) || 'your org';
+  const orgName = (org && org.name) || orgShort;
+  const seat = (typeof resolveSeat === 'function') ? resolveSeat(userId, dexId) : null;
+  const role = seat && seat.role ? seat.role : 'an operator';
+  if (lede) lede.textContent = `Step into the prototype as one of ${orgName}'s admins — explore freely, or watch a guided demo of how the new portal feels in motion.`;
+  if (desc) desc.textContent = `Sign in as ${firstName}, an ${role} for ${orgShort} on ${dexLabel}. Click through inboxes, Agreements, the lifecycle states. Reset anytime from the corner.`;
+}
+window.hydrateOnboardingOverlayChrome = hydrateOnboardingOverlayChrome;
+
+/* hydrateSettingsProfileChrome — fills the four rows under Settings → Profile
+   (Name / Email / Organisation / User since) from active user + active org
+   record. Organisation reads legalName + uen if present on the ORGS record,
+   else falls back to the display name alone. */
+function hydrateSettingsProfileChrome() {
+  const host = document.querySelector('[data-settings-profile]');
+  if (!host) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const user = (typeof USERS !== 'undefined' && USERS) ? USERS[userId] : null;
+  const orgId = user && user.primaryOrgId;
+  const org = (orgId && typeof ORGS !== 'undefined' && ORGS) ? ORGS[orgId] : null;
+  const affiliation = (orgId && typeof USER_ORG_AFFILIATIONS !== 'undefined') ? USER_ORG_AFFILIATIONS[`${userId}-${orgId}`] : null;
+  const nameEl = host.querySelector('[data-settings-profile-name]');
+  if (nameEl) nameEl.textContent = (user && user.name) || '—';
+  const emailEl = host.querySelector('[data-settings-profile-email]');
+  if (emailEl) emailEl.textContent = (user && user.email) || '—';
+  const orgEl = host.querySelector('[data-settings-profile-organisation]');
+  if (orgEl) {
+    if (org && org.legalName && org.uen) orgEl.textContent = `${org.legalName} · UEN ${org.uen}`;
+    else if (org && org.name) orgEl.textContent = org.name;
+    else orgEl.textContent = '—';
+  }
+  const sinceEl = host.querySelector('[data-settings-profile-user-since]');
+  if (sinceEl) sinceEl.textContent = (affiliation && affiliation.startDate)
+    ? formatHumanDate(affiliation.startDate)
+    : '—';
+}
+window.hydrateSettingsProfileChrome = hydrateSettingsProfileChrome;
+
+/* hydrateSettingsDexRolesChrome — re-renders the Settings → "Roles by DEX"
+   section. Each row represents one DEX where the active user holds a seat
+   (per resolveSeat). For platform-tier users, every enrolled DEX renders
+   uniformly via platformRole. Surface is data-truth: if Marcus's BX/HX
+   seats were stripped (Issues 0002 + 0003), only TX renders — the prior
+   markup that showed all three rows was stale relative to the affiliation
+   table. */
+function hydrateSettingsDexRolesChrome() {
+  const host = document.querySelector('[data-settings-dex-roles]');
+  if (!host) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const user = (typeof USERS !== 'undefined' && USERS) ? USERS[userId] : null;
+  const orgId = user && user.primaryOrgId;
+  const affiliation = (orgId && typeof USER_ORG_AFFILIATIONS !== 'undefined') ? USER_ORG_AFFILIATIONS[`${userId}-${orgId}`] : null;
+  const dexJoinDates = (affiliation && affiliation.dexJoinDates) || {};
+  const candidateDexes = (typeof activeUserEnrolledDexes === 'function') ? activeUserEnrolledDexes(userId) : ['tx', 'bx', 'hx'];
+  const rows = candidateDexes.map((d) => {
+    const seat = (typeof resolveSeat === 'function') ? resolveSeat(userId, d) : null;
+    if (!seat || !seat.role) return null;
+    const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[d]) || d.toUpperCase();
+    const scope = (typeof ROLE_SCOPE_DESCRIPTIONS !== 'undefined' && ROLE_SCOPE_DESCRIPTIONS[seat.role]) || '';
+    const joined = dexJoinDates[d] ? ` · joined ${formatHumanDate(dexJoinDates[d])}` : '';
+    const valueText = scope ? `${seat.role} · ${scope}${joined}` : `${seat.role}${joined}`;
+    return `<div class="settings-row"><span class="s-k"><span class="dex-chip ${escAttr(d)}"><span class="dex-dot"></span>${escAttr(dexLabel)}</span></span><span class="s-v">${escAttr(valueText)}</span><span class="s-action"></span></div>`;
+  }).filter(Boolean);
+  const heading = '<h3>Roles by DEX</h3>';
+  if (rows.length === 0) {
+    host.innerHTML = heading + '<p class="s-empty" style="font-size:12px;color:var(--g-50)">No active DEX roles for this user.</p>';
+    return;
+  }
+  host.innerHTML = heading + rows.join('');
+}
+window.hydrateSettingsDexRolesChrome = hydrateSettingsDexRolesChrome;
+
+/* hydrateDexSwitcherChrome — re-renders the DEX switcher rows
+   (#switcher-pop > [data-dex-switcher-rows]) for the active user. Each row
+   shows the DEX tile + name + per-DEX role + waiting-items count (derived
+   from workspace.inboxItems via listInboxItemsForUserAndDex). Active DEX
+   gets the check mark; non-active enrolled DEXes get the unread dot when
+   they have items waiting. */
+function hydrateDexSwitcherChrome() {
+  const host = document.querySelector('[data-dex-switcher-rows]');
+  if (!host) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const activeDex = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const enrolled = (typeof activeUserEnrolledDexes === 'function') ? activeUserEnrolledDexes(userId) : ['tx', 'bx', 'hx'];
+  const tile = (d) => ({ tx: 'Tx', bx: 'Bx', hx: 'Hx' }[d] || d.toUpperCase());
+  const rows = enrolled.map((d) => {
+    const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[d]) || d.toUpperCase();
+    const seat = (typeof resolveSeat === 'function') ? resolveSeat(userId, d) : null;
+    const role = seat && seat.role ? seat.role : '';
+    let waitingCount = 0;
+    if (typeof listInboxItemsForUserAndDex === 'function') {
+      waitingCount = listInboxItemsForUserAndDex(userId, d).filter((i) => !i.completion).length;
+    }
+    const isActive = d === activeDex;
+    const cls = `switcher-item ${escAttr(d)}${isActive ? ' active' : ''}`;
+    const trailing = isActive
+      ? `<i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:14px"></i>`
+      : (waitingCount > 0 ? `<span style="margin-left:auto;width:6px;height:6px;background:var(--red-50);border-radius:50%"></span>` : '');
+    const roleClause = role ? `${escAttr(role)} · ${waitingCount} item${waitingCount === 1 ? '' : 's'} waiting` : `${waitingCount} item${waitingCount === 1 ? '' : 's'} waiting`;
+    return `<div class="${cls}" role="menuitem" onclick="switchDex('${escAttr(d)}')"><span class="ws-tile">${escAttr(tile(d))}</span><div><div class="label">${escAttr(dexLabel)}</div><div class="role">${roleClause}</div></div>${trailing}</div>`;
+  });
+  host.innerHTML = rows.join('');
+}
+window.hydrateDexSwitcherChrome = hydrateDexSwitcherChrome;
+
+/* formatHumanDate — small "YYYY-MM-DD" → "14 Mar 2024" helper used by
+   the profile + DEX-role hydrators. Local utility; not exposed globally. */
+function formatHumanDate(iso) {
+  if (!iso || typeof iso !== 'string') return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const day = parseInt(m[3], 10);
+  const month = months[parseInt(m[2], 10) - 1] || m[2];
+  return `${day} ${month} ${m[1]}`;
+}
+
 /* runPortalChromeHydrators — single fan-out called whenever persona / DEX /
    workspace context changes. Each per-surface hydrator is invoked
    independently so a missing data-* anchor on one surface doesn't block the
@@ -2062,6 +2196,10 @@ function runPortalChromeHydrators() {
   try { hydrateImpersonationChrome(); } catch (e) {}
   try { hydrateJoinDexModalChrome(); } catch (e) {}
   try { hydrateSettingsOtherDexMembershipsChrome(); } catch (e) {}
+  try { hydrateOnboardingOverlayChrome(); } catch (e) {}
+  try { hydrateSettingsProfileChrome(); } catch (e) {}
+  try { hydrateSettingsDexRolesChrome(); } catch (e) {}
+  try { hydrateDexSwitcherChrome(); } catch (e) {}
 }
 window.runPortalChromeHydrators = runPortalChromeHydrators;
 

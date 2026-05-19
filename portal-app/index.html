@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=1200, initial-scale=1">
 <title>Dex Portal — Prototype</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="styles/tokens.css?v=p12">
-<link rel="stylesheet" href="styles/themes.css?v=p12">
-<link rel="stylesheet" href="styles/base.css?v=p12">
-<link rel="stylesheet" href="styles/components.css?v=p12">
-<link rel="stylesheet" href="styles/layout.css?v=p12">
-<link rel="stylesheet" href="styles/screens.css?v=p12">
-<link rel="stylesheet" href="styles/demos.css?v=p12">
+<link rel="stylesheet" href="styles/tokens.css?v=p13">
+<link rel="stylesheet" href="styles/themes.css?v=p13">
+<link rel="stylesheet" href="styles/base.css?v=p13">
+<link rel="stylesheet" href="styles/components.css?v=p13">
+<link rel="stylesheet" href="styles/layout.css?v=p13">
+<link rel="stylesheet" href="styles/screens.css?v=p13">
+<link rel="stylesheet" href="styles/demos.css?v=p13">
 </head>
 <body>
 
@@ -2087,13 +2087,13 @@
     <section class="ov-cta-pair" aria-labelledby="ov-cta-h2">
       <p class="ov-eyebrow"><b>Try it</b></p>
       <h2 id="ov-cta-h2">You've seen the why. Here's the what.</h2>
-      <p class="ov-cta-lede">Step into the prototype as one of Cosco Shipping's admins — explore freely, or watch a guided demo of how the new portal feels in motion.</p>
+      <p class="ov-cta-lede" data-onboarding-overlay-lede>Step into the prototype as one of Cosco Shipping's admins — explore freely, or watch a guided demo of how the new portal feels in motion.</p>
       <div class="ov-cta-grid">
         <a class="ov-cta-card primary" href="#" role="button" onclick="event.preventDefault(); goto('inbox-tx');">
           <div class="ov-cta-icon"><i class="ti ti-arrow-right" aria-hidden="true"></i></div>
           <div class="ov-cta-body">
             <p class="ov-cta-title">See it in motion</p>
-            <p class="ov-cta-desc">Sign in as Marcus, an Organisation Admin for Cosco on SGTradex. Click through inboxes, Agreements, the lifecycle states. Reset anytime from the corner.</p>
+            <p class="ov-cta-desc" data-onboarding-overlay-desc>Sign in as Marcus, an Organisation Admin for Cosco on SGTradex. Click through inboxes, Agreements, the lifecycle states. Reset anytime from the corner.</p>
           </div>
         </a>
         <a class="ov-cta-card secondary" href="#" role="button" onclick="event.preventDefault(); if (typeof openDemosPanel === 'function') openDemosPanel();">
@@ -3251,19 +3251,17 @@
         <h2>Account</h2>
         <p class="pane-lede">Your profile information and the role you hold across each DEX.</p>
 
-        <div class="settings-section">
+        <div class="settings-section" data-settings-profile>
           <h3>Profile</h3>
-          <div class="settings-row"><span class="s-k">Name</span><span class="s-v">Marcus Ong</span><span class="s-action"><a onclick="toast('Edit profile (mock)')">Edit</a></span></div>
-          <div class="settings-row"><span class="s-k">Email</span><span class="s-v">marcus.ong@cosco.com.sg</span><span class="s-action"><a onclick="toast('Email change requires verification')">Change</a></span></div>
-          <div class="settings-row"><span class="s-k">Organisation</span><span class="s-v">Cosco Shipping (SG) Pte Ltd · UEN 199001234A</span><span class="s-action"></span></div>
-          <div class="settings-row"><span class="s-k">User since</span><span class="s-v">14 Mar 2024</span><span class="s-action"></span></div>
+          <div class="settings-row"><span class="s-k">Name</span><span class="s-v" data-settings-profile-name>Marcus Ong</span><span class="s-action"><a onclick="toast('Edit profile (mock)')">Edit</a></span></div>
+          <div class="settings-row"><span class="s-k">Email</span><span class="s-v" data-settings-profile-email>marcus.ong@cosco.com.sg</span><span class="s-action"><a onclick="toast('Email change requires verification')">Change</a></span></div>
+          <div class="settings-row"><span class="s-k">Organisation</span><span class="s-v" data-settings-profile-organisation>Cosco Shipping (SG) Pte Ltd · UEN 199001234A</span><span class="s-action"></span></div>
+          <div class="settings-row"><span class="s-k">User since</span><span class="s-v" data-settings-profile-user-since>14 Mar 2024</span><span class="s-action"></span></div>
         </div>
 
-        <div class="settings-section">
+        <div class="settings-section" data-settings-dex-roles>
           <h3>Roles by DEX</h3>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span></span><span class="s-v">Admin User · can create Agreements + manage relationships · joined 14 Mar 2024</span><span class="s-action"></span></div>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span></span><span class="s-v">Operation User · Pitstop runtime + data ops only · joined 22 Aug 2025</span><span class="s-action"></span></div>
-          <div class="settings-row"><span class="s-k"><span class="dex-chip hx"><span class="dex-dot"></span>SGHealthdex</span></span><span class="s-v">Super Admin · governance + user management within Cosco · joined 09 Jan 2026</span><span class="s-action"></span></div>
+          <!-- Populated by hydrateSettingsDexRolesChrome(). See Issue 0011 stage 1c. -->
         </div>
       </div>
 
@@ -3342,9 +3340,11 @@
 
 <!-- ===== Shared popovers (positioned via JS, work across all injected shells) ===== -->
 <div class="switcher-pop" hidden id="switcher-pop" role="menu" aria-label="Workspace switcher">
-  <div class="switcher-item tx active" role="menuitem" onclick="switchDex('tx')"><span class="ws-tile">Tx</span><div><div class="label">SGTradex</div><div class="role">Admin User · 12 items waiting</div></div><i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:14px"></i></div>
-  <div class="switcher-item bx" role="menuitem" onclick="switchDex('bx')"><span class="ws-tile">Bx</span><div><div class="label">SGBuildex</div><div class="role">Operation User · 4 items waiting</div></div><span style="margin-left:auto;width:6px;height:6px;background:var(--red-50);border-radius:50%"></span></div>
-  <div class="switcher-item hx" role="menuitem" onclick="switchDex('hx')"><span class="ws-tile">Hx</span><div><div class="label">SGHealthdex</div><div class="role">Super Admin · 3 items waiting</div></div></div>
+  <div data-dex-switcher-rows>
+    <div class="switcher-item tx active" role="menuitem" onclick="switchDex('tx')"><span class="ws-tile">Tx</span><div><div class="label">SGTradex</div><div class="role">Admin User · 12 items waiting</div></div><i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:14px"></i></div>
+    <div class="switcher-item bx" role="menuitem" onclick="switchDex('bx')"><span class="ws-tile">Bx</span><div><div class="label">SGBuildex</div><div class="role">Operation User · 4 items waiting</div></div><span style="margin-left:auto;width:6px;height:6px;background:var(--red-50);border-radius:50%"></span></div>
+    <div class="switcher-item hx" role="menuitem" onclick="switchDex('hx')"><span class="ws-tile">Hx</span><div><div class="label">SGHealthdex</div><div class="role">Super Admin · 3 items waiting</div></div></div>
+  </div>
   <div class="dropdown-divider"></div>
   <div class="switcher-item all" role="menuitem" onclick="goto('inbox-all')"><span class="ws-tile"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="1" y="1" width="5" height="5" rx="1" fill="#363941"/><rect x="8" y="1" width="5" height="5" rx="1" fill="#60636b"/><rect x="1" y="8" width="5" height="5" rx="1" fill="#60636b"/><rect x="8" y="8" width="5" height="5" rx="1" fill="#363941"/></svg></span><div><div class="label">All DEXes</div><div class="role">21 items across 3 DEXes</div></div></div>
   <div class="dropdown-divider"></div>
@@ -3976,28 +3976,28 @@
      defined elsewhere. Per ADR 0028 the multi-Pitstop layer is a parallel concern
      hooking into existing surfaces — keeping it as the final layer makes the dependency
      direction explicit. ===== -->
-<script src="scripts/state.js?v=p12"></script>
-<script src="scripts/access.js?v=p12"></script>
-<script src="scripts/workspace-storage.js?v=p12"></script>
+<script src="scripts/state.js?v=p13"></script>
+<script src="scripts/access.js?v=p13"></script>
+<script src="scripts/workspace-storage.js?v=p13"></script>
 <!-- workspace-fixtures.js — scene/inbox/MP fixture data extracted from state.js
      in Phase 7. Must load before workspace-bootstrap.js (which dereferences
      SCENE_SEEDS / INBOX_BY_DEX) but order vs. state.js doesn't matter — all
      references are guarded with `typeof X !== 'undefined'`. -->
-<script src="scripts/workspace-fixtures.js?v=p12"></script>
-<script src="scripts/workspace-bootstrap.js?v=p12"></script>
-<script src="scripts/workspace.js?v=p12"></script>
-<script src="scripts/components.js?v=p12"></script>
-<script src="scripts/theme.js?v=p12"></script>
-<script src="scripts/wizard.js?v=p12"></script>
-<script src="scripts/app.js?v=p12"></script>
+<script src="scripts/workspace-fixtures.js?v=p13"></script>
+<script src="scripts/workspace-bootstrap.js?v=p13"></script>
+<script src="scripts/workspace.js?v=p13"></script>
+<script src="scripts/components.js?v=p13"></script>
+<script src="scripts/theme.js?v=p13"></script>
+<script src="scripts/wizard.js?v=p13"></script>
+<script src="scripts/app.js?v=p13"></script>
 <!-- Auto-demo runner (ADR 0034) — load order: runtime first, then each flow self-registers, then the launcher reads the registry. -->
-<script src="scripts/demos/runtime.js?v=p12"></script>
-<script src="scripts/demos/first-agreement.js?v=p12"></script>
-<script src="scripts/demos/extend.js?v=p12"></script>
-<script src="scripts/demos/approve.js?v=p12"></script>
-<script src="scripts/demos/cross-dex.js?v=p12"></script>
-<script src="scripts/demos/compose-message.js?v=p12"></script>
-<script src="scripts/demos/index.js?v=p12"></script>
+<script src="scripts/demos/runtime.js?v=p13"></script>
+<script src="scripts/demos/first-agreement.js?v=p13"></script>
+<script src="scripts/demos/extend.js?v=p13"></script>
+<script src="scripts/demos/approve.js?v=p13"></script>
+<script src="scripts/demos/cross-dex.js?v=p13"></script>
+<script src="scripts/demos/compose-message.js?v=p13"></script>
+<script src="scripts/demos/index.js?v=p13"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>
 <script src="scripts/pitstop.js"></script>
