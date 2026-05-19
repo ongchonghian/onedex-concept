@@ -1104,9 +1104,14 @@ function renderInboxCardHTML(item, opts) {
     : "goto('detail')";
   // Stamp data-agreement-id / data-msg-id on the card so cross-screen
   // highlight handoffs (highlightAgreementRows / highlightMessageRows)
-  // can find the inbox card after navigation.
+  // can find the inbox card after navigation. Per ADR 0037 we also stamp
+  // data-inbox-item-id so Demo flows can target a specific card by its
+  // stable id even when the underlying entity has no agreement/message id
+  // (hand-seeded inbox items carry only inboxItemId).
   const agrIdAttr = item.agreementId ? ` data-agreement-id="${escAttr(item.agreementId)}"` : '';
   const msgIdAttr = safeMessageId ? ` data-msg-id="${escAttr(safeMessageId)}"` : '';
+  const itemIdAttr = item.inboxItemId ? ` data-inbox-item-id="${escAttr(item.inboxItemId)}"` : '';
+  const ctaAttr = cta ? ` data-cta="${escAttr(cta)}"` : '';
   const ageClass = ageClassFromSurfacedAt(item.surfacedAt);
   const ageLabel = formatCompactAge(item.surfacedAt);
   const ageTooltip = {
@@ -1120,11 +1125,11 @@ function renderInboxCardHTML(item, opts) {
   // still click anywhere on the card body. The action button sits at z-index 2
   // so it remains independently activatable.
   const titleLink = `<a class="card-link" href="#" onclick="event.preventDefault(); ${cardClick}; return false;">${item.title || ''}</a>`;
-  return `<div class="inbox-card${item.bucket === 'team' ? ' team' : ''}"${agrIdAttr}${msgIdAttr}>` +
+  return `<div class="inbox-card${item.bucket === 'team' ? ' team' : ''}"${agrIdAttr}${msgIdAttr}${itemIdAttr}>` +
     actionChip + sourceIcon + dexChip + dirChip +
     `<div class="body"><div class="title">${ageDot}${titleLink}</div><div class="meta">${item.meta || ''}</div></div>` +
     dueChip +
-    `<button type="button" class="${buttonClass}" onclick="${buttonHandler}">${buttonLabel}</button>` +
+    `<button type="button" class="${buttonClass}"${ctaAttr} onclick="${buttonHandler}">${buttonLabel}</button>` +
     `</div>`;
 }
 
@@ -3508,11 +3513,17 @@ function renderDataPickerFromDex(dexCode) {
       const chev = open ? 'down' : 'right';
       const leaves = (g.elements || []).map(e => {
         const activeCls = e.active ? ' active' : '';
+        // Per ADR 0037: emit data-pack-id / data-element-id when the registry
+        // declares an explicit id, so Demo flows can target the entity rather
+        // than positional .leaf:nth-of-type selectors. No-op when id is absent.
+        const idAttr = e.id
+          ? ` ${e.kind === 'pack' ? 'data-pack-id' : 'data-element-id'}="${e.id}"`
+          : '';
         if (e.kind === 'pack') {
-          return `<button class="leaf${activeCls}"><i class="ti ti-stack"></i>${e.name}<span class="group-pill">pack</span></button>`;
+          return `<button class="leaf${activeCls}"${idAttr}><i class="ti ti-stack"></i>${e.name}<span class="group-pill">pack</span></button>`;
         }
         const v = e.version ? ` <span class="v-tag">${e.version}</span>` : '';
-        return `<button class="leaf${activeCls}"><i class="ti ti-${e.icon || 'file-text'}"></i>${e.name}${v}</button>`;
+        return `<button class="leaf${activeCls}"${idAttr}><i class="ti ti-${e.icon || 'file-text'}"></i>${e.name}${v}</button>`;
       }).join('');
       return `<details ${open}>
         <summary><i class="ti ti-chevron-${chev} chev"></i><i class="ti ti-folder"></i>${g.name}<span class="ct">${g.count != null ? g.count : ''}</span></summary>
@@ -7623,6 +7634,7 @@ function confirmExtend() {
     if (body && !body.querySelector('.renewed-banner')) {
       const b = document.createElement('div');
       b.className = 'renewed-banner';
+      b.setAttribute('data-demo', 'detail.renewed-banner');
       b.innerHTML = '<i class="ti ti-clock-play"></i><p>Extended by ' + extendMonths + ' months · new end date 30 Sep 2027 · notification cadence reset (60 / 30 / 14 / 7 / 1 days)</p>';
       body.insertBefore(b, body.firstChild);
     }
