@@ -2969,7 +2969,7 @@
         <h2 id="pack-title">Vessel arrival distribution</h2>
         <span class="pack-tag">PACK</span>
         <span class="status-pill active"><span class="dot"></span>Active (4 of 4)</span>
-        <button class="btn-primary" onclick="setComposerScenario('push-high-stakes'); composerState.scenario='pack'; goto('compose'); toast('Composer opens in pack mode · 1 form, 4 Messages dispatched on submit')"><i class="ti ti-send"></i>Send pack</button>
+        <button class="btn-primary" data-demo="pack.send-pack-btn" onclick="setComposerScenario('push-high-stakes'); composerState.scenario='pack'; goto('compose'); toast('Composer opens in pack mode · 1 form, 4 Messages dispatched on submit')"><i class="ti ti-send"></i>Send pack</button>
       </div>
       <p class="pack-sub">Created from <strong>Vessel arrival pack</strong> (4 elements: ETA · vessel particulars · crew list · cargo manifest) split across 4 counterparties at setup time. All members effective until <strong>14 Feb 2027</strong>.</p>
     </header>
@@ -3003,7 +3003,7 @@
       <!-- Member Agreements table -->
       <p class="section-label" style="margin-top:24px">Member Agreements (4)</p>
       <div class="pack-members-frame">
-        <table class="pack-members-table">
+        <table class="pack-members-table" data-demo="pack-detail.members-table">
           <thead><tr><th>Counterparty</th><th>Element</th><th>Agreement ID</th><th>Status</th><th>Latest Message</th><th></th></tr></thead>
           <tbody>
             <tr onclick="goto('detail')">
@@ -3996,6 +3996,7 @@
 <script src="scripts/demos/suspend.js?v=p17"></script>
 <script src="scripts/demos/watch-and-digest.js?v=p17"></script>
 <script src="scripts/demos/teammate-claim.js?v=p17"></script>
+<script src="scripts/demos/distribute-pack.js?v=p17"></script>
 <script src="scripts/demos/index.js?v=p17"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>

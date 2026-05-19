@@ -41,6 +41,7 @@ const SCRIPT_PATHS = [
   'scripts/demos/suspend.js',
   'scripts/demos/watch-and-digest.js',
   'scripts/demos/teammate-claim.js',
+  'scripts/demos/distribute-pack.js',
 ];
 
 /* JSDOM's runScripts: 'outside-only' does NOT wire inline onclick="..."

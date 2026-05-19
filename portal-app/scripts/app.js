@@ -2599,7 +2599,7 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
       case 'revoke':       return `<button onclick="event.stopPropagation(); openRevoke('${cp}')" title="Revoke"><i class="ti ti-x"></i></button>`;
       case 'withdraw':     return `<button onclick="event.stopPropagation(); openWithdraw('${cp}', ${idArg})" title="Withdraw"><i class="ti ti-x"></i></button>`;
       case 'view-audit':   return `<button onclick="event.stopPropagation(); toast('Opened ended-Agreement audit (read-only)')" title="View audit"><i class="ti ti-eye"></i></button>`;
-      case 'send-pack':    return `<button onclick="event.stopPropagation(); toast('Opens Composer in pack mode · dispatches 1 Message per member')" title="Send pack now"><i class="ti ti-send"></i></button>`;
+      case 'send-pack':    return `<button data-demo="pack.send-pack-btn" onclick="event.stopPropagation(); toast('Opens Composer in pack mode · dispatches 1 Message per member')" title="Send pack now"><i class="ti ti-send"></i></button>`;
       case 'revoke-pack':  return `<button onclick="event.stopPropagation(); toast('Revoke pack — fans out to all 4 members')" title="Revoke pack"><i class="ti ti-x"></i></button>`;
       default:             return '';
     }
@@ -2634,7 +2634,7 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
     if (row.kind === 'pack-parent') {
       const actionsHtml = (row.actions || []).map(a => actionBtn(a, row.name, row.id)).join('');
       const packIdAttr = row.id ? ` data-agreement-id="${escAttr(row.id)}"` : '';
-      return `<tr class="pack-parent"${packIdAttr} onclick="goto('pack-detail')">` +
+      return `<tr class="pack-parent" data-demo="pack.parent-row"${packIdAttr} onclick="goto('pack-detail')">` +
         `<td><div class="cp-cell"><i class="ti ti-chevron-down pack-toggle" aria-hidden="true"></i><div class="pack-ic"><i class="ti ti-stack-2"></i></div>` +
           `<div><div class="cp-name">${row.name || ''} <span class="pack-tag">${row.packTag || 'PACK'}</span></div><div style="font-size:11px;color:var(--g-50)">${row.childCount || 0} Agreements · ${row.cpCount || 0} counterparties</div></div></div></td>` +
         `<td>${elementCell(row.element)}</td>` +
@@ -2652,7 +2652,7 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
       ? `openAgreementDetail('${escAttr(row.id)}')`
       : `goto('detail')`;
     const idAttr = row.id ? ` data-agreement-id="${escAttr(row.id)}"` : '';
-    return `<tr class="${cls}"${idAttr} onclick="${openHandler}">` +
+    return `<tr class="${cls}"${idAttr}${cls === 'pack-member' ? ' data-demo="pack.member-row"' : ''} onclick="${openHandler}">` +
       `<td><div class="cp-cell${cpCellExtra}"><div class="cp-avatar">${cp.initials || ''}</div>` +
         `<div><div class="cp-name">${cp.name || ''}</div><div style="font-size:11px;color:var(--g-50)">${cp.role || ''} · ${cp.dex || ''}</div></div></div></td>` +
       `<td>${elementCell(row.element)}</td>` +
