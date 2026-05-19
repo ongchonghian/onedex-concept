@@ -1919,6 +1919,109 @@ function activeUserEnrolledDexes(userId) {
 }
 window.activeUserEnrolledDexes = activeUserEnrolledDexes;
 
+/* ============================================================================
+ * Portal-wide chrome hydrators (Issue 0011)
+ * ----------------------------------------------------------------------------
+ * Each de-hardcoded surface gets its own per-surface hydrator that swaps the
+ * literal markup for active-context values from USERS / ORGS / resolveSeat /
+ * ORG_DEX_MEMBERSHIPS / workspace queries. The fan-out wiring runs them all
+ * via runPortalChromeHydrators() — called from applyPersonaChrome() and the
+ * DEX-switch path so persona / DEX changes re-render every hydrated surface
+ * without a page reload.
+ *
+ * Naming convention: hydrate<Surface>Chrome().
+ * Register each new hydrator both here (via window.<name>) and in CONTEXT.md's
+ * "Reusable components — single source of truth" table.
+ * ============================================================================ */
+
+/* hydratePickerDexSuffixChrome — swaps the DEX-name suffix in any picker
+   placeholder that opted in with data-dex-suffix-placeholder="<prefix>".
+   Example: <input data-dex-suffix-placeholder="Search data elements on"> →
+   "Search data elements on SGTradex". Optional data-dex-suffix-tail appends
+   after the DEX label for placeholders with a trailing clause. */
+function hydratePickerDexSuffixChrome() {
+  const dexId = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[dexId]) || 'SGTradex';
+  document.querySelectorAll('[data-dex-suffix-placeholder]').forEach((el) => {
+    const prefix = el.getAttribute('data-dex-suffix-placeholder') || '';
+    const tail = el.getAttribute('data-dex-suffix-tail') || '';
+    el.setAttribute('placeholder', `${prefix} ${dexLabel}${tail}`);
+  });
+}
+window.hydratePickerDexSuffixChrome = hydratePickerDexSuffixChrome;
+
+/* hydrateListPageTitlesChrome — fills H1 page titles on the data-elements /
+   participants / agreements list screens. Markup opts in with
+   data-list-page-title="<prefix>" and the hydrator substitutes
+   "<prefix> <DEX label>". The H1 sits inside .canvas-meta but is real chrome —
+   only the sibling .meta-label / .adr-tag pills are dev annotations. */
+function hydrateListPageTitlesChrome() {
+  const dexId = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[dexId]) || 'SGTradex';
+  document.querySelectorAll('[data-list-page-title]').forEach((el) => {
+    const prefix = el.getAttribute('data-list-page-title') || '';
+    el.textContent = `${prefix} ${dexLabel}`;
+  });
+}
+window.hydrateListPageTitlesChrome = hydrateListPageTitlesChrome;
+
+/* hydrateImpersonationChrome — fills the "View as participant on <DEX>" banner
+   (top-of-page when impersonation is active) and the impersonation modal
+   header + body that introduce the session. Both reference the active DEX
+   so persona's view-as-participant journey reads truthfully. */
+function hydrateImpersonationChrome() {
+  const dexId = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const dexLabel = (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[dexId]) || 'SGTradex';
+  const banner = document.querySelector('[data-impersonation-banner-text]');
+  if (banner) {
+    banner.textContent = `Viewing as participant on ${dexLabel} · all actions tagged in the audit log under impersonation`;
+  }
+  const modalTitle = document.querySelector('[data-impersonation-modal-title]');
+  if (modalTitle) modalTitle.textContent = `View as participant on ${dexLabel}`;
+  const modalBody = document.querySelector('[data-impersonation-modal-body]');
+  if (modalBody) {
+    modalBody.textContent = `You'll see exactly what a participant on ${dexLabel} sees. Any action you take will be tagged in the audit log as performed under impersonation.`;
+  }
+}
+window.hydrateImpersonationChrome = hydrateImpersonationChrome;
+
+/* hydrateJoinDexModalChrome — fills the "Your org is already on <DEX list>"
+   line in the Join-another-DEX modal. List of enrolled DEXes derives from
+   ORG_DEX_MEMBERSHIPS for the active user's primary org. Falls back to the
+   default three-DEX listing if state is unavailable. */
+function hydrateJoinDexModalChrome() {
+  const line = document.querySelector('[data-join-dex-enrolled-line]');
+  if (!line) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const enrolled = (typeof activeUserEnrolledDexes === 'function')
+    ? activeUserEnrolledDexes(userId)
+    : ['tx', 'bx', 'hx'];
+  const labels = enrolled.map((d) => (typeof DEX_LABELS !== 'undefined' && DEX_LABELS[d]) || d.toUpperCase());
+  let listText;
+  if (labels.length === 0) listText = 'not yet enrolled in any DEX';
+  else if (labels.length === 1) listText = labels[0];
+  else if (labels.length === 2) listText = `${labels[0]} and ${labels[1]}`;
+  else listText = `${labels.slice(0, -1).join(', ')}, and ${labels[labels.length - 1]}`;
+  line.textContent = enrolled.length
+    ? `Your org is already on ${listText}.`
+    : `Your org is ${listText}.`;
+}
+window.hydrateJoinDexModalChrome = hydrateJoinDexModalChrome;
+
+/* runPortalChromeHydrators — single fan-out called whenever persona / DEX /
+   workspace context changes. Each per-surface hydrator is invoked
+   independently so a missing data-* anchor on one surface doesn't block the
+   others. Surfaces guarded inside hydrateInboxAllChrome / hydrateEmptyHero
+   are intentionally NOT re-run here — they're tied to specific screens and
+   have their own re-render triggers. */
+function runPortalChromeHydrators() {
+  try { hydratePickerDexSuffixChrome(); } catch (e) { /* surface-isolated */ }
+  try { hydrateListPageTitlesChrome(); } catch (e) {}
+  try { hydrateImpersonationChrome(); } catch (e) {}
+  try { hydrateJoinDexModalChrome(); } catch (e) {}
+}
+window.runPortalChromeHydrators = runPortalChromeHydrators;
+
 function renderInboxFromWorkspace(screenName) {
   if (typeof listInboxItemsForUserAndDex !== 'function') return;
   // Inbox materialisation can resolve closed items or surface new failed
@@ -7904,6 +8007,11 @@ function applyPersonaChrome() {
   // Rail caption suffix — names the active user so the demo controller and audience
   // never wonder who's on stage (ADR 0030 Q9-g).
   updateRailCaptionWithActiveUser(active);
+
+  // Issue 0011 — fan out to every per-surface chrome hydrator so the DEX-name
+  // suffixes, list-page H1s, impersonation copy, and join-DEX modal all
+  // re-render against the active persona / DEX.
+  if (typeof runPortalChromeHydrators === 'function') runPortalChromeHydrators();
 }
 
 /* Writes the active user's first name + a colleague-switch chevron next to the

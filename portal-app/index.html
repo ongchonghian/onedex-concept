@@ -531,7 +531,7 @@
   <div class="canvas-meta"><span class="meta-label">Wizard step</span><h1>Data element picker — browse + groups + search fallback</h1><span class="adr-tag">ADR 0013</span></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Browse-primary. Groups are first-class. Snapshot semantics protect existing Agreements.</div></div>
   <div class="picker-frame">
-    <div class="picker-search"><i class="ti ti-search"></i><input type="text" placeholder="Search data elements on SGTradex"><span class="meta">189 elements · 12 groups</span></div>
+    <div class="picker-search"><i class="ti ti-search"></i><input type="text" data-dex-suffix-placeholder="Search data elements on" placeholder="Search data elements on SGTradex"><span class="meta">189 elements · 12 groups</span></div>
     <div class="picker-grid">
       <div class="picker-tree">
         <details open>
@@ -822,7 +822,7 @@
   <div class="canvas-meta"><span class="meta-label">Wizard step</span><h1>Counterparty picker — hybrid with use-case-enrolment readiness</h1><span class="adr-tag">ADR 0014</span></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Click <em>Maersk</em> or <em>Acme Construction (SGBuildex)</em> to fire the cross-DEX warning.</div></div>
   <div class="picker-frame">
-    <div class="picker-search"><i class="ti ti-search"></i><input type="text" placeholder="Search counterparties on SGTradex (name, UEN, trading alias)"></div>
+    <div class="picker-search"><i class="ti ti-search"></i><input type="text" data-dex-suffix-placeholder="Search counterparties on" data-dex-suffix-tail=" (name, UEN, trading alias)" placeholder="Search counterparties on SGTradex (name, UEN, trading alias)"></div>
     <div class="picker-toolbar">
       <span class="chip solid">Any type</span><span class="chip muted">Carrier</span><span class="chip muted">Shipper</span><span class="chip muted">Service provider</span>
       <span class="chip tx" style="font-weight:500"><i class="ti ti-check" style="font-size:12px"></i>Ready for B/L sharing</span>
@@ -2527,7 +2527,7 @@
 
 <!-- ============ Data elements registry ============ -->
 <section class="screen" data-screen="data-elements">
-  <div class="canvas-meta"><span class="meta-label">Catalog</span><h1>Data elements on SGTradex</h1><span class="adr-tag">ADR 0013</span></div>
+  <div class="canvas-meta"><span class="meta-label">Catalog</span><h1 data-list-page-title="Data elements on">Data elements on SGTradex</h1><span class="adr-tag">ADR 0013</span></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Per-DEX-admin-curated catalog (per ADR 0013). Click a row to see versions, schema, usage stats, and impact analysis.</div></div>
 
   <div class="list-frame">
@@ -2718,7 +2718,7 @@
 
 <!-- ============ Participants directory ============ -->
 <section class="screen" data-screen="participants">
-  <div class="canvas-meta"><span class="meta-label">People &amp; orgs</span><h1>Participants on SGTradex</h1></div>
+  <div class="canvas-meta"><span class="meta-label">People &amp; orgs</span><h1 data-list-page-title="Participants on">Participants on SGTradex</h1></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>All orgs onboarded to SGTradex. Click a card to see the org profile, their team, the Agreements they have with you, and which use cases they're enrolled in.</div></div>
 
   <!-- Wrap toolbar + card list in .list-frame so this list-shaped screen matches
@@ -2841,7 +2841,7 @@
 
 <!-- ============ Agreements list page ============ -->
 <section class="screen" data-screen="agreements">
-  <div class="canvas-meta"><span class="meta-label">Agreements</span><h1>Agreements on SGTradex</h1><span class="adr-tag">ADR 0004</span></div>
+  <div class="canvas-meta"><span class="meta-label">Agreements</span><h1 data-list-page-title="Agreements on">Agreements on SGTradex</h1><span class="adr-tag">ADR 0004</span></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Click any row to land on its detail page. Use the row "···" menu to extend or revoke without opening detail.</div></div>
 
   <div class="list-frame">
@@ -3385,7 +3385,7 @@
 
 <div class="imp-banner" id="imp-banner">
   <i class="ti ti-eye lead"></i>
-  <span class="imp-text">Viewing as participant on SGTradex · all actions tagged in the audit log under impersonation</span>
+  <span class="imp-text" data-impersonation-banner-text>Viewing as participant on SGTradex · all actions tagged in the audit log under impersonation</span>
   <span class="imp-time" id="imp-time">02:00</span>
   <button class="imp-end" onclick="endImpersonation()">End session</button>
 </div>
@@ -3507,7 +3507,7 @@
 </div>
 
 <div class="overlay-veil" id="join-modal" hidden>
-  <div class="overlay-card"><div class="overlay-head"><div class="ic tx"><i class="ti ti-plus"></i></div><h4>Join another DEX</h4><button class="close" onclick="closeOverlay('join-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:14px">Your org is already on SGTradex, SGBuildex, and SGHealthdex.</p><div style="padding:12px 14px;background:var(--g-98);border-radius:var(--r-md);font-size:12px;color:var(--g-30);line-height:1.5"><i class="ti ti-info-circle" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--g-50)"></i>Joining a new DEX uses your existing org record — KYC fields pre-fill.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('join-modal')">Close</button></div></div>
+  <div class="overlay-card"><div class="overlay-head"><div class="ic tx"><i class="ti ti-plus"></i></div><h4>Join another DEX</h4><button class="close" onclick="closeOverlay('join-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:14px" data-join-dex-enrolled-line>Your org is already on SGTradex, SGBuildex, and SGHealthdex.</p><div style="padding:12px 14px;background:var(--g-98);border-radius:var(--r-md);font-size:12px;color:var(--g-30);line-height:1.5"><i class="ti ti-info-circle" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--g-50)"></i>Joining a new DEX uses your existing org record — KYC fields pre-fill.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('join-modal')">Close</button></div></div>
 </div>
 
 <div class="overlay-veil" id="template-modal" hidden>
@@ -3718,7 +3718,7 @@
 </div>
 
 <div class="overlay-veil" id="impersonate-modal" hidden>
-  <div class="overlay-card"><div class="overlay-head"><div class="ic warn"><i class="ti ti-eye"></i></div><h4>View as participant on SGTradex</h4><button class="close" onclick="closeOverlay('impersonate-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5;margin-bottom:10px">You'll see exactly what a participant on SGTradex sees. Any action you take will be tagged in the audit log as performed under impersonation.</p><div style="padding:10px 12px;background:var(--yellow-98);border:0.5px solid var(--yellow-95);border-radius:var(--r-md);font-size:11px;color:var(--g-30);line-height:1.5"><i class="ti ti-shield-lock" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--yellow-50)"></i>Auto-ends after 30 minutes. Surface banner persists for the duration.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('impersonate-modal')">Cancel</button><button class="btn-primary" onclick="closeOverlay('impersonate-modal'); startImpersonation()">Start session</button></div></div>
+  <div class="overlay-card"><div class="overlay-head"><div class="ic warn"><i class="ti ti-eye"></i></div><h4 data-impersonation-modal-title>View as participant on SGTradex</h4><button class="close" onclick="closeOverlay('impersonate-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5;margin-bottom:10px" data-impersonation-modal-body>You'll see exactly what a participant on SGTradex sees. Any action you take will be tagged in the audit log as performed under impersonation.</p><div style="padding:10px 12px;background:var(--yellow-98);border:0.5px solid var(--yellow-95);border-radius:var(--r-md);font-size:11px;color:var(--g-30);line-height:1.5"><i class="ti ti-shield-lock" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--yellow-50)"></i>Auto-ends after 30 minutes. Surface banner persists for the duration.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('impersonate-modal')">Cancel</button><button class="btn-primary" onclick="closeOverlay('impersonate-modal'); startImpersonation()">Start session</button></div></div>
 </div>
 
 <div class="search-overlay" id="search-overlay" hidden>

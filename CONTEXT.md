@@ -338,6 +338,10 @@ The prototype has grown across many iterations and now carries a real risk of "d
 | Demo callout | `renderDemoCallout({ anchor, label, rationale })` in `demos/runtime.js` | Single callout node; anchor-aware positioner auto-flips on viewport clip. |
 | Demo control bar | `renderDemoControlBar(state)` in `demos/runtime.js` | Single bottom-center pill; owns Pause / Resume / Stop + speed. State persists run-pause-resume across the same flow. |
 | List-frame wrapping (Drafts, Participants, Messages, Agreements) | `.list-frame` class in `components.css` | Visual contract — same padding / border / max-width across all list screens. |
+| Picker DEX-name suffix chrome | `hydratePickerDexSuffixChrome()` in `portal-app/scripts/app.js` | Walks `[data-dex-suffix-placeholder]` and rewrites the placeholder to "{prefix} {active DEX label}{optional tail}". Fan-out via `runPortalChromeHydrators()` from `applyPersonaChrome()`. See [Issue 0011](./docs/issues/0011-portal-wide-chrome-de-hardcoding.md). |
+| List-page H1 titles (Data elements / Participants / Agreements) | `hydrateListPageTitlesChrome()` in `portal-app/scripts/app.js` | Walks `[data-list-page-title]` H1s (one per list screen). The sibling `.meta-label` + `.adr-tag` chips inside `.canvas-meta` are dev annotations and stay literal; only the H1 itself is real chrome. |
+| Impersonation banner + modal chrome | `hydrateImpersonationChrome()` in `portal-app/scripts/app.js` | Fills the top-of-page banner (`[data-impersonation-banner-text]`) and the impersonation modal title/body (`[data-impersonation-modal-*]`) with the active DEX label. |
+| Join-another-DEX modal enrolment line | `hydrateJoinDexModalChrome()` in `portal-app/scripts/app.js` | Fills `[data-join-dex-enrolled-line]` with a comma-and-Oxford-listed sentence of the active user's enrolled DEXes derived from `activeUserEnrolledDexes()`. |
 
 **Surfaces that are deliberately NOT rebuilt** (and why — document any new exceptions here):
 
