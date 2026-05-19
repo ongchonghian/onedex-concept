@@ -997,14 +997,14 @@
         <span class="chip muted"     onclick="setMsgFilter('in-flight', this)"   data-filter="in-flight">In flight · 7</span>
         <span class="chip muted"     onclick="setMsgFilter('delivered', this)"   data-filter="delivered">Delivered · 0</span>
         <span class="chip muted"     onclick="setMsgFilter('acknowledged', this)" data-filter="acknowledged">Acknowledged · 1,232</span>
-        <span class="chip muted failed-multi" style="color:var(--red-50)" onclick="openFailedFilterPop(event)" id="failed-filter-chip" title="Failed · mine (3) + theirs (4) + expired (1)" data-filter="failed">Failed (3) · 8 <i class="ti ti-chevron-down" style="font-size:9px;margin-left:2px"></i></span>
+        <span class="chip muted failed-multi" style="color:var(--red-50)" onclick="openFailedFilterPop(event)" id="failed-filter-chip" data-demo="messages.failed-filter" title="Failed · mine (3) + theirs (4) + expired (1)" data-filter="failed">Failed (3) · 8 <i class="ti ti-chevron-down" style="font-size:9px;margin-left:2px"></i></span>
         <span class="chip muted closed-toggle" style="color:var(--g-50)" onclick="toggleClosedVisibility(this)" id="closed-filter-chip" title="Closed Messages are hidden by default — click to reveal (per ADR 0021)" data-filter="closed">Closed · hidden</span>
         <!-- Popover for Failed sub-filter (ADR 0021) -->
         <div class="failed-pop" id="failed-filter-pop" hidden role="menu" aria-label="Failed sub-filters">
           <p class="failed-pop-head">Failed sub-filters</p>
-          <label class="failed-pop-row"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="mine"><span class="owner-badge mine">Your action</span><span class="ct">3</span></label>
-          <label class="failed-pop-row"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="theirs"><span class="owner-badge theirs">Their action</span><span class="ct">4</span></label>
-          <label class="failed-pop-row"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="expired"><span class="owner-badge expired">Expired</span><span class="ct">1</span></label>
+          <label class="failed-pop-row" data-demo="messages.failed-popup.owner-mine"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="mine"><span class="owner-badge mine">Your action</span><span class="ct">3</span></label>
+          <label class="failed-pop-row" data-demo="messages.failed-popup.owner-theirs"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="theirs"><span class="owner-badge theirs">Their action</span><span class="ct">4</span></label>
+          <label class="failed-pop-row" data-demo="messages.failed-popup.owner-expired"><input type="checkbox" checked onchange="setMsgFailedSubfilter()" data-owner="expired"><span class="owner-badge expired">Expired</span><span class="ct">1</span></label>
           <div class="failed-pop-foot"><button class="btn-ghost" onclick="closeFailedFilterPop()">Done</button></div>
         </div>
       </div>
@@ -1218,7 +1218,7 @@
       <span id="msg-list-count">Showing 14 of 1,247 messages today · <a onclick="toast('Loading older messages')" style="color:var(--theme-20);cursor:pointer;text-decoration:underline">load more</a></span>
       <div class="pager-btns">
         <button onclick="openComposerPicker()" class="btn-primary-mini" title="Compose a new Message — pick which Agreement (counterparty + data element) to compose under"><i class="ti ti-pencil-plus" style="font-size:12px"></i>New Message</button>
-        <button onclick="openBulkRetryModal()" id="msg-bulk-retry-btn" title="Retry all Failed · your action Messages with the same idempotency keys">Bulk Retry · 3</button>
+        <button onclick="openBulkRetryModal()" id="msg-bulk-retry-btn" data-demo="messages.bulk-retry-btn" title="Retry all Failed · your action Messages with the same idempotency keys">Bulk Retry · 3</button>
         <button onclick="openBulkCloseModal()" id="msg-bulk-close-btn" title="Close all Failed · their action Messages with one shared reason">Bulk Close · 4</button>
         <button onclick="toast('Exporting today\'s messages as signed CSV')">Export today</button>
       </div>
@@ -1257,7 +1257,7 @@
         <h2 id="msg-title">Bunker delivery confirmation → PSA International</h2>
         <span class="status-pill failed" id="msg-status-pill"><span class="dot" aria-hidden="true"></span>Failed</span>
         <span class="owner-badge mine" id="msg-owner-badge" title="You can remediate this alone">Your action</span>
-        <button class="btn-secondary" id="msg-retry-btn" onclick="msgRetry()" title="Re-send payload to PSA · same idempotency key (within 24h window)"><i class="ti ti-refresh" aria-hidden="true"></i>Retry</button>
+        <button class="btn-secondary" id="msg-retry-btn" data-demo="message-detail.retry-btn" onclick="msgRetry()" title="Re-send payload to PSA · same idempotency key (within 24h window)"><i class="ti ti-refresh" aria-hidden="true"></i>Retry</button>
         <button class="btn-ghost" id="msg-edit-resend-btn" onclick="msgEditResend()" title="Open the composer pre-filled with this Message's payload · fix the failure reason · same idempotency key (safe because Failed · your action means counterparty never saw it)"><i class="ti ti-pencil" aria-hidden="true"></i>Edit &amp; resend</button>
         <button class="btn-ghost" id="msg-close-btn" onclick="msgClose()" title="Close · declare no further remediation expected (one-way per ADR 0021)"><i class="ti ti-archive" aria-hidden="true"></i>Close</button>
         <button class="btn-ghost" onclick="toast('More: Resend with new key · Export signed JSON · Mark for review · Copy permalink')" aria-label="More actions"><i class="ti ti-dots" aria-hidden="true"></i></button>
@@ -3997,6 +3997,7 @@
 <script src="scripts/demos/watch-and-digest.js?v=p17"></script>
 <script src="scripts/demos/teammate-claim.js?v=p17"></script>
 <script src="scripts/demos/distribute-pack.js?v=p17"></script>
+<script src="scripts/demos/triage-failures.js?v=p17"></script>
 <script src="scripts/demos/index.js?v=p17"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>

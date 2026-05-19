@@ -42,6 +42,7 @@ const SCRIPT_PATHS = [
   'scripts/demos/watch-and-digest.js',
   'scripts/demos/teammate-claim.js',
   'scripts/demos/distribute-pack.js',
+  'scripts/demos/triage-failures.js',
 ];
 
 /* JSDOM's runScripts: 'outside-only' does NOT wire inline onclick="..."
