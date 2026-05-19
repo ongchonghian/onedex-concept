@@ -30,15 +30,15 @@ const PLATFORM_INBOX = {
   count: 9, mineCount: 4, teamCount: 5,
   role: 'SGTradex Admin', // promote to 'Super SGTradex Admin' to unlock DE.Create work
   mine: [
-    { title: 'Pacific Container Lines — onboarding KYC review', meta: 'Org onboarding · KYC submitted 3d ago · awaiting your decision', btn: 'Review', action: 'review-org' },
-    { title: 'Acme Construction → SGBuildex · network admission', meta: 'Cross-DEX admission request · 2 of 3 platform admins approved', btn: 'Approve', action: 'approve-network' },
-    { title: 'Promote Bill of Lading v2.1 → Active (SGTradex)', meta: 'Data element governance · drafted by Kagura · review window closes today', btn: 'Open', action: 'open-de-promotion', requires: 'Super SGTradex Admin' },
-    { title: 'Issue SGHealthdex network certificate renewal', meta: 'Network · current cert expires in 21d · renewal SOP applies', btn: 'Renew', action: 'renew-network' }
+    { title: 'Pacific Container Lines — onboarding KYC review', meta: 'Org onboarding · KYC submitted 3d ago · awaiting your decision', btn: 'Review', cta: 'review-org', intent: 'decide', sourceType: 'governance' },
+    { title: 'Acme Construction → SGBuildex · network admission', meta: 'Cross-DEX admission request · 2 of 3 platform admins approved', btn: 'Approve', cta: 'approve-network', intent: 'decide', sourceType: 'governance' },
+    { title: 'Promote Bill of Lading v2.1 → Active (SGTradex)', meta: 'Data element governance · drafted by Kagura · review window closes today', btn: 'Open', cta: 'open-de-promotion', intent: 'decide', sourceType: 'governance', requires: 'Super SGTradex Admin' },
+    { title: 'Issue SGHealthdex network certificate renewal', meta: 'Network · current cert expires in 21d · renewal SOP applies', btn: 'Renew', cta: 'renew-network', intent: 'confirm', sourceType: 'governance' }
   ],
   team: [
-    { title: 'Onboard 4 SGBuildex contractor orgs — batch KYC', meta: 'Org onboarding · queued by automation · 2 admins eligible', btn: 'Claim' },
+    { title: 'Onboard 4 SGBuildex contractor orgs — batch KYC', meta: 'Org onboarding · queued by automation · 2 admins eligible', btn: 'Claim', intent: 'decide', sourceType: 'governance' },
     { title: 'Lesley approved Greater Bay Logistics org admin role', meta: 'Completed 12 min ago · disappears from inbox in 3 min', completion: true },
-    { title: 'Maersk requested SP appointment authority on SGTradex', meta: 'Service-Provider authorisation · pending platform sign-off', btn: 'Claim' }
+    { title: 'Maersk requested SP appointment authority on SGTradex', meta: 'Service-Provider authorisation · pending platform sign-off', btn: 'Claim', intent: 'decide', sourceType: 'governance' }
   ]
 };
 /* ---------- Per-DEX inbox data ----------
@@ -54,14 +54,14 @@ const INBOX_BY_DEX = {
     role: 'Admin User',            // can create + accept Agreements, no user mgmt
     orgName: 'Cosco Shipping',
     mine: [
-      { title: 'Maersk wants to receive Bills of Lading from you', meta: 'Invited 2h ago · waiting on you to accept or decline', btn: 'Review', action: 'review', dir: 'in' },
-      { title: 'Your ETA request to PSA — awaiting their decision', meta: 'Sent 4h ago · 30-day window · pending PSA accept · auto-reminder at day 21', btn: 'Open', action: 'open', dir: 'out' },
-      { title: 'Extend Agreement with Cosco before 30 Sep', meta: 'Renewal · expires in 9 days · auto-extend disabled', btn: 'Extend 12mo', action: 'extend' }
+      { title: 'Maersk wants to receive Bills of Lading from you', meta: 'Invited 2h ago · waiting on you to accept or decline', btn: 'Review', cta: 'review', intent: 'decide', sourceType: 'agreement', dir: 'in' },
+      { title: 'Your ETA request to PSA — awaiting their decision', meta: 'Sent 4h ago · 30-day window · pending PSA accept · auto-reminder at day 21', btn: 'Open', cta: 'open', intent: 'confirm', sourceType: 'message', dir: 'out' },
+      { title: 'Extend Agreement with Cosco before 30 Sep', meta: 'Renewal · expires in 9 days · auto-extend disabled', btn: 'Extend 12mo', cta: 'extend', intent: 'confirm', sourceType: 'agreement', dueAt: '2026-05-28T00:00:00+08:00' }
     ],
     team: [
-      { title: 'PSA bunker delivery — 3 contributor enrolments pending', meta: 'Approval · oldest 4h ago · 3 admins eligible', btn: 'Claim' },
+      { title: 'PSA bunker delivery — 3 contributor enrolments pending', meta: 'Approval · oldest 4h ago · 3 admins eligible', btn: 'Claim', intent: 'decide', sourceType: 'agreement' },
       { title: 'Layla approved CrimsonLogic appointment for ABC Logistics', meta: 'Completed 2 min ago · disappears from inbox in 3 min', completion: true },
-      { title: 'Review onboarding KYC for Pacific Container Lines', meta: 'Approval · 1d ago · 3 admins eligible', btn: 'Claim' }
+      { title: 'Review onboarding KYC for Pacific Container Lines', meta: 'Approval · 1d ago · 3 admins eligible', btn: 'Claim', intent: 'decide', sourceType: 'governance' }
     ]
   },
   bx: {
@@ -72,10 +72,10 @@ const INBOX_BY_DEX = {
     role: 'Operation User',        // Pitstop runtime/data ops only — cannot create Agreements
     orgName: 'Cosco Shipping',
     mine: [
-      { title: 'Concrete pour QC sign-off from JTC due tomorrow', meta: 'Approval · contractor-side · expires in 18h', btn: 'Open', action: 'open' }
+      { title: 'Concrete pour QC sign-off from JTC due tomorrow', meta: 'Approval · contractor-side · expires in 18h', btn: 'Open', cta: 'open', intent: 'decide', sourceType: 'agreement', dueAt: '2026-05-20T00:00:00+08:00' }
     ],
     team: [
-      { title: 'Builder safety incident reports — 2 awaiting upload', meta: 'Compliance · oldest 6h ago', btn: 'Claim' },
+      { title: 'Builder safety incident reports — 2 awaiting upload', meta: 'Compliance · oldest 6h ago', btn: 'Claim', intent: 'decide', sourceType: 'agreement' },
       { title: 'Layla approved subcontractor onboarding', meta: 'Completed 4 min ago', completion: true }   // Issue 0002 — reattributed from Wei Lin (who is canonically platform-tier per Issue 0004)
     ]
   },
@@ -87,11 +87,11 @@ const INBOX_BY_DEX = {
     role: 'Super Admin',           // org-tier governance: user mgmt + use cases + relationships
     orgName: 'Cosco Shipping',
     mine: [
-      { title: 'Annual compliance certificate expires in 14 days', meta: 'Renewal · residency-strict · no grace period', btn: 'Renew', action: 'renew-strict' }
+      { title: 'Annual compliance certificate expires in 14 days', meta: 'Renewal · residency-strict · no grace period', btn: 'Renew', cta: 'renew-strict', intent: 'confirm', sourceType: 'agreement', dueAt: '2026-06-02T00:00:00+08:00' }
     ],
     team: [
-      { title: 'Patient registry data classification review', meta: 'Governance · residency-strict · 2 Super Admins eligible', btn: 'Claim' },
-      { title: 'Lab partnership Agreement awaiting compliance sign-off', meta: 'Compliance review · with legal · 24h SLA', btn: 'Open' }
+      { title: 'Patient registry data classification review', meta: 'Governance · residency-strict · 2 Super Admins eligible', btn: 'Claim', intent: 'decide', sourceType: 'governance' },
+      { title: 'Lab partnership Agreement awaiting compliance sign-off', meta: 'Compliance review · with legal · 24h SLA', btn: 'Open', intent: 'decide', sourceType: 'agreement' }
     ]
   }
 };
@@ -394,13 +394,13 @@ const SCENE_SEEDS = {
       role: 'Operation User',
       orgName: 'Cosco Construction',
       mine: [
-        { title: 'Subcontractor Onboarding — Acme payload pending field-level validation', meta: 'Operations · 24 fields × 11 subcontractors · expires in 6h',        btn: 'Open',  action: 'open' },
-        { title: 'Concrete pour QC sign-off from JTC due tomorrow',                         meta: 'Approval · contractor-side · expires in 18h',                       btn: 'Open',  action: 'open' }
+        { title: 'Subcontractor Onboarding — Acme payload pending field-level validation', meta: 'Operations · 24 fields × 11 subcontractors · expires in 6h',        btn: 'Open',  cta: 'open', intent: 'decide', sourceType: 'agreement' },
+        { title: 'Concrete pour QC sign-off from JTC due tomorrow',                         meta: 'Approval · contractor-side · expires in 18h',                       btn: 'Open',  cta: 'open', intent: 'decide', sourceType: 'agreement', dueAt: '2026-05-20T00:00:00+08:00' }
       ],
       team: [
-        { title: 'Builder safety incident reports — 2 awaiting upload',                     meta: 'Compliance · oldest 6h ago',                                        btn: 'Claim' },
+        { title: 'Builder safety incident reports — 2 awaiting upload',                     meta: 'Compliance · oldest 6h ago',                                        btn: 'Claim', intent: 'decide', sourceType: 'agreement' },
         { title: 'Layla approved subcontractor onboarding',                                  meta: 'Completed 4 min ago',                                              completion: true },
-        { title: 'Manpower utilization · May submission failed (retry available)',           meta: 'Operations · BCA receiver · 1 of 1 retries remaining',             btn: 'Claim' }
+        { title: 'Manpower utilization · May submission failed (retry available)',           meta: 'Operations · BCA receiver · 1 of 1 retries remaining',             btn: 'Claim', intent: 'fix', sourceType: 'message' }
       ]
     },
 
@@ -546,13 +546,13 @@ const SCENE_SEEDS = {
       role: 'Super Admin',
       orgName: 'Cosco Health Services',
       mine: [
-        { title: 'Annual compliance certificate expires in 14 days',                   meta: 'Renewal · residency-strict · no grace period',                                       btn: 'Renew',  action: 'renew-strict' },
-        { title: 'Re-attest Patient Referral Record classification with SingHealth',   meta: 'Governance · residency-strict · attestation due 24 May',                            btn: 'Attest', action: 'attest' },
-        { title: 'Promote Dr Angela to Operation User on SGHealthdex',                    meta: 'User management · 1 pending nomination from Polyclinic Bedok',                      btn: 'Open',   action: 'open' }
+        { title: 'Annual compliance certificate expires in 14 days',                   meta: 'Renewal · residency-strict · no grace period',                                       btn: 'Renew',  cta: 'renew-strict', intent: 'confirm', sourceType: 'agreement', dueAt: '2026-06-02T00:00:00+08:00' },
+        { title: 'Re-attest Patient Referral Record classification with SingHealth',   meta: 'Governance · residency-strict · attestation due 24 May',                            btn: 'Attest', cta: 'attest', intent: 'confirm', sourceType: 'governance', dueAt: '2026-05-24T00:00:00+08:00' },
+        { title: 'Promote Dr Angela to Operation User on SGHealthdex',                    meta: 'User management · 1 pending nomination from Polyclinic Bedok',                      btn: 'Open',   cta: 'open', intent: 'decide', sourceType: 'governance' }
       ],
       team: [
-        { title: 'Patient registry data classification review',                         meta: 'Governance · residency-strict · 2 Super Admins eligible',                            btn: 'Claim' },
-        { title: 'Lab partnership Agreement awaiting compliance sign-off',              meta: 'Compliance review · with legal · 24h SLA',                                           btn: 'Claim' },
+        { title: 'Patient registry data classification review',                         meta: 'Governance · residency-strict · 2 Super Admins eligible',                            btn: 'Claim', intent: 'decide', sourceType: 'governance' },
+        { title: 'Lab partnership Agreement awaiting compliance sign-off',              meta: 'Compliance review · with legal · 24h SLA',                                           btn: 'Claim', intent: 'decide', sourceType: 'agreement' },
         { title: 'Lancelot approved Diabetic Foot Screening flow from Polyclinic Bedok',  meta: 'Completed 6 min ago · disappears from inbox in 3 min',                            completion: true }
       ]
     },
@@ -950,14 +950,14 @@ const SCENE_SEEDS = {
       role: 'Admin User',
       orgName: 'CrimsonLogic',
       mine: [
-        { title: 'Confirm 12 Container Booking transmissions to Cosco — manifest mismatch flagged', meta: 'Acting as Maersk · CL-Shipping · 2 of 14 manifests flagged · awaiting your review', btn: 'Review', action: 'review-transmission', dir: 'out' },
-        { title: 'Maersk requested SP appointment for Statement of Facts', meta: 'New SP delegation · authorisation drafted by Maersk · expires in 5 days', btn: 'Accept', action: 'accept-sp-appt' },
-        { title: 'CL-Customs scope-set update for Container Booking', meta: 'Routing change · 3 carriers affected · regulatory window closes in 48h', btn: 'Open', action: 'open-scope-update' }
+        { title: 'Confirm 12 Container Booking transmissions to Cosco — manifest mismatch flagged', meta: 'Acting as Maersk · CL-Shipping · 2 of 14 manifests flagged · awaiting your review', btn: 'Review', cta: 'review-transmission', intent: 'decide', sourceType: 'message', dir: 'out' },
+        { title: 'Maersk requested SP appointment for Statement of Facts', meta: 'New SP delegation · authorisation drafted by Maersk · expires in 5 days', btn: 'Accept', cta: 'accept-sp-appt', intent: 'decide', sourceType: 'agreement', dueAt: '2026-05-24T00:00:00+08:00' },
+        { title: 'CL-Customs scope-set update for Container Booking', meta: 'Routing change · 3 carriers affected · regulatory window closes in 48h', btn: 'Open', cta: 'open-scope-update', intent: 'confirm', sourceType: 'agreement', dueAt: '2026-05-21T00:00:00+08:00' }
       ],
       team: [
-        { title: 'Hapag-Lloyd onboarding for Container Booking transmission', meta: 'New carrier · awaiting CL-Shipping setup · 4 SP-operators eligible', btn: 'Claim' },
+        { title: 'Hapag-Lloyd onboarding for Container Booking transmission', meta: 'New carrier · awaiting CL-Shipping setup · 4 SP-operators eligible', btn: 'Claim', intent: 'decide', sourceType: 'governance' },
         { title: 'Aldous accepted ONE Line SP appointment', meta: 'Completed 8 min ago · disappears from inbox in 3 min', completion: true },
-        { title: 'Quarterly SP audit — pending CL-Customs sign-off', meta: 'Audit · oldest 1d ago · 2 SP-operators eligible', btn: 'Claim' }
+        { title: 'Quarterly SP audit — pending CL-Customs sign-off', meta: 'Audit · oldest 1d ago · 2 SP-operators eligible', btn: 'Claim', intent: 'confirm', sourceType: 'governance' }
       ]
     }
   },

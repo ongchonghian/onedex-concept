@@ -138,21 +138,32 @@ function themeInboxContent(dex) {
     const activeUser = typeof activeUserId === 'function' ? activeUserId() : 'marcus';
     const items = listInboxItemsForUserAndDex(activeUser, dex);
     if (items.length) {
+      // Preserve the 3-axis classification (intent / sourceType / dueAt per ADR 0035)
+      // and the renamed `cta` (formerly `action`) field through the flattening pass,
+      // so the renderer can produce the Action chip + Source icon + Due chip.
       const mine = items
         .filter((item) => item.bucket === 'mine' && item.status === 'open')
         .map((item) => ({
           title: item.title,
           meta: item.meta,
-          btn: 'Open',
-          action: 'open'
+          btn: item.btn || 'Open',
+          cta: item.cta || 'open',
+          intent: item.intent,
+          sourceType: item.sourceType,
+          dueAt: item.dueAt,
+          dir: item.dir
         }));
       const team = items
         .filter((item) => item.bucket === 'team' && item.status === 'open')
         .map((item) => ({
           title: item.title,
           meta: item.meta,
-          btn: 'Claim',
-          action: 'claim'
+          btn: item.btn || 'Claim',
+          cta: item.cta || 'claim',
+          intent: item.intent,
+          sourceType: item.sourceType,
+          dueAt: item.dueAt,
+          dir: item.dir
         }));
 
       workspaceData = {
@@ -221,8 +232,8 @@ function themeInboxContent(dex) {
       stacks[1].querySelector('summary .sub').textContent = visibleTeamCount + ' items · anyone can claim';
       const mineStack = stacks[0].querySelector('.inbox-stack');
       const teamStack = stacks[1].querySelector('.inbox-stack');
-      if (mineStack) mineStack.innerHTML = visibleMine.map(item => renderInboxCard(item, data.chip, 'mine')).join('');
-      if (teamStack) teamStack.innerHTML = visibleTeam.map(item => renderInboxCard(item, data.chip, 'team')).join('');
+      if (mineStack) mineStack.innerHTML = visibleMine.map(item => renderInboxCard(item, data.chip, 'mine', { showDex: false })).join('');
+      if (teamStack) teamStack.innerHTML = visibleTeam.map(item => renderInboxCard(item, data.chip, 'team', { showDex: false })).join('');
     }
   }
 

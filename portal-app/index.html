@@ -333,15 +333,28 @@
             <p class="ops-only-body">Your role is scoped to Pitstop runtime + data operations on this DEX. Creating new Agreements, managing users, and configuring relationships are reserved for Admin User or Super Admin roles. Ask your Super Admin to elevate your role if needed.</p>
           </div>
         </div>
-        <!-- Filter chips are wired in app.js via setInboxFilter() — each chip is a
-             real button with aria-pressed + data-filter. Counts hydrate at runtime
-             to stay consistent with workspace state (never bake counts into HTML). -->
-        <div class="filter-chips" role="group" aria-label="Filter inbox by category">
-          <button type="button" class="chip solid" data-inbox-filter="all" aria-pressed="true">All · <span data-count>…</span></button>
-          <button type="button" class="chip muted" data-inbox-filter="approval" aria-pressed="false">Approvals · <span data-count>…</span></button>
-          <button type="button" class="chip muted" data-inbox-filter="agreement" aria-pressed="false">Agreements · <span data-count>…</span></button>
-          <button type="button" class="chip muted" data-inbox-filter="renewal" aria-pressed="false">Renewals · <span data-count>…</span></button>
-          <button type="button" class="chip muted" data-inbox-filter="issue" aria-pressed="false">Issues · <span data-count>…</span></button>
+        <!-- ADR 0035 filter row: Intent segmented control (primary axis — what
+             the operator must do) + Source dropdown (secondary — record class).
+             Counts hydrate at runtime via renderInboxFromWorkspace. The legacy
+             mixed-axis chips (approval / agreement / renewal / issue) were
+             retired in favour of this clean two-axis split. -->
+        <div class="inbox-filter-row" role="group" aria-label="Filter inbox">
+          <div class="filter-chips" role="group" aria-label="Filter inbox by intent">
+            <button type="button" class="chip solid"  data-inbox-filter="all"     aria-pressed="true">All · <span data-count>…</span></button>
+            <button type="button" class="chip muted" data-inbox-filter="decide"  aria-pressed="false">Decide · <span data-count>…</span></button>
+            <button type="button" class="chip muted" data-inbox-filter="respond" aria-pressed="false">Respond · <span data-count>…</span></button>
+            <button type="button" class="chip muted" data-inbox-filter="fix"     aria-pressed="false">Fix · <span data-count>…</span></button>
+            <button type="button" class="chip muted" data-inbox-filter="confirm" aria-pressed="false">Confirm · <span data-count>…</span></button>
+          </div>
+          <label class="source-filter" title="Filter by record class">
+            <span class="source-filter-label">Source</span>
+            <select data-inbox-source-filter aria-label="Filter inbox by source">
+              <option value="all">All sources</option>
+              <option value="agreement">Agreements</option>
+              <option value="message">Messages</option>
+              <option value="governance">Governance</option>
+            </select>
+          </label>
         </div>
 
         <!-- Completion echo ribbon — lifted out of the team accordion (ADR 0008
@@ -407,34 +420,38 @@
         <div class="side-link"><i class="ti ti-users"></i>Participants</div>
         <div class="side-divider"></div>
         <p class="sec-label" style="margin-top:8px">Your DEXes</p>
-        <div class="dex-mini"><span class="dex-dot" style="background:var(--tx-50)"></span>SGTradex</div>
-        <div class="dex-mini"><span class="dex-dot" style="background:var(--bx-40)"></span>SGBuildex<span class="new-dot"></span></div>
-        <div class="dex-mini"><span class="dex-dot" style="background:var(--hx-40)"></span>SGHealthdex</div>
+        <!-- Sidebar mini-list rendered by hydrateInboxAllChrome() from the
+             active user's enrolled DEXes (ORG_DEX_MEMBERSHIPS). The previous
+             three hardcoded rows were swapped for this anchor in the ADR 0035
+             Phase 1 polish + Issue 0011 sweep. -->
+        <div data-inbox-all-your-dexes></div>
       </nav>
       <main class="content">
-        <h1>Welcome, Marcus.</h1>
-        <p class="lede">Across SGTradex, SGBuildex and SGHealthdex · 19 items waiting</p>
-        <div class="filter-chips">
-          <span class="chip solid">All · 19</span>
-          <span class="chip tx"><span class="dex-dot" style="background:var(--tx-50)"></span>SGTradex · 12</span>
-          <span class="chip bx"><span class="dex-dot" style="background:var(--bx-40)"></span>SGBuildex · 4</span>
-          <span class="chip hx"><span class="dex-dot" style="background:var(--hx-40)"></span>SGHealthdex · 3</span>
+        <!-- Welcome heading is hydrated by hydrateInboxAllChrome() — pulled from
+             the active user so persona switches re-render. -->
+        <h1 data-inbox-all-welcome>Welcome.</h1>
+        <p class="lede" aria-live="polite"></p>
+        <!-- DEX filter chips: list + counts both hydrate from the user's
+             enrolled DEXes. Chips stay non-interactive (visual chrome only)
+             for v1; ADR 0036 Phase 2 makes them clickable as a DEX-axis filter. -->
+        <div class="filter-chips" data-inbox-all-dex-chips></div>
+        <details class="group-block" open data-inbox-mine>
+          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">Mine</span><span class="sub" data-mine-count>…</span></summary>
+          <!-- ADR 0035: card bodies hydrated by renderInboxFromWorkspace from the
+               union of workspace.inboxItems across all DEXes. Shell still hand-
+               authored per the "neutral chrome at /portal/all" rule (ADR 0005). -->
+          <div class="inbox-stack" data-inbox-stack="mine"></div>
+        </details>
+        <details class="group-block" open data-inbox-team>
+          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">My team's</span><span class="sub" data-team-count>… · anyone can claim</span></summary>
+          <div class="inbox-stack" data-inbox-stack="team"></div>
+        </details>
+        <!-- Empty state mirrors inbox-tx for the all-clear reward. -->
+        <div class="inbox-empty" data-inbox-empty hidden>
+          <i class="ti ti-checkbox" aria-hidden="true"></i>
+          <p class="inbox-empty-title">You're caught up</p>
+          <p class="inbox-empty-body">Nothing in your queue or your team's across any DEX. New items will appear here.</p>
         </div>
-        <details class="group-block" open>
-          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">Mine</span><span class="sub">8 items across 3 DEXes</span></summary>
-          <div class="inbox-stack">
-            <div class="inbox-card" onclick="goto('detail')"><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="dir-chip in" title="Incoming data request — they want you to share with them"><i class="ti ti-download"></i>Incoming request</span><div class="body"><div class="title">Maersk wants to receive Bills of Lading from you</div><div class="meta">Invited 2h ago · waiting on you</div></div><button class="btn-primary neutral" style="padding:5px 10px;font-size:11px" onclick="event.stopPropagation(); openApprove()">Review</button></div>
-            <div class="inbox-card" onclick="goto('detail')"><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="dir-chip out" title="Outgoing data request — you asked them; awaiting their decision"><i class="ti ti-upload"></i>Outgoing request</span><div class="body"><div class="title">Your ETA request to PSA — awaiting their decision</div><div class="meta">Sent 4h ago · 30-day window · pending PSA accept</div></div><button class="btn-secondary neutral" onclick="event.stopPropagation(); toast('Opening outgoing request detail')">Open</button></div>
-            <div class="inbox-card" onclick="goto('warn-inline')"><span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span><span class="dir-chip in" title="Incoming data request — they want you to share with them"><i class="ti ti-download"></i>Incoming request</span><div class="body"><div class="title">Cross-DEX: PSA wants SGTradex bunker data via SGBuildex</div><div class="meta">Cross-DEX warning will fire on review</div></div><button class="btn-secondary" style="color:var(--bx-20);border-color:var(--bx-90)" onclick="event.stopPropagation(); goto('warn-inline')">Review</button></div>
-            <div class="inbox-card" onclick="toast('SGHealthdex compliance certificate renewal flow','warn')"><span class="dex-chip hx"><span class="dex-dot"></span>SGHealthdex</span><div class="body"><div class="title">Annual compliance certificate expires in 14d</div><div class="meta">Renewal · residency-strict · no grace period</div></div><button class="btn-secondary" style="color:var(--hx-20);border-color:var(--hx-90)" onclick="event.stopPropagation(); toast('Routed to governance review','warn')">Renew</button></div>
-          </div>
-        </details>
-        <details class="group-block" open>
-          <summary><i class="ti ti-chevron-down chev"></i><span class="ttl">My team's</span><span class="sub">14 items · claim to move into Mine</span></summary>
-          <div class="inbox-stack">
-            <div class="inbox-card team" onclick="goto('warn-chip')"><span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span><div class="body"><div class="title">5 contractor enrolments awaiting approval</div><div class="meta">Approval · oldest 3h ago · 4 admins eligible</div></div><button class="btn-secondary" style="color:var(--bx-20);border-color:var(--bx-90)" onclick="event.stopPropagation(); openClaim()">Claim</button></div>
-          </div>
-        </details>
       </main>
     </div>
   </div>
@@ -473,11 +490,14 @@
       </nav>
       <main class="empty-hero">
         <button class="new-here-pill" onclick="toast('Opening tips drawer: 4 things to know about the portal')"><i class="ti ti-bulb"></i>New here?<span class="nb">4</span></button>
-        <h1>Welcome, Marcus.</h1>
-        <p class="lede">As an <strong>Admin on SGTradex</strong>, you can review participant approvals, manage data elements, and create Agreements on behalf of your org.</p>
+        <!-- Welcome heading, role/DEX lede, and suggest-card desc all hydrate
+             from the active user + workspace via hydrateEmptyHeroChrome().
+             Server-side defaults below render gracefully if JS is delayed. -->
+        <h1 data-empty-hero-welcome>Welcome.</h1>
+        <p class="lede" data-empty-hero-lede>You can review approvals, manage data elements, and create Agreements on behalf of your org.</p>
         <a class="help-link" onclick="openGlossary()" style="cursor:pointer">What else can I do here?</a>
         <div class="suggest-grid">
-          <a class="suggest-card" onclick="goto('inbox-tx')"><div class="ic-pill"><i class="ti ti-file-text"></i></div><p class="ttl">Review your org's Agreements</p><p class="desc">Cosco Shipping has 23 active Agreements on SGTradex. Get the lay of the land.</p><p class="more">View Agreements <i class="ti ti-arrow-right"></i></p></a>
+          <a class="suggest-card" onclick="goto('inbox-tx')"><div class="ic-pill"><i class="ti ti-file-text"></i></div><p class="ttl">Review your org's Agreements</p><p class="desc" data-empty-hero-org-agreements>Get the lay of the land on your org's active Agreements.</p><p class="more">View Agreements <i class="ti ti-arrow-right"></i></p></a>
           <a class="suggest-card primary" onclick="startWizard('direct', { direction: 'send' })" style="cursor:pointer"><div class="ic-pill"><i class="ti ti-plus"></i></div><p class="ttl">Create your first Agreement</p><p class="desc">Set up data sharing with a counterparty, or appoint a service provider to act for you.</p><p class="more">Start now <i class="ti ti-arrow-right"></i></p></a>
         </div>
         <p style="font-size:11px;color:var(--g-70);margin:20px 0 0;max-width:480px;line-height:1.6">When items arrive, they'll appear above, split into <strong style="font-weight:500;color:var(--g-10)">Mine</strong> and <strong style="font-weight:500;color:var(--g-10)">My team's</strong>.</p>

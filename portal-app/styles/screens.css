@@ -180,6 +180,161 @@
   outline-offset: 2px;
 }
 
+/* ADR 0035 inbox filter row — Intent segmented control (primary) + Source
+   dropdown (secondary). Source sits right-aligned so the eye reads Intent
+   first; ux-serial-position places the load-bearing axis at the start of
+   the sequence. Filter chip counts use tabular nums so "Decide · 3" / "Fix · 12"
+   align in a column across re-renders (type-tabular-nums-for-data). */
+.inbox-filter-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin: var(--sp-2) 0 var(--sp-3);
+}
+.inbox-filter-row .filter-chips { flex: 1; margin: 0; }
+.inbox-filter-row .filter-chips button.chip [data-count] { font-variant-numeric: tabular-nums; }
+.screen[data-screen="inbox-all"] .filter-chips [data-count] { font-variant-numeric: tabular-nums; }
+.source-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-meta);
+  color: var(--g-40);
+  flex-shrink: 0;
+}
+.source-filter-label { font-weight: var(--fw-medium); }
+.source-filter select {
+  font: inherit;
+  font-size: var(--fs-meta);
+  /* min-height 32px keeps the dropdown at the Fitts touch-target floor
+     (ux-fitts-target-size) without making it visually bulky. */
+  min-height: 32px;
+  padding: 4px 28px 4px 10px;
+  border: 0.5px solid var(--g-85);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--g-10);
+  cursor: pointer;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--g-40) 50%), linear-gradient(135deg, var(--g-40) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  transition: border-color var(--motion-fast) var(--easing);
+}
+.source-filter select:hover { border-color: var(--g-70); }
+.source-filter select:focus-visible {
+  outline: 2px solid var(--theme-50);
+  outline-offset: 2px;
+}
+
+/* ADR 0036 — urgency banding inside each bucket. Bands render as <details>
+   sections; empty bands are hidden via the renderer (no DOM at all), so this
+   CSS never paints a "0 items" state. Layered structure is bucket > band >
+   (optional cross-DEX section) > card or bundle. */
+.inbox-band {
+  border: 0.5px solid var(--g-95);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  margin-bottom: var(--sp-2);
+}
+.inbox-band > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  list-style: none;
+  padding: 6px 12px;
+  font-size: var(--fs-meta);
+  color: var(--g-30);
+  user-select: none;
+}
+.inbox-band > summary::-webkit-details-marker { display: none; }
+.inbox-band > summary .chev {
+  font-size: 14px;
+  color: var(--g-50);
+  transition: transform var(--motion-fast) var(--easing);
+}
+.inbox-band[open] > summary .chev { transform: rotate(0deg); }
+.inbox-band:not([open]) > summary .chev { transform: rotate(-90deg); }
+.inbox-band-title { font-weight: var(--fw-medium); color: var(--g-10); }
+.inbox-band-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--g-50);
+  font-size: 11px;
+}
+.inbox-band-now > summary { background: var(--red-98); }
+.inbox-band-now > summary .inbox-band-title { color: var(--red-20); }
+.inbox-band-soon > summary { background: var(--yellow-98); }
+.inbox-band-soon > summary .inbox-band-title { color: var(--yellow-50); }
+.inbox-band-later > summary { background: var(--g-98); }
+.inbox-band-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: 8px 12px 12px;
+}
+
+/* ADR 0036 — Inbox bundle. Render-time aggregation of ≥3 same-key items.
+   The bundle card surfaces a single Action chip + Source icon + count chip +
+   bulk-action CTA; clicking the body toggles the children list. Children
+   render as ordinary inbox cards in a left-indented stack so the visual
+   hierarchy reads "bundle owns these". Reduced-motion respected via
+   prefers-reduced-motion in the host page. */
+.inbox-bundle { display: flex; flex-direction: column; }
+.inbox-bundle-card {
+  cursor: pointer;
+  user-select: none;
+}
+.inbox-bundle-card:hover { border-color: var(--g-70); }
+.inbox-bundle-card:focus-visible {
+  outline: 2px solid var(--theme-50);
+  outline-offset: 2px;
+}
+.inbox-bundle-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--g-50);
+  transition: transform var(--motion-fast) var(--easing);
+  flex-shrink: 0;
+}
+.inbox-bundle-card.is-expanded .inbox-bundle-glyph { transform: rotate(180deg); }
+.inbox-bundle-glyph i { font-size: 14px; line-height: 1; }
+.inbox-bundle-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--g-90);
+  color: var(--g-10);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.inbox-bundle-children {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0 6px 24px;
+  margin-top: 4px;
+  border-left: 2px solid var(--g-90);
+  margin-left: 12px;
+}
+.inbox-bundle-children[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .inbox-band > summary .chev,
+  .inbox-bundle-glyph { transition: none; }
+}
+
 /* Cross-DEX inbox sectioning — at /portal/all the renderer groups items by
    dexId within each bucket and prepends a section header per DEX. The header
    sits above its rows and uses the existing .dex-chip styling so DEX identity

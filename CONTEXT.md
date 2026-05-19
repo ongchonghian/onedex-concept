@@ -103,7 +103,7 @@ The four labels shown on Message rows, badges, and filter chips — identical ac
 _Avoid_: Queued (replaced by "In flight" because PULL and STORE do not have a sender's-side queue), sent (ambiguous), error (use Failed), pending
 
 **Owner badge (on Failed Messages)**:
-A mandatory secondary chip adjacent to the **Failed** status label that names who can act. **Your action** = the operator can remediate alone (retry, fix payload, escalate to support). **Their action** = counterparty needs to act; remediation is to nudge or mark abandoned. **Expired** = terminal time-out (most common in STORE flows); remediation is to re-stage with a longer TTL or accept the loss. The owner badge is the routing predicate for inbox auto-routing: *Failed · your action* Messages appear in the operator's inbox; *Failed · their action* and *Failed · expired* do not. See [ADR 0021](./docs/adr/0021-message-lifecycle-two-layer-model.md).
+A mandatory secondary chip adjacent to the **Failed** status label that names who can act. **Your action** = the operator can remediate alone (retry, fix payload, escalate to support). **Their action** = counterparty needs to act; remediation is to nudge or mark abandoned. **Expired** = terminal time-out (most common in STORE flows); remediation is to re-stage with a longer TTL or accept the loss. The owner badge is the routing predicate for inbox auto-routing: *Failed · your action* Messages appear in the operator's inbox; *Failed · their action* and *Failed · expired* do not. **Inbox-side counterpart:** when such a Message appears on the Inbox, the action-flavour counterpart of the *Your action* owner badge is the **Action chip** rendering `Fix` — same record, different viewpoint (status-flavour on Messages list vs action-flavour on Inbox). The two surfaces use different vocabulary deliberately; see [ADR 0035](./docs/adr/0035-inbox-three-axis-taxonomy.md)'s "forbids unification" clause. See also [ADR 0021](./docs/adr/0021-message-lifecycle-two-layer-model.md).
 _Avoid_: blame (the owner badge is action-oriented, not fault-oriented), severity (use a separate field if needed)
 
 **Message lifecycle (detail-view, flow-specific)**:
@@ -111,7 +111,7 @@ The timeline shown on the Message detail page, drawn from one of three flow-spec
 _Avoid_: state, status (reserved for the user-facing layer above), pipeline
 
 **Watch (toggle on Agreement)**:
-A per-user toggle on an Agreement that enables immediate notifications (inbox + email) on every Message under it hitting a terminal transition — Acknowledged or any Failed variant. Lives on the Agreement detail page. Per-Agreement granularity because most Messages are platform-automated (no per-Message toggle moment exists at creation) and operators reason about importance at the contractual level. State persists per-user-per-Agreement in a sidecar `agreement_watch` table. Distinct from DEX-admin-level data-element criticality (Phase 5+, separate concept). See [ADR 0023](./docs/adr/0023-message-notification-cadence.md).
+A per-user toggle on an Agreement that enables immediate notifications on every Message under it hitting a terminal transition — Acknowledged or any Failed variant. **Channel rules** (refined by [ADR 0035](./docs/adr/0035-inbox-three-axis-taxonomy.md)): *Watched-Acknowledged* → toast + email only, no Inbox card (no operator action required, so creating an Inbox card would violate the Inbox-as-action-queue contract); *Watched-Failed-your-action* → standard Inbox routing per ADR 0021 with `intent=fix`, plus toast + email; *Watched-Failed-their-action* and *Watched-Failed-expired* → toast + email only (consistent with the non-Watched routing rule that these never land in the Inbox). Lives on the Agreement detail page. Per-Agreement granularity because most Messages are platform-automated (no per-Message toggle moment exists at creation) and operators reason about importance at the contractual level. State persists per-user-per-Agreement in a sidecar `agreement_watch` table. Distinct from DEX-admin-level data-element criticality (Phase 5+, separate concept). See [ADR 0023](./docs/adr/0023-message-notification-cadence.md) and [ADR 0035](./docs/adr/0035-inbox-three-axis-taxonomy.md).
 _Avoid_: subscribe, follow, pin (these have other established meanings in the portal), notify-me
 
 **Message digest**:
@@ -248,7 +248,7 @@ The dispatch rule for whether a counterparty mention surfaces as a **named user*
 _Avoid_: actor identity (overloaded with audit-log "actor"), user-level vs org-level (loses the contractual/event distinction), attribution (the rule has more shape than just "who to attribute").
 
 **Inbox**:
-The default home view of the portal: a stack of items requiring action by the current user or their team. Split into **Mine** (items I'm assigned to or have claimed) and **My team's** (items others on my team could also act on). See [ADR 0003](./docs/adr/0003-inbox-with-claim-semantics.md).
+The default home view of the portal: a stack of items requiring action by the current user or their team. Split into **Mine** (items I'm assigned to or have claimed) and **My team's** (items others on my team could also act on). Every item carries a 3-axis classification — **Intent** (what to do), **Source** (which record class produced it), and **Urgency** (when) — that drives card chrome, sort, and **banding** (Now / Soon / Later sections within each bucket). Same-key items pile up into **Inbox bundles** with a single bulk-action CTA. See [ADR 0003](./docs/adr/0003-inbox-with-claim-semantics.md), [ADR 0035](./docs/adr/0035-inbox-three-axis-taxonomy.md), and [ADR 0036](./docs/adr/0036-inbox-banding-and-bundling.md).
 _Avoid_: dashboard, home, queue (queue means something different — see below)
 
 **Claim**:
@@ -260,8 +260,45 @@ The underlying set of all actionable items for a team on a DEX. The **Inbox** is
 _Avoid_: pending list, todo list
 
 **Completion echo**:
-The ~5-minute window after a user acts on an inbox item, during which the item remains visible in teammates' "My team's" view with a "completed by <user>" label. Closes the loop so teammates see what happened, rather than the item silently vanishing.
+The ~5-minute window after a user acts on an inbox item, during which the item remains visible in teammates' "My team's" view with a "completed by <user>" label. Closes the loop so teammates see what happened, rather than the item silently vanishing. The echo lifecycle is independent of the item's **Intent** / **Source** / **Urgency** axes — every item class echoes the same way on action.
 _Avoid_: recently completed, action history (the audit log is the full history; completion echo is the inbox's short-term lingering)
+
+**Intent (on Inbox items)**:
+The behavioural axis describing what the operator must do on an Inbox item — one of `decide` (judgement: accept / reject / approve), `respond` (provide data the counterparty is awaiting — *reserved, no v1 source*), `fix` (recover something broken on the operator's side), or `confirm` (lightweight ack of a state the platform already knows). Drives the leftmost coloured chip on every Inbox card (the **Action chip** in design parlance) and the primary segmented filter on the Inbox filter row. Distinct from `cta`, which is the button-handler key (renamed from the legacy `action` field). Closed vocabulary — adding a fifth value requires a follow-on ADR. See [ADR 0035](./docs/adr/0035-inbox-three-axis-taxonomy.md).
+_Avoid_: action (collides with the renamed `cta` field and with the *Failed · your action* owner badge from ADR 0021); job; task (collides with the Phase-5 governance / task source-type slot); priority (overloaded); purpose; verb.
+
+**Action chip (on Inbox cards)**:
+The leftmost coloured chip on every Inbox card, rendering the item's **Intent** value (`Decide` amber, `Respond` blue, `Fix` red, `Confirm` slate). Always present, never collapsed; the visual lead-in for behavioural triage. Distinct from the **Direction chip** (inbound/outbound, conditional, Message-source only), the **DEX chip** (conditional, `/portal/all` only — see [ADR 0005](./docs/adr/0005-neutral-chrome-at-portal-all.md)), and the **Due chip** (conditional, when `dueAt` ≤ 7 days). See [ADR 0035](./docs/adr/0035-inbox-three-axis-taxonomy.md).
+_Avoid_: intent chip (the chip *renders* Intent, but the design label is Action chip); job chip; priority chip; verb chip.
+
+**Source icon (on Inbox cards)**:
+A small (~12px), muted icon adjacent to the title on every Inbox card, denoting the underlying record class (`agreement`, `message`, or — Phase 5 — `governance`). Sufficient to disambiguate Agreement-derived from Message-derived items at a glance; insufficient to dominate the card. Backed by the `sourceType` field on every Inbox item (supersedes the older informal `derivedFrom`, which left fixture seeds undefined). Source must never be the visual frame of an item — no source-typed card colour, no source-typed silos. See [ADR 0035](./docs/adr/0035-inbox-three-axis-taxonomy.md).
+_Avoid_: type chip (loud — the icon is deliberately muted); kind icon; derivedFrom (legacy informal field name; canonical schema name is now `sourceType`).
+
+**Due chip (on Inbox cards)**:
+A right-aligned chip on Inbox cards showing the item's deadline distance — *Due today*, *in 2d*, *Overdue 3d*. **Conditional**: rendered only when `dueAt` is present **and** within 7 days; hidden when undated or far-future to avoid "no deadline" chrome on items that don't have one. Colour-coded by urgency (red border ≤0d, amber ≤24h, neutral otherwise). In v1, only Extend reminders carry an explicit `dueAt`; other sources render without the Due chip until they begin carrying deadlines. See [ADR 0035](./docs/adr/0035-inbox-three-axis-taxonomy.md).
+_Avoid_: deadline chip (the chip shows deadline *distance*, not the deadline itself); urgency chip (urgency is computed from `dueAt`, not stored on the chip); SLA chip.
+
+**Urgency band (on Inbox)**:
+A structural grouping inside each of **Mine** and **My team's** that organises items by when they must be acted on. Three values: `now` (overdue, due ≤24h, or default for Fix-class items), `soon` (due within 7 days, or aging items without an SLA), `later` (no SLA, far-future). Rendered as collapsible `<details>` sections under each bucket. **Hide-empty**: a band is omitted from the DOM when it contains zero items — under any filter combination, in any bucket, an empty band shows no chrome. Collapse state persists per `(userId, dexId, bucket, band)` in `workspace.inboxBandState`. Defaults: Now expanded; Soon expanded if non-empty; Later collapsed. The band a bundle lands in is the **worst-child's** band, not a per-child split (see [Inbox bundle]). See [ADR 0036](./docs/adr/0036-inbox-banding-and-bundling.md).
+_Avoid_: priority band (we deliberately avoid "priority" — urgency is deadline-derived, not an opaque score); time bucket (overloaded with "Mine / My team's bucket"); section (too generic).
+
+**Inbox bundle**:
+A **render-time** aggregation of Inbox items that share `(sourceType, counterpartyOrgId, intent)`. Forms when ≥3 same-key items exist in the same bucket; renders as one stacked card with an expand affordance and a single **bulk-action** CTA. **Element-agnostic** — bundles can contain children that span different data elements; the bundle title surfaces the variation (e.g., *"5 requests from PSA · ETA × 3, Container Manifest × 2"*). **Not a domain object** — has no `inboxItemId`, no persistence, no `workspace.bundles` record; re-forms on every render from current `workspace.inboxItems` state. Children stay individually claimed, individually acted on, individually echoed in the audit log. The bundle lives in the **worst-child's** band when its children span bands. See [ADR 0036](./docs/adr/0036-inbox-banding-and-bundling.md).
+_Avoid_: group (too generic; collides with "Data element group"); stack (collides with the inbox-stack DOM class); pack (collides with **Agreement pack** which is a different concept — packs have IDs, bundles don't); cluster.
+
+**Bulk action (on Inbox bundles)**:
+A single-CTA batch operation on an Inbox bundle that fires the per-child handler N times and emits one bundle-shaped echo in the completion ribbon. CTA label is derived from `(intent, bucket)`:
+
+| intent | Mine bucket | Team bucket |
+|---|---|---|
+| `decide` | Accept all | Claim all |
+| `respond` *(reserved)* | Respond all | Claim all |
+| `fix` | Retry all | Claim all |
+| `confirm` | Confirm all | Claim all |
+
+**Actual-count rule**: the ribbon echo reports the count of children that *actually* completed (a child claimed by a teammate mid-action is excluded). **Audit-log layer is unchanged** — N discrete events fire per ADR 0035's per-child-state rule. No confirm modal, no undo window in v1.2 (Phase 3 may revisit). See [ADR 0036](./docs/adr/0036-inbox-banding-and-bundling.md).
+_Avoid_: batch action (engineering-flavoured); group action (collides with Data element group); multi-select (we don't have multi-select; bulk action operates on a same-key bundle, not an arbitrary selection); mass action (alarming connotations).
 
 **Layout widths**:
 The prototype uses three width buckets to match the *kind* of work each surface hosts. Choose by the operator's job at that surface, not by the screen's name:
@@ -304,7 +341,7 @@ The prototype has grown across many iterations and now carries a real risk of "d
 
 **Surfaces that are deliberately NOT rebuilt** (and why — document any new exceptions here):
 
-- `inbox-all` screen shell — carries a deliberately different shell (cross-DEX aggregated view with the "All DEXes" workspace pill, no role-chip, no Create button). Left static so its specialness doesn't get accidentally normalised away.
+- `inbox-all` screen **shell** — carries a deliberately different shell (cross-DEX aggregated view with the "All DEXes" workspace pill, no role-chip, neutral chrome per [ADR 0005](./docs/adr/0005-neutral-chrome-at-portal-all.md)). Shell stays static so its specialness doesn't get accidentally normalised away. **Card bodies under the shell are workspace-driven** (per [ADR 0035](./docs/adr/0035-inbox-three-axis-taxonomy.md)) — the `[data-inbox-stack]` Mine / Team containers are populated by `renderInboxFromWorkspace('inbox-all')` from the union of `workspace.inboxItems` across all DEXes, with the cross-DEX section grouping headers emitted by `renderInboxStackHTML`. The per-DEX filter chip counts (All / SGTradex · N / SGBuildex · N / SGHealthdex · N) and the Welcome heading are hydrated by `hydrateInboxAllChrome()`. Only the per-DEX filter chips remain non-interactive (visual chrome only); making them clickable filters is a Phase 2 follow-up.
 
 **Retired components** (do not resurrect without ADR):
 
