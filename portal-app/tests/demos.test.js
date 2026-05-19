@@ -40,6 +40,7 @@ const SCRIPT_PATHS = [
   'scripts/demos/compose-message.js',
   'scripts/demos/suspend.js',
   'scripts/demos/watch-and-digest.js',
+  'scripts/demos/teammate-claim.js',
 ];
 
 /* JSDOM's runScripts: 'outside-only' does NOT wire inline onclick="..."

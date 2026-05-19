@@ -3493,7 +3493,7 @@
 </div>
 
 <div class="overlay-veil" id="claim-modal" hidden>
-  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-hand-finger" aria-hidden="true"></i></div><h4>Claim this item?</h4><button class="close" onclick="closeOverlay('claim-modal')" aria-label="Close"><i class="ti ti-x" aria-hidden="true"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5">This will remove the item from your teammates' queue. It moves from <strong style="font-weight:500">My team's</strong> into <strong style="font-weight:500">Mine</strong>, and only you will see it until you complete or release it.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('claim-modal')">Not now</button><button class="btn-primary" onclick="confirmClaim()">Claim</button></div></div>
+  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-hand-finger" aria-hidden="true"></i></div><h4>Claim this item?</h4><button class="close" onclick="closeOverlay('claim-modal')" aria-label="Close"><i class="ti ti-x" aria-hidden="true"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5">This will remove the item from your teammates' queue. It moves from <strong style="font-weight:500">My team's</strong> into <strong style="font-weight:500">Mine</strong>, and only you will see it until you complete or release it.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('claim-modal')">Not now</button><button class="btn-primary" onclick="confirmClaim()" data-demo="inbox.claim-modal.confirm">Claim</button></div></div>
 </div>
 
 <div class="overlay-veil" id="approve-modal" hidden>
@@ -3995,6 +3995,7 @@
 <script src="scripts/demos/compose-message.js?v=p17"></script>
 <script src="scripts/demos/suspend.js?v=p17"></script>
 <script src="scripts/demos/watch-and-digest.js?v=p17"></script>
+<script src="scripts/demos/teammate-claim.js?v=p17"></script>
 <script src="scripts/demos/index.js?v=p17"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>

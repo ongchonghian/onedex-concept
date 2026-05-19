@@ -1136,7 +1136,7 @@ function renderInboxCardHTML(item, opts) {
 /* renderInboxCompletionHTML — completion echo rows are rendered into the
    completion ribbon (above Mine), not the team stack. Compact one-liner. */
 function renderInboxCompletionHTML(item) {
-  return `<div class="completion-row">` +
+  return `<div class="completion-row" data-demo="inbox.completion-echo-row">` +
     `<i class="ti ti-check" aria-hidden="true"></i>` +
     `<span class="title">${item.title || ''}</span>` +
     `<span class="meta">${item.meta || ''}</span>` +

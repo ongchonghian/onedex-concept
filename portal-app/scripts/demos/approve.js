@@ -9,8 +9,7 @@
    · [data-demo="<semantic.role>"]     on modal anchors
    Class-based selectors (button[onclick*="..."]) are not used.
 
-   ADRs demonstrated: 0003 (inbox + claim semantics),
-   0007 (lifecycle), 0008 (inbox→detail routing)
+   ADRs demonstrated: 0007 (lifecycle), 0008 (inbox→detail routing)
    ============================================================ */
 
 (function (window) {
@@ -27,7 +26,7 @@
     id: 'approve',
     title: 'Approve incoming',
     description: "Maersk has invited Cosco to share Bills of Lading. Marcus reviews the request from his inbox and accepts — data starts flowing within five minutes.",
-    adrs: ['0003', '0007', '0008'],
+    adrs: ['0007', '0008'],
     durationSec: 45,
 
     seed: (workspace) => {
