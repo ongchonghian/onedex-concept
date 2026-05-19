@@ -566,6 +566,17 @@ function inferScopeSuggestion(orgId, dexId, elementId, direction) {
    by the renderers (renderActingAsPitstopChip, renderScopeCaptureStep, etc.). */
 function applyMpScenario(scenarioKey, btn) {
   if (!MP_SCENARIOS[scenarioKey]) return;
+
+  // Restore any demo-driven chipVisibility stash before applying. The
+  // pitstop-scope demo flow sets _chipVisibilityStash on scenario B so that
+  // the mutation (first-time → auto-filled) doesn't persist across flows for
+  // the rest of the browser session. Same save-restore pattern as _fStash for
+  // PITSTOP_ELEMENT_SCOPE (scenario F) below.
+  if (MP_SCENARIOS[scenarioKey]._chipVisibilityStash !== undefined) {
+    MP_SCENARIOS[scenarioKey].chipVisibility = MP_SCENARIOS[scenarioKey]._chipVisibilityStash;
+    delete MP_SCENARIOS[scenarioKey]._chipVisibilityStash;
+  }
+
   activeMpScenario = scenarioKey;
   const scenario = MP_SCENARIOS[scenarioKey];
 

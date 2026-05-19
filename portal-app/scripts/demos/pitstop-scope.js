@@ -37,7 +37,7 @@
     title: 'Pitstop scope: asked once, then silent',
     description: "Cosco runs three Pitstops on SGTradex. The first time the operator sends a Bunker Requisition Form, the wizard asks once which Pitstops dispatch it. Future Agreements for that element reuse the answer silently.",
     adrs: ['0033', '0028'],
-    durationSec: 65,
+    durationSec: 35,
 
     seed: (workspace) => {
       // Set Marcus as the active operator on SGTradex.
@@ -73,7 +73,18 @@
       // the wizard there, not shown again on compose). For this demo flow we
       // lift that restriction after the capture so the subsequent compose step
       // can show the silent pre-fill that operators see on every future Message.
+      //
+      // Save+restore: MP_SCENARIOS is a module-level constant in
+      // workspace-fixtures.js exposed on window — NOT part of the workspace, so
+      // the runner's pre-Play workspace reset does NOT restore it. Without the
+      // stash, scenario B carries 'auto-filled' for the rest of the browser
+      // session. Same pattern as scenario F's _fStash for PITSTOP_ELEMENT_SCOPE
+      // in applyMpScenario (pitstop.js ~593). applyMpScenario reads the stash
+      // back and deletes it before any chipVisibility check runs.
       if (window.MP_SCENARIOS && window.MP_SCENARIOS['B']) {
+        if (window.MP_SCENARIOS['B']._chipVisibilityStash === undefined) {
+          window.MP_SCENARIOS['B']._chipVisibilityStash = window.MP_SCENARIOS['B'].chipVisibility;
+        }
         window.MP_SCENARIOS['B'].chipVisibility = 'auto-filled';
       }
     },
@@ -102,7 +113,7 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="detail"].active',
         label: 'Step 3 of 5 — Recorded on the Agreement',
-        rationale: "The scope choice rides on Cosco's Agreement record, visible only to Cosco's admins. Future Bunker Requisition Form Agreements with any counterparty reuse this answer without asking again. The question is asked once and then falls silent.",
+        rationale: "The scope choice doesn't live on the Agreement contract itself — it rides on Cosco's own Pitstop topology, which the platform reads when routing each Message. The counterparty never sees it. Future Bunker Requisition Form Agreements with any counterparty reuse Cosco's choice via that inference, never re-asking.",
         dwell: 4600 },
 
       // ---- Composer shows the pre-applied chip ----
