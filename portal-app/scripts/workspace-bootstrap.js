@@ -27,6 +27,10 @@ function createEmptyWorkspace(meta = {}) {
     pitstopElementScope: {},
     userPitstopRoles: {},
     pitstopActivityLogs: {},
+    /* Per-agreement audit-trail entries surfaced by the detail-page
+       activity-log + pack-detail timeline (Issue 0011 stage 1e). Keyed by
+       agreementId; entries are ordered most-recent-first. */
+    agreementActivityLog: {},
     agreementDrafts: {},
     agreements: {},
     agreementPacks: {},
@@ -61,6 +65,7 @@ function seedReferenceCollections(workspace) {
   if (typeof PITSTOP_ELEMENT_SCOPE !== 'undefined') Object.assign(workspace.pitstopElementScope, cloneRef(PITSTOP_ELEMENT_SCOPE));
   if (typeof USER_PITSTOP_ROLES !== 'undefined')    Object.assign(workspace.userPitstopRoles,    cloneRef(USER_PITSTOP_ROLES));
   if (typeof PITSTOP_ACTIVITY_LOGS !== 'undefined') Object.assign(workspace.pitstopActivityLogs, cloneRef(PITSTOP_ACTIVITY_LOGS));
+  if (typeof AGREEMENT_ACTIVITY_LOG_BY_AGREEMENT !== 'undefined') Object.assign(workspace.agreementActivityLog, cloneRef(AGREEMENT_ACTIVITY_LOG_BY_AGREEMENT));
   return workspace;
 }
 

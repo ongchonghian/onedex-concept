@@ -2187,6 +2187,49 @@ function hydrateComposerDefaultHero() {
 }
 window.hydrateComposerDefaultHero = hydrateComposerDefaultHero;
 
+/* hydrateAgreementActivityLog — renders every `[data-agreement-activity-log]`
+   <ol> on the page from workspace.agreementActivityLog[agreementId]. Each
+   entry resolves its actor display from USERS[actorUserId] (with optional
+   "(actorDisplayOrg)" suffix) or actorOrgOnly when the actor is the org
+   itself. Issue 0011 stage 1e converted these from hand-authored seed
+   markup to workspace state. */
+function hydrateAgreementActivityLog() {
+  const containers = document.querySelectorAll('[data-agreement-activity-log]');
+  if (!containers.length) return;
+  const workspace = (typeof getWorkspace === 'function') ? getWorkspace() : null;
+  const log = (workspace && workspace.agreementActivityLog) || (typeof AGREEMENT_ACTIVITY_LOG_BY_AGREEMENT !== 'undefined' ? AGREEMENT_ACTIVITY_LOG_BY_AGREEMENT : {});
+  const users = (workspace && workspace.users) || (typeof USERS !== 'undefined' ? USERS : {});
+  containers.forEach((host) => {
+    const agreementId = host.getAttribute('data-agreement-activity-log');
+    const entries = log[agreementId] || [];
+    if (!entries.length) {
+      host.innerHTML = '<li class="ev"><span class="ev-dot muted" aria-hidden="true"></span><div class="ev-body"><p style="color:var(--g-50)">No activity yet.</p></div></li>';
+      return;
+    }
+    host.innerHTML = entries.map((e) => {
+      const dotClass = ['tx','bx','hx','green','muted'].includes(e.dotKind) ? `ev-dot ${e.dotKind}` : 'ev-dot';
+      const dotStyle = (e.dotKind && !['tx','bx','hx','green','muted'].includes(e.dotKind))
+        ? ` style="background:var(--${escAttr(e.dotKind)})"`
+        : '';
+      let actorHtml = '';
+      if (e.actorUserId) {
+        const user = users[e.actorUserId];
+        const name = (user && user.name) || e.actorUserId;
+        actorHtml = e.actorDisplayOrg
+          ? `<strong>${escAttr(name)} (${escAttr(e.actorDisplayOrg)})</strong> `
+          : `<strong>${escAttr(name)}</strong> `;
+      } else if (e.actorOrgOnly) {
+        actorHtml = `<strong>${escAttr(e.actorOrgOnly)}</strong> `;
+      }
+      const timeHtml = e.datetime
+        ? `<time datetime="${escAttr(e.datetime)}">${escAttr(e.humanTime || '')}</time>`
+        : `<time>${escAttr(e.humanTime || '')}</time>`;
+      return `<li class="ev"><span class="${dotClass}"${dotStyle} aria-hidden="true"></span><div class="ev-body"><p>${actorHtml}${e.bodyHtml || ''}</p><p class="ev-time">${timeHtml}</p></div></li>`;
+    }).join('');
+  });
+}
+window.hydrateAgreementActivityLog = hydrateAgreementActivityLog;
+
 /* formatHumanDate — small "YYYY-MM-DD" → "14 Mar 2024" helper used by
    the profile + DEX-role hydrators. Local utility; not exposed globally. */
 function formatHumanDate(iso) {
@@ -2216,6 +2259,7 @@ function runPortalChromeHydrators() {
   try { hydrateSettingsDexRolesChrome(); } catch (e) {}
   try { hydrateDexSwitcherChrome(); } catch (e) {}
   try { hydrateComposerDefaultHero(); } catch (e) {}
+  try { hydrateAgreementActivityLog(); } catch (e) {}
 }
 window.runPortalChromeHydrators = runPortalChromeHydrators;
 

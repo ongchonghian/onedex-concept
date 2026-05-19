@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=1200, initial-scale=1">
 <title>Dex Portal — Prototype</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="styles/tokens.css?v=p14">
-<link rel="stylesheet" href="styles/themes.css?v=p14">
-<link rel="stylesheet" href="styles/base.css?v=p14">
-<link rel="stylesheet" href="styles/components.css?v=p14">
-<link rel="stylesheet" href="styles/layout.css?v=p14">
-<link rel="stylesheet" href="styles/screens.css?v=p14">
-<link rel="stylesheet" href="styles/demos.css?v=p14">
+<link rel="stylesheet" href="styles/tokens.css?v=p15">
+<link rel="stylesheet" href="styles/themes.css?v=p15">
+<link rel="stylesheet" href="styles/base.css?v=p15">
+<link rel="stylesheet" href="styles/components.css?v=p15">
+<link rel="stylesheet" href="styles/layout.css?v=p15">
+<link rel="stylesheet" href="styles/screens.css?v=p15">
+<link rel="stylesheet" href="styles/demos.css?v=p15">
 </head>
 <body>
 
@@ -2426,11 +2426,8 @@
       <!-- Activity -->
       <section aria-labelledby="activity-h" id="section-activity">
         <p class="section-label" id="activity-h">Activity</p>
-        <ol class="activity" aria-label="Audit log, most recent first">
-          <li class="ev"><span class="ev-dot tx" aria-hidden="true"></span><div class="ev-body"><p><strong>Marcus Ong</strong> extended the Agreement by 6 months</p><p class="ev-time"><time datetime="2026-05-12T14:23+08:00">2 days ago · 14:23 SGT</time></p></div></li>
-          <li class="ev"><span class="ev-dot bx" aria-hidden="true"></span><div class="ev-body"><p><strong>Maersk Logistics</strong> began consuming the data feed</p><p class="ev-time"><time datetime="2026-03-21T09:15+08:00">21 Mar · 09:15 SGT · automated</time></p></div></li>
-          <li class="ev"><span class="ev-dot green" aria-hidden="true"></span><div class="ev-body"><p><strong>Granger (Maersk)</strong> accepted the Agreement</p><p class="ev-time"><time datetime="2026-03-21T09:12+08:00">21 Mar · 09:12 SGT</time></p></div></li>
-          <li class="ev"><span class="ev-dot muted" aria-hidden="true"></span><div class="ev-body"><p><strong>Marcus Ong</strong> created the Agreement and sent the invitation</p><p class="ev-time"><time datetime="2026-03-14T11:08+08:00">14 Mar · 11:08 SGT</time></p></div></li>
+        <ol class="activity" aria-label="Audit log, most recent first" data-agreement-activity-log="AGR-2026-04829">
+          <!-- Populated by hydrateAgreementActivityLog(). See Issue 0011 stage 1e. -->
         </ol>
         <p style="font-size:11px;color:var(--g-50);margin:10px 0 0;text-align:center" id="audit-foot">
           <button onclick="expandAudit(event)" aria-expanded="false" aria-controls="section-activity" style="background:transparent;border:none;color:var(--g-50);text-decoration:underline;cursor:pointer;font-family:inherit;font-size:11px">Show full audit log (24 entries)</button>
@@ -3048,10 +3045,8 @@
       <!-- Pack-level audit trail -->
       <p class="section-label" style="margin-top:24px">Pack activity</p>
       <p class="pack-audit-note">Per ADR 0027, the pack carries a thin audit (created · revoked · sent) — full per-Message detail lives on each member Agreement. Sample events:</p>
-      <ol class="activity">
-        <li class="ev"><span class="ev-dot" style="background:var(--green-50)" aria-hidden="true"></span><div class="ev-body"><p><strong>Marcus Ong</strong> sent pack · 4 Messages dispatched (1 per member Agreement) · idempotency keys recorded per Message</p><p class="ev-time"><time>22 Apr 2026 · 14:18 SGT</time></p></div></li>
-        <li class="ev"><span class="ev-dot" style="background:var(--green-50)" aria-hidden="true"></span><div class="ev-body"><p>All 4 member Agreements transitioned to <strong>Active</strong> (last acceptance: Hin Leong Insurance)</p><p class="ev-time"><time>14 Mar 2026 · 16:42 SGT</time></p></div></li>
-        <li class="ev"><span class="ev-dot tx" aria-hidden="true"></span><div class="ev-body"><p><strong>Marcus Ong</strong> created the pack via the split-counterparties wizard fork · 4 Agreements created in one transaction</p><p class="ev-time"><time>14 Mar 2026 · 11:14 SGT</time></p></div></li>
+      <ol class="activity" data-agreement-activity-log="pack:vessel-arrival-distribution">
+        <!-- Populated by hydrateAgreementActivityLog(). See Issue 0011 stage 1e. -->
       </ol>
 
     </section>
@@ -3976,28 +3971,28 @@
      defined elsewhere. Per ADR 0028 the multi-Pitstop layer is a parallel concern
      hooking into existing surfaces — keeping it as the final layer makes the dependency
      direction explicit. ===== -->
-<script src="scripts/state.js?v=p14"></script>
-<script src="scripts/access.js?v=p14"></script>
-<script src="scripts/workspace-storage.js?v=p14"></script>
+<script src="scripts/state.js?v=p15"></script>
+<script src="scripts/access.js?v=p15"></script>
+<script src="scripts/workspace-storage.js?v=p15"></script>
 <!-- workspace-fixtures.js — scene/inbox/MP fixture data extracted from state.js
      in Phase 7. Must load before workspace-bootstrap.js (which dereferences
      SCENE_SEEDS / INBOX_BY_DEX) but order vs. state.js doesn't matter — all
      references are guarded with `typeof X !== 'undefined'`. -->
-<script src="scripts/workspace-fixtures.js?v=p14"></script>
-<script src="scripts/workspace-bootstrap.js?v=p14"></script>
-<script src="scripts/workspace.js?v=p14"></script>
-<script src="scripts/components.js?v=p14"></script>
-<script src="scripts/theme.js?v=p14"></script>
-<script src="scripts/wizard.js?v=p14"></script>
-<script src="scripts/app.js?v=p14"></script>
+<script src="scripts/workspace-fixtures.js?v=p15"></script>
+<script src="scripts/workspace-bootstrap.js?v=p15"></script>
+<script src="scripts/workspace.js?v=p15"></script>
+<script src="scripts/components.js?v=p15"></script>
+<script src="scripts/theme.js?v=p15"></script>
+<script src="scripts/wizard.js?v=p15"></script>
+<script src="scripts/app.js?v=p15"></script>
 <!-- Auto-demo runner (ADR 0034) — load order: runtime first, then each flow self-registers, then the launcher reads the registry. -->
-<script src="scripts/demos/runtime.js?v=p14"></script>
-<script src="scripts/demos/first-agreement.js?v=p14"></script>
-<script src="scripts/demos/extend.js?v=p14"></script>
-<script src="scripts/demos/approve.js?v=p14"></script>
-<script src="scripts/demos/cross-dex.js?v=p14"></script>
-<script src="scripts/demos/compose-message.js?v=p14"></script>
-<script src="scripts/demos/index.js?v=p14"></script>
+<script src="scripts/demos/runtime.js?v=p15"></script>
+<script src="scripts/demos/first-agreement.js?v=p15"></script>
+<script src="scripts/demos/extend.js?v=p15"></script>
+<script src="scripts/demos/approve.js?v=p15"></script>
+<script src="scripts/demos/cross-dex.js?v=p15"></script>
+<script src="scripts/demos/compose-message.js?v=p15"></script>
+<script src="scripts/demos/index.js?v=p15"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>
 <script src="scripts/pitstop.js"></script>
