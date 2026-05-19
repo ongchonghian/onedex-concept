@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=1200, initial-scale=1">
 <title>Dex Portal — Prototype</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="styles/tokens.css?v=p13">
-<link rel="stylesheet" href="styles/themes.css?v=p13">
-<link rel="stylesheet" href="styles/base.css?v=p13">
-<link rel="stylesheet" href="styles/components.css?v=p13">
-<link rel="stylesheet" href="styles/layout.css?v=p13">
-<link rel="stylesheet" href="styles/screens.css?v=p13">
-<link rel="stylesheet" href="styles/demos.css?v=p13">
+<link rel="stylesheet" href="styles/tokens.css?v=p14">
+<link rel="stylesheet" href="styles/themes.css?v=p14">
+<link rel="stylesheet" href="styles/base.css?v=p14">
+<link rel="stylesheet" href="styles/components.css?v=p14">
+<link rel="stylesheet" href="styles/layout.css?v=p14">
+<link rel="stylesheet" href="styles/screens.css?v=p14">
+<link rel="stylesheet" href="styles/demos.css?v=p14">
 </head>
 <body>
 
@@ -1509,7 +1509,7 @@
         <span class="idem-key" id="compose-idem-key" title="Idempotency key — generated at draft-open, threaded through Submit + Retry per ADR 0021/0024">key: idem_a7f3c91d</span>
       </div>
       <div class="title-row">
-        <h2 id="compose-title">Bill of Lading → Maersk Logistics</h2>
+        <h2 id="compose-title" data-composer-default-hero>Compose Message</h2>
         <span class="complexity-pill high-stakes" id="compose-complexity-pill" title="Data element compose_complexity attribute per ADR 0025">high-stakes</span>
         <a class="cancel" onclick="composerCancel()" title="Your draft is auto-saved · decay-with-pin lifecycle per ADR 0024 (auto-purge on Agreement-end or 30-day inactivity, whichever first)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();composerCancel()}"><i class="ti ti-x" aria-hidden="true"></i>Cancel</a>
       </div>
@@ -3976,28 +3976,28 @@
      defined elsewhere. Per ADR 0028 the multi-Pitstop layer is a parallel concern
      hooking into existing surfaces — keeping it as the final layer makes the dependency
      direction explicit. ===== -->
-<script src="scripts/state.js?v=p13"></script>
-<script src="scripts/access.js?v=p13"></script>
-<script src="scripts/workspace-storage.js?v=p13"></script>
+<script src="scripts/state.js?v=p14"></script>
+<script src="scripts/access.js?v=p14"></script>
+<script src="scripts/workspace-storage.js?v=p14"></script>
 <!-- workspace-fixtures.js — scene/inbox/MP fixture data extracted from state.js
      in Phase 7. Must load before workspace-bootstrap.js (which dereferences
      SCENE_SEEDS / INBOX_BY_DEX) but order vs. state.js doesn't matter — all
      references are guarded with `typeof X !== 'undefined'`. -->
-<script src="scripts/workspace-fixtures.js?v=p13"></script>
-<script src="scripts/workspace-bootstrap.js?v=p13"></script>
-<script src="scripts/workspace.js?v=p13"></script>
-<script src="scripts/components.js?v=p13"></script>
-<script src="scripts/theme.js?v=p13"></script>
-<script src="scripts/wizard.js?v=p13"></script>
-<script src="scripts/app.js?v=p13"></script>
+<script src="scripts/workspace-fixtures.js?v=p14"></script>
+<script src="scripts/workspace-bootstrap.js?v=p14"></script>
+<script src="scripts/workspace.js?v=p14"></script>
+<script src="scripts/components.js?v=p14"></script>
+<script src="scripts/theme.js?v=p14"></script>
+<script src="scripts/wizard.js?v=p14"></script>
+<script src="scripts/app.js?v=p14"></script>
 <!-- Auto-demo runner (ADR 0034) — load order: runtime first, then each flow self-registers, then the launcher reads the registry. -->
-<script src="scripts/demos/runtime.js?v=p13"></script>
-<script src="scripts/demos/first-agreement.js?v=p13"></script>
-<script src="scripts/demos/extend.js?v=p13"></script>
-<script src="scripts/demos/approve.js?v=p13"></script>
-<script src="scripts/demos/cross-dex.js?v=p13"></script>
-<script src="scripts/demos/compose-message.js?v=p13"></script>
-<script src="scripts/demos/index.js?v=p13"></script>
+<script src="scripts/demos/runtime.js?v=p14"></script>
+<script src="scripts/demos/first-agreement.js?v=p14"></script>
+<script src="scripts/demos/extend.js?v=p14"></script>
+<script src="scripts/demos/approve.js?v=p14"></script>
+<script src="scripts/demos/cross-dex.js?v=p14"></script>
+<script src="scripts/demos/compose-message.js?v=p14"></script>
+<script src="scripts/demos/index.js?v=p14"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>
 <script src="scripts/pitstop.js"></script>

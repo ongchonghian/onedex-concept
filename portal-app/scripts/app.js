@@ -2172,6 +2172,21 @@ function hydrateDexSwitcherChrome() {
 }
 window.hydrateDexSwitcherChrome = hydrateDexSwitcherChrome;
 
+/* hydrateComposerDefaultHero — pulls the composer's initial H2 from the
+   default compose scenario's title rather than carrying it as a markup
+   literal. `setComposerScenario()` overwrites this H2 every time the
+   composer screen is opened — but the literal in HTML was still a
+   hardcoded "Element → Counterparty" string. Now it derives. */
+function hydrateComposerDefaultHero() {
+  const el = document.querySelector('[data-composer-default-hero]');
+  if (!el) return;
+  if (typeof COMPOSE_SCENARIOS === 'undefined') return;
+  const defaultScenario = (typeof composerState !== 'undefined' && composerState && composerState.scenario) || 'push-high-stakes';
+  const cfg = COMPOSE_SCENARIOS[defaultScenario] || COMPOSE_SCENARIOS['push-high-stakes'];
+  if (cfg && cfg.title) el.textContent = cfg.title;
+}
+window.hydrateComposerDefaultHero = hydrateComposerDefaultHero;
+
 /* formatHumanDate — small "YYYY-MM-DD" → "14 Mar 2024" helper used by
    the profile + DEX-role hydrators. Local utility; not exposed globally. */
 function formatHumanDate(iso) {
@@ -2200,6 +2215,7 @@ function runPortalChromeHydrators() {
   try { hydrateSettingsProfileChrome(); } catch (e) {}
   try { hydrateSettingsDexRolesChrome(); } catch (e) {}
   try { hydrateDexSwitcherChrome(); } catch (e) {}
+  try { hydrateComposerDefaultHero(); } catch (e) {}
 }
 window.runPortalChromeHydrators = runPortalChromeHydrators;
 
