@@ -338,13 +338,20 @@ function inboxSeedToWorkspaceItems(data, meta) {
         meta: item.meta,
         // UI affordance fields preserved so the workspace renderer can rebuild
         // an inbox card identically to the static fixture: which button to
-        // show ('Review'/'Open'/'Extend'/'Claim'), which action it fires,
-        // which direction chip ('in'/'out'), and whether the card is a
-        // post-completion ghost row.
+        // show ('Review'/'Open'/'Extend'/'Claim'), which CTA handler it fires
+        // (per ADR 0035: renamed from `action` to `cta` to free the word
+        // `action` for the behavioural Action chip), which direction chip
+        // ('in'/'out'), and whether the card is a post-completion ghost row.
         btn: item.btn || null,
-        action: item.action || null,
+        cta: item.cta || item.action || null,  // `action` fallback supports stale localStorage snapshots
         dir: item.dir || null,
         completion: !!item.completion,
+        // ADR 0035 3-axis classification. `intent` and `sourceType` default
+        // sensibly when the seed omits them — claim-only team rows usually
+        // mean Decide on an Agreement-shaped record.
+        intent: item.intent || (item.completion ? null : 'decide'),
+        sourceType: item.sourceType || (item.completion ? null : 'agreement'),
+        dueAt: item.dueAt || null,
         // Counterparty extracted from the seed metadata when the inbox row
         // references one. Used to bind the inbox item back to a real org
         // record so the org → inbox foreign key is auditable. Optional —
@@ -487,12 +494,14 @@ function materialiseInboxFromRecords(workspace, sceneMeta) {
   if (!user) return items;
   const userOrgId = user.primaryOrgId;
   const dexId = sceneMeta.activeDexId;
-  // Only dedupe against hand-authored seed items (no derivedFrom marker) —
+  // Only dedupe against hand-authored seed items (no sourceType derivation marker) —
   // re-materialise passes would otherwise see their own prior output and
-  // filter the agreement out of the next pass.
+  // filter the agreement out of the next pass. We treat any item carrying a
+  // `messageId` or matching the materialised-inbox id prefix as derived.
+  const isDerived = (it) => !!it.messageId || (typeof it.inboxItemId === 'string' && it.inboxItemId.startsWith('inbox-agr-derived-'));
   const seededAgreementIds = new Set(
     Object.values(workspace.inboxItems)
-      .filter((it) => it.ownerUserId === sceneMeta.activeUserId && it.dexId === dexId && it.agreementId && !it.derivedFrom)
+      .filter((it) => it.ownerUserId === sceneMeta.activeUserId && it.dexId === dexId && it.agreementId && !isDerived(it))
       .map((it) => it.agreementId)
   );
 
@@ -518,13 +527,17 @@ function materialiseInboxFromRecords(workspace, sceneMeta) {
           : `${cpName} hasn't processed ${elementName} yet`,
         meta: `${m.timeDisplay || 'recent'}${errorText ? ' · ' + errorText : ''}`,
         btn: isMine ? 'Retry' : 'View',
-        action: isMine ? 'retry-message' : 'view-message',
+        cta: isMine ? 'retry-message' : 'view-message',
         dir: m.direction === 'sent' ? 'out' : 'in',
         completion: false,
+        // ADR 0035 inference: Failed · your action Message → intent=fix,
+        // sourceType=message, urgency=now (no dueAt — failure isn't deadline-bound).
+        intent: 'fix',
+        sourceType: 'message',
+        dueAt: null,
         counterpartyOrgId: m.counterpartyOrgId || null,
         counterpartyName: cpName,
         status: 'open',
-        derivedFrom: 'message',
         createdAt: m.createdAt || new Date().toISOString(),
         surfacedAt: m.createdAt || new Date().toISOString()
       };
@@ -550,13 +563,19 @@ function materialiseInboxFromRecords(workspace, sceneMeta) {
           : `Your Agreement with ${cpName} is awaiting their review`,
         meta: isInbound ? 'Invitation · awaiting your response' : 'Sent · pending counterparty acceptance',
         btn: isInbound ? 'Review' : 'Open',
-        action: isInbound ? 'review' : 'open-agreement',
+        cta: isInbound ? 'review' : 'open-agreement',
         dir: isInbound ? 'in' : 'out',
         completion: false,
+        // ADR 0035 inference: Pending Agreement invitation → decide / agreement / now.
+        // An own-side pending Agreement (awaiting counterparty acceptance) is a tracking
+        // item — closest fit is `confirm` since the operator's role is to monitor, not
+        // act. Future Phase 3 Watching surface may rehome these.
+        intent: isInbound ? 'decide' : 'confirm',
+        sourceType: 'agreement',
+        dueAt: null,
         counterpartyOrgId: a.counterpartyOrgId || null,
         counterpartyName: cpName,
         status: 'open',
-        derivedFrom: 'agreement',
         createdAt: a.createdAt || new Date().toISOString(),
         surfacedAt: a.createdAt || new Date().toISOString()
       };

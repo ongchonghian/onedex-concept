@@ -18,6 +18,7 @@ Every issue carries the `needs-triage` label until a triage role picks it up. Ea
 | [0008](./0008-profile-menu-colleague-switcher.md) | Profile menu colleague switcher + workspace pill chevron | HITL | 0003, 0004 |
 | [0009](./0009-off-dex-cta-polish.md) | Off-DEX CTA polish | AFK | 0002 |
 | [0010](./0010-scene-seeds-key-migration.md) | SCENE_SEEDS key migration to affiliation-keyed shape | AFK | 0002, 0003 |
+| [0011](./0011-portal-wide-chrome-de-hardcoding.md) | Portal-wide chrome de-hardcoding sweep — composer, picker placeholders, settings, onboarding overlay | HITL | — |
 
 ## Dependency graph
 

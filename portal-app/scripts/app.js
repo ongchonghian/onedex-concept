@@ -134,13 +134,21 @@ function goto(name) {
   if (name === 'messages' && typeof renderMessagesFromWorkspace === 'function') {
     renderMessagesFromWorkspace();
   }
-  /* Inbox screens (per-DEX: inbox-tx / inbox-bx / inbox-hx; cross-DEX
-     overview: inbox-all). Each one rebuilds its own card stack from
-     workspace.inboxItems filtered to the active user + DEX, so a freshly-
-     submitted Agreement's "awaiting review" row shows up live instead of
-     being shadowed by the static fixture markup. */
-  if (/^inbox(-tx|-bx|-hx|-all)?$/.test(name) && typeof renderInboxFromWorkspace === 'function') {
+  /* Inbox screens. Per the ADR 0036 single-screen pattern, `inbox-tx` is the
+     canonical per-DEX inbox surface (reused for whichever DEX is currently
+     active via currentDexCode()) and `inbox-all` is the cross-DEX aggregate.
+     The renderer rebuilds its card stack from workspace.inboxItems filtered
+     to the active user + DEX, so a freshly-submitted Agreement's "awaiting
+     review" row shows up live instead of being shadowed by stale markup. */
+  if (/^inbox(-tx|-all)?$/.test(name) && typeof renderInboxFromWorkspace === 'function') {
     renderInboxFromWorkspace(name);
+  }
+  /* Empty (brand-new-user) hero — hydrate name / role / DEX / org / count
+     from the active user + workspace. Per Issue 0011 / ADR 0035 Phase 1
+     polish, the empty screen's hardcoded literals were replaced with
+     [data-empty-hero-*] anchors that this hydrator fills. */
+  if (name === 'empty' && typeof hydrateEmptyHeroChrome === 'function') {
+    hydrateEmptyHeroChrome();
   }
   if (name === 'participants' && typeof renderParticipantsFromWorkspace === 'function') {
     renderParticipantsFromWorkspace();
@@ -980,10 +988,11 @@ function renderMessageDetailFromWorkspace() {
 }
 
 /* ---------- Inbox (workspace-driven) ----------
-   Rebuilds the inbox-tx / inbox-bx / inbox-hx / inbox-all card stacks from
-   workspace.inboxItems. The static HTML in index.html is treated as a
-   skeleton — the renderer wipes both `.inbox-stack` containers (Mine + My
-   team's) and re-emits cards from workspace records.
+   Rebuilds the inbox-tx (per-DEX, reused per current DEX) and inbox-all
+   (cross-DEX aggregate) card stacks from workspace.inboxItems. The static
+   HTML in index.html is treated as a skeleton — the renderer wipes both
+   `.inbox-stack` containers (Mine + My team's) and re-emits cards from
+   workspace records.
 
    Workspace item shape:
      { inboxItemId, ownerUserId, dexId, bucket, title, meta,
@@ -1025,18 +1034,24 @@ function formatCompactAge(surfacedAt) {
   return Math.floor(ageWeeks) + 'w';
 }
 
-/* inboxFilterCategoryForItem — maps an item's action onto one of the four
-   filter-chip buckets. Items that don't match a known action fall under
-   'agreement' (the safe default for the generic Open affordance). */
-function inboxFilterCategoryForItem(item) {
-  const action = item.action || '';
-  if (action === 'review' || action === 'approve-network' || action === 'review-org') return 'approval';
-  if (action === 'extend' || action === 'renew' || action === 'renew-strict') return 'renewal';
-  if (action === 'retry-message' || action === 'view-message') return 'issue';
-  return 'agreement';
+/* inboxFilterIntentForItem — maps an inbox item to its Intent value for the
+   ADR 0035 segmented filter. Falls back to 'decide' for items without an
+   explicit intent (legacy seeds that haven't been backfilled). */
+function inboxFilterIntentForItem(item) {
+  return (item && item.intent) || 'decide';
 }
 
-function renderInboxCardHTML(item) {
+/* inboxFilterSourceForItem — maps an inbox item to its sourceType for the
+   ADR 0035 Source dropdown. Falls back to 'agreement' (the most common
+   record class) when missing. */
+function inboxFilterSourceForItem(item) {
+  return (item && item.sourceType) || 'agreement';
+}
+
+/* Back-compat alias — older app.js callsites still reference this name. */
+function inboxFilterCategoryForItem(item) { return inboxFilterIntentForItem(item); }
+
+function renderInboxCardHTML(item, opts) {
   const dex = item.dexId || 'tx';
   const dexLabel = ({ tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' }[dex] || 'SGTradex');
   if (item.completion) {
@@ -1045,35 +1060,46 @@ function renderInboxCardHTML(item) {
     // that still hands a completion item to this function.
     return renderInboxCompletionHTML(item);
   }
-  const dirChip = item.dir === 'in'
-    ? `<span class="dir-chip in"><i class="ti ti-download" aria-hidden="true"></i>Incoming request</span>`
-    : item.dir === 'out'
-      ? `<span class="dir-chip out"><i class="ti ti-upload" aria-hidden="true"></i>Outgoing request</span>`
-      : '';
-  const dexChip = `<span class="dex-chip ${dex}"><span class="dex-dot" aria-hidden="true"></span>${dexLabel}</span>`;
-  // Action button — map (action, btn) onto the existing click handlers so
-  // behaviour matches the static fixture. Unknown actions get a generic
-  // toast so the card stays clickable.
+  // ADR 0035 chip composition. Action chip is leftmost and always rendered;
+  // Source icon is muted and always rendered; the DEX / Direction / Due chips
+  // are conditional per the visual contract.
+  const showDex = !!(opts && opts.showDex);
+  const actionChip = (typeof renderInboxIntentChip === 'function') ? renderInboxIntentChip(item.intent) : '';
+  const sourceIcon = (typeof renderInboxSourceIcon === 'function') ? renderInboxSourceIcon(item.sourceType) : '';
+  const dueChip = (typeof renderInboxDueChip === 'function') ? renderInboxDueChip(item.dueAt) : '';
+  const dirChip = (item.sourceType === 'message')
+    ? (item.dir === 'in'
+        ? `<span class="dir-chip in"><i class="ti ti-download" aria-hidden="true"></i>Incoming request</span>`
+        : item.dir === 'out'
+          ? `<span class="dir-chip out"><i class="ti ti-upload" aria-hidden="true"></i>Outgoing request</span>`
+          : '')
+    : '';
+  const dexChip = showDex ? `<span class="dex-chip ${dex}"><span class="dex-dot" aria-hidden="true"></span>${dexLabel}</span>` : '';
+  // CTA button — map (cta, btn) onto the existing click handlers so behaviour
+  // matches the pre-ADR-0035 fixture. Unknown CTAs get a generic toast so the
+  // card stays clickable. Reads `cta` (renamed from `action` per ADR 0035) with
+  // an `action` fallback for stale localStorage snapshots.
+  const cta = item.cta || item.action || '';
   const safeMessageId = item.messageId ? escAttr(item.messageId) : '';
   const safeCounterparty = escAttr(item.counterpartyName || item.counterpartyOrgId || '');
   let actionHandler = `toast('Opening ${escAttr(item.title || 'item')}')`;
-  if (item.action === 'review') actionHandler = 'openApprove()';
-  else if (item.action === 'extend') actionHandler = `openExtend('${safeCounterparty}')`;
-  else if (item.action === 'open' || item.action === 'open-de-promotion') actionHandler = `toast('Opening ${escAttr(item.title || 'item')}')`;
-  else if (item.action === 'renew' || item.action === 'renew-strict') actionHandler = `toast('Renewing ${escAttr(item.title || 'item')}')`;
-  else if (item.action === 'approve-network') actionHandler = 'openApprove()';
-  else if (item.action === 'review-org') actionHandler = 'openApprove()';
-  else if (item.action === 'retry-message') actionHandler = `openMessageFromInbox('${safeMessageId}', true)`;
-  else if (item.action === 'view-message') actionHandler = `openMessageFromInbox('${safeMessageId}', false)`;
-  else if (item.action === 'open-agreement') actionHandler = `toast('Opening ${escAttr(item.title || 'Agreement')}'); goto('detail')`;
-  // Bucket-driven default: 'team' rows without an action get a Claim button.
+  if (cta === 'review') actionHandler = 'openApprove()';
+  else if (cta === 'extend') actionHandler = `openExtend('${safeCounterparty}')`;
+  else if (cta === 'open' || cta === 'open-de-promotion') actionHandler = `toast('Opening ${escAttr(item.title || 'item')}')`;
+  else if (cta === 'renew' || cta === 'renew-strict') actionHandler = `toast('Renewing ${escAttr(item.title || 'item')}')`;
+  else if (cta === 'approve-network') actionHandler = 'openApprove()';
+  else if (cta === 'review-org') actionHandler = 'openApprove()';
+  else if (cta === 'retry-message') actionHandler = `openMessageFromInbox('${safeMessageId}', true)`;
+  else if (cta === 'view-message') actionHandler = `openMessageFromInbox('${safeMessageId}', false)`;
+  else if (cta === 'open-agreement') actionHandler = `toast('Opening ${escAttr(item.title || 'Agreement')}'); goto('detail')`;
+  // Bucket-driven default: 'team' rows without a CTA get a Claim button.
   const isClaim = !item.btn && item.bucket === 'team';
   const buttonClass = item.bucket === 'team' || item.btn === 'Claim'
     ? 'btn-secondary'
-    : (item.action === 'review' || item.action === 'approve-network' || item.action === 'review-org' ? 'btn-primary' : 'btn-secondary');
+    : (cta === 'review' || cta === 'approve-network' || cta === 'review-org' ? 'btn-primary' : 'btn-secondary');
   const buttonLabel = isClaim ? 'Claim' : (item.btn || 'Open');
   const buttonHandler = isClaim ? 'openClaim()' : actionHandler;
-  const cardClick = item.derivedFrom === 'message' && safeMessageId
+  const cardClick = item.sourceType === 'message' && safeMessageId
     ? `openMessageFromInbox('${safeMessageId}', false)`
     : "goto('detail')";
   // Stamp data-agreement-id / data-msg-id on the card so cross-screen
@@ -1095,9 +1121,9 @@ function renderInboxCardHTML(item) {
   // so it remains independently activatable.
   const titleLink = `<a class="card-link" href="#" onclick="event.preventDefault(); ${cardClick}; return false;">${item.title || ''}</a>`;
   return `<div class="inbox-card${item.bucket === 'team' ? ' team' : ''}"${agrIdAttr}${msgIdAttr}>` +
-    dexChip +
-    dirChip +
+    actionChip + sourceIcon + dexChip + dirChip +
     `<div class="body"><div class="title">${ageDot}${titleLink}</div><div class="meta">${item.meta || ''}</div></div>` +
+    dueChip +
     `<button type="button" class="${buttonClass}" onclick="${buttonHandler}">${buttonLabel}</button>` +
     `</div>`;
 }
@@ -1181,12 +1207,21 @@ function renderPackDetailFromWorkspace() {
   SCREEN_RENDERERS['pack-detail']([parentRow].concat(memberRows));
 }
 
-/* Inbox category filter — 'all' | 'approval' | 'agreement' | 'renewal' | 'issue'.
-   Per-screen state lives on each inbox <section>'s dataset so /portal/tradex and
-   /portal/all maintain independent selections without colliding through a
-   single global. */
+/* Inbox filter state — three axes (Intent primary, Source secondary,
+   plus DEX tertiary on inbox-all per ADR 0036):
+   - Intent (segmented):  'all' | 'decide' | 'respond' | 'fix' | 'confirm'
+   - Source (dropdown):   'all' | 'agreement' | 'message' | 'governance'
+   - DEX (chip, inbox-all only): 'all' | 'tx' | 'bx' | 'hx'
+   Per-screen state lives on each inbox <section>'s dataset so /portal/tradex
+   and /portal/all maintain independent selections. */
 function getInboxFilter(screen) {
   return (screen && screen.dataset && screen.dataset.inboxFilter) || 'all';
+}
+function getInboxSourceFilter(screen) {
+  return (screen && screen.dataset && screen.dataset.inboxSourceFilter) || 'all';
+}
+function getInboxDexFilter(screen) {
+  return (screen && screen.dataset && screen.dataset.inboxDexFilter) || 'all';
 }
 function setInboxFilter(category, btn) {
   const screen = btn && btn.closest ? btn.closest('section.screen') : null;
@@ -1202,18 +1237,57 @@ function setInboxFilter(category, btn) {
   // canonical key for the renderer.
   renderInboxFromWorkspace(screen.getAttribute('data-screen'));
 }
+function setInboxSourceFilter(source, selectEl) {
+  const screen = selectEl && selectEl.closest ? selectEl.closest('section.screen') : null;
+  if (!screen) return;
+  screen.dataset.inboxSourceFilter = source;
+  renderInboxFromWorkspace(screen.getAttribute('data-screen'));
+}
+function setInboxDexFilter(dex, btn) {
+  const screen = btn && btn.closest ? btn.closest('section.screen') : null;
+  if (!screen) return;
+  screen.dataset.inboxDexFilter = dex;
+  // Reflect aria-pressed and the visual solid/muted state on the chip group.
+  screen.querySelectorAll('[data-inbox-dex-filter]').forEach((b) => {
+    const active = b.getAttribute('data-inbox-dex-filter') === dex;
+    b.setAttribute('aria-pressed', active ? 'true' : 'false');
+    b.classList.toggle('solid', active);
+    b.classList.toggle('muted', !active);
+  });
+  renderInboxFromWorkspace(screen.getAttribute('data-screen'));
+}
 window.setInboxFilter = setInboxFilter;
+window.setInboxSourceFilter = setInboxSourceFilter;
+window.setInboxDexFilter = setInboxDexFilter;
 
-function applyInboxFilter(items, category) {
-  if (!category || category === 'all') return items;
-  return items.filter((it) => inboxFilterCategoryForItem(it) === category);
+function applyInboxFilter(items, category, source, dex) {
+  let out = items;
+  if (category && category !== 'all') {
+    out = out.filter((it) => inboxFilterIntentForItem(it) === category);
+  }
+  if (source && source !== 'all') {
+    out = out.filter((it) => inboxFilterSourceForItem(it) === source);
+  }
+  if (dex && dex !== 'all') {
+    out = out.filter((it) => (it.dexId || 'tx') === dex);
+  }
+  return out;
 }
 
-/* Sort actionable items by surfacedAt ascending — oldest first.
-   Drives age-based triage: items at the top of each accordion are the ones
-   you've had longest, matching the visual age glyph. */
+/* Sort actionable items per ADR 0035 urgency rules:
+   1. Items with `dueAt` rank above items without (deadlines beat undated).
+   2. Within each band, ascending — earliest deadline (or oldest surfaced)
+      first. Oldest-first is deliberate: it fights the bottom-of-list neglect
+      bias that flat fixture-order tends to produce.
+   The age glyph on each card still reflects `surfacedAt`, so the two cues
+   stay legible together. */
 function sortInboxByAge(items) {
   return items.slice().sort((a, b) => {
+    const da = a.dueAt ? new Date(a.dueAt).getTime() : null;
+    const db = b.dueAt ? new Date(b.dueAt).getTime() : null;
+    if (da !== null && db !== null) return da - db;
+    if (da !== null) return -1;   // a has dueAt, b doesn't → a first
+    if (db !== null) return 1;    // b has dueAt, a doesn't → b first
     const ta = new Date(a.surfacedAt || a.createdAt || 0).getTime();
     const tb = new Date(b.surfacedAt || b.createdAt || 0).getTime();
     return ta - tb;
@@ -1225,20 +1299,39 @@ function sortInboxByAge(items) {
    union view. Returns the rendered HTML string. */
 function renderInboxStackHTML(items, opts) {
   const isCrossDex = !!(opts && opts.crossDex);
+  const bucket = (opts && opts.bucket) || 'mine';
+  // Per ADR 0035, the DEX chip on each card is shown only on the cross-DEX
+  // inbox-all surface (where the operator needs to know which DEX each item
+  // belongs to). On a single-DEX inbox the whole screen is one DEX, so the
+  // chip is redundant chrome.
+  const cardOpts = { showDex: isCrossDex };
+  // ADR 0036 D8 — run bundling before render. Items below threshold pass
+  // through as singles; same-key items at threshold form a bundle.
+  const entries = bundleItemsByKey(items, bucket);
+  const renderEntry = (entry) => {
+    if (entry.kind === 'single') return renderInboxCardHTML(entry.item, cardOpts);
+    if (entry.kind === 'singles') return entry.items.map((it) => renderInboxCardHTML(it, cardOpts)).join('');
+    if (entry.kind === 'bundle')  return renderInboxBundleCardHTML(entry, cardOpts);
+    return '';
+  };
   if (!isCrossDex || items.length === 0) {
-    return items.map(renderInboxCardHTML).join('');
+    return entries.map(renderEntry).join('');
   }
+  // Cross-DEX (/portal/all): group by dex within the band-scoped item set.
+  // We re-run bundling per DEX so that bundling stays single-DEX (a bundle
+  // never spans DEXes — per ADR 0036 bundles share counterparty, which is
+  // single-DEX-scoped at this prototype tier).
   const byDex = items.reduce((acc, it) => {
     const d = it.dexId || 'tx';
     (acc[d] = acc[d] || []).push(it);
     return acc;
   }, {});
   const DEX_ORDER = ['tx', 'bx', 'hx'];
-  const DEX_LABELS = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' };
   return DEX_ORDER
     .filter((d) => byDex[d] && byDex[d].length)
     .map((d) => {
-      const rows = byDex[d].map(renderInboxCardHTML).join('');
+      const perDexEntries = bundleItemsByKey(byDex[d], bucket);
+      const rows = perDexEntries.map(renderEntry).join('');
       const count = byDex[d].length;
       return `<div class="cross-dex-section" data-dex="${d}">` +
         `<div class="cross-dex-section-header"><span class="dex-chip ${d}"><span class="dex-dot" aria-hidden="true"></span>${DEX_LABELS[d]}</span><span class="cross-dex-count">${count} item${count === 1 ? '' : 's'}</span></div>` +
@@ -1248,18 +1341,583 @@ function renderInboxStackHTML(items, opts) {
     .join('');
 }
 
+/* renderInboxBucketHTML — Phase 2 (ADR 0036 D1). Inside each bucket (Mine or
+   My team's), partition items by urgency band (now / soon / later), then
+   render each non-empty band as a <details> section with the persisted
+   collapse state. Empty bands are omitted from the DOM per the hide-empty
+   rule. Each band's contents go through renderInboxStackHTML so cross-DEX
+   sectioning + bundling still apply within the band. */
+function renderInboxBucketHTML(items, opts) {
+  const bucket = (opts && opts.bucket) || 'mine';
+  const userId = (opts && opts.userId) || (typeof activeUserId === 'function' ? activeUserId() : 'marcus');
+  const dexId  = (opts && opts.dexId)  || (typeof currentDexCode === 'function' ? currentDexCode() : 'tx');
+  const nowMs = Date.now();
+  const byBand = { now: [], soon: [], later: [] };
+  items.forEach((it) => { byBand[bandForItem(it, nowMs)].push(it); });
+  return INBOX_BAND_ORDER
+    .filter((band) => byBand[band].length > 0)
+    .map((band) => {
+      const collapsed = getInboxBandCollapsed(userId, dexId, bucket, band);
+      const openAttr = collapsed ? '' : ' open';
+      const count = byBand[band].length;
+      const inner = renderInboxStackHTML(byBand[band], { crossDex: !!(opts && opts.crossDex), bucket });
+      return `<details class="inbox-band inbox-band-${band}" data-inbox-band="${band}" data-bucket="${bucket}"${openAttr}>` +
+        `<summary><i class="ti ti-chevron-down chev" aria-hidden="true"></i>` +
+        `<span class="inbox-band-title">${INBOX_BAND_LABELS[band]}</span>` +
+        `<span class="inbox-band-count">${count}</span>` +
+        `</summary>` +
+        `<div class="inbox-band-stack">${inner}</div>` +
+        `</details>`;
+    })
+    .join('');
+}
+window.renderInboxBucketHTML = renderInboxBucketHTML;
+
+/* renderInboxBundleCardHTML — ADR 0036 D2/D4. Bundle card: one Action chip
+   (intent-derived) + Source icon + DEX chip (if cross-DEX) + count chip +
+   title + bulk-action button. Click body toggles a sibling .bundle-children
+   block that lists the underlying items as ordinary inbox cards. Each child
+   keeps its own CTA. */
+function renderInboxBundleCardHTML(bundle, opts) {
+  const showDex = !!(opts && opts.showDex);
+  const rep = bundle.representativeItem || bundle.children[0];
+  const intent = rep.intent || 'decide';
+  const sourceType = rep.sourceType || 'agreement';
+  const actionChip = (typeof renderInboxIntentChip === 'function') ? renderInboxIntentChip(intent) : '';
+  const sourceIcon = (typeof renderInboxSourceIcon === 'function') ? renderInboxSourceIcon(sourceType) : '';
+  const dex = rep.dexId || 'tx';
+  const dexLabel = DEX_LABELS[dex] || 'SGTradex';
+  const dexChip = showDex ? `<span class="dex-chip ${dex}"><span class="dex-dot" aria-hidden="true"></span>${dexLabel}</span>` : '';
+  const safeKey = escAttr(bundle.key);
+  const bundleId = `bundle-${dex}-${escAttr(bundle.key.replace(/[^a-zA-Z0-9_-]+/g, '_'))}`;
+  const childrenHtml = bundle.children.map((c) => renderInboxCardHTML(c, opts)).join('');
+  return `<div class="inbox-bundle" data-inbox-bundle-key="${safeKey}" data-bucket="${bundle.bucket}">` +
+    `<div class="inbox-card inbox-bundle-card" tabindex="0" role="button" aria-expanded="false" aria-controls="${bundleId}" onclick="toggleInboxBundle(this); event.stopPropagation()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInboxBundle(this)}">` +
+      `<div class="inbox-bundle-glyph" aria-hidden="true"><i class="ti ti-chevron-down"></i></div>` +
+      actionChip + sourceIcon + dexChip +
+      `<span class="inbox-bundle-count" title="${bundle.children.length} grouped items">${bundle.children.length}</span>` +
+      `<div class="body"><div class="title">${escAttr(bundle.title)}</div><div class="meta">Grouped: same source, same counterparty, same action — bulk-act or expand to act per item.</div></div>` +
+      `<button type="button" class="btn-secondary inbox-bundle-cta" onclick="event.stopPropagation(); runBundleBulkAction(this)" data-bundle-key="${safeKey}" data-bundle-bucket="${bundle.bucket}">${escAttr(bundle.ctaLabel)}</button>` +
+    `</div>` +
+    `<div class="inbox-bundle-children" id="${bundleId}" hidden>${childrenHtml}</div>` +
+    `</div>`;
+}
+window.renderInboxBundleCardHTML = renderInboxBundleCardHTML;
+
+/* toggleInboxBundle — flips the bundle's expand state. Mirrors the existing
+   <details> idiom but uses an explicit hidden attribute so the bundle card
+   keeps its single-row look (no native disclosure marker). */
+function toggleInboxBundle(card) {
+  if (!card) return;
+  const wrapper = card.closest('.inbox-bundle');
+  if (!wrapper) return;
+  const childrenEl = wrapper.querySelector('.inbox-bundle-children');
+  if (!childrenEl) return;
+  const willOpen = childrenEl.hidden;
+  childrenEl.hidden = !willOpen;
+  card.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  card.classList.toggle('is-expanded', willOpen);
+}
+window.toggleInboxBundle = toggleInboxBundle;
+
+/* runBundleBulkAction — fires the per-child action handler N times on the
+   bundle's children, emits one bundle-shaped echo into the completion
+   ribbon, and re-renders the inbox so the bundle disappears and re-forms
+   from current state. Per ADR 0036 D3 + D5. */
+function runBundleBulkAction(btn) {
+  if (!btn) return;
+  const key = btn.getAttribute('data-bundle-key');
+  const bucket = btn.getAttribute('data-bundle-bucket') || 'mine';
+  if (!key) return;
+  const screen = btn.closest('section.screen');
+  const isCrossDex = !!(screen && screen.getAttribute('data-screen') === 'inbox-all');
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  // Re-resolve children from live workspace state so race conditions (a
+  // teammate claiming one mid-action) surface as a smaller actual-count
+  // per D5's actual-count rule.
+  const allItems = isCrossDex
+    ? ['tx','bx','hx'].reduce((acc,d) => acc.concat(listInboxItemsForUserAndDex(userId, d)), [])
+    : listInboxItemsForUserAndDex(userId, (typeof currentDexCode === 'function' ? currentDexCode() : 'tx'));
+  const matching = allItems.filter((it) => !it.completion && it.bucket === bucket && bundleKeyForItem(it) === key);
+  if (matching.length === 0) { toast('Nothing left to act on — items already resolved'); return; }
+  const intent = matching[0].intent || 'decide';
+  const verbForToast = bucket === 'team' ? 'Claimed' : (intent === 'fix' ? 'Retried' : intent === 'confirm' ? 'Confirmed' : 'Accepted');
+  // Fire per-child handler. Where Phase 1 already has a real workspace
+  // mutation (retryMessageRecord), use it. For Accept / Confirm / Claim,
+  // the prototype's existing single-item flows are modal-based; bulk
+  // action bypasses the modal (per D3) and applies a minimal workspace
+  // mutation that mirrors the visible outcome: close the inbox item
+  // (Mine bucket) or move bucket Team → Mine (Claim all). Underlying
+  // record state transitions (Pending → Active on Agreements) are
+  // prototype-level and stay with the per-item Accept flow for now.
+  const ws = (typeof ensureWorkspaceLoaded === 'function') ? ensureWorkspaceLoaded() : null;
+  let actualCount = 0;
+  const claimedAt = new Date().toISOString();
+  matching.forEach((it) => {
+    try {
+      if (bucket === 'team') {
+        // Claim: move the inbox item from Team to Mine on the workspace.
+        // Per D5, the actor's gesture is one — ribbon entry comes from
+        // emitInboxBundleEcho; we don't write per-child completion items.
+        if (ws && ws.inboxItems && ws.inboxItems[it.inboxItemId]) {
+          ws.inboxItems[it.inboxItemId].bucket = 'mine';
+          ws.inboxItems[it.inboxItemId].ownerUserId = userId;
+          ws.inboxItems[it.inboxItemId].surfacedAt = claimedAt;
+          actualCount += 1;
+        }
+        return;
+      }
+      if (intent === 'fix' && it.messageId && typeof retryMessageRecord === 'function') {
+        // retryMessageRecord re-materialises the inbox on its own; we don't
+        // need to delete here (the rematerialised item won't reappear if the
+        // retry succeeded). Per-child audit event is the retry call itself.
+        try { retryMessageRecord(it.messageId); actualCount += 1; return; } catch (e) { /* fall through */ }
+      }
+      // Accept / Confirm — remove the inbox item so the card disappears
+      // from its band and the bundle re-forms (or dissolves below threshold).
+      // The single bundle-echo emitted below carries the actor + count.
+      if (ws && ws.inboxItems && ws.inboxItems[it.inboxItemId]) {
+        delete ws.inboxItems[it.inboxItemId];
+        actualCount += 1;
+      }
+    } catch (e) { /* per-child failure is silent; actualCount reflects truth */ }
+  });
+  if (ws && typeof writeWorkspaceSnapshot === 'function') writeWorkspaceSnapshot(ws);
+  // Emit one bundle-shaped echo into the completion ribbon (D5).
+  if (typeof emitInboxBundleEcho === 'function') {
+    emitInboxBundleEcho({ bundleKey: key, bucket, count: actualCount, intent, sourceType: matching[0].sourceType, counterpartyName: matching[0].counterpartyName, actor: userId, dexId: matching[0].dexId });
+  }
+  toast(`${verbForToast} ${actualCount} item${actualCount === 1 ? '' : 's'}`);
+  if (typeof refreshInboxSurfaces === 'function') refreshInboxSurfaces();
+}
+window.runBundleBulkAction = runBundleBulkAction;
+
+/* bundleKeyForItem — single source of bundle-key derivation. Used by both
+   bundleItemsByKey (renderer) and runBundleBulkAction (action handler) so
+   the key never drifts between the visual aggregation and the bulk
+   dispatch. */
+function bundleKeyForItem(item) {
+  if (!item || !item.intent || !item.sourceType) return null;
+  const cp = item.counterpartyOrgId || item.counterpartyName || '__no_cp__';
+  return `${item.sourceType}|${cp}|${item.intent}`;
+}
+window.bundleKeyForItem = bundleKeyForItem;
+
+/* emitInboxBundleEcho — write a single bundle-shaped completion echo into
+   workspace.inboxItems so the completion ribbon picks it up on the next
+   render. Per ADR 0036 D5 — actual-count rule + one entry per bulk action. */
+function emitInboxBundleEcho(detail) {
+  if (typeof ensureWorkspaceLoaded !== 'function') return;
+  const ws = ensureWorkspaceLoaded();
+  ws.inboxItems = ws.inboxItems || {};
+  const id = `inbox-echo-bundle-${detail.bundleKey.replace(/[^a-zA-Z0-9_-]+/g,'_')}-${Date.now()}`;
+  const actorUser = (typeof USERS !== 'undefined' && USERS[detail.actor]) ? USERS[detail.actor] : null;
+  const actorFirst = actorUser && actorUser.name ? String(actorUser.name).split(/\s+/)[0] : 'you';
+  const verb = detail.bucket === 'team' ? 'claimed' : (detail.intent === 'fix' ? 'retried' : detail.intent === 'confirm' ? 'confirmed' : 'accepted');
+  const cp = detail.counterpartyName ? ` from ${detail.counterpartyName}` : '';
+  ws.inboxItems[id] = {
+    inboxItemId: id,
+    ownerUserId: detail.actor,
+    dexId: detail.dexId || (typeof currentDexCode === 'function' ? currentDexCode() : 'tx'),
+    bucket: detail.bucket,
+    title: `${detail.count} item${detail.count === 1 ? '' : 's'}${cp} · just ${verb} by ${actorFirst}`,
+    meta: `Bundle action · ${detail.count} per-item event${detail.count === 1 ? '' : 's'} fired`,
+    completion: true,
+    bundleEcho: true,
+    status: 'closed',
+    createdAt: new Date().toISOString(),
+    surfacedAt: new Date().toISOString()
+  };
+  if (typeof writeWorkspaceSnapshot === 'function') writeWorkspaceSnapshot(ws);
+}
+window.emitInboxBundleEcho = emitInboxBundleEcho;
+
 /* refreshInboxSurfaces — re-render every inbox screen so a newly persisted
    Agreement or Failed Message surfaces immediately, even if the user is
    currently sitting on the inbox while a doctor/composer/wizard creates
-   the record. Cheap — each call is a workspace read + a DOM swap. */
+   the record. Cheap — each call is a workspace read + a DOM swap.
+   The prototype has two inbox screens: `inbox-tx` (the single per-DEX
+   surface, reused for whichever DEX is active per ADR 0036 single-screen
+   pattern) and `inbox-all` (the cross-DEX aggregate). There is no
+   `inbox-bx` / `inbox-hx` element — those names existed as legacy stubs
+   and were cleaned up alongside the colleague-switch fix. */
 function refreshInboxSurfaces() {
   if (typeof renderInboxFromWorkspace !== 'function') return;
-  ['inbox-tx', 'inbox-bx', 'inbox-hx', 'inbox-all'].forEach((name) => {
+  ['inbox-tx', 'inbox-all'].forEach((name) => {
     if (document.querySelector(`.screen[data-screen="${name}"]`)) {
       renderInboxFromWorkspace(name);
     }
   });
+  if (typeof hydrateInboxAllChrome === 'function') hydrateInboxAllChrome();
 }
+
+/* DEX_LABELS — single source of truth for human-readable DEX names. The
+   workspace-pill, role chip, and DEX-chip family render their labels through
+   this map; hydrators that surface a DEX name in copy do the same so that
+   renaming a DEX in this object (rare) ripples cleanly. */
+const DEX_LABELS = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' };
+
+/* INBOX_BAND_LABELS — human-facing labels for the three urgency bands.
+   Single source of truth so band headers, filter-derived copy, and any
+   diagnostic surfaces stay in sync. Per ADR 0036. */
+const INBOX_BAND_LABELS = { now: 'Now', soon: 'Soon', later: 'Later' };
+const INBOX_BAND_ORDER = ['now', 'soon', 'later'];
+
+/* bandForItem — single owner of band derivation (ADR 0036 D7). Returns one
+   of 'now' | 'soon' | 'later' for an inbox item at a given point in time.
+   Rules:
+   - `dueAt` present and within 24h (or overdue) → now
+   - `dueAt` present and within 7 days → soon
+   - `dueAt` present and beyond 7 days → later
+   - no `dueAt`: intent=fix → now (recoverable failure has no deadline but
+     warrants top-of-list per ADR 0035); intent=decide → now (pending
+     judgements default to attention); intent=confirm → soon if aging > 3d
+     else now; everything else → later.
+   The function is *pure* — same inputs always yield same band — and called
+   per render. No state, no side effects, no persistence. */
+function bandForItem(item, nowMs) {
+  if (!item) return 'later';
+  const ref = (typeof nowMs === 'number') ? nowMs : Date.now();
+  const msPerDay = 24 * 3600 * 1000;
+  if (item.dueAt) {
+    const due = new Date(item.dueAt).getTime();
+    if (!isNaN(due)) {
+      const diffMs = due - ref;
+      if (diffMs <= msPerDay) return 'now';        // overdue or due within 24h
+      if (diffMs <= 7 * msPerDay) return 'soon';   // due within a week
+      return 'later';
+    }
+  }
+  // No dueAt — fall back to intent-based defaults.
+  const intent = item.intent || 'decide';
+  if (intent === 'fix' || intent === 'decide') return 'now';
+  if (intent === 'confirm') {
+    const surf = new Date(item.surfacedAt || item.createdAt || ref).getTime();
+    if (!isNaN(surf) && (ref - surf) > 3 * msPerDay) return 'soon';
+    return 'now';
+  }
+  return 'later';
+}
+window.bandForItem = bandForItem;
+
+/* Band collapse state — persisted per (userId, dexId, bucket, band) in the
+   workspace snapshot so operator preferences survive sessions per ADR 0036 D6.
+   Defaults: now=expanded, soon=expanded, later=collapsed. */
+function getInboxBandCollapsed(userId, dexId, bucket, band) {
+  if (typeof ensureWorkspaceLoaded !== 'function') return band === 'later';
+  const ws = ensureWorkspaceLoaded();
+  const path = ws.inboxBandState && ws.inboxBandState[userId] && ws.inboxBandState[userId][dexId] && ws.inboxBandState[userId][dexId][bucket];
+  const stored = path && path[band];
+  if (stored === 'expanded') return false;
+  if (stored === 'collapsed') return true;
+  return band === 'later';  // default collapse-state per band
+}
+function setInboxBandCollapsed(userId, dexId, bucket, band, collapsed) {
+  if (typeof ensureWorkspaceLoaded !== 'function') return;
+  const ws = ensureWorkspaceLoaded();
+  ws.inboxBandState = ws.inboxBandState || {};
+  ws.inboxBandState[userId] = ws.inboxBandState[userId] || {};
+  ws.inboxBandState[userId][dexId] = ws.inboxBandState[userId][dexId] || {};
+  ws.inboxBandState[userId][dexId][bucket] = ws.inboxBandState[userId][dexId][bucket] || {};
+  ws.inboxBandState[userId][dexId][bucket][band] = collapsed ? 'collapsed' : 'expanded';
+  if (typeof writeWorkspaceSnapshot === 'function') writeWorkspaceSnapshot(ws);
+}
+window.getInboxBandCollapsed = getInboxBandCollapsed;
+window.setInboxBandCollapsed = setInboxBandCollapsed;
+
+/* Bundle threshold — ≥3 same-key items form a bundle. Per ADR 0036 D8. */
+const INBOX_BUNDLE_THRESHOLD = 3;
+
+/* CTA label mapping per (intent, bucket). Team-bucket items always need
+   Claim-first per ADR 0003 claim semantics; only Mine-bucket bundles get
+   the intent-specific bulk verb. */
+const BULK_CTA_LABELS = {
+  mine: { decide: 'Accept all', respond: 'Respond all', fix: 'Retry all', confirm: 'Confirm all' },
+  team: { decide: 'Claim all',  respond: 'Claim all',   fix: 'Claim all', confirm: 'Claim all' }
+};
+
+/* bundleItemsByKey — group items by (sourceType, counterpartyOrgId, intent).
+   Returns an ordered list of bundle-descriptor-or-single-item entries. Each
+   bundle descriptor carries:
+     - children: the constituent items
+     - title: human-readable summary including counterparty + variation
+     - ctaLabel: derived from (intent, bucket)
+     - representativeItem: the worst-band child (sets the band the bundle
+       lives in)
+   Items below threshold pass through as individuals (no bundle key, just
+   the item).
+   Per ADR 0036 D2 (worst-child band) + D8 (element-agnostic key, derived
+   persistence). */
+function bundleItemsByKey(items, bucket) {
+  if (!Array.isArray(items) || items.length === 0) return [];
+  const keyOf = (it) => {
+    if (!it.intent || !it.sourceType) return null;  // unbundleable item
+    const cp = it.counterpartyOrgId || it.counterpartyName || '__no_cp__';
+    return `${it.sourceType}|${cp}|${it.intent}`;
+  };
+  const groups = new Map();
+  const order = [];   // preserve first-seen ordering
+  items.forEach((it) => {
+    const k = keyOf(it);
+    if (!k) {
+      order.push({ kind: 'single', item: it });
+      return;
+    }
+    if (!groups.has(k)) {
+      groups.set(k, []);
+      order.push({ kind: 'group', key: k });
+    }
+    groups.get(k).push(it);
+  });
+  return order.map((entry) => {
+    if (entry.kind === 'single') return entry;
+    const children = groups.get(entry.key);
+    if (children.length < INBOX_BUNDLE_THRESHOLD) {
+      // Below threshold — flatten back to singles in original order.
+      return { kind: 'singles', items: children };
+    }
+    return {
+      kind: 'bundle',
+      key: entry.key,
+      children,
+      title: composeBundleTitle(children),
+      ctaLabel: bulkCtaLabel(children[0], bucket),
+      representativeItem: pickWorstBandChild(children),
+      bucket
+    };
+  });
+}
+
+function bulkCtaLabel(item, bucket) {
+  const intent = (item && item.intent) || 'decide';
+  const b = bucket === 'team' ? 'team' : 'mine';
+  return (BULK_CTA_LABELS[b] && BULK_CTA_LABELS[b][intent]) || 'Open all';
+}
+
+/* pickWorstBandChild — used to anchor the bundle in the worst-child's band
+   per D2. "Worst" = closest band-rank-to-now: now > soon > later. */
+function pickWorstBandChild(children) {
+  if (!Array.isArray(children) || children.length === 0) return null;
+  const rank = { now: 0, soon: 1, later: 2 };
+  const now = Date.now();
+  return children.slice().sort((a, b) => {
+    const ba = bandForItem(a, now);
+    const bb = bandForItem(b, now);
+    if (rank[ba] !== rank[bb]) return rank[ba] - rank[bb];
+    // Tie-break by dueAt asc then createdAt asc — same as sortInboxByAge.
+    const da = a.dueAt ? new Date(a.dueAt).getTime() : Infinity;
+    const db = b.dueAt ? new Date(b.dueAt).getTime() : Infinity;
+    if (da !== db) return da - db;
+    const ta = new Date(a.surfacedAt || a.createdAt || 0).getTime();
+    const tb = new Date(b.surfacedAt || b.createdAt || 0).getTime();
+    return ta - tb;
+  })[0];
+}
+
+/* composeBundleTitle — produces the bundle's user-facing title per ADR 0036
+   D2. Surfaces count + counterparty + (when present) element variation +
+   urgency variation. Examples:
+     "5 ETA requests from PSA"                    (uniform element, single band)
+     "5 ETA requests from PSA · 2 due today"      (uniform element, mixed bands)
+     "5 requests from PSA · ETA × 3, Container Manifest × 2 · 2 due today"
+*/
+function composeBundleTitle(children) {
+  if (!Array.isArray(children) || children.length === 0) return '';
+  const count = children.length;
+  const cpName = (children[0].counterpartyName)
+    || (children[0].counterpartyOrgId ? children[0].counterpartyOrgId : 'Counterparty');
+  // Element noun derivation — look at child titles / elementName when available.
+  const elementCounts = {};
+  children.forEach((c) => {
+    const el = (c.elementName) || extractElementFromTitle(c.title);
+    if (el) elementCounts[el] = (elementCounts[el] || 0) + 1;
+  });
+  const elementKeys = Object.keys(elementCounts);
+  let elementClause = '';
+  if (elementKeys.length === 1) {
+    // Uniform element — fold into the lead noun.
+    elementClause = `${elementKeys[0]} ${pluralise('request', count)}`;
+  } else if (elementKeys.length > 1) {
+    const variation = elementKeys.map((k) => `${k} × ${elementCounts[k]}`).join(', ');
+    elementClause = `${pluralise('request', count)} · ${variation}`;
+  } else {
+    elementClause = pluralise('request', count);
+  }
+  // Urgency variation summary — per D2, surface counts of dueAt-anchored
+  // children in each band when they span.
+  const nowMs = Date.now();
+  const bandCounts = { now: 0, soon: 0, later: 0 };
+  children.forEach((c) => { bandCounts[bandForItem(c, nowMs)] += 1; });
+  const bandsPresent = INBOX_BAND_ORDER.filter((b) => bandCounts[b] > 0);
+  let urgencyClause = '';
+  if (bandsPresent.length > 1) {
+    // Multi-band — surface the "Now" subcount or fallback to first non-zero band.
+    if (bandCounts.now > 0 && bandCounts.now < count) {
+      urgencyClause = ` · ${bandCounts.now} due today`;
+    }
+    if (bandCounts.later > 0 && bandCounts.later < count) {
+      urgencyClause += `, ${bandCounts.later} with no SLA`;
+    }
+  }
+  return `${count} ${elementClause} from ${cpName}${urgencyClause}`;
+}
+
+function pluralise(noun, count) { return count === 1 ? noun : noun + 's'; }
+
+function extractElementFromTitle(title) {
+  // Best-effort extraction. Fixture titles vary in structure ("Bunker delivery
+  // to PSA failed", "Maersk wants to receive Bills of Lading from you",
+  // "Extend Agreement with Cosco") and there's no reliable parse for an
+  // element noun in free prose. We deliberately return null in the common
+  // case and let the bundle title fall back to a generic "requests" noun —
+  // that's more honest than guessing wrong. The item.elementName field (when
+  // populated by future seeds) bypasses this heuristic entirely.
+  return null;
+}
+window.bundleItemsByKey = bundleItemsByKey;
+window.bulkCtaLabel = bulkCtaLabel;
+
+/* hydrateEmptyHeroChrome — fills the welcome heading, role/DEX lede, and
+   suggest-card org-and-count copy on the brand-new-user empty screen.
+   Hardcoded literals "Welcome, Marcus.", "Admin on SGTradex", and "Cosco
+   Shipping has 23 active Agreements on SGTradex" all source from active
+   user + workspace state. Persona switches re-render via refreshChrome().
+   Per Issue 0011 (portal-wide chrome de-hardcoding sweep) and ADR 0035. */
+function hydrateEmptyHeroChrome() {
+  const screen = document.querySelector('.screen[data-screen="empty"]');
+  if (!screen) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const dexId = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
+  const dexLabel = DEX_LABELS[dexId] || 'SGTradex';
+  const user = (typeof USERS !== 'undefined' && USERS) ? USERS[userId] : null;
+  const firstName = user && user.name ? String(user.name).split(/\s+/)[0] : '';
+  const seat = (typeof resolveSeat === 'function') ? resolveSeat(userId, dexId) : null;
+  const role = seat && seat.role ? seat.role : null;
+  const orgId = (user && user.primaryOrgId) || (seat && seat.orgId) || null;
+  const org = (orgId && typeof ORGS !== 'undefined' && ORGS) ? ORGS[orgId] : null;
+  const orgName = (org && org.name) || '';
+
+  const welcome = screen.querySelector('[data-empty-hero-welcome]');
+  if (welcome) welcome.textContent = firstName ? `Welcome, ${firstName}.` : 'Welcome.';
+
+  const lede = screen.querySelector('[data-empty-hero-lede]');
+  if (lede) {
+    if (role) {
+      lede.innerHTML = `As <strong>${escAttr(role)} on ${escAttr(dexLabel)}</strong>, you can review participant approvals, manage data elements, and create Agreements on behalf of your org.`;
+    } else {
+      lede.textContent = `You can review approvals, manage data elements, and create Agreements on behalf of your org.`;
+    }
+  }
+
+  const orgAgr = screen.querySelector('[data-empty-hero-org-agreements]');
+  if (orgAgr) {
+    let activeCount = 0;
+    if (typeof listAgreementsForDex === 'function') {
+      const rows = listAgreementsForDex(dexId) || [];
+      activeCount = rows.filter((a) => a && (a.state === 'active' || (a.status && /active/i.test(a.status.label || '')))).length;
+    }
+    // Platform-tier orgs govern the DEX rather than participating in it, so
+    // "{Org} has N agreements on {DEX}" reads awkwardly (SGTradex governs
+    // SGTradex; it doesn't *own* Agreements there). Use a governance-flavour
+    // line in that case.
+    const isPlatform = seat && seat.tier === 'platform';
+    if (isPlatform && activeCount > 0) {
+      orgAgr.textContent = `Governing ${activeCount} active Agreement${activeCount === 1 ? '' : 's'} on ${dexLabel}. Get the lay of the land.`;
+    } else if (isPlatform) {
+      orgAgr.textContent = `Get the lay of the land on Agreements governed on ${dexLabel}.`;
+    } else if (orgName && activeCount > 0) {
+      orgAgr.textContent = `${orgName} has ${activeCount} active Agreement${activeCount === 1 ? '' : 's'} on ${dexLabel}. Get the lay of the land.`;
+    } else if (orgName) {
+      orgAgr.textContent = `Get the lay of the land on ${orgName}'s Agreements on ${dexLabel}.`;
+    } else {
+      orgAgr.textContent = 'Get the lay of the land on your org\'s Agreements.';
+    }
+  }
+}
+window.hydrateEmptyHeroChrome = hydrateEmptyHeroChrome;
+
+/* hydrateInboxAllChrome — fills the small chrome on inbox-all that's outside
+   renderInboxFromWorkspace's reach: the Welcome heading (active user's
+   display name) and per-DEX filter chip counts.
+   Phase 2 follow-up will convert the static five demo cards under
+   inbox-all to workspace-driven rendering; until then, the per-DEX
+   filter counts are derived from the union of workspace inbox items
+   across all DEXes so the chip totals stay truthful even with stale
+   demo cards underneath. */
+function hydrateInboxAllChrome() {
+  const screen = document.querySelector('.screen[data-screen="inbox-all"]');
+  if (!screen) return;
+  const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+  const enrolledDexes = activeUserEnrolledDexes(userId);  // ordered tx/bx/hx subset
+  // Welcome heading — pull the active user's display name from the user
+  // registry. Falls back to a neutral "Welcome." if resolution fails.
+  const welcome = screen.querySelector('[data-inbox-all-welcome]');
+  if (welcome) {
+    let firstName = '';
+    if (typeof USERS !== 'undefined') {
+      const u = USERS && USERS[userId];
+      if (u && u.name) firstName = String(u.name).split(/\s+/)[0];
+    }
+    welcome.textContent = firstName ? `Welcome, ${firstName}.` : 'Welcome.';
+  }
+  // Sidebar "Your DEXes" mini-list — render from the active user's enrolled
+  // DEXes. Previously a hardcoded list of all three rows regardless of
+  // membership; now respects ORG_DEX_MEMBERSHIPS.
+  const dexMiniHost = screen.querySelector('[data-inbox-all-your-dexes]');
+  if (dexMiniHost) {
+    dexMiniHost.innerHTML = enrolledDexes.map((d) => {
+      const dotVar = d === 'tx' ? '--tx-50' : d === 'bx' ? '--bx-40' : '--hx-40';
+      const label = DEX_LABELS[d] || d.toUpperCase();
+      return `<div class="dex-mini"><span class="dex-dot" style="background:var(${dotVar})"></span>${label}</div>`;
+    }).join('');
+  }
+  // Per-DEX filter chip list + counts — both dynamic from the user's enrolled
+  // DEXes. Chips themselves stay non-interactive (visual chrome only) for v1;
+  // ADR 0036 Phase 2 makes them clickable as a DEX-axis filter.
+  if (typeof listInboxItemsForUserAndDex !== 'function') return;
+  const countsByDex = {};
+  enrolledDexes.forEach((d) => {
+    countsByDex[d] = listInboxItemsForUserAndDex(userId, d).filter((i) => !i.completion).length;
+  });
+  const total = enrolledDexes.reduce((sum, d) => sum + countsByDex[d], 0);
+  const chipHost = screen.querySelector('[data-inbox-all-dex-chips]');
+  if (chipHost) {
+    // ADR 0036 — DEX chips are clickable as a third filter axis on inbox-all.
+    // Single-select per the existing Phase 1 chip pattern.
+    const activeDexFilter = getInboxDexFilter(screen);
+    const allClass = activeDexFilter === 'all' ? 'chip solid' : 'chip muted';
+    const allPressed = activeDexFilter === 'all' ? 'true' : 'false';
+    const allChip = `<button type="button" class="${allClass}" data-inbox-dex-filter="all" aria-pressed="${allPressed}">All · <span data-count>${total}</span></button>`;
+    const perDex = enrolledDexes.map((d) => {
+      const dotVar = d === 'tx' ? '--tx-50' : d === 'bx' ? '--bx-40' : '--hx-40';
+      const label = DEX_LABELS[d] || d.toUpperCase();
+      const active = activeDexFilter === d;
+      const cls = active ? `chip solid ${d}` : `chip muted ${d}`;
+      return `<button type="button" class="${cls}" data-inbox-dex-filter="${d}" aria-pressed="${active ? 'true' : 'false'}"><span class="dex-dot" style="background:var(${dotVar})"></span>${label} · <span data-count>${countsByDex[d]}</span></button>`;
+    }).join('');
+    chipHost.innerHTML = allChip + perDex;
+  }
+}
+window.hydrateInboxAllChrome = hydrateInboxAllChrome;
+
+/* activeUserEnrolledDexes — return the ordered list of DEX codes (tx/bx/hx)
+   that the user's primary org is actively enrolled in, per ORG_DEX_MEMBERSHIPS.
+   Used by hydrators that need to render per-DEX chrome without assuming the
+   universal-all-three default. Platform-tier orgs (no DEX memberships) get
+   the full list as a sensible fallback — they govern every DEX. */
+function activeUserEnrolledDexes(userId) {
+  const all = ['tx', 'bx', 'hx'];
+  if (typeof USERS === 'undefined' || typeof ORG_DEX_MEMBERSHIPS === 'undefined' || typeof ORGS === 'undefined') return all;
+  const user = USERS[userId];
+  if (!user || !user.primaryOrgId) return all;
+  const org = ORGS[user.primaryOrgId];
+  if (org && org.tier === 'platform') return all;  // platform tier spans every DEX
+  return all.filter((d) => {
+    const row = ORG_DEX_MEMBERSHIPS[`${user.primaryOrgId}-${d}`];
+    return row && row.status === 'active';
+  });
+}
+window.activeUserEnrolledDexes = activeUserEnrolledDexes;
 
 function renderInboxFromWorkspace(screenName) {
   if (typeof listInboxItemsForUserAndDex !== 'function') return;
@@ -1270,7 +1928,13 @@ function renderInboxFromWorkspace(screenName) {
   if (typeof updateSidebarBadges === 'function') updateSidebarBadges();
   const name = screenName || 'inbox-tx';
   const isCrossDex = name === 'inbox-all';
-  const dex = isCrossDex ? null : (name.replace(/^inbox-/, '') || 'tx');
+  // Read DEX from the live workspace meta — not the screen name. `inbox-tx`
+  // is now the single per-DEX inbox surface used for whichever DEX is active,
+  // so parsing 'tx' out of the name would hard-code the wrong DEX after a
+  // colleague switch to BX/HX.
+  const dex = isCrossDex
+    ? null
+    : ((typeof currentDexCode === 'function' && currentDexCode()) || name.replace(/^inbox-/, '') || 'tx');
   const screen = document.querySelector(`.screen[data-screen="${name}"]`);
   if (!screen) return;
 
@@ -1284,19 +1948,24 @@ function renderInboxFromWorkspace(screenName) {
   const actionable = allItems.filter((i) => !i.completion);
   const completions = allItems.filter((i) => i.completion);
 
-  // Apply category filter to actionable items. Completion ribbon is not filtered
-  // (it's an awareness band, not a triage queue).
+  // Apply ADR 0035 + ADR 0036 three-axis filter (Intent + Source + DEX).
+  // Completion ribbon is not filtered (it's an awareness band, not a triage queue).
   const filter = getInboxFilter(screen);
-  const filteredActionable = applyInboxFilter(actionable, filter);
+  const sourceFilter = getInboxSourceFilter(screen);
+  const dexFilter = isCrossDex ? getInboxDexFilter(screen) : 'all';
+  const filteredActionable = applyInboxFilter(actionable, filter, sourceFilter, dexFilter);
 
   const mine = sortInboxByAge(filteredActionable.filter((i) => i.bucket === 'mine'));
   const team = sortInboxByAge(filteredActionable.filter((i) => i.bucket === 'team'));
 
-  // Render into the new data-attribute-keyed stacks (no more positional lookups).
+  // ADR 0036 — render each bucket as banded sections (Now / Soon / Later)
+  // inside Mine and Team. Within each band, renderInboxStackHTML still
+  // handles cross-DEX sub-grouping + bundling (D8 element-agnostic key).
   const mineStack = screen.querySelector('[data-inbox-stack="mine"]');
   const teamStack = screen.querySelector('[data-inbox-stack="team"]');
-  if (mineStack) mineStack.innerHTML = renderInboxStackHTML(mine, { crossDex: isCrossDex });
-  if (teamStack) teamStack.innerHTML = renderInboxStackHTML(team, { crossDex: isCrossDex });
+  const renderResolvedDex = isCrossDex ? null : dex;
+  if (mineStack) mineStack.innerHTML = renderInboxBucketHTML(mine, { bucket: 'mine', userId, dexId: renderResolvedDex || 'all', crossDex: isCrossDex });
+  if (teamStack) teamStack.innerHTML = renderInboxBucketHTML(team, { bucket: 'team', userId, dexId: renderResolvedDex || 'all', crossDex: isCrossDex });
 
   // Completion ribbon — visible only when there is at least one completion echo.
   const ribbon = screen.querySelector('[data-inbox-completion-ribbon]');
@@ -1314,20 +1983,23 @@ function renderInboxFromWorkspace(screenName) {
   }
 
   // Filter-chip counts derive from the un-filtered actionable set so the chip
-  // labels always show "how many of this category exist", not "how many under
-  // the current filter".
-  const categoryCounts = actionable.reduce((acc, it) => {
-    const cat = inboxFilterCategoryForItem(it);
-    acc[cat] = (acc[cat] || 0) + 1;
+  // labels always show "how many of this Intent exist", not "how many under
+  // the current filter combination".
+  const intentCounts = actionable.reduce((acc, it) => {
+    const i = inboxFilterIntentForItem(it);
+    acc[i] = (acc[i] || 0) + 1;
     return acc;
   }, {});
   const totalActionable = actionable.length;
   screen.querySelectorAll('.filter-chips button[data-inbox-filter]').forEach((b) => {
     const cat = b.getAttribute('data-inbox-filter');
-    const count = cat === 'all' ? totalActionable : (categoryCounts[cat] || 0);
+    const count = cat === 'all' ? totalActionable : (intentCounts[cat] || 0);
     const countEl = b.querySelector('[data-count]');
     if (countEl) countEl.textContent = String(count);
   });
+  // Reflect the persisted Source dropdown selection back into the <select>.
+  const sourceSelect = screen.querySelector('[data-inbox-source-filter]');
+  if (sourceSelect && sourceSelect.value !== sourceFilter) sourceSelect.value = sourceFilter;
 
   // Bucket section counts.
   const mineCount = screen.querySelector('[data-mine-count]');
@@ -1356,10 +2028,14 @@ function renderInboxFromWorkspace(screenName) {
   }
   const sidebarBadge = screen.querySelector('.sidebar .side-link.active .count-badge');
   if (sidebarBadge) sidebarBadge.textContent = String(actionable.length);
+  // inbox-all carries chrome (welcome heading, per-DEX filter chip counts)
+  // outside this function's reach. Run its hydrator so those track workspace.
+  if (isCrossDex && typeof hydrateInboxAllChrome === 'function') hydrateInboxAllChrome();
 }
 
-/* Bind filter-chip clicks once on DOMContentLoaded. Delegated via the screen
-   so dynamically-injected screens (if any) still work. */
+/* Bind filter-chip clicks AND source-dropdown changes once on DOMContentLoaded.
+   Delegated via the screen so dynamically-injected screens still work. ADR
+   0035 splits filtering into two axes; both are wired here. */
 function bindInboxFilterChips() {
   document.querySelectorAll('section.screen[data-screen^="inbox-"] .filter-chips').forEach((chipBar) => {
     chipBar.addEventListener('click', (e) => {
@@ -1367,6 +2043,51 @@ function bindInboxFilterChips() {
       if (!btn) return;
       setInboxFilter(btn.getAttribute('data-inbox-filter'), btn);
     });
+  });
+  document.querySelectorAll('section.screen[data-screen^="inbox-"] [data-inbox-source-filter]').forEach((sel) => {
+    sel.addEventListener('change', (e) => {
+      setInboxSourceFilter(e.target.value, e.target);
+    });
+  });
+  // ADR 0036 — DEX-axis filter on inbox-all. Delegated at the screen level so
+  // the chip list re-rendered by hydrateInboxAllChrome() doesn't lose its
+  // handler.
+  document.querySelectorAll('section.screen[data-screen="inbox-all"]').forEach((screenEl) => {
+    screenEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-inbox-dex-filter]');
+      if (!btn) return;
+      setInboxDexFilter(btn.getAttribute('data-inbox-dex-filter'), btn);
+    });
+  });
+  // ADR 0036 — per-band collapse state persists per (user, dex, bucket, band).
+  // Delegated toggle listener on <details data-inbox-band>.
+  document.querySelectorAll('section.screen[data-screen^="inbox-"]').forEach((screenEl) => {
+    screenEl.addEventListener('toggle', (e) => {
+      const det = e.target;
+      if (!(det && det.matches && det.matches('details.inbox-band'))) return;
+      const band = det.getAttribute('data-inbox-band');
+      const bucket = det.getAttribute('data-bucket') || 'mine';
+      const userId = (typeof activeUserId === 'function') ? activeUserId() : 'marcus';
+      const screenName = screenEl.getAttribute('data-screen');
+      // Per-DEX inbox state is keyed by the active DEX (currentDexCode), not
+      // by parsing the screen name — `inbox-tx` is the single per-DEX inbox
+      // surface used for whichever DEX is currently active, so screen-name
+      // parsing would always store under 'tx' regardless of context.
+      const dexId = (screenName === 'inbox-all')
+        ? 'all'
+        : ((typeof currentDexCode === 'function' && currentDexCode()) || 'tx');
+      setInboxBandCollapsed(userId, dexId, bucket, band, !det.open);
+    }, true);  // capture phase — <details> toggle doesn't bubble by default
+  });
+  // ADR 0036 D7 — re-render inbox on tab-return so banding reflects current
+  // time after the operator has been on a different tab for an extended
+  // period. Cheap; runs only when the active screen is an inbox-*.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    const active = document.querySelector('section.screen.active');
+    if (active && /^inbox-/.test(active.getAttribute('data-screen') || '')) {
+      if (typeof refreshInboxSurfaces === 'function') refreshInboxSurfaces();
+    }
   });
 }
 if (typeof document !== 'undefined') {
@@ -7008,6 +7729,12 @@ function switchPersona(personaId) {
   if (typeof themeInboxContent === 'function') {
     themeInboxContent(personaId === 'platform-admin' ? 'tx' : currentDexCode());
   }
+  // Re-hydrate dynamic chrome that's outside the inbox renderer's reach
+  // (welcome heading, role/DEX lede, org+count copy on the empty hero;
+  // welcome name + per-DEX filter counts on inbox-all). These are no-ops
+  // when their owning screen isn't in the DOM, so always safe to call.
+  if (typeof hydrateEmptyHeroChrome === 'function') hydrateEmptyHeroChrome();
+  if (typeof hydrateInboxAllChrome === 'function') hydrateInboxAllChrome();
 
   // Refresh doctor context + counterparty pool when the active persona pivots
   // — the new operator's org may not be a member of the current DEX, or may
@@ -7393,6 +8120,10 @@ function refreshActiveScreenAfterAccountSwitch() {
   // Detail / message-detail with a cleared selection would render an empty
   // state. Route those back to their list view so the new account lands on
   // populated content; everything else re-renders in place.
+  // The inbox screen name `inbox-tx` is historical and now serves as the
+  // single per-DEX inbox surface for any current DEX (the dex is read from
+  // currentDexCode() inside the renderer, not parsed from the screen name).
+  // `inbox-all` stays put — it's the cross-DEX aggregate.
   let target = activeScreenName;
   if (activeScreenName === 'detail')          target = 'agreements';
   if (activeScreenName === 'message-detail')  target = 'messages';
@@ -7412,38 +8143,49 @@ function switchToColleague(userId) {
   const isPlatformTier = org && org.tier === 'platform';
 
   if (isPlatformTier) {
-    // Platform colleague — set the pin; chrome re-renders.
+    // Platform colleague — set the pin AND pivot workspace.meta.activeUserId
+    // so listInboxItemsForUserAndDex / activeUserId() / every workspace-driven
+    // renderer reads the new seat. Before this fix, only pinnedActiveUserId
+    // was set, but activeUserId() short-circuits on meta.activeUserId first,
+    // so the platform pin was effectively invisible to the renderers.
     pinnedActiveUserId = userId;
+    if (typeof patchWorkspaceMeta === 'function') patchWorkspaceMeta({ activeUserId: userId });
     if (typeof applyPersonaChrome === 'function') applyPersonaChrome();
     if (typeof refreshRoleChips === 'function') refreshRoleChips();
-    // Re-render the visible page so it reflects the new seat (was the bug
-    // where switching colleagues left the previous user's content on screen).
     refreshActiveScreenAfterAccountSwitch();
     toast(`Now viewing as ${user.name} (platform-tier colleague)`);
     return;
   }
 
-  // Participant-tier colleague — navigate to their home DEX. The resolver will
-  // pick them up automatically (resolveActiveUserId's same-org-colleague step).
+  // Participant-tier colleague — pivot workspace.meta.activeUserId to the
+  // colleague and navigate to their home DEX. The meta pivot is load-bearing:
+  // activeUserId() reads meta.activeUserId first and only falls through to
+  // resolveActiveUserId if meta is unset, so without this patch the new
+  // colleague's content never surfaces.
   pinnedActiveUserId = null;            // clear any prior platform pin
   let homeDexCode = null;
   if (aff && aff.dexRoles) {
     const dexKeys = Object.keys(aff.dexRoles);
     if (dexKeys.length) homeDexCode = dexKeys[0];
   }
+  if (typeof patchWorkspaceMeta === 'function') {
+    const patch = { activeUserId: userId };
+    if (homeDexCode) patch.activeDexId = homeDexCode;
+    patchWorkspaceMeta(patch);
+  }
   if (homeDexCode && typeof switchDex === 'function') {
-    // switchDex re-applies chrome + role chip
-    switchDex(homeDexCode);
-    // switchDex doesn't re-render the open page's main content — refresh
-    // explicitly so e.g. switching from Marcus (TX) to David (HX) on the
-    // Agreements page replaces TX rows with HX rows instead of leaving the
-    // stale TX list visible.
+    // switchDex re-applies chrome + role chip. Pass skipWorkspaceMeta so it
+    // doesn't clobber the activeUserId we just patched (switchDex by default
+    // only patches activeDexId; safe to call alongside the explicit patch
+    // above, but the explicit patch above is already authoritative).
+    switchDex(homeDexCode, { silent: true });
     refreshActiveScreenAfterAccountSwitch();
   } else {
     // Fall back: just re-render with what we have
     if (typeof applyPersonaChrome === 'function') applyPersonaChrome();
     refreshActiveScreenAfterAccountSwitch();
   }
+  toast(`Now viewing as ${user.name}`);
 }
 
 /* Renders a resolved-user line adjacent to the prototype rail's scenario caption —

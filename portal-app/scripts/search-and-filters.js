@@ -476,7 +476,9 @@
      collision (both files had applyInboxFilter) and a post-render clobber. */
 
   function categorizeInbox(item) {
-    var a = item.action || '';
+    // Legacy helper kept around for stub compatibility. Real categorisation lives
+    // in app.js (inboxFilterIntentForItem / inboxFilterSourceForItem per ADR 0035).
+    var a = item.cta || item.action || '';
     if (a === 'approve-network' || a === 'review-org') return 'approvals';
     if (a === 'review' && item.dir === 'in') return 'approvals';
     if (a === 'extend' || a.indexOf('renew') === 0 || a === 'attest') return 'renewals';

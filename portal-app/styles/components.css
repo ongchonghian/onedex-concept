@@ -454,6 +454,75 @@ body.persona-platform-admin .avatar[data-profile-btn] {
 .dir-chip.out { background: var(--theme-95); color: var(--theme-on-tint); }
 .dir-chip.out i { color: var(--theme-30); }
 
+/* ---------- Inbox 3-axis taxonomy primitives (ADR 0035) ---------- */
+/* Action chip — leftmost on every Inbox card; colour-coded by Intent.
+   Closed vocabulary: decide / respond / fix / confirm. The chip is the load-
+   bearing visual triage cue, so it sits ahead of every other chip in the
+   reading order. Decide=amber (judgement), Respond=blue (data owed),
+   Fix=red (broken), Confirm=slate (lightweight ack).
+   UX rules in play: ux-similarity-consistency (mirrors .dir-chip dimensions
+   so the chip family reads as one system); ux-von-restorff-emphasis (the
+   only coloured chip on a lean card, so it pulls the eye first);
+   timing-under-300ms (hover transition stays ≤200ms per duration-press-hover). */
+.intent-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  flex-shrink: 0;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  transition: filter var(--motion-fast) var(--easing);
+}
+.inbox-card:hover .intent-chip { filter: saturate(1.1); }
+.intent-chip.intent-decide  { background: var(--yellow-95); color: var(--yellow-50); }
+.intent-chip.intent-respond { background: var(--blue-95);   color: var(--blue-50); }
+.intent-chip.intent-fix     { background: var(--red-95);    color: var(--red-20); }
+.intent-chip.intent-confirm { background: var(--g-95);      color: var(--g-30); }
+
+/* Source icon — small muted glyph adjacent to the title; disambiguates the
+   underlying record class (agreement / message / governance) without claiming
+   visual weight. Per ADR 0035: source is a marker, never a visual frame.
+   Stays muted so it never competes with the Action chip for attention. */
+.source-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--surface-sub);
+  color: var(--g-40);
+  flex-shrink: 0;
+}
+.source-icon i { font-size: 12px; line-height: 1; }
+.source-icon.source-agreement  { color: var(--g-30); }
+.source-icon.source-message    { color: var(--theme-50); }
+.source-icon.source-governance { color: var(--blue-50); }
+
+/* Due chip — right-aligned deadline-distance chip. Rendered only when dueAt is
+   present AND within 7 days (renderer-side); colour escalates as the deadline
+   approaches. Tabular nums per type-tabular-nums-for-data so "in 2d" / "in 7d"
+   columns align across cards. */
+.due-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  flex-shrink: 0;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin-right: var(--sp-1, 4px);
+  white-space: nowrap;
+}
+.due-chip.due-overdue { background: var(--red-95);    color: var(--red-20);    border: 1px solid var(--red-50); }
+.due-chip.due-today   { background: var(--yellow-95); color: var(--yellow-50); }
+.due-chip.due-soon    { background: var(--g-95);      color: var(--g-30); }
+
 /* ---------- Ready / Invitation pills ---------- */
 .ready-pill {
   display: inline-flex;

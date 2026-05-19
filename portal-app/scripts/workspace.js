@@ -210,7 +210,11 @@ function listInboxItemsForUserAndDex(userId, dexId) {
     // message, accepted agreement) disappear from the inbox.
     Object.keys(workspace.inboxItems).forEach((id) => {
       const item = workspace.inboxItems[id];
-      if (item.ownerUserId === userId && item.dexId === dexId && item.derivedFrom && !fresh[id]) {
+      // A "derived" item is one materialiseInboxFromRecords would produce — keyed by
+      // messageId on the item, or the inbox-agr-derived- prefix. Hand-authored seeds
+      // (no messageId, no derived-prefix) are preserved across passes.
+      const isDerived = !!item.messageId || (typeof id === 'string' && id.startsWith('inbox-agr-derived-'));
+      if (item.ownerUserId === userId && item.dexId === dexId && isDerived && !fresh[id]) {
         delete workspace.inboxItems[id];
       }
     });
