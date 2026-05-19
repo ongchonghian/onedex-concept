@@ -11,7 +11,7 @@
    displaces class-based and positional selectors.
 
    ADRs demonstrated: 0024 (agreement-anchored composer),
-   0021 (message lifecycle), 0033 (Pitstop scope capture)
+   0021 (message lifecycle)
    ============================================================ */
 
 (function (window) {
@@ -21,7 +21,7 @@
     id: 'compose-message',
     title: 'Compose Message',
     description: "Marcus's Bill-of-Lading Agreement with Maersk is Active. A new shipment just left port — he sends the Bill of Lading through the portal in two steps.",
-    adrs: ['0024', '0021', '0033'],
+    adrs: ['0024', '0021'],
     durationSec: 60,
 
     seed: (workspace) => {

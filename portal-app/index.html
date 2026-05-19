@@ -679,7 +679,7 @@
     <div>Only shown when your Org has <strong>multiple Pitstops</strong> on this DEX and this element has no established scope yet. The platform asks once, at the moment the decision matters; future Agreements for this element reuse your choice silently. Pick one or more — picking multiple lets any of them dispatch (failover, regional split, gradual migration). Operators with access to only one will see no choice; managers with access to multiple will see the chip at compose-time.</div>
   </div>
 
-  <div class="pack-fork-frame">
+  <div class="pack-fork-frame" data-demo="wizard.scope-step">
     <header class="pf-header">
       <span class="agr-id">SCOPE-CAPTURE</span>
       <div class="pf-context">
@@ -1482,12 +1482,12 @@
        · D (SP, multi-Pitstop SP):           shown with choice (intersection ≥ 2)
        · E (one Pitstop retired):            shown with remaining choices
        · F (joint-state warning):            shown above the warning banner -->
-  <div class="compose-acting-pitstop-banner" id="compose-acting-pitstop-banner" hidden role="status" aria-live="polite">
+  <div class="compose-acting-pitstop-banner" id="compose-acting-pitstop-banner" data-demo="composer.send-from-chip" hidden role="status" aria-live="polite">
     <i class="ti ti-map-pin" aria-hidden="true"></i>
     <div class="banner-body">
       <div class="apc-row">
         <span class="apc-label">Send from</span>
-        <select id="compose-acting-pitstop-select" class="acting-owner-picker" onchange="onActingAsPitstopChange(this)" aria-label="Choose dispatching Pitstop"></select>
+        <select id="compose-acting-pitstop-select" class="acting-owner-picker" data-demo="composer.send-from-override" onchange="onActingAsPitstopChange(this)" aria-label="Choose dispatching Pitstop"></select>
         <span class="apc-hint" id="compose-acting-pitstop-hint">your last choice for this element — change anytime</span>
       </div>
       <p class="apc-foot">Audit triple records <code>composed_by</code> + <code>acting_as_org</code> + <code>acting_as_pitstop</code> per ADR 0028 (column name stays parallel for schema; user-facing label is "Send from"). Per-operator memory; override per message.</p>
@@ -4000,6 +4000,7 @@
 <script src="scripts/demos/distribute-pack.js?v=p17"></script>
 <script src="scripts/demos/triage-failures.js?v=p17"></script>
 <script src="scripts/demos/acting-as-sp.js?v=p17"></script>
+<script src="scripts/demos/pitstop-scope.js?v=p17"></script>
 <script src="scripts/demos/index.js?v=p17"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>

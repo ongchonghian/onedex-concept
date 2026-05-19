@@ -44,6 +44,7 @@ const SCRIPT_PATHS = [
   'scripts/demos/distribute-pack.js',
   'scripts/demos/triage-failures.js',
   'scripts/demos/acting-as-sp.js',
+  'scripts/demos/pitstop-scope.js',
 ];
 
 /* JSDOM's runScripts: 'outside-only' does NOT wire inline onclick="..."
