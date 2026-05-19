@@ -60,7 +60,7 @@
       { action: 'annotate',
         anchor: '[data-demo="messages.failed-popup.owner-mine"]',
         label: 'Step 2 of 6 — Failures sort by who can fix them',
-        rationale: "Your action, Their action, Expired. The inbox routes Your-action failures to Marcus directly; the rest stay off his queue. He never wastes time on a failure only the counterparty can resolve.",
+        rationale: "Failures sort into Your action, Their action, and Expired — the inbox routes only Your-action ones to Marcus. He never wastes time on a failure only the counterparty can resolve.",
         dwell: 4600 },
 
       // ---- Narrow to Your action only ----

@@ -41,7 +41,7 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="detail"].active #detail-watch-toggle',
         label: 'Step 1 of 4 — Quiet by default',
-        rationale: "Marcus's Agreements are quiet by default. Acknowledged and Failed Messages collect into a twice-daily digest — no noise on routine traffic. Watch is the opt-in for things that can't wait. A vessel just left port; a Mass Flow Meter Receipt must land with PSA before the berth window closes.",
+        rationale: "Marcus's Agreements are quiet by default — Acknowledged and Failed Messages collect into a twice-daily digest. Watch is the opt-in for things that can't wait, like the Mass Flow Meter Receipt that has to land with PSA before this vessel's berth window closes.",
         dwell: 4400 },
 
       // ---- Toggle Watch on ----
@@ -61,13 +61,13 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="messages"].active [data-msg-id="MSG-1240"]',
         label: 'Step 3 of 4 — Routine failures stay quiet',
-        rationale: "This Bunker delivery failure landed under a different Agreement — one Marcus chose not to Watch. It rolls into tomorrow morning's digest, not into his inbox as an interruption. Payload validation issues on routine commodity data can wait a few hours; the digest handles them.",
+        rationale: "This Bunker delivery failure landed under an Agreement Marcus chose not to Watch. It rolls into tomorrow morning's digest instead of pinging his inbox — routine validation issues don't earn an interruption.",
         dwell: 4600 },
 
       { action: 'annotate',
         anchor: '.screen[data-screen="messages"].active [data-msg-id="MSG-1240"]',
         label: 'Step 4 of 4 — Two cadences, one rule',
-        rationale: "Watch is the only knob. Each Agreement is either on the immediate cadence or on the digest. The operator picks per Agreement; the platform handles the rest. No per-event notification settings, no rules to maintain — just the one decision at Agreement level.",
+        rationale: "Watch is the only knob — every Agreement is either on the immediate cadence or on the digest. Marcus picks per Agreement, and the platform handles the rest.",
         dwell: 4400 },
 
       // ---- Terminal expect ----

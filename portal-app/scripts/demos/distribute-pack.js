@@ -50,7 +50,7 @@
       { action: 'annotate',
         anchor: `.screen[data-screen="agreements"].active [data-agreement-id="${PACK_ID}"]`,
         label: 'Step 2 of 4 — But each row is independent',
-        rationale: "Each pack member is a fully independent Agreement. PSA's terms, Maersk's terms, ICA's terms — separate records, separate audit trails. The pack just keeps them visually together.",
+        rationale: "Each pack member is a fully independent Agreement — PSA's terms, Maersk's, ICA's — separate records, separate audit trails. The pack just keeps them visually together.",
         dwell: 4400 },
 
       // ---- Open the pack-detail screen ----
@@ -62,7 +62,7 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="pack-detail"].active [data-demo="pack-detail.members-table"]',
         label: 'Step 3 of 4 — Per-counterparty everything',
-        rationale: "Revoking one counterparty doesn't touch the others. Auditing one counterparty doesn't drag the others in. The pack is a coordination tool, not a merge.",
+        rationale: "Revoking one counterparty doesn't touch the others, and auditing one doesn't drag the rest in. The pack is a coordination tool, not a merge.",
         dwell: 4600 },
 
       // ---- Send pack ----

@@ -116,7 +116,7 @@
       { action: 'annotate',
         anchor: `.screen[data-screen="inbox-tx"].active [data-inbox-item-id="${TEAM_ITEM_ID}"]`,
         label: 'Step 4 of 4 — Now it\'s his to finish',
-        rationale: "The item lives in Mine until Marcus completes or releases it. Releasing puts it back in My team's; completing emits the same kind of echo Sarah left him two minutes ago. Work moves visibly between teammates.",
+        rationale: "The item lives in Mine until Marcus completes or releases it. Completing it emits the same kind of echo Sarah left him two minutes ago — work moves visibly between teammates.",
         dwell: 4600 },
     ]
   };

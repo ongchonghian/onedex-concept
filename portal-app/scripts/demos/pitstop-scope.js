@@ -97,13 +97,13 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="wiz-scope-capture"].active [data-demo="wizard.scope-step"]',
         label: 'Step 1 of 5 — One question, the first time',
-        rationale: "Cosco runs three Pitstops on SGTradex. This is Cosco's first Bunker Requisition Form Agreement with TFG Marine — the platform has never seen this element flow from Cosco before. So it asks once, at the moment the decision matters, rather than letting routing be decided at every compose.",
+        rationale: "Cosco runs three Pitstops on SGTradex, and this is its first Bunker Requisition Form Agreement on the network. The platform asks once, at the moment the decision matters — never again.",
         dwell: 5000 },
 
       { action: 'annotate',
         anchor: '.screen[data-screen="wiz-scope-capture"].active [data-demo="wizard.scope-option"][data-pitstop-id="cosco-tx-ops"]',
         label: 'Step 2 of 5 — Pick the dispatching Pitstops',
-        rationale: "The operator picks one Pitstop or several — picking multiple gives failover and lets any of them dispatch on a given day. The counterparty never sees this choice. TFG Marine has no view of Cosco's internal Pitstop topology. Cosco describes its own side; the other side stays opaque.",
+        rationale: "The operator picks one Pitstop or several — picking multiple gives failover. TFG Marine never sees this choice; Cosco describes its own side, and the other side stays opaque.",
         dwell: 4800 },
 
       // ---- Agreement detail showing scope was captured ----
@@ -113,7 +113,7 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="detail"].active',
         label: 'Step 3 of 5 — Recorded on the Agreement',
-        rationale: "The scope choice doesn't live on the Agreement contract itself — it rides on Cosco's own Pitstop topology, which the platform reads when routing each Message. The counterparty never sees it. Future Bunker Requisition Form Agreements with any counterparty reuse Cosco's choice via that inference, never re-asking.",
+        rationale: "The scope choice rides on Cosco's own Pitstop topology, not on the Agreement contract — the counterparty never sees it. Future Bunker Requisition Form Agreements with any counterparty reuse Cosco's choice silently.",
         dwell: 4600 },
 
       // ---- Composer shows the pre-applied chip ----
@@ -123,14 +123,14 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="compose"].active [data-demo="composer.send-from-chip"]',
         label: 'Step 4 of 5 — Pre-applied, every time',
-        rationale: "On every Bunker Requisition Form Cosco composes, the Send-from chip is pre-filled with the Pitstops the operator chose once. Routine work stays silent — the operator is not asked which Pitstop to use on each Message. The platform remembers the answer.",
+        rationale: "On every Bunker Requisition Form, the Send-from chip arrives pre-filled with the Pitstops Cosco chose once. Routine work stays silent — the operator isn't asked which Pitstop on every Message.",
         dwell: 4800 },
 
       // ---- Override is available for the exception ----
       { action: 'annotate',
         anchor: '.screen[data-screen="compose"].active [data-demo="composer.send-from-override"]',
         label: 'Step 5 of 5 — The escape hatch',
-        rationale: "For the one Message that needs to go from a different Pitstop, the operator changes the dropdown per-message. The default holds for everything else. The platform does not punish exceptions — it just makes them deliberate rather than accidental.",
+        rationale: "For the one Message that needs a different Pitstop, the operator changes the dropdown per-message — the default holds for everything else. Exceptions stay deliberate, never accidental.",
         dwell: 4800 },
 
       { action: 'expect', target: '.screen[data-screen="compose"].active [data-demo="composer.send-from-chip"]' },

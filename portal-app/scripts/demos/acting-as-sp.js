@@ -58,7 +58,7 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="detail"].active [data-demo="detail.appointment-banner"]',
         label: 'Step 1 of 5 — Acting for Maersk, not as Maersk',
-        rationale: "This Agreement belongs to Maersk, not to CrimsonLogic. Maersk owns the data relationship with Cosco; its appointment gives Pat the right to compose Messages under it. The portal names that relationship on the Agreement page — Pat can never lose track of whose data he is about to send.",
+        rationale: "This Agreement belongs to Maersk, not to CrimsonLogic — Maersk's appointment gives Pat the right to compose under it. The portal names that relationship up top, so Pat can't lose track of whose data he's about to send.",
         dwell: 4800 },
 
       // ---- Open the composer via the agreed-upon scenario ----
@@ -88,14 +88,14 @@
 
       { action: 'annotate',
         anchor: '.screen[data-screen="message-detail"].active [data-demo="message.audit.acting-as-row"]',
-        label: 'Step 4 of 5 — Why this matters for Ask A',
-        rationale: "Today's system is more permissive about who can send under an Agreement. The new portal locks composing to the data owner — or to a service provider explicitly acting on the owner's behalf, recorded as such. The compliance team reviewing this audit row sees the full chain of authorisation in one line.",
+        label: 'Step 4 of 5 — Authorisation in one row',
+        rationale: "Composing is locked to the data owner — or to a service provider explicitly acting on their behalf, recorded as such. Compliance reads the chain of authorisation in one row.",
         dwell: 5000 },
 
       { action: 'annotate',
         anchor: '.screen[data-screen="message-detail"].active [data-demo="message.audit.acting-as-row"]',
-        label: 'Step 5 of 5 — One workflow, any direction',
-        rationale: "The same Acting-as pattern works whether Maersk appointed CrimsonLogic, or Cosco appointed someone else. The portal surfaces whoever the data owner is; the audit always records both. The compliance question for leadership is simply: should the new portal enforce this tighter ownership check — and should the audit row be the canonical proof point?",
+        label: 'Step 5 of 5 — Same pattern, any direction',
+        rationale: "Whichever org appoints, the portal surfaces the data owner and the audit records both. The same ownership check applies for every appointment.",
         dwell: 5200 },
 
       { action: 'expect', target: '.screen[data-screen="message-detail"].active [data-demo="message.audit.acting-as-row"]' },
