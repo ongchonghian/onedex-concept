@@ -454,6 +454,311 @@ test('regAlternativesFor returns correct closed lists per type', () => {
   assert.equal(w.regAlternativesFor(fComposite), null);
 });
 
+/* UX-40 — field.title round-trip. The optional title slot must survive
+ * serialise → parse without being lost, must auto-derive from humanized
+ * name when unset, and must not bloat the model with redundant values
+ * (titles matching the humanized default stay absent on the model). */
+test('UX-40 field.title round-trips when set; auto-derives on emit when absent', () => {
+  const w = loadRegisterElement();
+
+  // Case 1: title not set — emission falls back to humanizeFieldName.
+  const f1 = w.regBlankField('sample_type', 'string');
+  const schema1 = w.schemaFromFields({ meta: { name: 'T' }, fields: [f1] });
+  assert.equal(schema1.properties.sample_type.title, 'Sample Type');
+
+  // Case 2: title set — emission preserves the author override.
+  const f2 = w.regBlankField('edta', 'boolean');
+  f2.title = 'EDTA';                                              // acronym override the auto-humanizer would get wrong
+  const schema2 = w.schemaFromFields({ meta: { name: 'T' }, fields: [f2] });
+  assert.equal(schema2.properties.edta.title, 'EDTA');
+
+  // Round-trip: title comes back into the model on parse.
+  const parsed2 = w.fieldsFromSchema(schema2);
+  assert.equal(parsed2.length, 1);
+  assert.equal(parsed2[0].title, 'EDTA');
+
+  // Case 3: incoming title equals the humanized default — model stays sparse
+  // (f.title undefined) so re-emission doesn't duplicate the value.
+  const schema3 = {
+    type: 'object',
+    properties: {
+      foo_bar: { type: 'string', title: 'Foo Bar' }                // matches humanizeFieldName('foo_bar')
+    }
+  };
+  const parsed3 = w.fieldsFromSchema(schema3);
+  assert.equal(parsed3.length, 1);
+  assert.equal(parsed3[0].title, undefined);                       // sparse — not stored redundantly
+  // Re-emit: title still emitted, derived from the humanized name.
+  const schema3b = w.schemaFromFields({ meta: { name: 'T' }, fields: parsed3 });
+  assert.equal(schema3b.properties.foo_bar.title, 'Foo Bar');
+});
+
+/* UX-38 — Cartesian-aware manual restatement upgrades the detector with
+ * outlier purging, enum-constrained row identifiers, the FIX-2 "Other"
+ * escape-hatch heuristic, and pessimistic reconciliation. These tests exercise
+ * the shared transformer that both the auto-refit and the manual lever now
+ * route through. */
+test('UX-38 detector purges unique-prefix/unique-suffix outliers', () => {
+  const w = loadRegisterElement();
+  // 8 Cartesian fields (plain/edta/urine/fluoride × clinic/lab) + 1 outlier
+  // with unique prefix AND suffix.
+  const names = [
+    'plain_clinic', 'plain_lab',
+    'edta_clinic', 'edta_lab',
+    'urine_clinic', 'urine_lab',
+    'fluoride_clinic', 'fluoride_lab',
+    'notes_text'                                                   // outlier (unique prefix AND suffix)
+  ];
+  const m = w.regRefit_detectCartesianMatrix(names);
+  assert.ok(m, 'matrix should be detected after outlier purge');
+  assert.equal(m.outlierNames.length, 1);
+  assert.equal(m.outlierNames[0], 'notes_text');
+  assert.equal(m.prefixes.length, 4);                               // plain/edta/urine/fluoride
+  assert.equal(m.suffixes.length, 2);                               // clinic/lab
+  assert.equal(m.hasEscapeHatch, false);                            // no other(s)_* prefix
+});
+
+test('UX-38 detector flags "others_*" escape hatch when present in source', () => {
+  const w = loadRegisterElement();
+  const names = [
+    'plain_clinic', 'plain_lab',
+    'edta_clinic', 'edta_lab',
+    'others_clinic', 'others_lab'                                   // explicit "Others" row
+  ];
+  const m = w.regRefit_detectCartesianMatrix(names);
+  assert.ok(m);
+  assert.equal(m.hasEscapeHatch, true);
+  assert.equal(m.escapeHatchPrefix, 'others');
+});
+
+test('UX-38 shared transformer builds enum-constrained items shape with FIX-2 companion', () => {
+  const w = loadRegisterElement();
+  const children = [
+    Object.assign(w.regBlankField('plain_clinic',    'boolean'), { required: true  }),
+    Object.assign(w.regBlankField('plain_lab',       'boolean'), { required: false }),
+    Object.assign(w.regBlankField('edta_clinic',     'boolean'), { required: true  }),
+    Object.assign(w.regBlankField('edta_lab',        'boolean'), { required: false }),
+    Object.assign(w.regBlankField('urine_clinic',    'boolean'), { required: true  }),
+    Object.assign(w.regBlankField('urine_lab',       'boolean'), { required: false }),
+    Object.assign(w.regBlankField('others_clinic',   'boolean'), { required: false }),
+    Object.assign(w.regBlankField('others_lab',      'boolean'), { required: false })
+  ];
+  const out = w.regRefit_buildCartesianRestatementShape(children, { groupName: 'Nature of Specimens' });
+  assert.ok(out, 'shape should be produced');
+  // Row identifier is an enum constrained to detected prefixes.
+  assert.equal(out.rowIdentifierName, 'specimen_type');             // singularised "Nature of Specimens"
+  assert.deepEqual(plain(out.enumValues).sort(), ['edta', 'others', 'plain', 'urine']);
+  assert.ok(out.itemsProperties.specimen_type);
+  assert.equal(out.itemsProperties.specimen_type.type, 'string');
+  assert.ok(Array.isArray(out.itemsProperties.specimen_type.enum));
+  // FIX-2 companion is present because "others" was detected.
+  assert.equal(out.companionName, 'specimen_type_other');
+  assert.ok(out.itemsProperties.specimen_type_other);
+  assert.equal(out.itemsProperties.specimen_type_other.type, 'string');
+  // Companion has visibleWhen sidecar via itemPresentation.
+  assert.equal(out.itemPresentation.specimen_type_other.visibleWhen,
+    "specimen_type == 'others'");
+  // "Other" label defaults to "Other" for the escape-hatch prefix.
+  assert.equal(out.enumLabels.others, 'Other');
+  // Pessimistic reconciliation: clinic column had 3/4 true cells → resolved false.
+  assert.equal(out.reconciliation.clinic.divergent, true);
+  assert.equal(out.reconciliation.clinic.resolvedRequired, false);
+  // lab column was unanimously not-required → not divergent, resolved false.
+  assert.equal(out.reconciliation.lab.divergent, false);
+  // Required row identifier is required at items level.
+  assert.ok(out.itemsRequired.indexOf('specimen_type') !== -1);
+});
+
+test('UX-38 transformer returns null when no Cartesian product exists', () => {
+  const w = loadRegisterElement();
+  // 3 fields, no shared suffix structure.
+  const children = [
+    w.regBlankField('first_name', 'string'),
+    w.regBlankField('last_name', 'string'),
+    w.regBlankField('email', 'string')
+  ];
+  const out = w.regRefit_buildCartesianRestatementShape(children, { groupName: 'Applicant' });
+  assert.equal(out, null);
+});
+
+test('UX-38 row-identifier name heuristic singularises and slugifies', () => {
+  const w = loadRegisterElement();
+  assert.equal(w.regRefit_proposeRowIdentifierName('Nature of Specimens'), 'specimen_type');
+  assert.equal(w.regRefit_proposeRowIdentifierName('List of Vendors'), 'vendor_type');
+  assert.equal(w.regRefit_proposeRowIdentifierName('Sample Types'), 'sample_type');     // already ends in "type"
+  assert.equal(w.regRefit_proposeRowIdentifierName('Specimens'), 'specimen_type');
+});
+
+test('UX-38 visibleWhen round-trips on nested children as x-visible-when', () => {
+  const w = loadRegisterElement();
+  // Build an array-of-objects field with a child carrying visibleWhen.
+  const arr = w.regBlankField('specimens', 'array');
+  const rowField = w.regBlankField('specimen_type', 'enum');
+  rowField.required = true;
+  rowField.validation.enumValues = ['plain', 'edta', 'others'];
+  const companion = w.regBlankField('specimen_type_other', 'string');
+  companion.visibleWhen = "specimen_type == 'others'";
+  arr.validation = {
+    itemType: 'object',
+    itemChildren: [rowField, companion]
+  };
+  const schema = w.schemaFromFields({ meta: { name: 't' }, fields: [arr] });
+  // The companion property carries x-visible-when on the wire.
+  assert.equal(schema.properties.specimens.items.properties.specimen_type_other['x-visible-when'],
+    "specimen_type == 'others'");
+  // Round-trip back into the model.
+  const parsed = w.fieldsFromSchema(schema);
+  assert.equal(parsed.length, 1);
+  const parsedCompanion = parsed[0].validation.itemChildren.find(c => c.name === 'specimen_type_other');
+  assert.ok(parsedCompanion);
+  assert.equal(parsedCompanion.visibleWhen, "specimen_type == 'others'");
+});
+
+/* UX-39 — pre-populate defaults from enum (smart-merge lifecycle, sparse
+ * rows, identity-by-enum-value, predicate gates). These tests exercise the
+ * canonical workflow: build an array-of-objects with one enum child, click
+ * Pre-populate, verify the sparse default rows, then verify smart re-run
+ * after the enum churns. */
+test('UX-39 predicate: eligible only when items has exactly one single-select enum with values', () => {
+  const w = loadRegisterElement();
+  // No items → null.
+  const f0 = w.regBlankField('a', 'array');
+  assert.equal(w.regCanPrePopulateFromEnum(f0), null);
+
+  // Items with no enum child → null.
+  const f1 = w.regBlankField('b', 'array');
+  f1.validation = { itemType: 'object', itemChildren: [
+    w.regBlankField('clinic', 'boolean'),
+    w.regBlankField('lab', 'boolean')
+  ]};
+  assert.equal(w.regCanPrePopulateFromEnum(f1), null);
+
+  // Items with one enum with values → eligible.
+  const f2 = w.regBlankField('c', 'array');
+  const e2 = w.regBlankField('sample_type', 'enum');
+  e2.validation.enumValues = ['plain', 'edta'];
+  f2.validation = { itemType: 'object', itemChildren: [e2, w.regBlankField('clinic', 'boolean')] };
+  const eligible = w.regCanPrePopulateFromEnum(f2);
+  assert.ok(eligible);
+  assert.equal(eligible.enumKid.name, 'sample_type');
+  assert.deepEqual(plain(eligible.values), ['plain', 'edta']);
+
+  // Two enums → ambiguous → null.
+  const f3 = w.regBlankField('d', 'array');
+  const e3a = w.regBlankField('a', 'enum'); e3a.validation.enumValues = ['x'];
+  const e3b = w.regBlankField('b', 'enum'); e3b.validation.enumValues = ['y'];
+  f3.validation = { itemType: 'object', itemChildren: [e3a, e3b] };
+  assert.equal(w.regCanPrePopulateFromEnum(f3), null);
+
+  // Empty enum → null.
+  const f4 = w.regBlankField('e', 'array');
+  const e4 = w.regBlankField('z', 'enum');                          // no values yet
+  f4.validation = { itemType: 'object', itemChildren: [e4] };
+  assert.equal(w.regCanPrePopulateFromEnum(f4), null);
+});
+
+test('UX-39 click-1: sparse default rows, boolean=false explicit, others absent', () => {
+  const w = loadRegisterElement();
+  const draft = w.regGetDraft();
+  const arr = w.regBlankField('specimens', 'array');
+  const enumKid = w.regBlankField('sample_type', 'enum');
+  enumKid.validation.enumValues = ['plain', 'edta', 'urine'];
+  arr.validation = { itemType: 'object', itemChildren: [
+    enumKid,
+    w.regBlankField('clinic', 'boolean'),
+    w.regBlankField('lab', 'boolean'),
+    w.regBlankField('notes', 'string')
+  ]};
+  draft.fields = [arr];
+  draft._groups = [];
+  // Confirm yes (loadPortal stubs window.confirm = () => true).
+  assert.equal(w.regPrePopulateDefaultsFromEnum(arr), true);
+  assert.ok(Array.isArray(arr.default));
+  assert.equal(arr.default.length, 3);
+  // Each row carries the enum value + booleans=false, strings absent.
+  arr.default.forEach((row, i) => {
+    assert.equal(row.sample_type, enumKid.validation.enumValues[i]);
+    assert.equal(row.clinic, false);
+    assert.equal(row.lab, false);
+    assert.equal('notes' in row, false);                           // sparse
+  });
+});
+
+test('UX-39 smart re-run: identity-by-enum-value preserves edits, adds new, keeps orphans', () => {
+  const w = loadRegisterElement();
+  const draft = w.regGetDraft();
+  const arr = w.regBlankField('specimens', 'array');
+  const enumKid = w.regBlankField('sample_type', 'enum');
+  enumKid.validation.enumValues = ['plain', 'edta', 'fluoride'];
+  arr.validation = { itemType: 'object', itemChildren: [enumKid,
+    w.regBlankField('clinic', 'boolean'), w.regBlankField('lab', 'boolean')] };
+  draft.fields = [arr];
+
+  // Click 1: initial pre-populate.
+  w.regPrePopulateDefaultsFromEnum(arr);
+  assert.equal(arr.default.length, 3);
+
+  // Sarah edits the EDTA row to mark clinic=true.
+  const edtaRow = arr.default.find(r => r.sample_type === 'edta');
+  edtaRow.clinic = true;
+
+  // Enum churn: add 'plasma', remove 'fluoride'.
+  enumKid.validation.enumValues = ['plain', 'edta', 'plasma'];
+
+  // Click 2: smart re-run.
+  w.regPrePopulateDefaultsFromEnum(arr);
+  assert.equal(arr.default.length, 4);                              // original 3 + plasma; fluoride kept as orphan
+  // EDTA edit survives (identity-by-enum-value).
+  const edtaAfter = arr.default.find(r => r.sample_type === 'edta');
+  assert.equal(edtaAfter.clinic, true);
+  // New plasma row exists with sparse defaults.
+  const plasmaRow = arr.default.find(r => r.sample_type === 'plasma');
+  assert.ok(plasmaRow);
+  assert.equal(plasmaRow.clinic, false);
+  // Fluoride kept as orphan (per Q9 pessimistic preservation).
+  const fluorideRow = arr.default.find(r => r.sample_type === 'fluoride');
+  assert.ok(fluorideRow);
+});
+
+test('UX-39 default array round-trips through schemaFromFields ↔ fieldsFromSchema', () => {
+  const w = loadRegisterElement();
+  const arr = w.regBlankField('specimens', 'array');
+  const enumKid = w.regBlankField('sample_type', 'enum');
+  enumKid.validation.enumValues = ['plain', 'edta'];
+  arr.validation = { itemType: 'object', itemChildren: [enumKid,
+    w.regBlankField('clinic', 'boolean')] };
+  arr.default = [
+    { sample_type: 'plain', clinic: false },
+    { sample_type: 'edta',  clinic: true }
+  ];
+  const schema = w.schemaFromFields({ meta: { name: 't' }, fields: [arr] });
+  assert.deepEqual(plain(schema.properties.specimens.default), plain(arr.default));
+  const parsed = w.fieldsFromSchema(schema);
+  assert.equal(parsed.length, 1);
+  assert.deepEqual(plain(parsed[0].default), plain(arr.default));
+});
+
+test('UX-39 clear defaults removes the default array', () => {
+  const w = loadRegisterElement();
+  const draft = w.regGetDraft();
+  const arr = w.regBlankField('specimens', 'array');
+  arr.default = [{ x: 1 }, { x: 2 }];
+  draft.fields = [arr];
+  assert.equal(w.regClearArrayDefaults(arr), true);
+  assert.equal(arr.default, undefined);
+});
+
+test('UX-40 regDisplayLabel prefers field.title, falls back to humanized name', () => {
+  const w = loadRegisterElement();
+  const f1 = w.regBlankField('sample_type', 'string');
+  assert.equal(w.regDisplayLabel(f1), 'Sample Type');               // fallback path
+  f1.title = 'Specimen Type';
+  assert.equal(w.regDisplayLabel(f1), 'Specimen Type');              // override path
+  // Disclaimer-shaped objects (no name) return empty.
+  assert.equal(w.regDisplayLabel({ type: 'disclaimer' }), '');
+  assert.equal(w.regDisplayLabel(null), '');
+});
+
 /* UX-36 — manual Class-3 restatement (group ↔ array-of-objects). The two
  * directions exercise the cardinality lever Sarah pulls when the LLM's
  * extraction shape doesn't match her real-world data shape. The forward

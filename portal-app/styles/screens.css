@@ -8877,3 +8877,223 @@ textarea.reg-skeleton-input {
   .ov-jump-cta { flex-direction: column; align-items: stretch; }
   .ov-jump-cta-actions { justify-content: flex-end; }
 }
+
+/* UX-38 — Cartesian-restatement confirmation modal. Inline-editable row-
+ * identifier name + per-row label inputs. Tab-through workflow per Q5. */
+.reg-cartesian-modal-veil {
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9000;
+}
+.reg-cartesian-modal {
+  background: var(--bg-1);
+  border-radius: var(--r-lg);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+  width: 560px; max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 64px); overflow-y: auto;
+  padding: 22px 24px 18px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.reg-cartesian-modal-heading {
+  font-size: 16px;
+  font-weight: var(--fw-medium);
+  color: var(--g-10);
+  display: flex; align-items: center; gap: 8px;
+}
+.reg-cartesian-modal-summary {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--g-30);
+  line-height: 1.5;
+}
+.reg-cartesian-modal-row { display: flex; flex-direction: column; gap: 4px; }
+.reg-cartesian-modal-label {
+  font-size: 11.5px;
+  font-weight: var(--fw-medium);
+  color: var(--g-30);
+}
+.reg-cartesian-modal-input {
+  padding: 7px 9px;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  font: inherit;
+  background: white;
+}
+.reg-cartesian-modal-input:focus { outline: none; border-color: var(--theme-50); }
+.reg-cartesian-modal-labels {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 220px; overflow-y: auto;
+  padding: 6px 8px;
+  border: 0.5px solid var(--g-95);
+  border-radius: var(--r-sm);
+  background: var(--g-99);
+}
+.reg-cartesian-modal-label-row {
+  display: grid;
+  grid-template-columns: 110px 16px 1fr auto;
+  align-items: center;
+  gap: 6px;
+}
+.reg-cartesian-modal-wire {
+  font-family: var(--ff-mono, monospace);
+  font-size: 11px;
+  color: var(--g-30);
+}
+.reg-cartesian-modal-arrow { color: var(--g-60); text-align: center; }
+.reg-cartesian-modal-tag {
+  font-size: 10.5px;
+  color: var(--theme-30);
+  font-style: italic;
+}
+.reg-cartesian-modal-cols {
+  font-size: 12px;
+  color: var(--g-30);
+  line-height: 1.6;
+}
+.reg-cartesian-modal-cols code {
+  background: var(--g-98);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.reg-cartesian-modal-warning {
+  background: var(--y-95, #fff8e6);
+  border: 0.5px solid var(--y-80, #fde293);
+  border-radius: var(--r-sm);
+  padding: 9px 11px;
+  font-size: 11.5px;
+  color: var(--g-20);
+  line-height: 1.5;
+}
+.reg-cartesian-modal-warning code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.reg-cartesian-modal-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  border-top: 0.5px solid var(--g-95);
+  padding-top: 12px;
+}
+
+/* UX-39 — array-defaults panel. Sits between the items-shape editor and the
+ * reverse-restatement affordance. Three states: ineligible (disabled button),
+ * eligible (pre-populate button), populated (summary + action cluster + editor). */
+.reg-array-defaults-panel {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--g-95);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reg-array-prepopulate-btn {
+  align-self: flex-start;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid var(--g-80);
+  border-radius: var(--r-sm);
+  color: var(--g-30);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.reg-array-prepopulate-btn:hover:not(:disabled) {
+  background: var(--theme-95);
+  border-color: var(--theme-50);
+  color: var(--theme-20);
+}
+.reg-array-prepopulate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.reg-array-defaults-summary {
+  font-size: 12px;
+  color: var(--g-30);
+}
+.reg-array-defaults-summary code {
+  background: var(--g-98);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.reg-array-defaults-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.reg-array-defaults-action {
+  padding: 4px 9px;
+  background: transparent;
+  border: 1px solid var(--g-85);
+  border-radius: var(--r-sm);
+  color: var(--g-30);
+  font-size: 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.reg-array-defaults-action:hover {
+  background: var(--theme-95);
+  border-color: var(--theme-50);
+  color: var(--theme-20);
+}
+.reg-array-defaults-action--danger:hover {
+  background: var(--r-95, #ffebec);
+  border-color: var(--r-50, #d24a55);
+  color: var(--r-30, #8a1622);
+}
+.reg-array-defaults-editor {
+  margin-top: 8px;
+  padding: 10px;
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  max-height: 360px;
+  overflow-y: auto;
+}
+.reg-array-defaults-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11.5px;
+}
+.reg-array-defaults-table th,
+.reg-array-defaults-table td {
+  border: 0.5px solid var(--g-95);
+  padding: 5px 7px;
+  text-align: left;
+  vertical-align: middle;
+}
+.reg-array-defaults-table th {
+  font-size: 10.5px;
+  font-weight: var(--fw-medium);
+  color: var(--g-30);
+  background: var(--g-98);
+  white-space: nowrap;
+}
+.reg-array-defaults-table td input,
+.reg-array-defaults-table td select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  font: inherit;
+}
+.reg-array-defaults-table td input[type="checkbox"] {
+  width: auto;
+}
+.reg-array-defaults-editor-footer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--g-95);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
