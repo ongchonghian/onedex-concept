@@ -48,11 +48,16 @@ const SMART_START_LIVE_TIMEOUT_MS = 180000;
  * published model name changes. */
 const SMART_START_VLM_ENDPOINT = 'https://api.moonshot.ai/v1/chat/completions';
 const SMART_START_VLM_MODEL = 'kimi-k2.6';
-// Bumped 2048 → 4096 so a single page with dense field lists (e.g., a typical
-// employment-application form) doesn't truncate mid-response. Each page is
-// still one VLM call; multi-page docs are handled by iterating in the
-// caller.
-const SMART_START_VLM_MAX_TOKENS = 4096;
+// Bumped 2048 → 4096 → 8192 so a single page with dense field lists (e.g., a
+// typical employment-application form) doesn't truncate mid-response. The
+// 8192 ceiling accommodates the grouped-envelope output shape (groups[] with
+// per-group rationale + fields[]) which roughly doubles raw token count vs
+// the flat-fields[] shape. Reasoning models would also need this headroom
+// for their internal thinking, but the prototype now defaults to a non-
+// reasoning vision model (see SMART_START_XAI_VLM_MODEL) so the bump is
+// mostly insurance against dense pages. Each page is still one VLM call;
+// multi-page docs are handled by iterating in the caller.
+const SMART_START_VLM_MAX_TOKENS = 8192;
 
 /* Moonshot / Kimi LLM (overlay alternative to Anthropic Claude). Same
  * Chat Completions endpoint + same multimodal kimi-k2.6 model used for
@@ -62,13 +67,20 @@ const SMART_START_LLM_KIMI_MODEL = 'kimi-k2.6';
 /* xAI Grok — third provider. OpenAI-compatible Chat Completions endpoint at
  * api.x.ai (the operator's curl used the newer /v1/responses shape, but the
  * chat-completions endpoint accepts the same model strings and slots in to
- * our existing OpenAI-style dispatcher). grok-4.20-reasoning is assumed
- * multimodal — if Grok 4.2 publishes a separate vision SKU, edit
- * SMART_START_XAI_VLM_MODEL below.
+ * our existing OpenAI-style dispatcher).
+ *
+ * Model choice: xAI publishes both reasoning and non-reasoning variants.
+ * VLM extraction is pure perception + structured-JSON emission; reasoning
+ * models burn 7000+ tokens of internal thinking before emitting output and
+ * routinely hit the 180s timeout on dense pages. We use
+ * grok-4.20-non-reasoning-latest for the VLM path (fast, JSON-mode reliable,
+ * vision-capable, no internal thinking tax) and keep grok-4.20-reasoning
+ * available for the LLM overlay where multi-step grounding-source synthesis
+ * can genuinely benefit from reasoning.
  *
  * Model strings are configurable: bump them when xAI ships new variants. */
 const SMART_START_XAI_ENDPOINT  = 'https://api.x.ai/v1/chat/completions';
-const SMART_START_XAI_VLM_MODEL = 'grok-4.20-reasoning';
+const SMART_START_XAI_VLM_MODEL = 'grok-4.20-non-reasoning-latest';
 const SMART_START_XAI_LLM_MODEL = 'grok-4.20-reasoning';
 
 /* ============================================================
@@ -626,7 +638,10 @@ function smartStart_isAbortError(err) {
 }
 
 function smartStart_safeParseJson(text) {
-  if (!text) return null;
+  if (!text) {
+    console.warn('[smart-start-assist] safeParseJson received empty text');
+    return null;
+  }
   // Trim any trailing content after the JSON ends — the assistant may emit
   // closing prose despite the prompt. We're permissive about that.
   try {
@@ -637,6 +652,15 @@ function smartStart_safeParseJson(text) {
     if (lastBrace > 0) {
       try { return JSON.parse(text.slice(0, lastBrace + 1)); } catch (e2) {}
     }
+    // Diagnostic log — surface the raw text + parse error so operators can see
+    // exactly what the model returned (truncated JSON, prose, mixed content).
+    // Truncated to 2000 chars so the console doesn't explode on huge bodies.
+    console.warn('[smart-start-assist] safeParseJson failed', {
+      parseError: e.message,
+      textLength: text.length,
+      textHead: text.slice(0, 1000),
+      textTail: text.length > 1000 ? text.slice(-1000) : ''
+    });
     return null;
   }
 }

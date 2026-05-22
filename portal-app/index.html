@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=1200, initial-scale=1">
 <title>Dex Portal — Prototype</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="styles/tokens.css?v=p60">
-<link rel="stylesheet" href="styles/themes.css?v=p60">
-<link rel="stylesheet" href="styles/base.css?v=p60">
-<link rel="stylesheet" href="styles/components.css?v=p60">
-<link rel="stylesheet" href="styles/layout.css?v=p60">
-<link rel="stylesheet" href="styles/screens.css?v=p60">
-<link rel="stylesheet" href="styles/demos.css?v=p60">
+<link rel="stylesheet" href="styles/tokens.css?v=p87">
+<link rel="stylesheet" href="styles/themes.css?v=p87">
+<link rel="stylesheet" href="styles/base.css?v=p87">
+<link rel="stylesheet" href="styles/components.css?v=p87">
+<link rel="stylesheet" href="styles/layout.css?v=p87">
+<link rel="stylesheet" href="styles/screens.css?v=p87">
+<link rel="stylesheet" href="styles/demos.css?v=p87">
 </head>
 <body>
 
@@ -2926,14 +2926,49 @@
         </div>
 
         <div class="reg-fields-section">
-          <h3>Fields</h3>
+          <div class="reg-fields-header">
+            <h3>Fields</h3>
+            <button type="button" class="reg-structural-review-btn"
+                    data-reg-structural-review
+                    data-demo="register-canvas.structural-review"
+                    onclick="regOpenRefitDrawer()"
+                    title="Smart Start refit — review structural-restatement suggestions from ADR 0040 §17's seed-time self-audit"
+                    hidden><i class="ti ti-stack-3"></i> Structural review<span class="reg-structural-review-badge" data-reg-refit-count hidden>0</span></button>
+          </div>
           <div class="reg-field-list" data-reg-field-list data-demo="register-canvas.field-list"></div>
           <div class="reg-field-empty" data-reg-field-empty hidden>
             No fields yet. Add the first field to begin.
           </div>
-          <button type="button" class="reg-add-field"
-                  data-demo="register-canvas.add-field"
-                  onclick="regAddField()"><i class="ti ti-plus"></i> Add field</button>
+          <div class="reg-field-toolbar">
+            <button type="button" class="reg-add-field"
+                    data-demo="register-canvas.add-field"
+                    onclick="regAddField()"><i class="ti ti-plus"></i> Add field</button>
+            <button type="button" class="reg-add-group"
+                    data-demo="register-canvas.add-group"
+                    onclick="regAddGroup()"
+                    title="Create a new group. Each field can be moved into any group via the per-row group picker."><i class="ti ti-folder-plus"></i> Add group</button>
+            <button type="button" class="reg-add-disclaimer"
+                    data-demo="register-canvas.add-disclaimer"
+                    onclick="regAddDisclaimer()"
+                    title="Add a Markdown disclaimer between input fields (renders as presentation only — not part of the data schema)"><i class="ti ti-info-circle"></i> Add disclaimer text</button>
+          </div>
+        </div>
+
+        <!-- Refit drawer (ADR 0041) — right-side panel with clickable backdrop. -->
+        <div class="reg-refit-backdrop" data-reg-refit-backdrop hidden onclick="regCloseRefitDrawer()" aria-hidden="true"></div>
+        <div class="reg-refit-drawer" data-reg-refit-drawer hidden role="dialog" aria-modal="false" aria-label="Structural review">
+          <div class="reg-refit-drawer-header">
+            <div class="reg-refit-drawer-titlewrap">
+              <h3>Structural review</h3>
+              <span class="reg-refit-subtitle">Smart Start refit · ADR 0041</span>
+            </div>
+            <button type="button" class="reg-refit-drawer-close" onclick="regCloseRefitDrawer()" aria-label="Close structural review"><i class="ti ti-x" aria-hidden="true"></i><span class="reg-refit-drawer-close-label">Close</span></button>
+          </div>
+          <div class="reg-refit-drawer-body" data-reg-refit-cards></div>
+          <div class="reg-refit-drawer-footer">
+            <button type="button" class="reg-refit-rerun" data-reg-refit-rerun onclick="regRefitRerun()"><i class="ti ti-refresh"></i> Re-run structural review</button>
+            <span class="reg-refit-rerun-hint" data-reg-refit-rerun-hint></span>
+          </div>
         </div>
 
         <div class="reg-governance">
@@ -4607,52 +4642,52 @@
      defined elsewhere. Per ADR 0028 the multi-Pitstop layer is a parallel concern
      hooking into existing surfaces — keeping it as the final layer makes the dependency
      direction explicit. ===== -->
-<script src="scripts/state.js?v=p60"></script>
-<script src="scripts/access.js?v=p60"></script>
-<script src="scripts/workspace-storage.js?v=p60"></script>
+<script src="scripts/state.js?v=p87"></script>
+<script src="scripts/access.js?v=p87"></script>
+<script src="scripts/workspace-storage.js?v=p87"></script>
 <!-- workspace-fixtures.js — scene/inbox/MP fixture data extracted from state.js
      in Phase 7. Must load before workspace-bootstrap.js (which dereferences
      SCENE_SEEDS / INBOX_BY_DEX) but order vs. state.js doesn't matter — all
      references are guarded with `typeof X !== 'undefined'`. -->
-<script src="scripts/workspace-fixtures.js?v=p60"></script>
-<script src="scripts/workspace-bootstrap.js?v=p60"></script>
-<script src="scripts/workspace.js?v=p60"></script>
-<script src="scripts/components.js?v=p60"></script>
-<script src="scripts/theme.js?v=p60"></script>
-<script src="scripts/wizard.js?v=p60"></script>
-<script src="scripts/app.js?v=p60"></script>
-<script src="scripts/register-element.js?v=p60"></script>
-<script src="scripts/register-onramps.js?v=p60"></script>
+<script src="scripts/workspace-fixtures.js?v=p87"></script>
+<script src="scripts/workspace-bootstrap.js?v=p87"></script>
+<script src="scripts/workspace.js?v=p87"></script>
+<script src="scripts/components.js?v=p87"></script>
+<script src="scripts/theme.js?v=p87"></script>
+<script src="scripts/wizard.js?v=p87"></script>
+<script src="scripts/app.js?v=p87"></script>
+<script src="scripts/register-element.js?v=p87"></script>
+<script src="scripts/register-onramps.js?v=p87"></script>
 <!-- Smart Start assist (ADR 0040) — engine + UI primitives + fixtures.
      Load order: fixtures before engine before UI primitives, all before the
      demos (which exercise the integrated flow). -->
-<script src="scripts/fixtures/smart-start/canned-responses.js?v=p60"></script>
-<script src="scripts/fixtures/smart-start/confluence-pages.js?v=p60"></script>
-<script src="scripts/fixtures/smart-start/dex-references.js?v=p60"></script>
-<script src="scripts/smart-start-assist-prompts.js?v=p60"></script>
-<script src="scripts/smart-start-assist-live.js?v=p60"></script>
-<script src="scripts/smart-start-assist.js?v=p60"></script>
-<script src="scripts/smart-start-assist-ui.js?v=p60"></script>
+<script src="scripts/fixtures/smart-start/canned-responses.js?v=p87"></script>
+<script src="scripts/fixtures/smart-start/confluence-pages.js?v=p87"></script>
+<script src="scripts/fixtures/smart-start/dex-references.js?v=p87"></script>
+<script src="scripts/smart-start-assist-prompts.js?v=p87"></script>
+<script src="scripts/smart-start-assist-live.js?v=p87"></script>
+<script src="scripts/smart-start-assist.js?v=p87"></script>
+<script src="scripts/smart-start-assist-ui.js?v=p87"></script>
 <!-- Auto-demo runner (ADR 0034) — load order: runtime first, then each flow self-registers, then the launcher reads the registry. -->
-<script src="scripts/demos/runtime.js?v=p60"></script>
-<script src="scripts/demos/lib/seed-helpers.js?v=p60"></script>
-<script src="scripts/demos/first-agreement.js?v=p60"></script>
-<script src="scripts/demos/extend.js?v=p60"></script>
-<script src="scripts/demos/approve.js?v=p60"></script>
-<script src="scripts/demos/cross-dex.js?v=p60"></script>
-<script src="scripts/demos/compose-message.js?v=p60"></script>
-<script src="scripts/demos/suspend.js?v=p60"></script>
-<script src="scripts/demos/watch-and-digest.js?v=p60"></script>
-<script src="scripts/demos/teammate-claim.js?v=p60"></script>
-<script src="scripts/demos/distribute-pack.js?v=p60"></script>
-<script src="scripts/demos/triage-failures.js?v=p60"></script>
-<script src="scripts/demos/acting-as-sp.js?v=p60"></script>
-<script src="scripts/demos/pitstop-scope.js?v=p60"></script>
-<script src="scripts/demos/register-element.js?v=p60"></script>
-<script src="scripts/demos/register-element-with-assist.js?v=p60"></script>
-<script src="scripts/demos/register-element-with-assist-live.js?v=p60"></script>
-<script src="scripts/demos/version-element.js?v=p60"></script>
-<script src="scripts/demos/index.js?v=p60"></script>
+<script src="scripts/demos/runtime.js?v=p87"></script>
+<script src="scripts/demos/lib/seed-helpers.js?v=p87"></script>
+<script src="scripts/demos/first-agreement.js?v=p87"></script>
+<script src="scripts/demos/extend.js?v=p87"></script>
+<script src="scripts/demos/approve.js?v=p87"></script>
+<script src="scripts/demos/cross-dex.js?v=p87"></script>
+<script src="scripts/demos/compose-message.js?v=p87"></script>
+<script src="scripts/demos/suspend.js?v=p87"></script>
+<script src="scripts/demos/watch-and-digest.js?v=p87"></script>
+<script src="scripts/demos/teammate-claim.js?v=p87"></script>
+<script src="scripts/demos/distribute-pack.js?v=p87"></script>
+<script src="scripts/demos/triage-failures.js?v=p87"></script>
+<script src="scripts/demos/acting-as-sp.js?v=p87"></script>
+<script src="scripts/demos/pitstop-scope.js?v=p87"></script>
+<script src="scripts/demos/register-element.js?v=p87"></script>
+<script src="scripts/demos/register-element-with-assist.js?v=p87"></script>
+<script src="scripts/demos/register-element-with-assist-live.js?v=p87"></script>
+<script src="scripts/demos/version-element.js?v=p87"></script>
+<script src="scripts/demos/index.js?v=p87"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>
 <script src="scripts/pitstop.js"></script>

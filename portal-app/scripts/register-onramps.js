@@ -1326,16 +1326,85 @@ async function regProcessFormFile(file, kind, myToken) {
 
 /* Build a Smart Start seed from a VLM extraction response. Mirrors the shape
  * regFormSeedFromFilename returns so the downstream rendering path doesn't
- * need to know how the seed was produced. */
+ * need to know how the seed was produced.
+ *
+ * Enum-aware: when a field carries `options[]` (per the strengthened VLM prompt
+ * — see smartStartPrompts_extractFieldsFromPdf), the option values + labels
+ * land in `validation.enumValues` + `validation.enumLabels`.
+ *
+ * "Others ____" companion-field pattern: for any enum option flagged
+ * `hasFreeTextBlank: true`, the seed builder synthesises a companion text
+ * field (`<base>_<option>_specify`) AND a cross-field validation rule that
+ * requires the companion when the enum holds that option. Generalises beyond
+ * literally "Others" — any option with an adjacent blank triggers the pattern. */
 function regBuildSeedFromVlmExtraction(vlmExtracted, filename, vlmProvider) {
-  const fields = (vlmExtracted.fields || []).map(f => ({
-    name: (f.name || regSlugify(f.label || 'field')) || 'field',
-    type: f.type || 'string',
-    required: true,                                                   // operator can untick
-    description: f.label || '',
-    examples: f.exampleValue ? [String(f.exampleValue)] : undefined,
-    _group: f._group || 'Fields'
-  }));
+  const fields = [];
+  const rules = [];
+
+  (vlmExtracted.fields || []).forEach(f => {
+    const baseName = (f.name || regSlugify(f.label || 'field')) || 'field';
+    const validation = {};
+
+    if (f.type === 'enum' && Array.isArray(f.options) && f.options.length) {
+      const enumValues = [];
+      const enumLabels = {};
+      f.options.forEach(opt => {
+        if (!opt) return;
+        const value = opt.value || regSlugify(opt.label || '');
+        if (!value) return;
+        enumValues.push(value);
+        if (opt.label) enumLabels[value] = opt.label;
+      });
+      if (enumValues.length) {
+        validation.enumValues = enumValues;
+        validation.enumLabels = enumLabels;
+      }
+    }
+
+    fields.push({
+      name: baseName,
+      type: f.type || 'string',
+      required: true,                                                 // operator can untick
+      description: f.label || '',
+      examples: f.exampleValue ? [String(f.exampleValue)] : undefined,
+      validation: Object.keys(validation).length ? validation : undefined,
+      _group: f._group || 'Fields'
+    });
+
+    // Companion fields + cross-field rules for any enum option with a
+    // free-text blank next to it. Generalises the "Others ____" pattern:
+    // works equally for "Insurance Name ____", "Other (please specify) ____",
+    // "S Pass ____" (if a form-designer attached a blank there), etc.
+    if (f.type === 'enum' && Array.isArray(f.options)) {
+      f.options.forEach(opt => {
+        if (!opt || !opt.hasFreeTextBlank) return;
+        const optValue = opt.value || regSlugify(opt.label || '');
+        if (!optValue) return;
+        const companionName = baseName + '_' + regSlugify(optValue) + '_specify';
+        fields.push({
+          name: companionName,
+          type: 'string',
+          required: false,                                            // conditional, enforced via rule below
+          description: 'Free-text companion for "' + (opt.label || optValue) + '" in ' + baseName,
+          _group: f._group || 'Fields',
+          _companionFor: { base: baseName, option: optValue }
+        });
+        rules.push({
+          name: companionName + '_required',
+          // govaluate-style cross-field expression: rule passes when the enum
+          // doesn't hold the flagged option, OR the companion is non-empty.
+          // For checkbox-cluster (selectionMode === 'multiple') the enum is an
+          // array; the array-membership check uses `contains`.
+          expression: f.selectionMode === 'multiple'
+            ? '!contains(' + baseName + ', "' + optValue + '") || (' + companionName + ' != "" && ' + companionName + ' != null)'
+            : baseName + ' != "' + optValue + '" || (' + companionName + ' != "" && ' + companionName + ' != null)',
+          on_failure: 'When "' + (opt.label || optValue) + '" is selected, "' + companionName + '" must be filled in.',
+          applies_at: 'validation'
+        });
+      });
+    }
+  });
+
   // Preserve group order + rationales from the extraction, but rebuild each
   // group's `fields` list from the seed shape so the renderer always works
   // off the canonical seed-field representation.
@@ -1361,7 +1430,8 @@ function regBuildSeedFromVlmExtraction(vlmExtracted, filename, vlmProvider) {
       category: 'Imported · review category',
       description: 'Schema derived from ' + (vlmProvider || 'VLM') + ' extraction of ' + (filename || 'uploaded form') + '. Review names + types before publishing.'
     },
-    fields: fields
+    fields: fields,
+    rules: rules
   };
 }
 
@@ -1619,6 +1689,7 @@ function regUseFormSeed() {
     fields: seed.fields,
     meta: seed.meta,
     groups: seed._groups || null,
+    rules: seed.rules || null,                                       // cross-field companion-required rules per FIX-2
     source: { onramp: 'form', extractedKey: seed._key || 'unknown' }
   });
   _regLastFormSeed = null;
@@ -1644,14 +1715,50 @@ function registerOnramp_completeWithSeed(seed) {
   // Field assignment — replace whatever was there (an on-ramp seed is a fresh
   // starting point; partial seeds aren't a v1 feature).
   if (Array.isArray(seed.fields) && seed.fields.length) {
-    regDraft.fields = seed.fields.map(f => Object.assign(regBlankField(f.name), {
-      type: f.type || 'string',
-      required: !!f.required,
-      description: f.description || '',
-      validation: Object.assign({}, f.validation || {}),
-      examples: f.examples ? f.examples.slice() : undefined,
-      group: f._group || f.group || null
-    }));
+    regDraft.fields = seed.fields.map(f => {
+      const newField = Object.assign(regBlankField(f.name), {
+        type: f.type || 'string',
+        required: !!f.required,
+        description: f.description || '',
+        validation: Object.assign({}, f.validation || {}),
+        examples: f.examples ? f.examples.slice() : undefined,
+        group: f._group || f.group || null
+      });
+      // IMPL-3 — ADR 0040 §17 amendment. Capture presentation snapshot at seed
+      // time so the per-field Presentation panel's sparkle "auto-extracted"
+      // indicator can reliably detect Sarah's edits to originAnnotation.
+      // The snapshot is immutable for the life of the draft; the live value
+      // is what Sarah edits.
+      const src = f.presentation || {};
+      const legacyOrigin = f.validation && f.validation.originAnnotation;
+      const origin = src.originAnnotation || legacyOrigin;
+      if (origin || src.hintOverride || src.rowLabels || src.optionLabels) {
+        newField.presentation = {};
+        if (origin) {
+          newField.presentation.originAnnotation = origin;
+          newField.presentation.originAnnotationFromSeed = origin;
+          // Migrate legacy validation.originAnnotation
+          if (newField.validation) delete newField.validation.originAnnotation;
+        }
+        if (src.hintOverride)  newField.presentation.hintOverride  = src.hintOverride;
+        if (src.rowLabels)     newField.presentation.rowLabels     = Object.assign({}, src.rowLabels);
+        if (src.optionLabels)  newField.presentation.optionLabels  = Object.assign({}, src.optionLabels);
+      }
+      // Preserve companion-field provenance from FIX-2
+      if (f._companionFor) newField._companionFor = Object.assign({}, f._companionFor);
+      return newField;
+    });
+  }
+  // Cross-field validation rules — companion-field requirements emitted by
+  // regBuildSeedFromVlmExtraction for the "Others ____" pattern. Each rule
+  // is govaluate-style, runs at validation time, fires on_failure when the
+  // companion enum option is held without the companion field being filled.
+  if (Array.isArray(seed.rules) && seed.rules.length) {
+    regDraft.rules = (regDraft.rules || []).concat(
+      seed.rules.map(r => Object.assign({
+        id: 'r_' + Math.random().toString(36).slice(2, 9)
+      }, r))
+    );
   }
   // Carry the seed's group structure onto the draft so the Schema tab can
   // render fields under their original headings. Filtered to groups that
