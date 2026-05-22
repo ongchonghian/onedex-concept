@@ -120,6 +120,7 @@ function regBlankField(name, type) {
     name: name || '',
     type: type || 'string',
     required: false,
+    title: undefined,                          // UX-40 — optional display-label override; absent means "fall back to humanizeFieldName(name)"
     description: '',
     validation: {},
     group: null
@@ -529,13 +530,30 @@ function fieldToSchemaProperty(f) {
     }
     default:         prop.type = 'string';
   }
+  // UX-40 — emit `title` (display label) per JSON Schema convention. Always
+  // emitted so downstream JSON-Schema-compliant renderers have a non-snake-
+  // case label; honors author override when `f.title` is set, else derives
+  // from the humanised field name.
+  if (f.name) prop.title = f.title || humanizeFieldName(f.name);
   if (f.description) prop.description = f.description;
+  // UX-38 / Q4 — per-row conditional visibility for array-item children.
+  // Constrained grammar (same-row sibling eq/neq only) enforced upstream by
+  // the detector + modal; serialiser/parser are pass-through. Stored as a
+  // JSON Schema extension keyword so it travels with the property entry
+  // (no nesting under a separate sidecar needed for Phase-1).
+  if (f.visibleWhen) prop['x-visible-when'] = f.visibleWhen;
   if (f.type !== 'composite-input' && v.pattern) prop.pattern = v.pattern;
   if (v.minimum !== undefined) prop.minimum = v.minimum;
   if (v.maximum !== undefined) prop.maximum = v.maximum;
   if (v.minLength !== undefined) prop.minLength = v.minLength;
   if (v.maxLength !== undefined) prop.maxLength = v.maxLength;
   if (f.examples && f.examples.length) prop.examples = f.examples;
+  // UX-39 — pre-populated default rows for array-of-objects fields. JSON
+  // Schema-native `default` keyword; per-row identity is enum-value-based
+  // (the row's enum field carries the wire identifier).
+  if (f.type === 'array' && Array.isArray(f.default) && f.default.length) {
+    prop.default = f.default;
+  }
   return prop;
 }
 
@@ -620,8 +638,16 @@ function fieldsFromSchema(schema) {
 function fieldFromSchemaProperty(name, p, isRequired, presEntry) {
   const f = regBlankField(name);
   f.required = !!isRequired;
+  // UX-40 — preserve incoming `title` as an explicit author override only when
+  // it diverges from the humanised default. If the schema's `title` matches
+  // what we'd auto-derive from the slug, we leave `f.title = undefined` so
+  // re-emission stays clean (no redundant `title` storage in the model).
+  if (p.title && p.title !== humanizeFieldName(name)) f.title = p.title;
   f.description = p.description || '';
+  if (p['x-visible-when']) f.visibleWhen = p['x-visible-when'];
   if (p.examples) f.examples = p.examples;
+  // UX-39 — pick up array `default` rows when re-importing.
+  if (p.type === 'array' && Array.isArray(p.default)) f.default = p.default;
   const pres = presEntry || {};
 
   // Type derivation. Order: presentation hint for likert-scale and
@@ -2297,6 +2323,17 @@ function regRestateGroupAsArray(groupName) {
     return false;
   }
 
+  // UX-38 — try the Cartesian decomposition path first. If the group's
+  // fields follow a <prefix>_<suffix> matrix pattern (≥2 rows × ≥2 columns
+  // × ≥80% coverage after outlier purging), build the enum-constrained
+  // shape via the shared transformer and route through the smart-modal
+  // confirmation. Otherwise fall through to the existing flat-passthrough
+  // restatement (the UX-36 default).
+  const cartesian = regRefit_buildCartesianRestatementShape(namedFields, { groupName });
+  if (cartesian) {
+    return regRestateGroupAsArray_cartesian(groupName, namedFields, disclaimers, cartesian);
+  }
+
   // Propose the array field's name. Slug from the group name; if that's
   // already taken at top level, suffix with _2/_3/...
   let proposedName = regSlugifyForKey(groupName);
@@ -2389,6 +2426,331 @@ function regRestateGroupAsArray(groupName) {
   if (typeof window.toast === 'function') {
     window.toast('Restated group "' + groupName + '" as table "' + arrayName + '" (' +
       namedFields.length + ' columns).');
+  }
+  return true;
+}
+
+/* UX-38 — Cartesian-aware branch of the manual group→array restatement.
+ * Opens the inline-editable confirmation modal (row identifier name +
+ * per-row label inputs + outlier disclosure + reconciliation warning + data-
+ * loss + audit). On confirm, commits the upgraded enum-constrained items
+ * shape — sample_type enum + optional FIX-2 companion + column properties.
+ * On cancel, no-op. */
+function regRestateGroupAsArray_cartesian(groupName, namedFields, disclaimers, restatement) {
+  // Decide the array field's name. Same disambiguation as the flat path —
+  // slug the group name; collision-suffix if needed.
+  let proposedArrayName = regSlugifyForKey(groupName);
+  if (!proposedArrayName) proposedArrayName = 'rows';
+  const takenNames = new Set((regDraft.fields || []).map(f => f.name).filter(Boolean));
+  namedFields.forEach(f => takenNames.delete(f.name));
+  let arrayName = proposedArrayName;
+  let dedup = 2;
+  while (takenNames.has(arrayName)) { arrayName = proposedArrayName + '_' + dedup++; }
+
+  // Open the custom modal with editable inputs (row identifier name + enum
+  // labels). Resolution is async — the modal calls back with the final
+  // user-approved values or null on cancel.
+  return regOpenCartesianRestatementModal({
+    groupName, arrayName, restatement,
+    onConfirm: (approved) => regCommitCartesianRestatement({
+      groupName, arrayName, namedFields, disclaimers, restatement, approved
+    }),
+    onCancel: () => {}
+  });
+}
+
+/* UX-38 — open the inline-editable confirmation modal. Mounts a transient
+ * <div> with inputs for the row-identifier name + one TextInput per enum
+ * value's display label. Tab-through edit flow per Q5 sign-off. */
+function regOpenCartesianRestatementModal(opts) {
+  const { groupName, arrayName, restatement, onConfirm, onCancel } = opts;
+  const { matrix, dominantType, enumValues, enumLabels, rowIdentifierName,
+          companionName, reconciliation, outlierChildren, sourceFieldSnapshots } = restatement;
+
+  // Remove any stale instance first.
+  const existing = document.querySelector('[data-reg-cartesian-modal]');
+  if (existing) existing.remove();
+
+  const veil = document.createElement('div');
+  veil.className = 'reg-cartesian-modal-veil';
+  veil.setAttribute('data-reg-cartesian-modal', '');
+
+  const modal = document.createElement('div');
+  modal.className = 'reg-cartesian-modal';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-label', 'Restate as table');
+
+  // Heading + summary line.
+  const heading = document.createElement('div');
+  heading.className = 'reg-cartesian-modal-heading';
+  heading.innerHTML = '<i class="ti ti-table-row" aria-hidden="true"></i> ' +
+    'Restate "' + escapeHtml(groupName) + '" as a table?';
+  modal.appendChild(heading);
+
+  const summary = document.createElement('p');
+  summary.className = 'reg-cartesian-modal-summary';
+  summary.innerHTML = 'Cartesian matrix detected: <strong>' + matrix.prefixes.length +
+    '</strong> rows × <strong>' + matrix.suffixes.length + '</strong> columns covering ' +
+    Math.round(matrix.coverage * 100) + '% of ' + sourceFieldSnapshots.length +
+    ' ' + dominantType + ' fields.' +
+    (matrix.hasEscapeHatch
+      ? ' "<strong>' + escapeHtml(matrix.escapeHatchPrefix) + '</strong>" prefix detected — injecting "Other" escape hatch.'
+      : '');
+  modal.appendChild(summary);
+
+  // Row-identifier name input.
+  const nameRow = document.createElement('div');
+  nameRow.className = 'reg-cartesian-modal-row';
+  nameRow.innerHTML = '<label class="reg-cartesian-modal-label">Row identifier field name</label>';
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.className = 'reg-cartesian-modal-input';
+  nameInput.value = rowIdentifierName;
+  nameInput.setAttribute('aria-label', 'Row identifier field name');
+  nameRow.appendChild(nameInput);
+  modal.appendChild(nameRow);
+
+  // Enum label table (wire value → editable display label).
+  const labelsHeader = document.createElement('div');
+  labelsHeader.className = 'reg-cartesian-modal-label';
+  labelsHeader.textContent = 'Row values (display labels — edit if auto-humanisation is wrong)';
+  modal.appendChild(labelsHeader);
+  const labelsTable = document.createElement('div');
+  labelsTable.className = 'reg-cartesian-modal-labels';
+  const labelInputs = {};
+  enumValues.forEach(v => {
+    const r = document.createElement('div');
+    r.className = 'reg-cartesian-modal-label-row';
+    const wireSpan = document.createElement('span');
+    wireSpan.className = 'reg-cartesian-modal-wire';
+    wireSpan.textContent = v;
+    const arrow = document.createElement('span');
+    arrow.className = 'reg-cartesian-modal-arrow';
+    arrow.textContent = '→';
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'reg-cartesian-modal-input';
+    inp.value = enumLabels[v] || humanizeFieldName(v);
+    inp.setAttribute('aria-label', 'Display label for ' + v);
+    labelInputs[v] = inp;
+    r.appendChild(wireSpan);
+    r.appendChild(arrow);
+    r.appendChild(inp);
+    if (matrix.hasEscapeHatch && v === matrix.escapeHatchPrefix) {
+      const tag = document.createElement('span');
+      tag.className = 'reg-cartesian-modal-tag';
+      tag.textContent = '(escape hatch)';
+      r.appendChild(tag);
+    }
+    labelsTable.appendChild(r);
+  });
+  modal.appendChild(labelsTable);
+
+  // Columns disclosure.
+  const colsRow = document.createElement('div');
+  colsRow.className = 'reg-cartesian-modal-cols';
+  colsRow.innerHTML = '<span class="reg-cartesian-modal-label">Columns (' + dominantType + '):</span> ' +
+    matrix.suffixes.map(s => '<code>' + escapeHtml(s) + '</code>').join(', ');
+  modal.appendChild(colsRow);
+
+  // Outliers disclosure.
+  if (outlierChildren.length) {
+    const ol = document.createElement('div');
+    ol.className = 'reg-cartesian-modal-warning';
+    ol.innerHTML = '⚠ ' + outlierChildren.length + ' field' +
+      (outlierChildren.length === 1 ? '' : 's') + ' don\'t fit the matrix and will STAY in the group "' +
+      escapeHtml(groupName) + '" alongside the new table:<br>' +
+      outlierChildren.slice(0, 5).map(o =>
+        '<code>' + escapeHtml(o.name) + '</code> (' + o.type + ')').join(', ') +
+      (outlierChildren.length > 5 ? ', …' : '');
+    modal.appendChild(ol);
+  }
+
+  // Reconciliation disclosure (per Q7 — divergent required attrs).
+  const divergent = Object.keys(reconciliation).filter(k => reconciliation[k].divergent);
+  if (divergent.length) {
+    const rec = document.createElement('div');
+    rec.className = 'reg-cartesian-modal-warning';
+    rec.innerHTML = '⚠ Reconciliation (loosest required wins):<br>' +
+      divergent.map(k => {
+        const r = reconciliation[k];
+        return '<code>' + escapeHtml(k) + '</code> — resolved required=false (' +
+          r.requiredCellCount + ' of ' + r.participatingCells +
+          ' source cells were required; tightening to true would break the dissenters)';
+      }).join('<br>');
+    modal.appendChild(rec);
+  }
+
+  // Data-loss + cascade warnings (loud, per Q7).
+  const dataLoss = document.createElement('div');
+  dataLoss.className = 'reg-cartesian-modal-warning';
+  dataLoss.innerHTML =
+    '⚠ ' + sourceFieldSnapshots.length + ' source-field descriptions and validations will be dropped ' +
+    'from the live schema but preserved in the audit log for provenance.<br>' +
+    '⚠ Validation rules referencing collapsed field names will NOT be auto-rewritten. ' +
+    'Update them in the Rules tab after restatement.';
+  modal.appendChild(dataLoss);
+
+  // Footer — cancel + restate.
+  const footer = document.createElement('div');
+  footer.className = 'reg-cartesian-modal-footer';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'btn-secondary';
+  cancelBtn.textContent = 'Cancel';
+  const okBtn = document.createElement('button');
+  okBtn.type = 'button';
+  okBtn.className = 'btn-primary';
+  okBtn.textContent = 'Restate';
+  footer.appendChild(cancelBtn);
+  footer.appendChild(okBtn);
+  modal.appendChild(footer);
+
+  veil.appendChild(modal);
+  document.body.appendChild(veil);
+
+  function close() { veil.remove(); document.removeEventListener('keydown', onKey); }
+  function onKey(e) {
+    if (e.key === 'Escape') { close(); if (onCancel) onCancel(); }
+  }
+  document.addEventListener('keydown', onKey);
+  cancelBtn.addEventListener('click', () => { close(); if (onCancel) onCancel(); });
+  okBtn.addEventListener('click', () => {
+    const approved = {
+      rowIdentifierName: (nameInput.value || rowIdentifierName).trim() || rowIdentifierName,
+      enumLabels: {}
+    };
+    enumValues.forEach(v => {
+      approved.enumLabels[v] = (labelInputs[v].value || humanizeFieldName(v)).trim() || humanizeFieldName(v);
+    });
+    close();
+    if (onConfirm) onConfirm(approved);
+  });
+  // Autofocus the row-identifier name input.
+  setTimeout(() => { try { nameInput.focus(); nameInput.select(); } catch (e) {} }, 0);
+  return true;
+}
+
+/* UX-38 — commit the Cartesian restatement after the modal returns approved
+ * values. Builds the items.properties model attached to the new array field,
+ * splices it into regDraft.fields in place of the source fields, removes the
+ * group when no outliers remain, fires the full provenance audit event. */
+function regCommitCartesianRestatement(opts) {
+  const { groupName, arrayName, namedFields, disclaimers, restatement, approved } = opts;
+  const { matrix, dominantType, enumValues, rowIdentifierName: defaultRowName, companionName,
+          reconciliation, outlierChildren, sourceFieldSnapshots, itemPresentation,
+          itemsRequired } = restatement;
+  // Use the approved values; fall back to detector defaults if missing.
+  const rowName = approved.rowIdentifierName || defaultRowName;
+  const labels = approved.enumLabels || restatement.enumLabels;
+
+  // Build itemChildren (field-model objects) — mirror the items.properties
+  // shape we already computed but as the field-model representation that
+  // round-trips through schemaFromFields / fieldsFromSchema.
+  const itemChildren = [];
+
+  // Row identifier (enum) — wire values are the lowercase prefixes; labels
+  // are the user-edited display strings carried via validation.enumLabels.
+  const rowField = regBlankField(rowName, 'enum');
+  rowField.required = itemsRequired.indexOf(rowName) !== -1 || true;     // row identifier is always required
+  rowField.title = humanizeFieldName(rowName);
+  rowField.validation = {
+    enumValues: enumValues.slice(),
+    enumLabels: Object.assign({}, labels)
+  };
+  itemChildren.push(rowField);
+
+  // FIX-2 companion (if escape hatch fires) — string property, hidden via
+  // visibleWhen sidecar when the row's identifier isn't the escape-hatch
+  // prefix.
+  if (companionName && matrix.hasEscapeHatch) {
+    const comp = regBlankField(companionName, 'string');
+    comp.required = false;
+    comp.title = 'Please specify ' + (labels[matrix.escapeHatchPrefix] || 'other').toLowerCase();
+    comp.visibleWhen = rowName + " == '" + matrix.escapeHatchPrefix + "'";
+    itemChildren.push(comp);
+  }
+
+  // Column properties — one per detected suffix. Required = pessimistic
+  // reconciliation per Q7 (loosest wins).
+  matrix.suffixes.forEach(suffix => {
+    const col = regBlankField(suffix, dominantType);
+    col.title = humanizeFieldName(suffix);
+    col.required = !!reconciliation[suffix].resolvedRequired;
+    itemChildren.push(col);
+  });
+
+  // Scaffold the new array field.
+  const arrayField = regBlankField(arrayName, 'array');
+  arrayField.title = humanizeFieldName(arrayName);
+  arrayField.description = groupName;
+  arrayField.validation = {
+    itemType: 'object',
+    itemChildren: itemChildren
+  };
+  arrayField.group = outlierChildren.length > 0 ? groupName : null;      // stays in group if outliers remain
+  // The group is preserved IFF there are outliers; otherwise we delete it.
+
+  // Splice: replace the in-matrix source fields with the new array field.
+  // Outliers stay in place (they keep their group pointer + position).
+  const inMatrixNames = new Set();
+  Object.keys(restatement.matrix.decomposed).forEach(idx => {
+    inMatrixNames.add(restatement.matrix.decomposed[idx].original);
+  });
+  // (Decomposed is an array; iterate it properly.)
+  matrix.decomposed.forEach(d => inMatrixNames.add(d.original));
+  const firstSourceField = namedFields.find(f => inMatrixNames.has(f.name));
+  const firstIdx = firstSourceField ? regDraft.fields.indexOf(firstSourceField) : regDraft.fields.length;
+  const removedIds = namedFields.filter(f => inMatrixNames.has(f.name)).map(f => f.id);
+  regDraft.fields = regDraft.fields.filter(f => !removedIds.includes(f.id));
+  if (firstIdx >= 0 && firstIdx <= regDraft.fields.length) {
+    regDraft.fields.splice(firstIdx, 0, arrayField);
+  } else {
+    regDraft.fields.push(arrayField);
+  }
+  disclaimers.forEach(d => {
+    // Disclaimers always stay at top level — if no outliers, also clear group pointer.
+    if (!outlierChildren.length) d.group = null;
+  });
+
+  // Group removal — only when no outliers remain.
+  if (!outlierChildren.length) {
+    regDraft._groups = (regDraft._groups || []).filter(g => g.name !== groupName);
+  }
+
+  // Full audit payload per Q7 — preserves the source metadata for forensic
+  // recovery even though it's been dropped from the live schema.
+  regAuditLog_append('manual-restatement-applied', 'human', {
+    direction: 'group-to-array',
+    variant: 'cartesian-decomposition',
+    sourceGroup: groupName,
+    sourceFieldIds: removedIds,
+    sourceFieldNames: namedFields.filter(f => inMatrixNames.has(f.name)).map(f => f.name),
+    resultingField: { id: arrayField.id, name: arrayName, rowIdentifier: rowName },
+    cartesianDecomposition: {
+      prefixes: matrix.prefixes.slice(),
+      suffixes: matrix.suffixes.slice(),
+      dominantType,
+      outliers: outlierChildren.map(o => ({ name: o.name, type: o.type })),
+      hasEscapeHatch: matrix.hasEscapeHatch,
+      escapeHatchPrefix: matrix.escapeHatchPrefix,
+      reconciliation: reconciliation,
+      enumValues: enumValues.slice(),
+      enumLabels: Object.assign({}, labels),
+      sourceFieldSnapshots
+    }
+  });
+
+  regRenderFields();
+  regRenderJsonPreview();
+  regRenderSkeleton();
+  regScheduleAutosave();
+  if (typeof window.toast === 'function') {
+    window.toast('Restated "' + groupName + '" as table "' + arrayName + '" (' +
+      matrix.prefixes.length + ' rows × ' + matrix.suffixes.length + ' columns' +
+      (outlierChildren.length ? '; ' + outlierChildren.length + ' outlier(s) stayed in group' : '') +
+      ').');
   }
   return true;
 }
@@ -2906,6 +3268,15 @@ function regBuildArrayExpander(field, depth) {
     }
   }
 
+  // UX-39 — pre-populate defaults from the items' enum. The default-rows
+  // panel sits between the items-shape editor and the reverse-restatement
+  // affordance because it's closer to "authoring the array's data" than
+  // "reshaping the array". Only top-level arrays — same constraint as
+  // UX-36b (nested-array defaults open a deeper cardinality question).
+  if (depth === 1 && it === 'object') {
+    expander.appendChild(regBuildArrayDefaultsPanel(field));
+  }
+
   // UX-36b — Reverse Class-3 restatement affordance. Only meaningful at
   // the top level (we don't want operators flattening nested arrays-of-
   // objects mid-recursion — that opens a much messier cardinality question
@@ -2932,6 +3303,453 @@ function regBuildArrayExpander(field, depth) {
   }
 
   return expander;
+}
+
+/* UX-39 — strict single-enum predicate per Q8. Returns the source-enum kid
+ * and its values when the array's items shape is eligible for one-click
+ * pre-population; null otherwise. Used by the panel to decide whether to
+ * render the button (eligible) or a disabled-with-tooltip placeholder. */
+function regCanPrePopulateFromEnum(field) {
+  if (!field || field.type !== 'array') return null;
+  const v = field.validation || {};
+  if (v.itemType !== 'object' || !Array.isArray(v.itemChildren)) return null;
+  // Multi-select enums excluded — "one row per enum value" semantics break
+  // when the row's enum field itself holds multiple values per row.
+  const enumKids = v.itemChildren.filter(c =>
+    c.type === 'enum' && !(c.validation && c.validation.multi)
+  );
+  if (enumKids.length !== 1) return null;
+  const enumKid = enumKids[0];
+  const values = (enumKid.validation && enumKid.validation.enumValues) || [];
+  if (!values.length) return null;
+  return { enumKid, values: values.slice() };
+}
+
+/* UX-39 / Q11 — build the "Default rows" panel inside the array expander.
+ * Three states:
+ *   1. Ineligible — disabled button with tooltip explaining why (2 enums,
+ *      multi-select, empty enum, etc.).
+ *   2. Eligible, no defaults yet — "Pre-populate rows from enum options" button.
+ *   3. Defaults exist — read-only summary + [✎ Edit defaults] / [↺ Re-run] /
+ *      [✕ Clear] action cluster; inline editor when expanded.
+ */
+function regBuildArrayDefaultsPanel(field) {
+  const panel = document.createElement('div');
+  panel.className = 'reg-array-defaults-panel';
+  panel.setAttribute('data-field-id', field.id);
+
+  const eligible = regCanPrePopulateFromEnum(field);
+  const hasDefaults = Array.isArray(field.default) && field.default.length > 0;
+
+  if (!eligible && !hasDefaults) {
+    // Ineligible — show disabled button with diagnostic tooltip.
+    const v = field.validation || {};
+    const enumKids = (v.itemChildren || []).filter(c => c.type === 'enum');
+    let reason;
+    if (!v.itemChildren || v.itemChildren.length === 0) {
+      reason = 'Define the columns first (set item type to "Nested object" and add children).';
+    } else if (enumKids.length === 0) {
+      reason = 'Pre-populate needs exactly one Pick list child in the row shape to drive the row taxonomy.';
+    } else if (enumKids.length > 1) {
+      reason = 'Pre-populate needs exactly one Pick list child. This row shape has ' +
+        enumKids.length + ' (' + enumKids.map(k => k.name).join(', ') + '). ' +
+        'Combine or remove one first.';
+    } else if (enumKids[0].validation && enumKids[0].validation.multi) {
+      reason = 'Pre-populate works only for single-select Pick lists.';
+    } else {
+      reason = 'Add values to the Pick list first.';
+    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'reg-array-prepopulate-btn';
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-list-numbers"></i> Pre-populate rows from Pick list';
+    btn.setAttribute('title', reason);
+    panel.appendChild(btn);
+    return panel;
+  }
+
+  if (eligible && !hasDefaults) {
+    // Eligible, no defaults yet — initial pre-populate button.
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'reg-array-prepopulate-btn';
+    btn.innerHTML = '<i class="ti ti-list-numbers"></i> Pre-populate rows from "' +
+      escapeHtml(eligible.enumKid.name) + '"';
+    btn.setAttribute('title',
+      'Generates ' + eligible.values.length + ' default rows — one per Pick list value. ' +
+      'Sibling boolean columns default to false; everything else stays sparse.');
+    btn.addEventListener('click', () => regPrePopulateDefaultsFromEnum(field));
+    panel.appendChild(btn);
+    return panel;
+  }
+
+  // hasDefaults — render the read-only summary + action cluster.
+  const summary = document.createElement('div');
+  summary.className = 'reg-array-defaults-summary';
+  const sourceName = eligible ? eligible.enumKid.name : '(unknown)';
+  summary.innerHTML = '<span class="reg-array-defaults-summary-text">' +
+    'Default rows: <strong>' + field.default.length + '</strong> pre-populated' +
+    (eligible ? ' from <code>' + escapeHtml(sourceName) + '</code>' : '') +
+    '</span>';
+  panel.appendChild(summary);
+
+  const actions = document.createElement('div');
+  actions.className = 'reg-array-defaults-actions';
+
+  // [✎ Edit defaults] — opens the inline editor.
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.className = 'reg-array-defaults-action';
+  editBtn.innerHTML = '<i class="ti ti-edit"></i> Edit defaults';
+  editBtn.setAttribute('title',
+    'Override individual cell values in the default rows. Changes that match ' +
+    'the sparse template revert to absent on save.');
+  editBtn.addEventListener('click', () => regToggleArrayDefaultsEditor(field));
+  actions.appendChild(editBtn);
+
+  // [↺ Re-run] — re-run the smart-merge against the current enum values.
+  if (eligible) {
+    const rerunBtn = document.createElement('button');
+    rerunBtn.type = 'button';
+    rerunBtn.className = 'reg-array-defaults-action';
+    rerunBtn.innerHTML = '<i class="ti ti-refresh"></i> Re-run from Pick list';
+    rerunBtn.setAttribute('title',
+      'Re-sync default rows against the current Pick list values. Adds rows for new values; ' +
+      'flags removed values as orphans (kept by default — destructive consent required).');
+    rerunBtn.addEventListener('click', () => regPrePopulateDefaultsFromEnum(field));
+    actions.appendChild(rerunBtn);
+  }
+
+  // [✕ Clear] — remove all defaults.
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'reg-array-defaults-action reg-array-defaults-action--danger';
+  clearBtn.innerHTML = '<i class="ti ti-x"></i> Clear';
+  clearBtn.setAttribute('title',
+    'Remove all default rows. Composer renders the table empty at runtime.');
+  clearBtn.addEventListener('click', () => regClearArrayDefaults(field));
+  actions.appendChild(clearBtn);
+
+  panel.appendChild(actions);
+
+  // Inline editor — rendered only when toggled open via the [✎ Edit] button.
+  if (regIsArrayDefaultsEditorOpen(field.id)) {
+    panel.appendChild(regBuildArrayDefaultsEditor(field));
+  }
+
+  return panel;
+}
+
+/* UX-39 — open/closed state for the per-field inline defaults editor.
+ * Mirrors the per-field Presentation-panel toggle pattern. */
+const _regArrayDefaultsEditorOpen = new Set();
+function regIsArrayDefaultsEditorOpen(fieldId) {
+  return _regArrayDefaultsEditorOpen.has(fieldId);
+}
+function regToggleArrayDefaultsEditor(field) {
+  if (!field || !field.id) return;
+  if (_regArrayDefaultsEditorOpen.has(field.id)) {
+    _regArrayDefaultsEditorOpen.delete(field.id);
+  } else {
+    _regArrayDefaultsEditorOpen.add(field.id);
+  }
+  regRenderFields();
+}
+
+/* UX-39 / Q11 — inline editor for default rows. Renders a small editable
+ * table where each cell uses an input typed by the column's field type.
+ * Save commits to field.default with the sparse-save logic (changes that
+ * match the sparse template revert to absent). Cancel discards. */
+function regBuildArrayDefaultsEditor(field) {
+  const editor = document.createElement('div');
+  editor.className = 'reg-array-defaults-editor';
+
+  const children = (field.validation && field.validation.itemChildren) || [];
+  const defaults = Array.isArray(field.default) ? field.default : [];
+  // Working copy — edits land here until Save commits to field.default.
+  const working = defaults.map(r => Object.assign({}, r));
+
+  const table = document.createElement('table');
+  table.className = 'reg-array-defaults-table';
+  const thead = document.createElement('thead');
+  const trh = document.createElement('tr');
+  children.forEach(c => {
+    const th = document.createElement('th');
+    th.textContent = regDisplayLabel(c);
+    trh.appendChild(th);
+  });
+  thead.appendChild(trh);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  working.forEach((row, rowIdx) => {
+    const tr = document.createElement('tr');
+    children.forEach(child => {
+      const td = document.createElement('td');
+      const inp = regBuildArrayDefaultsCellInput(child, row[child.name], (newVal) => {
+        if (newVal === undefined || newVal === null || newVal === '') {
+          delete row[child.name];
+        } else {
+          row[child.name] = newVal;
+        }
+      });
+      td.appendChild(inp);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  editor.appendChild(table);
+
+  // Footer — Save / Cancel.
+  const footer = document.createElement('div');
+  footer.className = 'reg-array-defaults-editor-footer';
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'btn-secondary';
+  cancel.textContent = 'Cancel';
+  cancel.addEventListener('click', () => {
+    _regArrayDefaultsEditorOpen.delete(field.id);
+    regRenderFields();
+  });
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.className = 'btn-primary';
+  save.textContent = 'Save defaults';
+  save.addEventListener('click', () => {
+    // Sparse-save: prune any cell that matches the sparse template (boolean
+    // false stays explicit per Q10; other types absent if undefined).
+    const sparseCleaned = working.map(row => {
+      const out = {};
+      Object.keys(row).forEach(k => {
+        const v = row[k];
+        if (v === undefined || v === null || v === '') return;     // already sparse
+        out[k] = v;
+      });
+      return out;
+    });
+    const cellsChanged = regCountCellChanges(field.default || [], sparseCleaned);
+    field.default = sparseCleaned;
+    regAuditLog_append('array-defaults-edited', 'human', {
+      fieldId: field.id,
+      fieldName: field.name,
+      rowsModified: sparseCleaned.length,
+      cellsChangedFromSparse: cellsChanged
+    });
+    _regArrayDefaultsEditorOpen.delete(field.id);
+    regRenderFields();
+    regRenderSkeleton();
+    regRenderJsonPreview();
+    regScheduleAutosave();
+    if (typeof window.toast === 'function') {
+      window.toast('Saved ' + sparseCleaned.length + ' default row' +
+        (sparseCleaned.length === 1 ? '' : 's') + '.');
+    }
+  });
+  footer.appendChild(cancel);
+  footer.appendChild(save);
+  editor.appendChild(footer);
+
+  return editor;
+}
+
+/* Approximate cell-change counter for the audit payload. Compares two
+ * arrays-of-objects by per-key value strict-equality; counts each diverging
+ * cell. Phase-1 audit precision is sufficient — a regulator never needs
+ * cell-level diffs, just "Sarah edited the defaults". */
+function regCountCellChanges(before, after) {
+  let n = 0;
+  const len = Math.max(before.length, after.length);
+  for (let i = 0; i < len; i++) {
+    const b = before[i] || {};
+    const a = after[i] || {};
+    const keys = new Set([...Object.keys(b), ...Object.keys(a)]);
+    keys.forEach(k => { if (b[k] !== a[k]) n++; });
+  }
+  return n;
+}
+
+/* Build the typed input control for a single default-row cell. The input
+ * type mirrors the column's field type. Calls onChange with the new value
+ * (or undefined/null to signal "revert to sparse"). */
+function regBuildArrayDefaultsCellInput(child, currentVal, onChange) {
+  if (child.type === 'boolean') {
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !!currentVal;
+    cb.addEventListener('change', () => onChange(cb.checked));
+    return cb;
+  }
+  if (child.type === 'enum') {
+    const sel = document.createElement('select');
+    const optBlank = document.createElement('option');
+    optBlank.value = '';
+    optBlank.textContent = '—';
+    sel.appendChild(optBlank);
+    ((child.validation && child.validation.enumValues) || []).forEach(v => {
+      const o = document.createElement('option');
+      o.value = v;
+      const labels = (child.validation && child.validation.enumLabels) || {};
+      o.textContent = labels[v] || humanizeFieldName(v);
+      if (currentVal === v) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', () => onChange(sel.value || undefined));
+    return sel;
+  }
+  const inp = document.createElement('input');
+  if (child.type === 'number' || child.type === 'integer') inp.type = 'number';
+  else if (child.type === 'date') inp.type = 'date';
+  else if (child.type === 'datetime') inp.type = 'datetime-local';
+  else inp.type = 'text';
+  if (currentVal !== undefined && currentVal !== null) inp.value = String(currentVal);
+  inp.addEventListener('input', () => {
+    const v = inp.value;
+    if (v === '') onChange(undefined);
+    else if (child.type === 'number' || child.type === 'integer') {
+      const n = child.type === 'integer' ? parseInt(v, 10) : parseFloat(v);
+      onChange(isNaN(n) ? undefined : n);
+    } else {
+      onChange(v);
+    }
+  });
+  return inp;
+}
+
+/* UX-39 / Q9 — smart-merge pre-population. Click 1 (no existing defaults)
+ * is just "make N sparse rows". Click 2+ (defaults already exist) uses
+ * identity-by-enum-value to:
+ *   - Add rows for new enum values.
+ *   - Flag rows for removed enum values as orphans (kept by default — Sarah
+ *     gives destructive consent via an inline keep/remove choice).
+ *   - Preserve manual edits to surviving rows.
+ * Audit event captures the delta payload. */
+function regPrePopulateDefaultsFromEnum(field) {
+  const eligible = regCanPrePopulateFromEnum(field);
+  if (!eligible) return false;
+  const { enumKid, values } = eligible;
+  const enumFieldName = enumKid.name;
+  const children = (field.validation && field.validation.itemChildren) || [];
+  const existingDefaults = Array.isArray(field.default) ? field.default : [];
+
+  // Identity-by-enum-value lookup (Q9 invariant).
+  const existingByValue = {};
+  existingDefaults.forEach(r => {
+    const v = r[enumFieldName];
+    if (typeof v === 'string') existingByValue[v] = r;
+  });
+
+  const existingValueSet = new Set(Object.keys(existingByValue));
+  const newValueSet = new Set(values);
+  const addedValues = values.filter(v => !existingValueSet.has(v));
+  const removedFromEnum = [...existingValueSet].filter(v => !newValueSet.has(v));
+
+  // Confirmation gate. Click 1 (no existing defaults) → simple confirm.
+  // Click 2+ → detailed merge summary.
+  if (typeof window.confirm === 'function') {
+    let msg;
+    if (existingDefaults.length === 0) {
+      msg = 'Pre-populate "' + (field.name || 'array') + '" with ' + values.length +
+        ' default row' + (values.length === 1 ? '' : 's') +
+        '?\n\nOne row per Pick list value. Boolean columns default to false; ' +
+        'other types stay absent.\n\nSarah can override individual cells via Edit defaults.';
+    } else {
+      const parts = ['Re-run pre-populate from "' + enumFieldName + '"?\n'];
+      if (addedValues.length) {
+        parts.push('Adding ' + addedValues.length + ' new row' + (addedValues.length === 1 ? '' : 's') +
+          ': ' + addedValues.slice(0, 4).join(', ') + (addedValues.length > 4 ? ', …' : ''));
+      }
+      if (removedFromEnum.length) {
+        parts.push(removedFromEnum.length + ' row' + (removedFromEnum.length === 1 ? '' : 's') +
+          ' for value' + (removedFromEnum.length === 1 ? '' : 's') +
+          ' no longer in the Pick list: ' + removedFromEnum.slice(0, 4).join(', ') +
+          (removedFromEnum.length > 4 ? ', …' : '') +
+          ' — KEPT as orphans (runtime will flag them as invalid).');
+      }
+      parts.push('\nManual edits on ' + (existingDefaults.length - removedFromEnum.length) +
+        ' surviving row' + ((existingDefaults.length - removedFromEnum.length) === 1 ? '' : 's') +
+        ' will be preserved.');
+      msg = parts.join('\n');
+    }
+    const ok = window.confirm(msg);
+    if (!ok) return false;
+  }
+
+  // Build the new default array. Order: existing rows (preserved + orphans),
+  // followed by added rows in enum-value order.
+  const merged = [];
+  // First, existing rows preserved in their original order.
+  existingDefaults.forEach(r => merged.push(r));
+  // Then, added rows for values that weren't already present.
+  addedValues.forEach(v => {
+    const row = {};
+    row[enumFieldName] = v;
+    children.forEach(c => {
+      // Sparse default values per Q10. Boolean → false (explicit). Other
+      // types stay absent.
+      if (c.name === enumFieldName) return;                       // already set
+      if (c.type === 'boolean') row[c.name] = false;
+      // Strings/numbers/dates/enums/FIX-2 companions stay absent.
+    });
+    merged.push(row);
+  });
+
+  field.default = merged;
+
+  regAuditLog_append('defaults-prepopulated-from-enum', 'human', {
+    fieldId: field.id,
+    fieldName: field.name,
+    enumFieldName: enumFieldName,
+    valuesAdded: addedValues,
+    valuesRemovedFromEnum: removedFromEnum,
+    rowsKeptAsOrphan: removedFromEnum.slice(),
+    existingRowsPreserved: existingDefaults.length - removedFromEnum.length,
+    totalRowsAfter: merged.length
+  });
+
+  regRenderFields();
+  regRenderSkeleton();
+  regRenderJsonPreview();
+  regScheduleAutosave();
+  if (typeof window.toast === 'function') {
+    if (existingDefaults.length === 0) {
+      window.toast('Pre-populated ' + merged.length + ' default rows from "' + enumFieldName + '".');
+    } else {
+      window.toast('Merged defaults: +' + addedValues.length + ' new, ' +
+        removedFromEnum.length + ' orphan(s) kept, ' +
+        (existingDefaults.length - removedFromEnum.length) + ' preserved.');
+    }
+  }
+  return true;
+}
+
+/* UX-39 — clear all defaults. Confirms first because removing a populated
+ * defaults block changes what operators see at runtime. */
+function regClearArrayDefaults(field) {
+  if (!field || !Array.isArray(field.default) || !field.default.length) return false;
+  if (typeof window.confirm === 'function') {
+    const ok = window.confirm(
+      'Remove all ' + field.default.length + ' default row(s) from "' + (field.name || 'array') +
+      '"?\n\nComposer will render the table empty at runtime (operators add rows manually).'
+    );
+    if (!ok) return false;
+  }
+  const previousCount = field.default.length;
+  delete field.default;
+  regAuditLog_append('array-defaults-cleared', 'human', {
+    fieldId: field.id,
+    fieldName: field.name,
+    rowsCleared: previousCount
+  });
+  regRenderFields();
+  regRenderSkeleton();
+  regRenderJsonPreview();
+  regScheduleAutosave();
+  if (typeof window.toast === 'function') {
+    window.toast('Cleared ' + previousCount + ' default row(s) from "' + (field.name || 'array') + '".');
+  }
+  return true;
 }
 
 /* Construct a synthetic field-model entry that proxies an array's item shape
@@ -4599,6 +5417,7 @@ function regRefit_proposedToField(proposed) {
 function regRefit_proposedChildToField(name, p, isRequired) {
   const child = regBlankField(name, p.type || 'string');
   child.required = !!isRequired;
+  if (p.title && p.title !== humanizeFieldName(name)) child.title = p.title;
   if (p.description) child.description = p.description;
   return child;
 }
@@ -4750,56 +5569,285 @@ function regRefit_decomposeOnLastUnderscore(names) {
   return decomposed;
 }
 
-/* Detect a Cartesian product structure across the given property names. Returns
- * { prefixes, suffixes, coverage, decomposed } when a matrix is detected,
- * null otherwise. Requires ≥2 distinct prefixes AND ≥2 distinct suffixes AND
- * ≥80% combination coverage (presence ratio of expected prefix×suffix pairs). */
+/* UX-38 — detect a Cartesian product structure across the given property
+ * names. Returns enriched result when a matrix is detected, null otherwise.
+ *
+ *   { prefixes, suffixes, decomposed, coverage,
+ *     outlierNames,         names that couldn't participate in the matrix
+ *     hasEscapeHatch,       true if matrix prefixes contain an other(s)_*
+ *     escapeHatchPrefix }   the literal prefix matched (e.g., "other", "others")
+ *
+ * Algorithm (per Q6 decision):
+ *   1. Decompose each name on the LAST underscore into {prefix, suffix}.
+ *   2. Count each prefix and suffix; flag any name whose prefix OR suffix is
+ *      unique (count === 1) as an outlier and purge it.
+ *   3. Re-evaluate the cleaned survivor pool against the gates:
+ *        ≥2 distinct prefixes × ≥2 distinct suffixes × ≥80% coverage.
+ *   4. Detect "other(s)_*" escape-hatch (per Q2 heuristic).
+ *
+ * This bug-fixes the previous detector which would let a unique-prefix or
+ * unique-suffix field silently weave a phantom row/column into the matrix.
+ *
+ * Requires ≥2 distinct prefixes AND ≥2 distinct suffixes AND ≥80% combination
+ * coverage (presence ratio of expected prefix × suffix pairs) AFTER outlier
+ * purging. */
 function regRefit_detectCartesianMatrix(names) {
-  if (names.length < 4) return null;
-  const decomposed = regRefit_decomposeOnLastUnderscore(names);
-  if (!decomposed) return null;
+  if (!Array.isArray(names) || names.length < 4) return null;
+  const decomposedAll = regRefit_decomposeOnLastUnderscore(names);
+  if (!decomposedAll) return null;
+
+  // Count prefixes and suffixes across the decomposed set.
+  const prefixCounts = {};
+  const suffixCounts = {};
+  decomposedAll.forEach(d => {
+    prefixCounts[d.prefix] = (prefixCounts[d.prefix] || 0) + 1;
+    suffixCounts[d.suffix] = (suffixCounts[d.suffix] || 0) + 1;
+  });
+
+  // Purge outliers — names whose prefix OR suffix appears only once. These
+  // can't participate in a 2-D matrix (they'd be a phantom row or column).
+  const outlierNames = [];
+  const decomposed = decomposedAll.filter(d => {
+    const isOutlier = prefixCounts[d.prefix] === 1 || suffixCounts[d.suffix] === 1;
+    if (isOutlier) outlierNames.push(d.original);
+    return !isOutlier;
+  });
+
+  if (decomposed.length < 4) return null;                        // not enough survivors for a matrix
 
   const prefixSet = new Set();
   const suffixSet = new Set();
   decomposed.forEach(d => { prefixSet.add(d.prefix); suffixSet.add(d.suffix); });
 
-  if (prefixSet.size < 2 || suffixSet.size < 2) return null;     // not a 2-D matrix
+  if (prefixSet.size < 2 || suffixSet.size < 2) return null;     // still not a 2-D matrix after purge
 
   const expected = prefixSet.size * suffixSet.size;
   const actual = decomposed.length;
   const coverage = actual / expected;
   if (coverage < 0.8) return null;
 
+  // UX-38 / Q2 — escape-hatch heuristic. Promote an "other(s)_*" prefix into
+  // a synthesised FIX-2 companion only when the source artefact already
+  // carried that escape hatch as a row. Domain-agnostic; works for medical
+  // labs, vendor invoices, and any form where the human author included an
+  // explicit "Others" row.
+  const prefixes = Array.from(prefixSet);
+  const escapeHatchPrefix = prefixes.find(p => /^others?(_.*)?$/i.test(p));
+
   return {
-    prefixes: Array.from(prefixSet),
+    prefixes,
     suffixes: Array.from(suffixSet),
+    decomposed,
     coverage,
-    decomposed
+    outlierNames,
+    hasEscapeHatch: !!escapeHatchPrefix,
+    escapeHatchPrefix: escapeHatchPrefix || null
   };
 }
 
-function regRefit_checkObjectForMatrix(field, r) {
-  if (!field || field.type !== 'object' || !Array.isArray(field.children)) return;
-  const children = field.children.filter(c => c.type !== 'disclaimer');
-  if (children.length < 4) return;
+/* UX-38 — shared Cartesian-restatement transformer. Takes a children-shaped
+ * array (`[{name, type, required, description, validation, examples}]`),
+ * runs the upgraded detector, and — when a matrix is detected — produces
+ * the full upgraded items.properties shape:
+ *
+ *   { sample_type: { enum: [...] },           ← row identifier (enum)
+ *     sample_type_other: { type: 'string' },  ← FIX-2 companion (only if escape hatch fires)
+ *     <suffix1>: { type: <dominantType> },    ← column properties
+ *     <suffix2>: { type: <dominantType> },
+ *     ... }
+ *
+ * Returns null if no Cartesian matrix is detected. Otherwise returns the
+ * full restatement bundle ready for both the manual UX-38 lever and the
+ * auto-refit suggestion path:
+ *
+ *   { matrix,                  the detector output (prefixes/suffixes/outliers/escape-hatch)
+ *     dominantType,            the inferred column type ('boolean'/'string'/'number'/...)
+ *     itemsProperties,         items.properties object for the wire
+ *     itemsRequired,           items.required array (typically just the row identifier)
+ *     enumValues,              wire-level enum values (lowercase prefixes, with 'other' if escape hatch)
+ *     enumLabels,              { wireValue: humanizedLabel } — defaults; editable in modal
+ *     rowIdentifierName,       default field name for the row identifier (e.g., 'sample_type')
+ *     companionName,           default field name for the FIX-2 companion or null
+ *     reconciliation,          per-column required-divergence info (pessimistic loosest-wins)
+ *     outlierChildren,         child objects that fell outside the matrix
+ *     sourceFieldSnapshots,    full metadata of source fields for forensic audit trail
+ *     itemPresentation }       per-item-child presentation sidecar (labels + visibleWhen)
+ *
+ * Callers wrap this output into either a confirmation modal (manual lever) or
+ * a suggestion card (auto-refit). DRY across both paths per the UX-38 brief.
+ */
+function regRefit_buildCartesianRestatementShape(children, opts) {
+  if (!Array.isArray(children) || children.length < 4) return null;
+  // Drop disclaimers — they can't participate in items.properties.
+  const eligible = children.filter(c => c && c.name && c.type !== 'disclaimer');
+  if (eligible.length < 4) return null;
 
-  // Type-homogeneity gate: dominant child type must cover ≥80% of the set.
-  // We don't require booleans specifically — the matrix could be filled with
-  // strings (text cells), numbers (score cells), or booleans (checkboxes).
+  // Type-homogeneity gate (same as the existing auto-refit). Dominant child
+  // type must cover ≥80% of the eligible set.
   const typeCounts = {};
-  children.forEach(c => { typeCounts[c.type] = (typeCounts[c.type] || 0) + 1; });
+  eligible.forEach(c => { typeCounts[c.type] = (typeCounts[c.type] || 0) + 1; });
   let dominantType = null;
   let dominantCount = 0;
   Object.keys(typeCounts).forEach(t => {
     if (typeCounts[t] > dominantCount) { dominantType = t; dominantCount = typeCounts[t]; }
   });
-  const typeHomogeneity = dominantCount / children.length;
-  if (typeHomogeneity < 0.8) return;
+  if (dominantCount / eligible.length < 0.8) return null;
 
-  // Cartesian-product naming gate. Without this, we'd mis-fire on legitimate
-  // boolean clusters that lack the matrix footprint.
-  const matrix = regRefit_detectCartesianMatrix(children.map(c => c.name));
-  if (!matrix) return;
+  const matrix = regRefit_detectCartesianMatrix(eligible.map(c => c.name));
+  if (!matrix) return null;
+
+  // Group decomposed-survivor children by prefix + suffix so we can read each
+  // cell's source attributes for reconciliation.
+  const cellByKey = {};                                          // "<prefix>__<suffix>" → child
+  eligible.forEach(c => {
+    const idx = c.name.lastIndexOf('_');
+    if (idx <= 0 || idx === c.name.length - 1) return;
+    const prefix = c.name.slice(0, idx);
+    const suffix = c.name.slice(idx + 1);
+    if (matrix.outlierNames.indexOf(c.name) !== -1) return;
+    cellByKey[prefix + '__' + suffix] = c;
+  });
+  const outlierChildren = eligible.filter(c => matrix.outlierNames.indexOf(c.name) !== -1);
+
+  // UX-38 row-identifier default name — singularisation heuristic per Q3:
+  //   1. Strip leading determiner phrases (/^(nature|kind|type|list|set) of /i).
+  //   2. Naive plural strip (drop trailing 's').
+  //   3. Append _type unless name already ends in _type / _kind / _category.
+  const groupNameHint = (opts && opts.groupName) || (opts && opts.parentFieldName) || 'rows';
+  const rowIdentifierName = regRefit_proposeRowIdentifierName(groupNameHint);
+  const companionName = matrix.hasEscapeHatch
+    ? rowIdentifierName + '_other'
+    : null;
+
+  // Enum values (wire) = lowercase prefixes as decomposed. Labels (display) =
+  // humanized; the confirmation modal makes these editable. Per Q5.
+  const enumValues = matrix.prefixes.slice();
+  const enumLabels = {};
+  enumValues.forEach(v => { enumLabels[v] = humanizeFieldName(v); });
+  // For the escape-hatch prefix specifically, default the label to "Other"
+  // regardless of its source casing ("others" → "Other", "Others" → "Other").
+  if (matrix.hasEscapeHatch && matrix.escapeHatchPrefix) {
+    enumLabels[matrix.escapeHatchPrefix] = 'Other';
+  }
+
+  // Build column properties. Each suffix becomes a property of `dominantType`.
+  // Pessimistic reconciliation per Q7: the column is `required: true` only
+  // when EVERY participating cell was required. Any single false drops the
+  // column to required: false. Same logic could extend to other divergent
+  // attributes in Phase 2; for Phase 1 only `required` is reconciled.
+  const itemsProperties = {};
+  const itemsRequired = [rowIdentifierName];
+  const reconciliation = {};
+  matrix.suffixes.forEach(suffix => {
+    const cells = matrix.prefixes
+      .map(p => cellByKey[p + '__' + suffix])
+      .filter(Boolean);
+    const requiredCells = cells.filter(c => c.required);
+    const allRequired = cells.length > 0 && requiredCells.length === cells.length;
+    const anyRequired = requiredCells.length > 0;
+    const prop = { type: dominantType };
+    prop.title = humanizeFieldName(suffix);
+    itemsProperties[suffix] = prop;
+    if (allRequired) itemsRequired.push(suffix);
+    reconciliation[suffix] = {
+      participatingCells: cells.length,
+      requiredCellCount: requiredCells.length,
+      resolvedRequired: allRequired,
+      divergent: anyRequired && !allRequired                     // surface in modal as a yellow warning
+    };
+  });
+
+  // Row identifier — enum constrained.
+  const rowIdProp = {
+    type: 'string',
+    title: humanizeFieldName(rowIdentifierName),
+    enum: enumValues.slice()
+  };
+  // FIX-2 companion (string) — only when escape hatch fires.
+  const orderedProps = {};
+  orderedProps[rowIdentifierName] = rowIdProp;
+  if (companionName) {
+    orderedProps[companionName] = {
+      type: 'string',
+      title: 'Please specify ' + (enumLabels[matrix.escapeHatchPrefix] || 'other').toLowerCase()
+    };
+  }
+  Object.keys(itemsProperties).forEach(k => { orderedProps[k] = itemsProperties[k]; });
+
+  // Per-item-child presentation sidecar — labels for the row-identifier enum,
+  // plus visibleWhen for the FIX-2 companion (Q4 contract). Lives inside
+  // x-presentation.<arrayFieldName>.itemPresentation.<childName>.
+  const itemPresentation = {};
+  itemPresentation[rowIdentifierName] = { labels: enumLabels };
+  if (companionName) {
+    itemPresentation[companionName] = {
+      visibleWhen: rowIdentifierName + " == '" + matrix.escapeHatchPrefix + "'"
+    };
+  }
+
+  // Forensic snapshots (Q7 — full metadata for the audit log).
+  const sourceFieldSnapshots = eligible.map(c => ({
+    id: c.id,
+    name: c.name,
+    type: c.type,
+    required: !!c.required,
+    description: c.description || '',
+    validation: c.validation ? JSON.parse(JSON.stringify(c.validation)) : {},
+    examples: Array.isArray(c.examples) ? c.examples.slice() : undefined
+  }));
+
+  return {
+    matrix,
+    dominantType,
+    itemsProperties: orderedProps,
+    itemsRequired,
+    enumValues,
+    enumLabels,
+    rowIdentifierName,
+    companionName,
+    reconciliation,
+    outlierChildren,
+    sourceFieldSnapshots,
+    itemPresentation
+  };
+}
+
+/* UX-38 / Q3 — singularisation heuristic for the row-identifier field's
+ * default name. Phase-1: strip leading determiner phrases, naive plural
+ * strip, append `_type` unless already terminating in a noun suffix. Sarah
+ * edits the result in the confirmation modal — defaults that miss English
+ * irregulars (e.g., "categorie") get fixed there. */
+function regRefit_proposeRowIdentifierName(groupOrParentName) {
+  if (!groupOrParentName) return 'row_type';
+  let s = String(groupOrParentName).trim();
+  // Strip leading determiners.
+  s = s.replace(/^(nature|kind|type|list|set)\s+of\s+/i, '');
+  // Slugify.
+  s = s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  if (!s) return 'row_type';
+  // Naive plural strip on the last token.
+  const parts = s.split('_');
+  const last = parts[parts.length - 1];
+  if (last.length > 3 && last.endsWith('s') && !last.endsWith('ss')) {
+    parts[parts.length - 1] = last.slice(0, -1);
+    s = parts.join('_');
+  }
+  // Append _type unless a noun suffix already present.
+  if (!/_(type|kind|category|class)$/i.test(s)) s += '_type';
+  return s;
+}
+
+function regRefit_checkObjectForMatrix(field, r) {
+  if (!field || field.type !== 'object' || !Array.isArray(field.children)) return;
+  // UX-38 — route through the shared transformer so the auto-refit suggestion
+  // and the manual UX-38 lever produce identical shapes. Includes outlier
+  // purging, enum-constrained row identifier, "Other" escape-hatch heuristic,
+  // and pessimistic reconciliation per Q1/Q2/Q6/Q7.
+  const restatement = regRefit_buildCartesianRestatementShape(field.children, {
+    parentFieldName: field.name
+  });
+  if (!restatement) return;
+  const { matrix, dominantType } = restatement;
 
   // De-dupe: don't re-propose for the same object.
   const existing = r.suggestions.find(s =>
@@ -4808,21 +5856,16 @@ function regRefit_checkObjectForMatrix(field, r) {
     s.payload.mergedFromFieldIds[0] === field.id);
   if (existing) return;
 
-  // Build the proposed shape. The row identifier becomes a string property
-  // named `row_label`; each detected suffix becomes a column property with
-  // the dominant type. _seedRows carries one entry per detected prefix so
-  // Composer can rehydrate the fixed-row taxonomy on first render.
-  const columnProps = {};
-  matrix.suffixes.forEach(s => {
-    columnProps[s] = { type: dominantType, description: 'Column "' + s + '" from the detected matrix' };
-  });
-  const itemProps = Object.assign(
-    { row_label: { type: 'string', description: 'Row identifier (originally the prefix in <prefix>_<suffix> property names)' } },
-    columnProps
-  );
+  // Seed rows: one entry per detected prefix; sparse (boolean→false, else absent)
+  // per Q10. Composer rehydrates the fixed-row taxonomy from these on first
+  // render. The escape-hatch row (if present) is also seeded — empty companion.
   const seedRows = matrix.prefixes.map(p => {
-    const row = { row_label: p };
-    matrix.suffixes.forEach(s => { row[s] = dominantType === 'boolean' ? false : null; });
+    const row = {};
+    row[restatement.rowIdentifierName] = p;
+    matrix.suffixes.forEach(s => {
+      if (dominantType === 'boolean') row[s] = false;
+      // Other types stay absent (sparse rows).
+    });
     return row;
   });
 
@@ -4839,17 +5882,32 @@ function regRefit_checkObjectForMatrix(field, r) {
         type: 'array',
         items: {
           type: 'object',
-          properties: itemProps,
-          required: ['row_label']
+          properties: restatement.itemsProperties,
+          required: restatement.itemsRequired
         },
         description: field.description || '',
-        _seedRows: seedRows
+        _seedRows: seedRows,
+        _itemPresentation: restatement.itemPresentation     // labels + visibleWhen sidecar
+      },
+      cartesianDecomposition: {
+        prefixes: matrix.prefixes.slice(),
+        suffixes: matrix.suffixes.slice(),
+        dominantType,
+        outliers: restatement.outlierChildren.map(o => ({ name: o.name, type: o.type })),
+        hasEscapeHatch: matrix.hasEscapeHatch,
+        escapeHatchPrefix: matrix.escapeHatchPrefix,
+        reconciliation: restatement.reconciliation,
+        rowIdentifierName: restatement.rowIdentifierName,
+        companionName: restatement.companionName,
+        enumValues: restatement.enumValues.slice(),
+        enumLabels: Object.assign({}, restatement.enumLabels)
       },
       rationale: 'Cartesian-product matrix detected: ' + matrix.prefixes.length +
         ' row prefixes × ' + matrix.suffixes.length + ' column suffixes covering ' +
-        Math.round(matrix.coverage * 100) + '% of ' + children.length +
-        ' ' + dominantType + ' children. Likely a VLM-misclassified ' +
-        'checkbox/cell grid per ADR 0040 §17 Lever 2.'
+        Math.round(matrix.coverage * 100) + '% of ' + restatement.sourceFieldSnapshots.length +
+        ' ' + dominantType + ' children' +
+        (matrix.hasEscapeHatch ? '. "' + matrix.escapeHatchPrefix + '" prefix detected — injected FIX-2 escape hatch.' : '.') +
+        (restatement.outlierChildren.length ? ' ' + restatement.outlierChildren.length + ' outlier field(s) excluded.' : '')
     },
     sources: [{
       type: 'cartesian-product-naming',
@@ -4857,13 +5915,17 @@ function regRefit_checkObjectForMatrix(field, r) {
       rowPrefixes: matrix.prefixes.slice(),
       columnSuffixes: matrix.suffixes.slice(),
       coverage: matrix.coverage.toFixed(2),
-      dominantType,
-      typeHomogeneity: typeHomogeneity.toFixed(2)
+      dominantType
     }],
     confidence: matrix.coverage >= 0.95 ? 'medium' : 'low',
-    caveats: matrix.coverage < 1
-      ? ['Partial Cartesian coverage (' + Math.round(matrix.coverage * 100) + '%) — verify some cells weren\'t intentionally omitted']
-      : []
+    caveats: [].concat(
+      matrix.coverage < 1
+        ? ['Partial Cartesian coverage (' + Math.round(matrix.coverage * 100) + '%) — verify some cells weren\'t intentionally omitted']
+        : [],
+      restatement.outlierChildren.length
+        ? ['Outliers excluded from matrix: ' + restatement.outlierChildren.map(o => o.name).join(', ')]
+        : []
+    )
   };
 
   r.suggestions.push(sug);
@@ -4877,7 +5939,9 @@ function regRefit_checkObjectForMatrix(field, r) {
     rowCount: matrix.prefixes.length,
     columnCount: matrix.suffixes.length,
     coverage: matrix.coverage,
-    dominantType
+    dominantType,
+    hasEscapeHatch: matrix.hasEscapeHatch,
+    outlierCount: restatement.outlierChildren.length
   });
 }
 
@@ -5196,7 +6260,7 @@ function regRenderSkeleton() {
     wrap.className = 'reg-skeleton-field';
     const lbl = document.createElement('span');
     lbl.className = 'reg-skeleton-label';
-    lbl.textContent = humanizeFieldName(f.name) + (f.required ? ' *' : '');
+    lbl.textContent = regDisplayLabel(f) + (f.required ? ' *' : '');
     wrap.appendChild(lbl);
     wrap.appendChild(regBuildSkeletonInput(f, 1));
     if (f.description) {
@@ -5316,7 +6380,7 @@ function regBuildSkeletonGroup(group, fields, renderField) {
     fields.forEach(f => {
       const th = document.createElement('th');
       th.textContent = (f.type === 'disclaimer') ? '' :
-        (humanizeFieldName(f.name) + (f.required ? ' *' : ''));
+        (regDisplayLabel(f) + (f.required ? ' *' : ''));
       trh.appendChild(th);
     });
     thead.appendChild(trh);
@@ -5353,6 +6417,34 @@ function regBuildSkeletonGroup(group, fields, renderField) {
   fields.forEach(f => renderField(f, body));
   wrap.appendChild(body);
   return wrap;
+}
+
+/* UX-39 — pre-filled skeleton input. Renders the standard skeleton input
+ * for a field and pre-sets its value from a default-row cell. Read-only —
+ * Composer Preview is a visualisation, not an authoring surface (the inline
+ * editor in the array expander is where Sarah authors defaults). */
+function regBuildSkeletonInputWithValue(f, value, depth) {
+  const el = regBuildSkeletonInput(f, depth);
+  if (!el) return el;
+  // boolean → checkbox: set .checked
+  if (f.type === 'boolean' && el.tagName === 'INPUT') {
+    el.checked = !!value;
+  } else if (f.type === 'enum' && el.tagName === 'SELECT' && typeof value === 'string') {
+    // Find the option with the matching value and select it.
+    for (let i = 0; i < el.options.length; i++) {
+      if (el.options[i].value === value || el.options[i].textContent === value) {
+        el.selectedIndex = i;
+        break;
+      }
+    }
+  } else if (el.tagName === 'INPUT' && value !== undefined && value !== null) {
+    el.value = String(value);
+  }
+  // Disable interactivity — Composer Preview is render-only.
+  if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
+    el.disabled = true;
+  }
+  return el;
 }
 
 function regBuildSkeletonInput(f, depth) {
@@ -5523,10 +6615,9 @@ function regBuildSkeletonArray(f, depth) {
   }
 
   // UX-37 — array-of-objects renders as a true HTML table at the top level
-  // (depth 1). This is the visual outcome UX-36's forward restatement was
-  // aiming at: columns are the itemChildren, each sample row is a record.
-  // Deeper nesting falls back to the vertical Item-1/2/3 stack — true 2-D
-  // table-in-table is past the depth cap and would muddy the preview.
+  // (depth 1). UX-39 / Q13 extends this: when field.default carries
+  // pre-populated rows, render ALL of them (each pre-filled with the
+  // default values) instead of the 2 sample skeleton rows.
   if (itemType === 'object' && depth === 1) {
     const children = (v.itemChildren || []).filter(c => c && c.name);
     if (!children.length) {
@@ -5542,7 +6633,7 @@ function regBuildSkeletonArray(f, depth) {
     const trh = document.createElement('tr');
     children.forEach(c => {
       const th = document.createElement('th');
-      th.textContent = humanizeFieldName(c.name) + (c.required ? ' *' : '');
+      th.textContent = regDisplayLabel(c) + (c.required ? ' *' : '');
       trh.appendChild(th);
     });
     // Trailing "Actions" column for the add/remove-row affordance.
@@ -5554,12 +6645,24 @@ function regBuildSkeletonArray(f, depth) {
     table.appendChild(thead);
 
     const tbody = document.createElement('tbody');
-    const ROW_PREVIEW_COUNT = 2;                                  // 2 rows is enough to communicate "this is repeating"
-    for (let r = 0; r < ROW_PREVIEW_COUNT; r++) {
+    // UX-39 / Q13 — when default rows exist, render all N. Otherwise
+    // fall back to the 2-row skeleton sample so empty arrays still
+    // communicate "this is a repeating dataset".
+    const hasDefaults = Array.isArray(f.default) && f.default.length > 0;
+    const renderRows = hasDefaults ? f.default : [{}, {}];
+    renderRows.forEach(row => {
       const tr = document.createElement('tr');
       children.forEach(c => {
         const td = document.createElement('td');
-        td.appendChild(regBuildSkeletonInput(c, depth + 1));
+        // UX-39 — when the row carries a value for this column, render an
+        // input pre-filled with that value (so Sarah sees what operators
+        // will see on first render). Otherwise fall back to the bare
+        // skeleton input.
+        if (hasDefaults && c.name in row) {
+          td.appendChild(regBuildSkeletonInputWithValue(c, row[c.name], depth + 1));
+        } else {
+          td.appendChild(regBuildSkeletonInput(c, depth + 1));
+        }
         tr.appendChild(td);
       });
       const tdAct = document.createElement('td');
@@ -5571,7 +6674,7 @@ function regBuildSkeletonArray(f, depth) {
       tdAct.appendChild(rmBtn);
       tr.appendChild(tdAct);
       tbody.appendChild(tr);
-    }
+    });
     table.appendChild(tbody);
     wrap.appendChild(table);
     const addBtn = document.createElement('span');
@@ -5693,7 +6796,7 @@ function regBuildSkeletonObject(f, depth) {
     childWrap.className = 'reg-skeleton-field';
     const lbl = document.createElement('span');
     lbl.className = 'reg-skeleton-label';
-    lbl.textContent = humanizeFieldName(c.name) + (c.required ? ' *' : '');
+    lbl.textContent = regDisplayLabel(c) + (c.required ? ' *' : '');
     childWrap.appendChild(lbl);
     childWrap.appendChild(regBuildSkeletonInput(c, depth + 1));
     wrap.appendChild(childWrap);
@@ -5704,6 +6807,17 @@ function regBuildSkeletonObject(f, depth) {
 function humanizeFieldName(snake) {
   if (!snake) return '';
   return snake.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/* UX-40 — display-label getter. Returns the user-authored `title` when set,
+ * else falls back to the slug-humanized field name. All UI surfaces that
+ * render a field's label go through this so author overrides (set via
+ * restatement modals or round-trip from external schemas carrying `title`)
+ * take precedence over auto-humanization. The wire identifier remains
+ * `field.name`; this only affects display. */
+function regDisplayLabel(fieldOrChild) {
+  if (!fieldOrChild) return '';
+  return fieldOrChild.title || humanizeFieldName(fieldOrChild.name || '');
 }
 
 /* ---------- On-ramp picker (modal) ---------- */
@@ -7219,32 +8333,79 @@ function regRenderTestModal() {
     const children = (v.itemChildren || []).filter(c => c && c.name);
     if (!children.length) {
       return '<div class="reg-test-field"><span class="reg-test-label">'
-        + escapeHtml(humanizeFieldName(f.name)) + (f.required ? ' *' : '') + '</span>'
+        + escapeHtml(regDisplayLabel(f)) + (f.required ? ' *' : '') + '</span>'
         + '<span class="reg-test-hint">(this table has no columns defined yet)</span></div>';
     }
     const cols = children.map(c =>
-      '<th>' + escapeHtml(humanizeFieldName(c.name)) + (c.required ? ' *' : '') + '</th>'
+      '<th>' + escapeHtml(regDisplayLabel(c)) + (c.required ? ' *' : '') + '</th>'
     ).join('') + '<th class="reg-test-array-table-actions"></th>';
-    // Start with one editable row. Add-row is a non-functional preview affordance
-    // — the Test-as-operator modal is a visual preview, not a real data-entry
-    // app (per the existing "Preview only — typed values are discarded" footer).
-    const cells = children.map(c => '<td>' + renderTestInputOnly({
-      id: f.id + '__' + c.name + '__r0',
-      name: c.name,
-      type: c.type,
-      required: c.required,
-      validation: c.validation || {},
-      examples: c.examples
-    }) + '</td>').join('') + '<td class="reg-test-array-table-actions"><span class="reg-test-array-rm" aria-hidden="true">×</span></td>';
+    // UX-39 / Q13 — when default rows exist, render all N as editable
+    // operator-style rows (pre-filled with the default values). Test-as-
+    // operator inputs are editable but discarded on modal close per the
+    // existing footer's "Preview only — typed values are discarded" contract.
+    const hasDefaults = Array.isArray(f.default) && f.default.length > 0;
+    const renderRows = hasDefaults ? f.default : [{}];
+    const rowsHtml = renderRows.map((row, rowIdx) => {
+      const cells = children.map(c => {
+        const value = hasDefaults && (c.name in row) ? row[c.name] : undefined;
+        const inp = renderTestInputOnlyWithValue({
+          id: f.id + '__' + c.name + '__r' + rowIdx,
+          name: c.name,
+          type: c.type,
+          required: c.required,
+          validation: c.validation || {},
+          examples: c.examples
+        }, value);
+        return '<td>' + inp + '</td>';
+      }).join('') + '<td class="reg-test-array-table-actions"><span class="reg-test-array-rm" aria-hidden="true">×</span></td>';
+      return '<tr>' + cells + '</tr>';
+    }).join('');
     return '<div class="reg-test-field reg-test-field--array">'
-      + '<span class="reg-test-label">' + escapeHtml(humanizeFieldName(f.name)) + (f.required ? ' *' : '') + '</span>'
+      + '<span class="reg-test-label">' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' *' : '') + '</span>'
       + '<table class="reg-test-array-table">'
       +   '<thead><tr>' + cols + '</tr></thead>'
-      +   '<tbody><tr>' + cells + '</tr></tbody>'
+      +   '<tbody>' + rowsHtml + '</tbody>'
       + '</table>'
       + '<span class="reg-test-array-add" aria-hidden="true">+ Add row</span>'
       + (f.description ? '<span class="reg-test-hint">' + escapeHtml(f.description) + '</span>' : '')
       + '</div>';
+  };
+
+  // UX-39 — input HTML with a pre-filled default value. Same dispatch as
+  // renderTestInputOnly but injects the value into the right attribute
+  // for each input type. Inputs stay editable so the operator-simulator
+  // can override the default at runtime.
+  const renderTestInputOnlyWithValue = (f, value) => {
+    if (value === undefined || value === null) return renderTestInputOnly(f);
+    const inputId = 'reg-test-' + f.id;
+    const demoAttr = ' data-demo="test.input.' + escapeHtml(f.name) + '"';
+    const evtAttr = (f.type === 'boolean' || f.type === 'enum')
+      ? ' onchange="regUpdateTestRuleEvals()"'
+      : ' oninput="regUpdateTestRuleEvals()"';
+    switch (f.type) {
+      case 'number':
+      case 'integer':
+        return '<input id="' + inputId + '"' + demoAttr + ' type="number"' + evtAttr +
+          ' value="' + escapeHtml(String(value)) + '">';
+      case 'date':     return '<input id="' + inputId + '"' + demoAttr + ' type="date"' + evtAttr +
+        ' value="' + escapeHtml(String(value)) + '">';
+      case 'datetime': return '<input id="' + inputId + '"' + demoAttr + ' type="datetime-local"' + evtAttr +
+        ' value="' + escapeHtml(String(value)) + '">';
+      case 'boolean':  return '<input id="' + inputId + '"' + demoAttr + ' type="checkbox"' + evtAttr +
+        (value ? ' checked' : '') + '>';
+      case 'enum': {
+        let s = '<select id="' + inputId + '"' + demoAttr + evtAttr + '>';
+        ((f.validation && f.validation.enumValues) || []).forEach(v => {
+          s += '<option' + (v === value ? ' selected' : '') + '>' + escapeHtml(v) + '</option>';
+        });
+        return s + '</select>';
+      }
+      default:
+        return '<input id="' + inputId + '"' + demoAttr + ' type="text"' + evtAttr +
+          ' value="' + escapeHtml(String(value)) + '"' +
+          (f.validation && f.validation.pattern ? ' pattern="' + escapeHtml(f.validation.pattern) + '"' : '') +
+          '>';
+    }
   };
 
   const renderField = (f) => {
@@ -7254,7 +8415,7 @@ function regRenderTestModal() {
       return renderTestArrayObjectTable(f);
     }
     return '<label class="reg-test-field">'
-      + '<span class="reg-test-label">' + escapeHtml(humanizeFieldName(f.name)) + (f.required ? ' *' : '') + '</span>'
+      + '<span class="reg-test-label">' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' *' : '') + '</span>'
       + renderTestInputOnly(f)
       + (f.description ? '<span class="reg-test-hint">' + escapeHtml(f.description) + '</span>' : '')
       + '</label>';
@@ -7281,7 +8442,7 @@ function regRenderTestModal() {
     }
     if (hint === 'table') {
       const cols = list.map(f => f.name
-        ? '<th>' + escapeHtml(humanizeFieldName(f.name)) + (f.required ? ' *' : '') + '</th>'
+        ? '<th>' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' *' : '') + '</th>'
         : '<th></th>').join('');
       const cells = list.map(f => '<td>'
         + (f.name ? renderTestInputOnly(f) : '')
@@ -7474,4 +8635,15 @@ if (typeof window !== 'undefined') {
   // reach them. Same exposure pattern as the existing promote/demote pair.
   window.regRestateGroupAsArray = regRestateGroupAsArray;
   window.regRestateArrayAsGroup = regRestateArrayAsGroup;
+  // UX-38 — shared transformer + detector helpers, exposed for tests and
+  // for the auto-refit suggestion drawer to reuse the same shape.
+  window.regRefit_detectCartesianMatrix = regRefit_detectCartesianMatrix;
+  window.regRefit_buildCartesianRestatementShape = regRefit_buildCartesianRestatementShape;
+  window.regRefit_proposeRowIdentifierName = regRefit_proposeRowIdentifierName;
+  window.regCommitCartesianRestatement = regCommitCartesianRestatement;
+  // UX-39 — pre-populate defaults helpers exposed for tests + demo flows.
+  window.regCanPrePopulateFromEnum = regCanPrePopulateFromEnum;
+  window.regPrePopulateDefaultsFromEnum = regPrePopulateDefaultsFromEnum;
+  window.regClearArrayDefaults = regClearArrayDefaults;
+  window.regToggleArrayDefaultsEditor = regToggleArrayDefaultsEditor;
 }
