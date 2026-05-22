@@ -1,5 +1,10 @@
 const WORKSPACE_STORAGE_KEY = 'dex-portal-workspace';
-/* Schema 4 (2026-05-18): inbox materialisation. The workspace bootstrap now
+/* Schema 5 (2026-05-21): adds Diane (Beatrix) as SGBuildex platform admin +
+   PLATFORM_ADMIN_BY_DEX-driven DEX-aware platform-admin resolution. Existing
+   v4 snapshots froze users + affiliations without Diane; archive-and-rebuild
+   so the profile menu, role-row copy, and rail resolution all pick her up.
+
+   Schema 4 (2026-05-18): inbox materialisation. The workspace bootstrap now
    writes inbox items for pending Agreements and Failed Messages (ADR
    0021/0023) directly into workspace.inboxItems, so the Inbox surface stops
    shadowing those records. Existing v3 snapshots archive-and-rebuild on
@@ -18,7 +23,7 @@ const WORKSPACE_STORAGE_KEY = 'dex-portal-workspace';
    userPitstopRoles, pitstopActivityLogs) and stamps `counterpartyOrgId` on
    every Agreement and Message so the organisation → agreement → message
    chain resolves through real org records instead of display strings. */
-const WORKSPACE_STORAGE_SCHEMA_VERSION = 4;
+const WORKSPACE_STORAGE_SCHEMA_VERSION = 5;
 
 function archiveCorruptWorkspace(raw, storage = window.localStorage, now = new Date()) {
   const archiveKey = `dex-portal-workspace-corrupt-${now.toISOString()}`;

@@ -140,8 +140,14 @@ function resolveActiveUserId(personaId, dexId) {
   const defaultUser = users[defaultUserId];
   if (!defaultUser) return null;
 
-  // Platform-tier shortcut — Sarah / Wei Lin operate cross-DEX, no per-DEX seat search.
+  // Platform-tier — per-DEX preference (amends ADR 0030 to surface a DEX-coherent
+  // platform-admin face per URL DEX). Falls back to the default user when no
+  // map entry exists for this DEX, or when the mapped user is unknown.
   if (defaultUser.personaType === 'platform-admin') {
+    if (typeof PLATFORM_ADMIN_BY_DEX !== 'undefined' && dexId && PLATFORM_ADMIN_BY_DEX[dexId]) {
+      const mapped = PLATFORM_ADMIN_BY_DEX[dexId];
+      if (users[mapped]) return mapped;
+    }
     return defaultUserId;
   }
 

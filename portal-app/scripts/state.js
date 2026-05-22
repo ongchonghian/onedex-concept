@@ -180,6 +180,7 @@ const USERS = {
   pat:    { name: 'Chou',       email: 'chou@crimsonlogic.com',         initials: 'CH', primaryOrgId: 'crimsonlogic', personaType: 'participant' },  // CrimsonLogic SP-operator (Kung Fu Boy)
   sarah:  { name: 'Kagura',     email: 'kagura@sgtradex.com',           initials: 'KG', primaryOrgId: 'sgtradex',     personaType: 'platform-admin' }, // SGTradex Admin (Onmyoji)
   weilin: { name: 'Lesley',     email: 'lesley@sgtradex.com',           initials: 'LE', primaryOrgId: 'sgtradex',     personaType: 'platform-admin' }, // Issue 0004 — platform teammate (Twilight Sniper)
+  diane:  { name: 'Beatrix',    email: 'beatrix@sgtradex.com',          initials: 'BX', primaryOrgId: 'sgtradex',     personaType: 'platform-admin' }, // SGBuildex-focused platform admin (Magnum Opus) — the same Diane Lim named as the BD contact in env-site-obs Confluence fixtures (ADR 0040 Slice 1 canned-response)
 
   /* BX/HX primary contacts on the counterparty side — surface in participants
      directory + activity log via ADR 0031's actorUserId dispatch rule.
@@ -254,6 +255,11 @@ const USER_ORG_AFFILIATIONS = {
     startDate:    '2023-01-15',
     platformRole: 'SGTradex Admin'             // peer to Sarah; same governance scope
   },
+  'diane-sgtradex': {                          // SGBuildex-focused platform admin — third peer to Sarah / Wei Lin.
+    status:       'active',                    // Same governance scope (canManageDataElements on every DEX
+    startDate:    '2023-06-12',                // per ADR 0001 + ADR 0040 §15); demos can present her as the
+    platformRole: 'SGTradex Admin'             // BX face on /portal/bx/ when ADR 0030's rail resolver gains
+  },                                           // DEX-aware platform-admin disambiguation.
 
   /* BX/HX counterparty primary-contact affiliations (added for Alice + David scenes). */
   'kelvin-jtc': {                              // JTC inspector — BX counterparty primary contact
@@ -330,6 +336,20 @@ const PERSONA_TO_USER = {
   'sp-operator':    'pat'
 };
 
+/* DEX-aware platform-admin disambiguation (ADR 0030 amendment, 2026-05-21).
+ *
+ * Previously the rail resolved 'platform-admin' to Sarah on every URL DEX
+ * (per ADR 0030 Table). That worked but produced jarring chrome — Sarah's
+ * org reads "SGTradex" on /portal/bx/. With Diane (Beatrix) added as a
+ * SGBuildex-focused platform admin, the rail can now present a DEX-coherent
+ * face per URL DEX. Falls back to PERSONA_TO_USER['platform-admin'] when no
+ * entry is configured for a DEX. */
+const PLATFORM_ADMIN_BY_DEX = {
+  tx: 'sarah',     // Kagura — historical default
+  bx: 'diane',     // Beatrix — SGBuildex platform admin, closes loop with env-site-obs Confluence fixture
+  hx: 'sarah'      // Kagura — no HX-specific platform admin yet; falls through to Sarah
+};
+
 const PERSONA_LABELS = {
   'participant':    'Participant operator',
   'platform-admin': 'Platform operator',
@@ -392,14 +412,25 @@ const PERSONAS = (function buildPersonas() {
        'Etr User'         — ETR / agreement creation surface only
    A user can hold different roles on different DEXes (e.g. Admin User on SGTradex, Operation User on SGBuildex).
 */
+/* `canManageDataElements` (added 2026-05-20 per ADR 0039) supersedes the legacy
+   admin-corev2 capability `canPromoteDataElement`. Two-line story:
+     - Legacy model: only Super SGTradex Admin "publishes Data Elements"
+       (canPromoteDataElement). The capability existed in this table but had
+       zero usages in portal-app — it was a stub awaiting the registration UX.
+     - New model (ADR 0039): element registration is unified Sarah-class
+       governance, surfaced as +New element / +New version / +New pack CTAs on
+       the Data elements catalogue page. Both platform-tier roles hold it.
+   Capability gates the registration flow's CTAs (per ADR 0039 sub-decision 13)
+   but does NOT gate catalogue viewing (sidebar "Data elements" item stays open
+   to everyone per app.js:7995 "Read-only reference for everyone"). */
 const ROLE_CAPABILITIES = {
-  'Super SGTradex Admin': { tier: 'platform', canCreateAgreement: true,  canManageUsers: true,  canPromoteDataElement: true,  canManageNetworks: true,  opsOnly: false, label: 'Super SGTradex Admin' },
-  'SGTradex Admin':       { tier: 'platform', canCreateAgreement: false, canManageUsers: true,  canPromoteDataElement: false, canManageNetworks: true,  opsOnly: false, label: 'SGTradex Admin' },
-  'Super Admin':          { tier: 'org',      canCreateAgreement: true,  canManageUsers: true,  canPromoteDataElement: false, canManageNetworks: false, opsOnly: false, label: 'Super Admin' },
-  'Admin User':           { tier: 'org',      canCreateAgreement: true,  canManageUsers: false, canPromoteDataElement: false, canManageNetworks: false, opsOnly: false, label: 'Admin User' },
-  'Operation User':       { tier: 'org',      canCreateAgreement: false, canManageUsers: false, canPromoteDataElement: false, canManageNetworks: false, opsOnly: true,  label: 'Operation User' },
-  'Tech User':            { tier: 'org',      canCreateAgreement: false, canManageUsers: false, canPromoteDataElement: false, canManageNetworks: false, opsOnly: false, label: 'Tech User' },
-  'Etr User':             { tier: 'org',      canCreateAgreement: true,  canManageUsers: false, canPromoteDataElement: false, canManageNetworks: false, opsOnly: false, label: 'Etr User' }
+  'Super SGTradex Admin': { tier: 'platform', canCreateAgreement: true,  canManageUsers: true,  canManageDataElements: true,  canManageNetworks: true,  opsOnly: false, label: 'Super SGTradex Admin' },
+  'SGTradex Admin':       { tier: 'platform', canCreateAgreement: false, canManageUsers: true,  canManageDataElements: true,  canManageNetworks: true,  opsOnly: false, label: 'SGTradex Admin' },
+  'Super Admin':          { tier: 'org',      canCreateAgreement: true,  canManageUsers: true,  canManageDataElements: false, canManageNetworks: false, opsOnly: false, label: 'Super Admin' },
+  'Admin User':           { tier: 'org',      canCreateAgreement: true,  canManageUsers: false, canManageDataElements: false, canManageNetworks: false, opsOnly: false, label: 'Admin User' },
+  'Operation User':       { tier: 'org',      canCreateAgreement: false, canManageUsers: false, canManageDataElements: false, canManageNetworks: false, opsOnly: true,  label: 'Operation User' },
+  'Tech User':            { tier: 'org',      canCreateAgreement: false, canManageUsers: false, canManageDataElements: false, canManageNetworks: false, opsOnly: false, label: 'Tech User' },
+  'Etr User':             { tier: 'org',      canCreateAgreement: true,  canManageUsers: false, canManageDataElements: false, canManageNetworks: false, opsOnly: false, label: 'Etr User' }
 };
 
 /* ---------- Per-DEX data-element registry ----------
@@ -503,6 +534,80 @@ const DATA_ELEMENTS_BY_DEX = {
       ] },
       { name: 'Lab & imaging',         count: 14, elements: [] },
       { name: 'Public-health surveys', count: 17, elements: [] }
+    ]
+  }
+};
+
+/* ---------- Fork-source schemas for the registration "Start from existing" on-ramp ----------
+   Per ADR 0039 sub-decision 3 + 10. The catalogue list at DATA_ELEMENTS_BY_DEX
+   above carries names + versions but not the actual schemas — for the prototype
+   we keep the canonical schemas for a handful of demoable elements here so the
+   Start-from-existing on-ramp (and the +New version flow) has plausible content
+   to fork from. Elements not listed here fork with a single placeholder field
+   and a banner naming the limitation — honest framing per ADR 0039 §10.
+
+   Shape: { elementId: { name, latestVersion, fields: [...] } }
+   Field shape mirrors the field-builder's in-memory model (register-element.js):
+     { name, type, required, description?, validation?, examples? }
+   The schemaFromFields() serialiser in register-element.js converts these to
+   JSON Schema; fieldsFromSchema() (its inverse) is the import path. */
+const FORK_SOURCE_SCHEMAS = {
+  'bill-of-lading': {
+    name: 'Bill of Lading',
+    latestVersion: 'v2.1',
+    fields: [
+      { name: 'bl_number',          type: 'string', required: true,  description: 'Bill of Lading reference number', validation: { pattern: '^[A-Z]{4}\\d{7}$' }, examples: ['MAEU1234567'] },
+      { name: 'shipper',            type: 'string', required: true,  description: 'Shipper organisation name' },
+      { name: 'consignee',          type: 'string', required: true,  description: 'Consignee organisation name' },
+      { name: 'notify_party',       type: 'string', required: false, description: 'Notify party (optional)' },
+      { name: 'vessel_name',        type: 'string', required: true,  description: 'Carrying vessel' },
+      { name: 'voyage_number',      type: 'string', required: true,  description: 'Voyage reference' },
+      { name: 'port_of_loading',    type: 'string', required: true,  description: 'UN/LOCODE port of loading' },
+      { name: 'port_of_discharge',  type: 'string', required: true,  description: 'UN/LOCODE port of discharge' },
+      { name: 'date_of_issue',      type: 'date',   required: true,  description: 'B/L issue date' },
+      { name: 'goods_description',  type: 'string', required: true,  description: 'Cargo description' },
+      { name: 'gross_weight_kg',    type: 'number', required: true,  description: 'Gross weight in kg',     validation: { minimum: 0 } },
+      { name: 'measurement_cbm',    type: 'number', required: false, description: 'Volume in cubic metres', validation: { minimum: 0 } },
+      { name: 'freight_terms',      type: 'enum',   required: true,  description: 'Freight payment terms',  validation: { enumValues: ['PREPAID', 'COLLECT'] } }
+    ]
+  },
+  'cargo-manifest': {
+    name: 'Cargo manifest',
+    latestVersion: 'v3.0',
+    fields: [
+      { name: 'manifest_id',        type: 'string', required: true,  description: 'Manifest reference' },
+      { name: 'vessel_name',        type: 'string', required: true,  description: 'Carrying vessel' },
+      { name: 'voyage_number',      type: 'string', required: true,  description: 'Voyage reference' },
+      { name: 'eta',                type: 'datetime', required: true, description: 'Estimated time of arrival (ISO 8601)' },
+      { name: 'port_of_arrival',    type: 'string', required: true,  description: 'UN/LOCODE port of arrival' },
+      { name: 'total_containers',   type: 'integer', required: true, description: 'Number of containers',   validation: { minimum: 0 } },
+      { name: 'total_gross_weight', type: 'number', required: true,  description: 'Total gross weight (kg)' },
+      { name: 'line_items_count',   type: 'integer', required: true, description: 'Number of cargo line items' }
+    ]
+  },
+  'eta': {
+    name: 'ETA',
+    latestVersion: 'v2.0',
+    fields: [
+      { name: 'vessel_imo',         type: 'string', required: true,  description: 'IMO vessel identifier',  validation: { pattern: '^\\d{7}$' } },
+      { name: 'voyage_number',      type: 'string', required: true,  description: 'Voyage reference' },
+      { name: 'destination_port',   type: 'string', required: true,  description: 'UN/LOCODE destination port' },
+      { name: 'estimated_arrival',  type: 'datetime', required: true, description: 'Estimated arrival (ISO 8601)' },
+      { name: 'confidence',         type: 'enum',   required: false, description: 'Confidence level',       validation: { enumValues: ['HIGH', 'MEDIUM', 'LOW'] } }
+    ]
+  },
+  'concrete-cube-test': {
+    name: 'Concrete cube test',
+    latestVersion: 'v1.0',
+    fields: [
+      { name: 'project_reference',  type: 'string', required: true,  description: 'BCA project reference number', validation: { pattern: '^[A-Z]{3}-\\d{6}$' }, examples: ['BCA-202601'] },
+      { name: 'sample_date',        type: 'date',   required: true,  description: 'Date sample was cast' },
+      { name: 'test_date',          type: 'date',   required: true,  description: 'Date sample was tested' },
+      { name: 'location',           type: 'string', required: true,  description: 'Site location reference' },
+      { name: 'cube_id',            type: 'string', required: true,  description: 'Cube specimen identifier' },
+      { name: 'compressive_strength_mpa', type: 'number', required: true, description: 'Compressive strength (MPa)', validation: { minimum: 0, maximum: 200 } },
+      { name: 'grade',              type: 'enum',   required: true,  description: 'Concrete design grade',  validation: { enumValues: ['C20', 'C25', 'C30', 'C40', 'C50', 'C60'] } },
+      { name: 'tester_signature',   type: 'string', required: true,  description: 'Tester certifying signature' }
     ]
   }
 };

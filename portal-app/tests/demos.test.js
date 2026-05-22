@@ -31,6 +31,8 @@ const SCRIPT_PATHS = [
   'scripts/wizard.js',
   'scripts/app.js',
   'scripts/pitstop.js',
+  'scripts/register-element.js',
+  'scripts/register-onramps.js',
   'scripts/demos/runtime.js',
   'scripts/demos/lib/seed-helpers.js',
   'scripts/demos/first-agreement.js',
@@ -44,6 +46,10 @@ const SCRIPT_PATHS = [
   'scripts/demos/distribute-pack.js',
   'scripts/demos/triage-failures.js',
   'scripts/demos/acting-as-sp.js',
+  'scripts/demos/register-element.js',
+  'scripts/demos/register-element-with-assist.js',
+  'scripts/demos/register-element-with-assist-live.js',
+  'scripts/demos/version-element.js',
   'scripts/demos/pitstop-scope.js',
 ];
 
@@ -132,6 +138,11 @@ test('every registered demo flow runs end-to-end in headless mode without error'
   const flows = window.listDemoFlows();
 
   for (const flow of flows) {
+    // Flows that make real network calls (e.g. fetching a sample document or
+    // hitting a live LLM/VLM API) opt out of the JSDOM smoke by setting
+    // headlessSkip: true on their flow def. The runtime/UI still registers
+    // them — only the automated harness skips them.
+    if (flow.headlessSkip) continue;
     await t.test(`flow "${flow.id}"`, async () => {
       await window.runDemoFlow(flow.id, { headless: true });
       const overlay = window.document.querySelector('.demo-error-overlay');

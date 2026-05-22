@@ -3946,93 +3946,45 @@ function openImpersonate() { openOverlay('impersonate-modal'); }
 function openGlossary(){ openOverlay('glossary-modal'); }
 
 /* ---------- Register new data element (admin) ---------- */
-function openRegisterDataElement() {
-  // Reset fields each open so reopening doesn't show last attempt's values.
-  const ids = ['register-de-name', 'register-de-category', 'register-de-description', 'register-de-version', 'register-de-complexity'];
-  const defaults = { 'register-de-version': 'v0.1', 'register-de-complexity': 'high-stakes' };
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (id in defaults) el.value = defaults[id];
-    else el.value = '';
-  });
-  updateRegisterDePreview();
-  openOverlay('register-de-modal');
-  setTimeout(() => { const f = document.getElementById('register-de-name'); if (f) f.focus(); }, 50);
+/* ===== Data Element registration flow handoff (ADR 0039) =====
+ *
+ * The registration UX itself lives in scripts/register-element.js. app.js
+ * exposes only the entry points and the capability-gate wiring; the actual
+ * flow (on-ramp picker, field-builder, canvas, publish) is in the sibling
+ * module. When the legacy openRegisterDataElement / confirmRegisterDataElement /
+ * register-de-modal removal lands in Impl F, this section reduces to just the
+ * two entry-point delegators below.
+ *
+ * Both CTAs are gated by canManageDataElements (Q14, ADR 0039 §13) via the
+ * generic [data-cap] walker in refreshCapabilityGates. Vocabulary per ADR
+ * 0039 §9: CTA labels are "+ New element" / "+ New version" (matches +New
+ * Agreement topbar pattern at app.js:8032); terminal verb is "Publish v1.0".
+ */
+
+function openNewElementFlow() {
+  if (typeof registerElement_startNewElement === 'function') {
+    registerElement_startNewElement();
+  } else {
+    console.warn('register-element.js not loaded — +New element CTA inactive');
+  }
 }
 
-function updateRegisterDePreview() {
-  const name = (document.getElementById('register-de-name') || {}).value || 'Element name';
-  const cat  = (document.getElementById('register-de-category') || {}).value || 'uncategorised';
-  const ver  = (document.getElementById('register-de-version') || {}).value || 'v0.1';
-  const previewName = document.getElementById('register-de-preview-name');
-  const previewMeta = document.getElementById('register-de-preview-meta');
-  const previewVer  = document.getElementById('register-de-preview-version');
-  if (previewName) previewName.textContent = name.trim() || 'Element name';
-  if (previewMeta) previewMeta.textContent = 'Draft · ' + cat;
-  if (previewVer)  previewVer.textContent = ver.trim() || 'v0.1';
+function openNewVersionFlow() {
+  if (typeof registerElement_startNewVersion === 'function') {
+    registerElement_startNewVersion();
+  } else {
+    console.warn('register-element.js not loaded — +New version CTA inactive');
+  }
 }
 
-function confirmRegisterDataElement() {
-  const name = ((document.getElementById('register-de-name') || {}).value || '').trim();
-  const cat  = ((document.getElementById('register-de-category') || {}).value || '').trim();
-  const desc = ((document.getElementById('register-de-description') || {}).value || '').trim();
-  const ver  = ((document.getElementById('register-de-version') || {}).value || 'v0.1').trim();
-  const cx   = ((document.getElementById('register-de-complexity') || {}).value || 'high-stakes').trim();
-
-  if (!name) {
-    if (typeof toast === 'function') toast('Element name is required', 'warn');
-    const f = document.getElementById('register-de-name'); if (f) f.focus();
-    return;
-  }
-  if (!cat) {
-    if (typeof toast === 'function') toast('Pick a category before submitting', 'warn');
-    const f = document.getElementById('register-de-category'); if (f) f.focus();
-    return;
-  }
-
-  // Persist the new element into DATA_ELEMENTS_BY_DEX so subsequent re-renders
-  // (which clobber any appended tbody rows) keep it visible. Illustrative
-  // only — production would POST to the DEX admin catalog API.
-  const dex = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
-  if (typeof DATA_ELEMENTS_BY_DEX !== 'undefined' && DATA_ELEMENTS_BY_DEX[dex]) {
-    const reg = DATA_ELEMENTS_BY_DEX[dex];
-    reg.groups = reg.groups || [];
-    let group = reg.groups.find(g => g.name === cat);
-    if (!group) {
-      group = { name: cat, count: 0, elements: [] };
-      reg.groups.push(group);
-      reg.groupCount = (reg.groupCount || reg.groups.length - 1) + 1;
-    }
-    group.elements = group.elements || [];
-    group.elements.unshift({ kind: 'leaf', name, version: ver, icon: 'file-text', complexity: cx, draft: true });
-    group.count = (group.count || 0) + 1;
-    reg.totalCount = (reg.totalCount || 0) + 1;
-  }
-
-  // Cache the rich detail for the just-registered element so the detail page
-  // shows the registrant's description rather than the generic stub.
-  if (typeof DE_DETAIL_BY_NAME === 'object' && !DE_DETAIL_BY_NAME[name]) {
-    DE_DETAIL_BY_NAME[name] = {
-      elementId: 'de_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''),
-      blurb: desc || (cat + ' data element · just registered as Draft.'),
-      versions: [{ v: ver, state: 'Draft', released: '— (just registered)', breaking: false, usage: 'Not yet in use' }],
-      agreements: [],
-      impact: { orgs: 0, agreements: 0, msgsPerDay: 0, breakingMigrators: 0 },
-      schema: '{\n  "messageId":   "string",\n  "agreementId": "string",\n  "dataElement": { "id": "de_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') + '", "version": "' + ver + '" }\n  // Schema not yet defined — pending admin review\n}',
-      activity: [{ dot: 'tx', who: ((typeof activeUserId === 'function') ? activeUserId() : 'You'), text: 'Registered <strong>' + name + '</strong> as Draft via the catalog', when: 'just now' }]
-    };
-  }
-
-  // Re-render the catalog so the new element shows up at the top of its group
-  // and the chip totals stay in sync with the registry.
-  if (typeof renderDataElementsCatalogFromDex === 'function') {
-    renderDataElementsCatalogFromDex(dex);
-  }
-
-  closeOverlay('register-de-modal');
-  if (typeof toast === 'function') toast(name + ' registered as Draft · DEX admins notified for promotion review');
-}
+/* The legacy openRegisterDataElement / updateRegisterDePreview /
+ * confirmRegisterDataElement trio (and the register-de-modal it drove) was
+ * removed in Impl F. The new flow lives in scripts/register-element.js +
+ * scripts/register-onramps.js and is reached via openNewElementFlow() /
+ * openNewVersionFlow() above. Per ADR 0039 — "Register" vocabulary is retired;
+ * canonical verbs are "+ New element" / "+ New version" (CTAs) and
+ * "Publish v1.0" (terminal commit).
+ */
 
 /* ---------- Invite participant (admin) ---------- */
 function openInviteParticipant() {
@@ -8099,7 +8051,29 @@ function refreshRoleChips() {
     // CrimsonLogic on SGTradex" instead of leaking the DEX's default Cosco context.
     const personaOrgName = (PERSONAS[currentPersona] && PERSONAS[currentPersona].orgName);
     const orgName = personaOrgName || cfg.orgName || 'your org';
-    profileRole.textContent = role + ' · ' + orgName + ' on ' + (cfg.name || 'this DEX');
+    // Role-row copy differs by tier:
+    //   - Participant: "{role} · {orgName} on {currentDex}" — DEX-scoped seat.
+    //   - Platform:    "{role} · governs all DEXes" — cross-DEX governance per
+    //     ADR 0001. The legacy template ("Admin · SGTradex on SGBuildex") read
+    //     as if platform admins were DEX-scoped, which they aren't.
+    //     When the active user is the nominated platform admin for this DEX
+    //     (via PLATFORM_ADMIN_BY_DEX), surface that: "{role} · platform admin
+    //     for SGBuildex" so Beatrix's role reads as her actual identity.
+    const tier = (ROLE_CAPABILITIES[role] && ROLE_CAPABILITIES[role].tier) || null;
+    if (tier === 'platform') {
+      const activeUid = (typeof workspaceMeta === 'function' && workspaceMeta()) ? workspaceMeta().activeUserId : null;
+      const activeDex = (typeof currentDexCode === 'function') ? currentDexCode() : null;
+      const isNominatedForThisDex = activeUid && activeDex &&
+        typeof PLATFORM_ADMIN_BY_DEX !== 'undefined' &&
+        PLATFORM_ADMIN_BY_DEX[activeDex] === activeUid;
+      if (isNominatedForThisDex) {
+        profileRole.textContent = role + ' · platform admin for ' + (cfg.name || 'this DEX');
+      } else {
+        profileRole.textContent = role + ' · governs all DEXes';
+      }
+    } else {
+      profileRole.textContent = role + ' · ' + orgName + ' on ' + (cfg.name || 'this DEX');
+    }
   }
   refreshCapabilityGates();
 }
@@ -8107,13 +8081,28 @@ function refreshRoleChips() {
 /* Hide / show capability-gated affordances based on the active role.
  * Sources for the gate rules: admin-ui/src/components/Navigation/index.js + admin-corev2/src/constants.ts.
  *   - canCreateAgreement → +New Agreement button (topbar) + dropdown entry points
+ *                          (legacy marker: [data-create-btn])
  *   - opsOnly            → switches the UI into a stripped-down view (Operation User per
  *                          admin-ui/src/middlewares/is-non-ops-user/index.js)
+ *   - [data-cap="<capName>"] → generic in-app capability gate. Per ADR 0039 the
+ *                          registration CTAs use data-cap="canManageDataElements".
+ *                          Mirrors the data-cap convention already established for
+ *                          rail items in access.js (see canSeeRail). Hides element
+ *                          when role lacks the named capability.
  */
 function refreshCapabilityGates() {
   const canCreate = hasCapability('canCreateAgreement');
   document.querySelectorAll('[data-create-btn]').forEach(btn => {
     btn.style.display = canCreate ? '' : 'none';
+  });
+  // Generic [data-cap] walker — supports arbitrary capability names without
+  // adding a new querySelectorAll per capability. New gated CTAs just add
+  // data-cap="capName" to the markup; the walker hides them when the active
+  // role lacks the named cap. Per ADR 0039.
+  document.querySelectorAll('[data-cap]').forEach(el => {
+    const capName = el.getAttribute('data-cap');
+    if (!capName || capName === 'any') return;
+    el.style.display = hasCapability(capName) ? '' : 'none';
   });
   // Banner on the inbox when role is ops-only, so the operator understands why
   // the create affordances are gone (mirrors the legacy redirect behaviour).
@@ -8180,8 +8169,15 @@ function switchPersona(personaId) {
   // Phase 6 — keep workspace.meta.activeUserId in lockstep with the chrome's
   // active persona so workspace renderers (drafts, inbox, etc.) filter to
   // the correct operator on every persona pivot.
+  // Slice 5.8 (2026-05-21) — DEX-aware resolution: route through
+  // resolveActiveUserId so platform-admin picks Beatrix on BX (per
+  // PLATFORM_ADMIN_BY_DEX in state.js) instead of the static Sarah default.
   if (typeof patchWorkspaceMeta === 'function') {
-    patchWorkspaceMeta({ activeUserId: PERSONA_TO_USER[personaId] || personaId });
+    const _currentDex = (typeof currentDexCode === 'function') ? currentDexCode() : null;
+    const _resolved = (typeof resolveActiveUserId === 'function')
+      ? resolveActiveUserId(personaId, _currentDex)
+      : null;
+    patchWorkspaceMeta({ activeUserId: _resolved || PERSONA_TO_USER[personaId] || personaId });
   }
   // Issue 0008 — clear any colleague pin when switching persona category.
   // A pin only makes sense within the same category; cross-category persona
@@ -8571,6 +8567,13 @@ function switchToAccount(userId) {
   if (aff && aff.dexRoles) {
     const dexKeys = Object.keys(aff.dexRoles);
     if (dexKeys.length) homeDexCode = dexKeys[0];
+  } else if (aff && aff.platformRole && typeof PLATFORM_ADMIN_BY_DEX !== 'undefined') {
+    // Platform-tier users have no per-DEX seat — their "home DEX" is the one
+    // PLATFORM_ADMIN_BY_DEX nominates them for. Beatrix on BX, Kagura on TX, etc.
+    // Falls through to null when no entry exists (user stays on current DEX).
+    for (const d of Object.keys(PLATFORM_ADMIN_BY_DEX)) {
+      if (PLATFORM_ADMIN_BY_DEX[d] === userId) { homeDexCode = d; break; }
+    }
   }
   if (homeDexCode && typeof switchDex === 'function' && homeDexCode !== currentDexCode()) {
     switchDex(homeDexCode, { silent: true });

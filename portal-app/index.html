@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=1200, initial-scale=1">
 <title>Dex Portal — Prototype</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="styles/tokens.css?v=p17">
-<link rel="stylesheet" href="styles/themes.css?v=p17">
-<link rel="stylesheet" href="styles/base.css?v=p17">
-<link rel="stylesheet" href="styles/components.css?v=p17">
-<link rel="stylesheet" href="styles/layout.css?v=p17">
-<link rel="stylesheet" href="styles/screens.css?v=p17">
-<link rel="stylesheet" href="styles/demos.css?v=p17">
+<link rel="stylesheet" href="styles/tokens.css?v=p60">
+<link rel="stylesheet" href="styles/themes.css?v=p60">
+<link rel="stylesheet" href="styles/base.css?v=p60">
+<link rel="stylesheet" href="styles/components.css?v=p60">
+<link rel="stylesheet" href="styles/layout.css?v=p60">
+<link rel="stylesheet" href="styles/screens.css?v=p60">
+<link rel="stylesheet" href="styles/demos.css?v=p60">
 </head>
 <body>
 
@@ -1894,9 +1894,104 @@
       </div>
     </section>
 
+    <!-- ADMIN BEFORE / AFTER — register a new data element -->
+    <section class="ov-section ov-ba ov-section--accent-tx">
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>04</b> Same story, for the admins behind the catalogue</p>
+      <h2>Register a new document type</h2>
+      <p class="ov-section-lede">The catalogue of document types — Bill of Lading, Cargo manifest, Concrete cube test, and so on — is curated by DEX admins. Today, adding a new one or revising an existing one is a multi-day relay across four different teams. In the new portal, a single admin does it on a single screen.</p>
+
+      <div class="ov-ba-grid">
+        <!-- Legacy -->
+        <article class="ov-ba-col ov-ba-legacy">
+          <header><span class="ov-badge legacy">Today</span><span class="ov-meta">Four actor types · days to weeks</span></header>
+          <ol class="ov-steps">
+            <li>A customer-success manager prepares an Excel template capturing the new document and its fields</li>
+            <li>The customer-success manager raises a service request</li>
+            <li>The service request is reviewed and approved by a tech lead</li>
+            <li>A developer translates the Excel into a schema file in the code repository</li>
+            <li>The developer raises a pull request; the team reviews and merges</li>
+            <li>Tech leads manually copy the merged schema into the schema registry for each environment (test, then production)</li>
+            <li>Tech leads make four manual API calls via a developer tool to register the schema, the use case, the persona relationships, and the verification flow</li>
+            <li>The operations team restarts the relevant infrastructure to load the new configuration</li>
+            <li>Days later — or if anything was wrong, weeks later — the new document is finally available to use</li>
+          </ol>
+          <p class="ov-ba-totals"><strong>9 steps</strong> · 4 actor types · days to weeks</p>
+        </article>
+
+        <!-- New -->
+        <article class="ov-ba-col ov-ba-new">
+          <header><span class="ov-badge new">New portal</span><span class="ov-meta">One admin · one screen · minutes</span></header>
+          <ol class="ov-steps">
+            <li>The DEX admin opens the Data elements catalogue and clicks <strong>+ New element</strong></li>
+            <li>Picks how to start — describe in plain English, drop a sample CSV, upload the legacy PDF or Word form, or fork an existing element</li>
+            <li>Refines the auto-drafted schema; the form preview shows what partners will fill in, updating as she edits</li>
+            <li>Marks the document routine or legally significant; optionally adds cross-field business rules</li>
+            <li>Reviews everything in one place and publishes — the new version is available to new agreements immediately</li>
+          </ol>
+          <p class="ov-ba-totals"><strong>5 steps</strong> · 1 admin · 1 screen · minutes</p>
+        </article>
+      </div>
+
+      <!-- Step-count infographic — same shape as the operator before/after viz -->
+      <div class="ov-ba-viz" aria-hidden="true">
+        <div class="ov-ba-viz-rows">
+          <div class="ov-ba-viz-row is-legacy">
+            <span class="ov-ba-viz-label">Today</span>
+            <div class="ov-ba-viz-bar"><span class="ov-ba-viz-bar-fill" style="width:100%"></span></div>
+            <span class="ov-ba-viz-count">9</span>
+          </div>
+          <div class="ov-ba-viz-row is-new">
+            <span class="ov-ba-viz-label">New portal</span>
+            <div class="ov-ba-viz-bar"><span class="ov-ba-viz-bar-fill" style="width:55.6%"></span></div>
+            <span class="ov-ba-viz-count">5</span>
+          </div>
+        </div>
+        <div class="ov-ba-viz-delta">
+          <p class="ov-ba-viz-delta-num">−75%</p>
+          <p class="ov-ba-viz-delta-lbl">Actor types</p>
+        </div>
+      </div>
+
+      <div class="ov-ba-callouts">
+        <div class="ov-callout">
+          <i class="ti ti-users" aria-hidden="true"></i>
+          <p><strong>From four actor types to one.</strong> The customer-success-to-developer-to-leads-to-operations relay collapses to a single DEX admin authoring directly. No service request, no Excel handoff, no waiting for the next release.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-bolt" aria-hidden="true"></i>
+          <p><strong>Days to minutes.</strong> Engineering teams come off the catalogue relay. Their time goes to the things that actually need code.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-shield-check" aria-hidden="true"></i>
+          <p><strong>Partners on existing agreements aren't disturbed.</strong> Publishing a new version of a document creates a new record — every agreement already running keeps the version it originally consented to. New agreements pick the latest from the moment of publish. No silent rewrite under participants' feet.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-eye" aria-hidden="true"></i>
+          <p><strong>What partners will see is visible while authoring.</strong> The admin watches the partner-facing form preview update as she edits the schema. No surprise at the other end; no round-trip through staging to verify.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- INLINE JUMP-TO-PROTOTYPE CTA — placed right after the two before/after stories
+         (operator at section 03, admin at section 04) so anyone who's seen the
+         infographics can step into the prototype without scrolling past the rest. -->
+    <aside class="ov-jump-cta" aria-label="Jump to the prototype">
+      <div class="ov-jump-cta-body">
+        <i class="ti ti-arrow-right-circle" aria-hidden="true"></i>
+        <div>
+          <p class="ov-jump-cta-head">Seen enough? Step into the prototype.</p>
+          <p class="ov-jump-cta-sub">Skip the rest of the brief and explore the portal directly — or run a guided demo. Continue scrolling for the mental model, the decisions behind the design, the rollout plan, and the asks for leadership.</p>
+        </div>
+      </div>
+      <div class="ov-jump-cta-actions">
+        <button type="button" class="btn-secondary" onclick="if (typeof openDemosPanel === 'function') openDemosPanel();"><i class="ti ti-player-play"></i> Run a guided demo</button>
+        <button type="button" class="btn-primary" onclick="goto('inbox-tx');">Open the prototype <i class="ti ti-arrow-right"></i></button>
+      </div>
+    </aside>
+
     <!-- CONCEPT MAP -->
     <section class="ov-section ov-concept ov-section--accent-blu ov-section--banded">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>04</b> The new mental model</p>
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>05</b> The new mental model</p>
       <h2>Three sections answer three questions</h2>
       <p class="ov-section-lede">The portal's outer sidebar is grouped around what an operator is trying to do — not around legacy module boundaries.</p>
 
@@ -1921,7 +2016,7 @@
           <p class="ov-card-question">"What are the building blocks?"</p>
           <h3>Directory</h3>
           <ul>
-            <li><strong>Data elements</strong> — the catalogue of record types curated by DEX admins; this is where each record gets tagged routine or high-stakes (<a class="ov-link" href="#" onclick="event.preventDefault(); toast('ADR 0013 + 0025')">ADR 0013/25</a>)</li>
+            <li><strong>Data elements</strong> — the catalogue of record types. DEX admins author new elements themselves on a single screen and tag each routine or legally significant; partners on existing agreements aren't disturbed when new versions ship (<a class="ov-link" href="#" onclick="event.preventDefault(); toast('ADR 0013 + 0025 + 0039')">ADR 0013/25/39</a>)</li>
             <li><strong>Participants</strong> — orgs the user can transact with on this DEX</li>
           </ul>
         </div>
@@ -1931,8 +2026,8 @@
 
     <!-- KEY DECISIONS — stakeholder framing -->
     <section class="ov-section ov-decisions ov-section--accent-tx">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>05</b> Eight decisions that shape the experience</p>
-      <h2>Why operators will find this simpler</h2>
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>06</b> Nine decisions that shape the experience</p>
+      <h2>Why operators (and admins) will find this simpler</h2>
       <p class="ov-section-lede">The decisions below were made deliberately during design. Each has a clear business consequence for operators and the organisations using the network.</p>
 
       <div class="ov-decisions-grid">
@@ -1988,12 +2083,19 @@
           <p>For single-Pitstop organisations (the majority) nothing changes — they never see the choice. For multi-Pitstop ones, the operator picks which of <em>their</em> Pitstops dispatches each element exactly once at Agreement creation; from then on it's silent. The counterparty's Pitstop topology never appears in the wizard, the Agreement detail, or the <em>"View as counterparty"</em> panel — only post-facto, as forensic detail on a Message's delivery trace if an operator goes looking. Per-Message forensic detail surfaces when needed; routine work stays uncluttered.</p>
           <p class="ov-deci-src">Customer outcome — multi-Pitstop orgs gain explicit per-element routing without forcing the rest of the network to learn their setup; operators on both sides only describe what they know about their own organisation</p>
         </div>
+        <div class="ov-decision ov-decision--wide">
+          <p class="ov-deci-num">09</p>
+          <h4>Admins author elements themselves, no engineering relay</h4>
+          <p>Today, adding a new document type — or revising an existing one — requires a customer-success manager to draft an Excel, a developer to translate it into code, tech leads to manually copy schemas across environments, and the operations team to restart infrastructure. Four actor types coordinate; days pass; engineering is the bottleneck on what is fundamentally a content decision.</p>
+          <p>In the new portal, a DEX admin opens the Data elements catalogue and authors the new document directly. She picks how to start — describe in plain English, drop a sample CSV, upload the legacy PDF or Word form, or fork an existing element — refines the auto-drafted schema with the partner-facing form preview visible beside her, marks the document routine or legally significant, optionally adds cross-field business rules, reviews everything in one place, and publishes. Single screen; single admin; minutes. Snapshot semantics protect every existing agreement automatically: bumping a version creates a new record rather than rewriting the old one, so partners already in flight aren't disturbed.</p>
+          <p class="ov-deci-src">Customer outcome — new document types live the same day they're decided; engineering teams come off the catalogue relay; partners on existing agreements are never disturbed by version bumps</p>
+        </div>
       </div>
     </section>
 
     <!-- ROADMAP -->
     <section class="ov-section ov-roadmap ov-section--accent-grn ov-section--banded">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>06</b> What launches first vs what's deferred</p>
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>07</b> What launches first vs what's deferred</p>
       <h2>Honest scoping</h2>
       <p class="ov-section-lede">Several capabilities depend on supporting work that the platform team has not yet built. We design them now, document the plan, and ship them when the foundations are ready. Here is what each phase delivers.</p>
 
@@ -2041,7 +2143,7 @@
 
     <!-- MIGRATION REASSURANCE -->
     <section class="ov-section ov-migration ov-section--accent-ylw">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>07</b> What happens on rollout day</p>
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>08</b> What happens on rollout day</p>
       <h2>Existing operators get a soft landing</h2>
       <p class="ov-section-lede">Migration is treated as a design problem, not an afterthought. Three things happen automatically so legacy users land productive — no parallel run, no manual cutover, no lost work.</p>
 
@@ -2063,7 +2165,7 @@
 
     <!-- WHAT WE'D ASK FOR -->
     <section class="ov-section ov-asks ov-section--accent-red ov-section--banded">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>08</b> What we need from leadership</p>
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>09</b> What we need from leadership</p>
       <h2>Three calls before the build begins</h2>
       <div class="ov-asks-grid">
         <div class="ov-ask">
@@ -2112,8 +2214,8 @@
       <p class="ov-footer-head">Design &amp; decisions reference</p>
       <p class="ov-footer-intro">This brief is the strategic story for leadership. Every claim in it is backed by a longer design record — linked below for anyone (product reviewers, compliance officers, delivery leads) who wants to verify the trade-offs, see what was rejected, or onboard new team members. Stakeholders typically don't need to open these; they're available for due diligence.</p>
       <div class="ov-footer-links">
-        <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('adrs')"><i class="ti ti-stack"></i><span><strong>Decision records</strong><span class="meta">26 structural decisions · each with options considered + trade-offs</span></span></a>
-        <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('risks')"><i class="ti ti-shield-exclamation"></i><span><strong>Risk register</strong><span class="meta">10 design risks · with defined tests + planned mitigations</span></span></a>
+        <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('adrs')"><i class="ti ti-stack"></i><span><strong>Decision records</strong><span class="meta">39 structural decisions · each with options considered + trade-offs</span></span></a>
+        <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('risks')"><i class="ti ti-shield-exclamation"></i><span><strong>Risk register</strong><span class="meta">19 design risks · with defined tests + planned mitigations</span></span></a>
         <a class="ov-footer-link" href="#" onclick="event.preventDefault(); toast('Opens portal_grilling_summary.md')"><i class="ti ti-file-text"></i><span><strong>Design grilling summary</strong><span class="meta">A walkthrough of every key design question that was raised, debated, and resolved</span></span></a>
         <a class="ov-footer-link" href="#" onclick="event.preventDefault(); toast('Opens platform_rewrite_breakdown.md')"><i class="ti ti-list-numbers"></i><span><strong>Phase-by-phase delivery plan</strong><span class="meta">Delivery breakdown of what launches when and in what order</span></span></a>
       </div>
@@ -2129,16 +2231,17 @@
     <header class="ov-hero" style="padding-bottom:18px">
       <span class="ov-eyebrow">Reference</span>
       <h1 id="adrs-h1">Architecture Decision Records</h1>
-      <p class="ov-lede">28 structural decisions banked across 9 grilling rounds. Each captures the considered options, the chosen path, the consequences, and any risk it introduces. Click a row to read the full ADR in <code>design-concepts/docs/adr/</code>.</p>
+      <p class="ov-lede">39 structural decisions banked across the design grilling rounds. Each captures the considered options, the chosen path, the consequences, and any risk it introduces. Click a row to read the full ADR in <code>design-concepts/docs/adr/</code>.</p>
     </header>
 
     <div class="ref-toolbar">
       <div class="ref-filter-chips" role="toolbar" aria-label="Filter ADRs">
-        <span class="chip solid">All · 28</span>
-        <span class="chip muted">Foundations (Phase 1) · 6</span>
-        <span class="chip muted">Agreement model (Phase 3) · 8</span>
-        <span class="chip muted">UX (Phase 5) · 11</span>
-        <span class="chip muted">Notifications + Composer · 3</span>
+        <span class="chip solid">All · 39</span>
+        <span class="chip muted">Foundations · 7</span>
+        <span class="chip muted">Agreement model · 10</span>
+        <span class="chip muted">UX · 13</span>
+        <span class="chip muted">Messages · 4</span>
+        <span class="chip muted">Composer + Catalogue · 5</span>
       </div>
     </div>
 
@@ -2182,6 +2285,17 @@
           <tr onclick="openAdrPanel('0026', 'Agreement snapshot immutability; schema upgrades require revoke-and-recreate', 'cmp')"><td class="ref-num">0026</td><td><strong>Agreement snapshot immutability; schema upgrades require revoke-and-recreate</strong><p class="ref-meta">v1 has no in-place upgrade · cross-pitstop schema negotiation deferred to Phase 8 (DEX-104 / DSV Phase 3)</p></td><td>Composer · Agreement detail (Phase 8)</td><td><span class="ref-tag cmp">Composer</span></td><td><span class="ref-status active">Active</span></td></tr>
           <tr onclick="openAdrPanel('0027', 'Agreement pack — UI grouping for multi-counterparty pack scenarios', 'agr')"><td class="ref-num">0027</td><td><strong>Agreement pack — UI grouping for multi-counterparty pack scenarios</strong><p class="ref-meta">1:1 cardinality rule (one Agreement, one counterparty) stays · pack is a UI-layer grouping of N Agreements created together for a multi-counterparty Data element pack distribution · setup wizard split fork · Pack detail page · Composer Send-pack mode</p></td><td>Wizard · Agreements list · Pack detail · Composer · Drafts</td><td><span class="ref-tag ag">Agreement</span></td><td><span class="ref-status active">Active</span></td></tr>
           <tr onclick="openAdrPanel('0028', 'Routing is not an Agreement property; multi-Pitstop is operational, not contractual', 'agr')"><td class="ref-num">0028</td><td><strong>Routing is not an Agreement property; multi-Pitstop is operational, not contractual</strong><p class="ref-meta">Negative ADR — Agreement record stays Pitstop-free · routing captured in parallel <code>pitstop_element_scope</code> layer · scope set inline at Agreement creation · "Send from" chip in Composer (per-operator memory) · counterparty's Pitstop topology never appears on contractual surfaces · symmetric joint-state warning at form-open · soft retirement preserves audit trail</p></td><td>Wizard · Composer · Settings → Pitstops · Messages · View Delivery Trace</td><td><span class="ref-tag ag">Agreement</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0029', 'User-org affiliation as N-to-M with embedded DEX roles', 'foundations')"><td class="ref-num">0029</td><td><strong>User-org affiliation as N-to-M with embedded DEX roles</strong><p class="ref-meta">Users affiliate N:M with orgs; per-DEX <code>dexRoles[]</code> on participant-tier · <code>platformRole</code> on platform-tier · <code>ORG_DEX_MEMBERSHIP</code> made explicit</p></td><td>Identity model · Persona resolution</td><td><span class="ref-tag fo">Foundations</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0030', 'Demo persona resolution via persona pill and URL DEX', 'foundations')"><td class="ref-num">0030</td><td><strong>Demo persona resolution via persona pill + URL DEX</strong><p class="ref-meta">Persona = category only (participant / platform-admin / sp-operator) · resolved user derived from (category, URL DEX, scenario) · same human resolves to different users per DEX</p></td><td>Topbar · Workspace pill · Demo runner</td><td><span class="ref-tag fo">Foundations</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0031', 'Counterparty attribution dispatch rule', 'ux')"><td class="ref-num">0031</td><td><strong>Counterparty attribution — dispatch rule</strong><p class="ref-meta">Event identity (named user, e.g. "X accepted at 14:23") vs contractual identity (org name, e.g. "Agreement with X") — single rule applied consistently across all attribution surfaces</p></td><td>Activity logs · Inbox cards · Acting-as banner · Directory</td><td><span class="ref-tag ux">UX</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0032', 'DEX brand naming convention', 'foundations')"><td class="ref-num">0032</td><td><strong>DEX brand naming convention</strong><p class="ref-meta">User-facing names always carry SG prefix (SGTradex / SGBuildex / SGHealthdex); code identifiers stay lowercase (tx / bx / hx)</p></td><td>All user-facing chrome · Code identifiers</td><td><span class="ref-tag fo">Foundations</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0033', 'Reactive Pitstop scope capture with inference', 'agr')"><td class="ref-num">0033</td><td><strong>Reactive Pitstop scope capture with inference</strong><p class="ref-meta">Scope captured at moment of friction (wizard skip + Composer chip), never as upfront setup · soft pre-fill from observed operator pattern after N=3 captures · degrades to empty pickers without inference data</p></td><td>Agreement wizard · Composer chip</td><td><span class="ref-tag ag">Agreement</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0034', 'Prototype-to-functional auto-demo runner', 'ux')"><td class="ref-num">0034</td><td><strong>Prototype-to-functional — auto-demo runner</strong><p class="ref-meta">Outer screen-catalogue rail retired · floating ▶ Demos pill instead · declarative step model · headless smoke test enrols every flow automatically · no build step, no shadow store</p></td><td>Prototype shell · All demo flows</td><td><span class="ref-tag ux">UX</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0035', 'Inbox three-axis taxonomy', 'ux')"><td class="ref-num">0035</td><td><strong>Inbox three-axis taxonomy</strong><p class="ref-meta">Source-type × intent × ownership axes · drives auto-routing of Failed Messages, completion echoes, Watch surfacing · forbids the Messages-list "owner badge" and the Inbox "action chip" from unifying their vocabulary</p></td><td>Inbox · Messages list · Watch toggle</td><td><span class="ref-tag ux">UX</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0036', 'Inbox banding and bundling', 'ux')"><td class="ref-num">0036</td><td><strong>Inbox banding + bundling</strong><p class="ref-meta">Aged-into-overdue banding via deadline boundary · bundle ribbon for related items · per-child-state audit-log layer unchanged · actual-count echo on bundle action</p></td><td>Inbox</td><td><span class="ref-tag ux">UX</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0037', 'Auto-demo runner decoupled from markup via demo anchors', 'ux')"><td class="ref-num">0037</td><td><strong>Auto-demo runner decoupled from markup via demo anchors</strong><p class="ref-meta">Supplements 0034 — <code>data-demo</code> for unique anchors · <code>data-{entity}-id</code> for repeated rows · JSDOM smoke iterates every registered flow · <code>nth-child</code> banned · headless mode skips cursor/callout/visibility checks</p></td><td>Demo runner · All demo flows · Markup contract</td><td><span class="ref-tag ux">UX</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0038', 'Data Element governance — three independent layers', 'cmp')"><td class="ref-num">0038</td><td><strong>Data Element governance — three independent layers</strong><p class="ref-meta">Schema (JSON Schema · AJV+RJSF · per-version) · Validation rules (govaluate expressions · submission time) · Routing rules (orchestrator JSONB · cross-version). Names what the dex-monorepo backend already implements; surfaces it as portal IA.</p></td><td>Data elements registration · Composer submission · Orchestrator</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0039', 'Data Element registration — admin-authored single-page flow', 'cmp')"><td class="ref-num">0039</td><td><strong>Data Element registration — admin-authored single-page flow</strong><p class="ref-meta">14 sub-decisions consolidating the registration UX · 2 CTAs (new element / new version) · Smart Start with 4 on-ramps (sample / form / NL / fork) · 4-tab canvas · DEX-admin-owned, no engineering relay · supersedes the 9-step legacy process documented in <em>update-process-190526-231734.pdf</em></p></td><td>Data elements catalogue · Registration canvas · 5 new modals</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -2196,15 +2310,15 @@
     <header class="ov-hero" style="padding-bottom:18px">
       <span class="ov-eyebrow">Reference</span>
       <h1 id="risks-h1">Risk register</h1>
-      <p class="ov-lede">15 concept-design risks identified during grilling. Each has a defined test that validates or invalidates it before engineering commits, plus a planned mitigation if it materialises.</p>
+      <p class="ov-lede">19 concept-design risks identified during grilling. Each has a defined test that validates or invalidates it before engineering commits, plus a planned mitigation if it materialises.</p>
     </header>
 
     <div class="ref-toolbar">
       <div class="ref-filter-chips" role="toolbar" aria-label="Filter risks">
-        <span class="chip solid">All · 15</span>
+        <span class="chip solid">All · 19</span>
         <span class="chip muted" style="color:var(--red-50)">High · 1</span>
-        <span class="chip muted" style="color:var(--yellow-50)">Medium · 8</span>
-        <span class="chip muted" style="color:var(--green-50)">Low · 6</span>
+        <span class="chip muted" style="color:var(--yellow-50)">Medium · 10</span>
+        <span class="chip muted" style="color:var(--green-50)">Low · 8</span>
       </div>
     </div>
 
@@ -2236,11 +2350,15 @@
           <tr><td class="ref-num">DX-R16</td><td><strong>Stale scope seed from <code>DataElementTracking</code></strong><p class="ref-meta">The one-time migration seeds <code>pitstop_element_scope</code> from the union of <code>DataElementTracking</code> + DynamoDB pitstop-config. Pitstops that handled an element historically but not recently get seeded too, producing noise in the scope list.</p><p class="ref-src">Source: ADR 0028</p></td><td>Settings → Pitstops · Migration script</td><td><span class="risk-sev medium">Medium</span></td><td>Settings page makes pruning visible and one-click; no activity-threshold cleanup (truthfulness chosen over cleanliness); pre-apply report reviewed by Org admins before prod cutover.</td><td><span class="ref-status mitigated">Mitigated · v1</span></td></tr>
           <tr><td class="ref-num">DX-R17</td><td><strong>Phase-2 dependency on symmetric joint-state warning</strong><p class="ref-meta">The Composer's joint-state warning at form-open ("counterparty's Org has no Pitstop currently handling…") requires the consolidated platform DB to query both sides' scope. Until Phase 2 lands the consolidated scope tables, only reactive Failed signals are available.</p><p class="ref-src">Source: ADR 0028</p></td><td>Composer · Joint-state banner</td><td><span class="risk-sev medium">Medium</span></td><td>ADR 0028 explicitly names the dependency; design ships incrementally — v1 ships with reactive-only signals, the proactive form-open warning ships when Phase 2 lands the consolidated scope tables.</td><td><span class="ref-status deferred">Deferred · Phase 2</span></td></tr>
           <tr><td class="ref-num">DX-R18</td><td><strong>Federation latency on cross-Pitstop dispatch</strong><p class="ref-meta">The Composer's <em>Send from</em> chip dispatches to one of N <code>pitstop-core</code> backends per Org. Latency between the unified portal and the selected backend affects perceived Submit time; multi-Pitstop Orgs may see higher variance.</p><p class="ref-src">Source: ADR 0028</p></td><td>Composer · Submit</td><td><span class="risk-sev low">Low</span></td><td>The portal's Composer form already handles backend latency for single-Pitstop Orgs; multi-Pitstop introduces no new latency class, just the same latency from one of several possible destinations. Monitor p95 Submit latency post-launch.</td><td><span class="ref-status open">Open · post-launch</span></td></tr>
+          <tr><td class="ref-num">DX-R19</td><td><strong>Admin-authored schemas drift from real partner data</strong><p class="ref-meta">DEX admins now author schemas themselves without engineering review. If the admin's mental model of a document doesn't match what partners actually send, the field shapes (types, patterns, required flags) will diverge from production data and submissions will fail validation in volume.</p><p class="ref-src">Source: ADR 0039 §8</p></td><td>Data elements registration · Composer · Partner submissions</td><td><span class="risk-sev medium">Medium</span></td><td>Test-as-operator modal lets admin see the partner-side form before publishing · live cross-field rule evaluator against synthesised payload · post-launch monitoring of submission-failure rate per element with alerting threshold</td><td><span class="ref-status mitigated">Mitigated · v1</span></td></tr>
+          <tr><td class="ref-num">DX-R20</td><td><strong>PDF / image on-ramp needs network on first use</strong><p class="ref-meta">The Tesseract OCR engine that powers the "upload an existing form" on-ramp is loaded from CDN the first time an admin uses it (~5MB). Air-gapped deployments and offline demos will see the PDF/image path fail until the engine is bundled locally.</p><p class="ref-src">Source: ADR 0039 §10</p></td><td>Registration · PDF/image on-ramp</td><td><span class="risk-sev low">Low</span></td><td>Three other on-ramps (sample CSV/JSON, plain English, fork an existing element, Word .docx via mammoth) work fully offline · clear error UI when CDN load fails · vendoring the OCR libraries locally is a Phase-2 build option if air-gapped deployments emerge</td><td><span class="ref-status mitigated">Mitigated · v1</span></td></tr>
+          <tr><td class="ref-num">DX-R21</td><td><strong>Cross-field rule errors surface at submission, not at authoring</strong><p class="ref-meta">Admin-authored expression rules (date ordering, value sums, conditional requiredness) are evaluated by the production govaluate engine at Composer submission. A rule that references a non-existent field or contains a typo will fail silently at author-time but reject every partner submission until fixed.</p><p class="ref-src">Source: ADR 0038 · ADR 0039 §7</p></td><td>Registration Rules tab · Composer submission</td><td><span class="risk-sev medium">Medium</span></td><td>Rules tab evaluator runs against a synthesised payload at author-time and surfaces PASS / FAIL / ERROR badges per rule · admin sees the JavaScript error message inline when an expression fails to compile · same engine used at author-time and submission-time so behaviour is consistent</td><td><span class="ref-status mitigated">Mitigated · v1</span></td></tr>
+          <tr><td class="ref-num">DX-R22</td><td><strong>Publish acts on the wrong work-in-progress draft</strong><p class="ref-meta">The registration canvas autosaves to <code>localStorage</code> as the admin types. If she closes the tab mid-author, the draft persists; on next open the system prompts to continue. If she ignores the prompt or two admins share a browser, the wrong draft may surface and get published.</p><p class="ref-src">Source: ADR 0039 §9</p></td><td>Registration canvas · localStorage</td><td><span class="risk-sev low">Low</span></td><td>Resume prompt names the autosave timestamp · canvas always lands on the Schema tab on open so admin sees what she's editing before publishing · Review tab makes everything visible before commit · Publish button disabled until complexity + fields set</td><td><span class="ref-status mitigated">Mitigated · v1</span></td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="ref-footer-note"><i class="ti ti-info-circle"></i> Risks DX-R1 through DX-R5 are <strong>open and pre-test</strong> — they need the P7+P8 cheapest-test runs (5–6 operators × 3 task questions) before engineering commits. DX-R6 through DX-R11 are <strong>mitigated in v1 by design</strong>; DX-R7 has a v1 escape (revoke-and-recreate) and waits on platform Phase 8. DX-R15 through DX-R18 are the <strong>multi-Pitstop risks from ADR 0028</strong> — DX-R15 + DX-R18 are post-launch monitoring concerns; DX-R16 is mitigated via the Settings page's prune affordance; DX-R17 is the Phase-2 consolidated-DB dependency on the symmetric joint-state warning.</p>
+    <p class="ref-footer-note"><i class="ti ti-info-circle"></i> Risks DX-R1 through DX-R5 are <strong>open and pre-test</strong> — they need the P7+P8 cheapest-test runs (5–6 operators × 3 task questions) before engineering commits. DX-R6 through DX-R11 are <strong>mitigated in v1 by design</strong>; DX-R7 has a v1 escape (revoke-and-recreate) and waits on platform Phase 8. DX-R15 through DX-R18 are the <strong>multi-Pitstop risks from ADR 0028</strong> — DX-R15 + DX-R18 are post-launch monitoring concerns; DX-R16 is mitigated via the Settings page's prune affordance; DX-R17 is the Phase-2 consolidated-DB dependency on the symmetric joint-state warning. DX-R19 through DX-R22 are the <strong>registration risks from ADRs 0038 + 0039</strong> — admin-authored schemas are a new authorship surface, mitigated at v1 by the Test-as-operator preview, the live rule evaluator, the Review tab, and clear autosave-resume affordances; DX-R20's network dependency for OCR is the only one with a deployment caveat (air-gapped sites would need the OCR libraries vendored locally as a Phase-2 build option).</p>
 
     <div class="ref-summary-grid">
       <div class="ref-summary-card">
@@ -2535,7 +2653,21 @@
         <span class="chip solid">All · 189</span><span class="chip muted">Active · 156</span><span class="chip muted">Draft · 8</span><span class="chip muted">Deprecated · 21</span><span class="chip muted">Retired · 4</span>
       </div>
       <div class="grow"></div>
-      <button class="btn-primary" onclick="openRegisterDataElement()"><i class="ti ti-plus"></i>Register new</button>
+      <!-- Catalogue CTAs per ADR 0039 sub-decisions 2 + 13.
+           Two distinct governance acts: +New element (greenfield identity)
+           vs +New version (bump an existing element's identity for future Agreements).
+           Both gated by canManageDataElements; participant roles see neither.
+           Vocabulary per ADR 0039 §9 — "Register" is retired; CTA verb is "New". -->
+      <button class="btn-secondary"
+              data-cap="canManageDataElements"
+              data-demo="catalogue.new-version-cta"
+              onclick="openNewVersionFlow()"
+              title="Publish a new version of an existing data element (per ADR 0026 — supersedes for future Agreements; existing Agreements keep their snapshot)"><i class="ti ti-versions"></i>New version</button>
+      <button class="btn-primary"
+              data-cap="canManageDataElements"
+              data-demo="catalogue.new-element-cta"
+              onclick="openNewElementFlow()"
+              title="Register a brand-new data element for this DEX (per ADR 0039)"><i class="ti ti-plus"></i>New element</button>
     </div>
 
     <div class="de-categories" style="padding:10px 18px;border-bottom:0.5px solid var(--g-90);background:var(--surface-sub);margin-bottom:0">
@@ -2713,6 +2845,561 @@
     </section>
   </div>
 </section>
+
+<!-- ============ Data element registration canvas (ADR 0039) ============
+     Single screen used by both +New element and +New version flows.
+     Four-tab canvas: Schema (interactive) · Compose complexity (Impl E)
+     · Rules (Impl E) · Review (Impl F). Pack assignment is a sidecar inside
+     Review per Q6 — not its own tab. Logic lives in scripts/register-element.js.
+-->
+<section class="screen" data-screen="register-element" aria-labelledby="reg-canvas-title">
+
+  <div class="reg-canvas-head">
+    <div>
+      <span class="meta-label">Catalog · authoring</span>
+      <div class="reg-canvas-title">
+        <h1 id="reg-canvas-title" data-reg-page-title>New element</h1>
+        <span class="reg-version-pill" data-reg-version-pill>v1.0</span>
+      </div>
+    </div>
+    <div class="reg-canvas-status" data-reg-autosave aria-live="polite"></div>
+  </div>
+
+  <nav class="reg-tabs" role="tablist" aria-label="Registration steps">
+    <button type="button" class="reg-tab active" role="tab" aria-selected="true"
+            data-reg-tab="schema"
+            data-demo="register-canvas.tab-schema"
+            onclick="regSwitchTab('schema')">Schema</button>
+    <button type="button" class="reg-tab" role="tab" aria-selected="false"
+            data-reg-tab="complexity"
+            data-demo="register-canvas.tab-complexity"
+            onclick="regSwitchTab('complexity')">Compose complexity</button>
+    <button type="button" class="reg-tab" role="tab" aria-selected="false"
+            data-reg-tab="rules"
+            data-demo="register-canvas.tab-rules"
+            onclick="regSwitchTab('rules')">Rules</button>
+    <button type="button" class="reg-tab" role="tab" aria-selected="false"
+            data-reg-tab="review"
+            data-demo="register-canvas.tab-review"
+            onclick="regSwitchTab('review')">Review <span class="reg-tab-stub-badge">Impl F</span></button>
+  </nav>
+
+  <!-- Smart Start assist degradation banner (ADR 0040 Q10, Slice 5).
+       Hidden by default; populated by regRenderAssistDegradationBanner when
+       the engine reports degradedSources or a partial/failed status. -->
+  <div id="reg-assist-degradation-banner" class="reg-assist-degradation-banner" hidden></div>
+
+  <!-- Tab panel: SCHEMA (interactive in Impl C) -->
+  <div data-reg-tab-panel="schema" role="tabpanel" aria-labelledby="reg-canvas-title">
+    <div class="reg-canvas-body">
+      <div class="reg-canvas-main">
+
+        <div class="reg-header">
+          <div class="reg-header-field" style="grid-column: 1 / -1">
+            <label for="reg-meta-name">Element name</label>
+            <input type="text" id="reg-meta-name"
+                   data-demo="register-canvas.meta-name"
+                   placeholder="e.g. Concrete cube test"
+                   oninput="regOnMetaNameInput(this.value)">
+          </div>
+          <div class="reg-header-field" style="grid-column: 1 / -1">
+            <label for="reg-meta-description">Description</label>
+            <textarea id="reg-meta-description"
+                      data-demo="register-canvas.meta-description"
+                      placeholder="What does this element represent?"
+                      oninput="regOnMetaDescriptionInput(this.value)"></textarea>
+          </div>
+          <div class="reg-header-field">
+            <label for="reg-meta-category">Category</label>
+            <input type="text" id="reg-meta-category"
+                   data-demo="register-canvas.meta-category"
+                   placeholder="e.g. Concrete tests"
+                   oninput="regOnMetaCategoryInput(this.value)">
+          </div>
+          <div class="reg-header-field">
+            <label for="reg-meta-version">Version</label>
+            <input type="text" id="reg-meta-version"
+                   data-demo="register-canvas.meta-version"
+                   placeholder="v1.0"
+                   oninput="regOnMetaVersionInput(this.value)">
+          </div>
+        </div>
+
+        <div class="reg-fields-section">
+          <h3>Fields</h3>
+          <div class="reg-field-list" data-reg-field-list data-demo="register-canvas.field-list"></div>
+          <div class="reg-field-empty" data-reg-field-empty hidden>
+            No fields yet. Add the first field to begin.
+          </div>
+          <button type="button" class="reg-add-field"
+                  data-demo="register-canvas.add-field"
+                  onclick="regAddField()"><i class="ti ti-plus"></i> Add field</button>
+        </div>
+
+        <div class="reg-governance">
+          <h3>Governance</h3>
+          <label>
+            <input type="checkbox" id="reg-residency-strict"
+                   data-demo="register-canvas.residency-strict"
+                   onchange="regOnResidencyStrictChange(this.checked)">
+            <span>
+              <strong>Residency-strict</strong>
+              <div class="reg-gov-hint">Disallows cross-DEX use (hard-stop per ADR 0012) and locks Compose complexity to high-stakes (per ADR 0025). Intra-DEX use is unaffected.</div>
+            </span>
+          </label>
+        </div>
+
+      </div>
+
+      <aside class="reg-canvas-rail" aria-label="Live preview">
+        <div class="reg-rail-panel">
+          <div class="reg-rail-panel-head">
+            <span>Composer preview</span>
+            <span style="font-size: 10px; text-transform: none; letter-spacing: 0">read-only</span>
+          </div>
+          <div class="reg-rail-panel-body">
+            <div class="reg-skeleton" data-reg-skeleton data-demo="register-canvas.skeleton"></div>
+          </div>
+        </div>
+        <div class="reg-rail-panel">
+          <div class="reg-rail-panel-head">
+            <span>JSON Schema</span>
+            <span style="font-size: 10px; text-transform: none; letter-spacing: 0">generated</span>
+          </div>
+          <div class="reg-rail-panel-body">
+            <pre class="reg-json-preview" data-reg-json-preview data-demo="register-canvas.json-preview"></pre>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Tab panel: COMPLEXITY — content rendered by regRenderComplexityTab() in register-element.js -->
+  <div data-reg-tab-panel="complexity" role="tabpanel" hidden></div>
+
+  <!-- Tab panel: RULES — content rendered by regRenderRulesTab() in register-element.js -->
+  <div data-reg-tab-panel="rules" role="tabpanel" hidden></div>
+
+  <!-- Tab panel: REVIEW (placeholder until Impl F) -->
+  <div data-reg-tab-panel="review" role="tabpanel" hidden>
+    <div class="reg-tab-placeholder">
+      <i class="ti ti-list-check"></i>
+      <strong>Review &amp; publish — Impl F</strong>
+      Summary view + pack-assignment sidecar + Publish v1.0 button. Structural friction per ADR 0015 (no modal warnings).
+    </div>
+  </div>
+
+  <!-- Footer — prev / next buttons are rendered live by regRenderCanvasFooter()
+       (register-element.js) so labels and visibility track the active tab in
+       the 4-tab sequence. Schema is the first tab (no prev); Review is the
+       last (next becomes Publish in Impl F). -->
+  <div class="reg-canvas-foot">
+    <div class="left">
+      <button class="btn-cancel"
+              data-demo="register-canvas.back"
+              onclick="regDiscardAndExit()"><i class="ti ti-arrow-left" style="font-size: 12px"></i> Back to catalogue</button>
+      <button class="btn-cancel"
+              data-reg-prev-btn
+              data-demo="register-canvas.prev"
+              hidden><i class="ti ti-arrow-left" style="font-size: 12px"></i> Previous: <span data-reg-prev-label></span></button>
+    </div>
+    <div class="right">
+      <button class="btn-primary"
+              data-reg-next-btn
+              data-demo="register-canvas.continue"
+              hidden>Continue: <span data-reg-next-label></span> <i class="ti ti-arrow-right" style="font-size: 12px"></i></button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Registration on-ramp picker (ADR 0039 §3) ============ -->
+<div class="overlay-veil" id="register-onramp-picker" hidden>
+  <div class="overlay-card xl" role="dialog" aria-labelledby="reg-onramp-title" aria-modal="true">
+    <div class="overlay-head">
+      <div class="ic tx"><i class="ti ti-plus"></i></div>
+      <h4 id="reg-onramp-title">New element on <span data-dex-label>SGTradex</span></h4>
+      <button class="close" aria-label="Close" onclick="regCloseOnrampPicker()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="color: var(--g-50); font-size: var(--fs-meta); margin-bottom: 12px;">How would you like to start? Each option seeds the canvas — you can edit before publishing.</p>
+      <div class="reg-onramp-grid">
+        <button type="button" class="reg-onramp-tile"
+                data-demo="onramp.sample"
+                onclick="regSelectOnramp('sample')">
+          <i class="ti ti-table"></i>
+          <span class="reg-onramp-tile-title">Sample data</span>
+          <span class="reg-onramp-tile-body">Drop a CSV or JSON file. Fields and types inferred automatically.</span>
+        </button>
+        <button type="button" class="reg-onramp-tile"
+                data-demo="onramp.form"
+                onclick="regSelectOnramp('form')">
+          <i class="ti ti-file-text"></i>
+          <span class="reg-onramp-tile-title">Existing form</span>
+          <span class="reg-onramp-tile-body">Upload a PDF, Word document, or image. Text extracted, schema mapped from labelled fields.</span>
+        </button>
+        <button type="button" class="reg-onramp-tile"
+                data-demo="onramp.nl"
+                onclick="regSelectOnramp('nl')">
+          <i class="ti ti-message-circle"></i>
+          <span class="reg-onramp-tile-title">Describe in plain English</span>
+          <span class="reg-onramp-tile-body">"Concrete tests submitted by contractors with date, location, strength."</span>
+        </button>
+        <button type="button" class="reg-onramp-tile"
+                data-demo="onramp.fork"
+                onclick="regSelectOnramp('fork')">
+          <i class="ti ti-stack-2"></i>
+          <span class="reg-onramp-tile-title">Start from existing</span>
+          <span class="reg-onramp-tile-body">Pick an element from the catalogue and start with its schema pre-loaded.</span>
+        </button>
+      </div>
+      <div class="reg-onramp-scratch">
+        Or <a data-demo="onramp.scratch" onclick="regSelectOnramp('scratch')">start from scratch</a> — empty canvas, define every field by hand.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Element picker (used by +New version and fork on-ramp) ============ -->
+<div class="overlay-veil" id="register-element-picker" hidden>
+  <div class="overlay-card lg" role="dialog" aria-labelledby="reg-picker-title" aria-modal="true">
+    <div class="overlay-head">
+      <div class="ic tx"><i class="ti ti-stack-2"></i></div>
+      <h4 id="reg-picker-title">Start from which element?</h4>
+      <button class="close" aria-label="Close" onclick="regCloseElementPicker()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="color: var(--g-50); font-size: var(--fs-meta); margin-bottom: 12px;">Pick an existing element to fork. The full schema seeds the canvas; you can rename, add, or remove fields before publishing.</p>
+      <div class="reg-picker-list" data-reg-element-picker-list data-demo="picker.element-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Sample data on-ramp modal (Impl D · ADR 0039 §3 + §10) ============ -->
+<div class="overlay-veil" id="register-sample-onramp" hidden>
+  <div class="overlay-card xl" role="dialog" aria-labelledby="reg-sample-title" aria-modal="true">
+    <div class="overlay-head">
+      <div class="ic tx"><i class="ti ti-table"></i></div>
+      <h4 id="reg-sample-title">Sample data — paste or drop a file</h4>
+      <button class="close" aria-label="Close" onclick="regCloseSampleOnramp()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="color: var(--g-50); font-size: var(--fs-meta); margin-bottom: 12px;">Drop a CSV (with header row) or paste JSON. Fields, types, and validation are inferred from your data — review the preview, then use it as your starting point.</p>
+      <div class="reg-sample-grid">
+        <div class="reg-sample-input-wrap"
+             data-demo="onramp.sample.dropzone"
+             ondragover="event.preventDefault()"
+             ondrop="event.preventDefault(); regOnSampleFile(event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0])">
+          <label class="reg-sample-input-label">Paste CSV / JSON — or drop a file</label>
+          <textarea id="reg-sample-input"
+                    class="reg-sample-input"
+                    data-demo="onramp.sample.input"
+                    placeholder="project_reference,sample_date,strength_mpa,grade&#10;BCA-202601,2026-04-12,42.3,C30&#10;BCA-202602,2026-04-15,38.7,C30"
+                    oninput="regOnSampleInput(this.value)"></textarea>
+          <div class="reg-sample-file-row">
+            <label class="btn-secondary" style="cursor: pointer">
+              <i class="ti ti-upload"></i> Or choose a file
+              <input type="file" accept=".csv,.json,.txt,application/json,text/csv,text/plain" style="display: none" onchange="regOnSampleFile(this.files && this.files[0])">
+            </label>
+            <span class="reg-sample-file-hint">CSV with header row · JSON array / object</span>
+          </div>
+        </div>
+        <div class="reg-sample-preview-wrap">
+          <label class="reg-sample-input-label">Inferred fields (live preview)</label>
+          <div id="reg-sample-preview" class="reg-sample-preview" data-demo="onramp.sample.preview"></div>
+        </div>
+      </div>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="regCloseSampleOnramp()">Cancel</button>
+      <button class="btn-primary" id="reg-sample-use-btn" data-demo="onramp.sample.use" onclick="regUseSampleSeed()" disabled><i class="ti ti-arrow-right"></i> Use these fields</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Plain English on-ramp modal (Impl D · ADR 0039 §3 + §10) ============ -->
+<div class="overlay-veil" id="register-nl-onramp" hidden>
+  <div class="overlay-card xl" role="dialog" aria-labelledby="reg-nl-title" aria-modal="true">
+    <div class="overlay-head">
+      <div class="ic tx"><i class="ti ti-message-circle"></i></div>
+      <h4 id="reg-nl-title">Describe your element in plain English</h4>
+      <button class="close" aria-label="Close" onclick="regCloseNlOnramp()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="color: var(--g-50); font-size: var(--fs-meta); margin-bottom: 12px;">Tell us what the element is and which fields it carries. A schema draft is generated from your description.</p>
+      <div class="reg-nl-grid">
+        <div class="reg-nl-input-wrap">
+          <label class="reg-sample-input-label">Description</label>
+          <textarea id="reg-nl-input"
+                    class="reg-nl-input"
+                    data-demo="onramp.nl.input"
+                    placeholder="e.g. Concrete cube test submitted by contractors to BCA with project reference, sample date, location, and compressive strength in MPa."></textarea>
+          <div class="reg-nl-examples">
+            <span class="reg-nl-examples-label">Or try an example:</span>
+            <button type="button" class="reg-nl-example-chip" data-demo="onramp.nl.example-concrete" onclick="regUseNlExample('concrete')">Concrete cube test</button>
+            <button type="button" class="reg-nl-example-chip" data-demo="onramp.nl.example-vessel" onclick="regUseNlExample('vessel-arrival')">Vessel arrival</button>
+            <button type="button" class="reg-nl-example-chip" data-demo="onramp.nl.example-bunker" onclick="regUseNlExample('bunker')">Bunker delivery</button>
+          </div>
+          <button class="btn-primary reg-nl-generate" data-demo="onramp.nl.generate" onclick="regGenerateFromNl()"><i class="ti ti-sparkles"></i> Generate schema</button>
+        </div>
+        <div class="reg-nl-stream-wrap">
+          <label class="reg-sample-input-label">Generated schema</label>
+          <pre id="reg-nl-stream" class="reg-nl-stream" data-demo="onramp.nl.stream"></pre>
+          <div id="reg-nl-match-note" class="reg-nl-match-note" data-demo="onramp.nl.note"></div>
+        </div>
+      </div>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="regCloseNlOnramp()">Cancel</button>
+      <button class="btn-primary" id="reg-nl-use-btn" data-demo="onramp.nl.use" onclick="regUseNlSeed()" disabled><i class="ti ti-arrow-right"></i> Use this schema</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PDF / Form on-ramp modal (Impl D · ADR 0039 §3 + §10) ============ -->
+<div class="overlay-veil" id="register-form-onramp" hidden>
+  <div class="overlay-card xl" role="dialog" aria-labelledby="reg-form-title" aria-modal="true">
+    <div class="overlay-head">
+      <div class="ic tx"><i class="ti ti-file-text"></i></div>
+      <h4 id="reg-form-title">Upload an existing form (PDF / Word / image)</h4>
+      <button class="close" aria-label="Close" onclick="regCloseFormOnramp()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="overlay-body">
+      <p style="color: var(--g-50); font-size: var(--fs-meta); margin-bottom: 12px;" id="reg-form-engine-blurb">
+        <!-- Populated dynamically by regRefreshFormEngineBlurb() — reflects whether a VLM key is saved. -->
+      </p>
+
+      <!-- Stage: idle (drop zone) -->
+      <div data-reg-form-stage="idle">
+        <div class="reg-form-dropzone"
+             data-demo="onramp.form.dropzone"
+             ondragover="event.preventDefault()"
+             ondrop="event.preventDefault(); regOnFormFile(event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0])">
+          <i class="ti ti-upload" style="font-size: 36px; color: var(--g-70)"></i>
+          <p class="reg-form-dropzone-title">Drop a PDF, Word document, or image here</p>
+          <p class="reg-form-dropzone-hint">or</p>
+          <label class="btn-primary" style="cursor: pointer">
+            <i class="ti ti-file-text"></i> Choose a file
+            <input type="file" accept=".pdf,.docx,image/png,image/jpeg,image/gif,image/webp,image/tiff" style="display: none" onchange="regOnFormFile(this.files && this.files[0])">
+          </label>
+          <p class="reg-form-dropzone-meta">PDF · Word (.docx) · PNG · JPEG · GIF · WebP · TIFF — processed locally</p>
+        </div>
+
+        <!-- Smart Start assist settings (ADR 0040 §16.3) — keys-first UX.
+             Section 1 (API keys): save Anthropic and/or Moonshot keys. Each
+             saved key enables its matching model in section 2.
+             Section 2 (Pick models): radio options auto-disable when their
+             matching key isn't saved; selection auto-flips on key clear.
+             Settings apply to ALL eligible on-ramps for the session. -->
+        <details class="reg-form-assist-key" data-demo="onramp.form.assist-key">
+          <summary>
+            <i class="ti ti-sparkles"></i>
+            Smart Start assist · API keys + model selection
+            <span class="reg-form-assist-key-status" id="reg-form-assist-key-status">canned suggestions</span>
+          </summary>
+          <div class="reg-form-assist-key-body">
+            <p class="reg-form-assist-key-warning">
+              <i class="ti ti-alert-triangle"></i>
+              <strong>Demo only · your keys · your cost · cleared on tab close.</strong>
+              Direct browser → provider. Keys persist in <code>localStorage</code> until you clear them.
+              Once set, applies to ALL eligible on-ramps (PDF · Sample · Plain English) for this session.
+            </p>
+
+            <!-- Section 1 — API keys (primary action) -->
+            <div class="reg-form-assist-keys-section">
+              <div class="reg-form-assist-section-heading">1 · API keys <span>saving a key enables its model below</span></div>
+
+              <div class="reg-form-assist-key-block">
+                <label class="reg-form-assist-key-label">
+                  <i class="ti ti-message-2"></i>
+                  <span>Anthropic Claude</span>
+                  <span class="reg-form-assist-key-saved-tag" id="reg-form-assist-anthropic-saved-tag" hidden>
+                    <i class="ti ti-check"></i>saved
+                  </span>
+                </label>
+                <div class="reg-form-assist-key-row" id="reg-form-assist-anthropic-row">
+                  <input type="password"
+                         id="reg-form-assist-key-input"
+                         class="reg-form-assist-key-input"
+                         placeholder="sk-ant-..."
+                         autocomplete="off"
+                         spellcheck="false"
+                         data-key-provider="anthropic"
+                         oninput="regOnAssistKeyInput('anthropic')">
+                  <button type="button" class="btn-primary" id="reg-form-assist-save-btn" onclick="regSaveAssistKey()" disabled>Save key</button>
+                  <button type="button" class="btn-cancel" id="reg-form-assist-clear-btn" onclick="regClearAssistKey()" disabled>Clear</button>
+                </div>
+              </div>
+
+              <div class="reg-form-assist-key-block">
+                <label class="reg-form-assist-key-label">
+                  <i class="ti ti-photo"></i>
+                  <span>Moonshot Kimi</span>
+                  <span class="reg-form-assist-key-saved-tag" id="reg-form-assist-moonshot-saved-tag" hidden>
+                    <i class="ti ti-check"></i>saved
+                  </span>
+                </label>
+                <div class="reg-form-assist-key-row" id="reg-form-moonshot-row">
+                  <input type="password"
+                         id="reg-form-moonshot-key-input"
+                         class="reg-form-assist-key-input"
+                         placeholder="sk-..."
+                         autocomplete="off"
+                         spellcheck="false"
+                         data-key-provider="moonshot"
+                         oninput="regOnAssistKeyInput('moonshot')">
+                  <button type="button" class="btn-primary" id="reg-form-moonshot-save-btn" onclick="regSaveMoonshotKey()" disabled>Save key</button>
+                  <button type="button" class="btn-cancel" id="reg-form-moonshot-clear-btn" onclick="regClearMoonshotKey()" disabled>Clear</button>
+                </div>
+              </div>
+
+              <div class="reg-form-assist-key-block">
+                <label class="reg-form-assist-key-label">
+                  <i class="ti ti-rocket"></i>
+                  <span>xAI Grok</span>
+                  <span class="reg-form-assist-key-saved-tag" id="reg-form-assist-xai-saved-tag" hidden>
+                    <i class="ti ti-check"></i>saved
+                  </span>
+                </label>
+                <div class="reg-form-assist-key-row" id="reg-form-xai-row">
+                  <input type="password"
+                         id="reg-form-xai-key-input"
+                         class="reg-form-assist-key-input"
+                         placeholder="xai-..."
+                         autocomplete="off"
+                         spellcheck="false"
+                         data-key-provider="xai"
+                         oninput="regOnAssistKeyInput('xai')">
+                  <button type="button" class="btn-primary" id="reg-form-xai-save-btn" onclick="regSaveXaiKey()" disabled>Save key</button>
+                  <button type="button" class="btn-cancel" id="reg-form-xai-clear-btn" onclick="regClearXaiKey()" disabled>Clear</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 2 — Pick models (gated on saved keys) -->
+            <div class="reg-form-assist-providers-section" id="reg-form-assist-providers-section">
+              <div class="reg-form-assist-section-heading">2 · Use which model for…</div>
+
+              <div class="reg-form-assist-key-provider">
+                <label class="reg-form-assist-key-label">
+                  <i class="ti ti-message-2"></i>
+                  <span>LLM overlay (suggestion synthesis across 4 tabs)</span>
+                </label>
+                <div class="reg-form-overlay-provider-toggle" role="radiogroup" aria-label="LLM overlay provider">
+                  <label class="reg-form-overlay-provider-option" data-requires-key="anthropic">
+                    <input type="radio"
+                           name="reg-form-overlay-provider"
+                           value="anthropic"
+                           onchange="regSelectOverlayProvider('anthropic')">
+                    <span>Anthropic Claude (Sonnet 4.6)</span>
+                  </label>
+                  <label class="reg-form-overlay-provider-option" data-requires-key="moonshot">
+                    <input type="radio"
+                           name="reg-form-overlay-provider"
+                           value="moonshot"
+                           onchange="regSelectOverlayProvider('moonshot')">
+                    <span>Moonshot Kimi K2.6</span>
+                  </label>
+                  <label class="reg-form-overlay-provider-option" data-requires-key="xai">
+                    <input type="radio"
+                           name="reg-form-overlay-provider"
+                           value="xai"
+                           onchange="regSelectOverlayProvider('xai')">
+                    <span>xAI Grok 4.2</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="reg-form-assist-key-provider">
+                <label class="reg-form-assist-key-label">
+                  <i class="ti ti-photo"></i>
+                  <span>VLM (PDF → field extraction)</span>
+                </label>
+                <div class="reg-form-overlay-provider-toggle" role="radiogroup" aria-label="VLM provider">
+                  <label class="reg-form-overlay-provider-option" data-requires-key="anthropic">
+                    <input type="radio"
+                           name="reg-form-vlm-provider"
+                           value="anthropic"
+                           onchange="regSelectVlmProvider('anthropic')">
+                    <span>Anthropic Claude (Sonnet 4.6 vision)</span>
+                  </label>
+                  <label class="reg-form-overlay-provider-option" data-requires-key="moonshot">
+                    <input type="radio"
+                           name="reg-form-vlm-provider"
+                           value="moonshot"
+                           onchange="regSelectVlmProvider('moonshot')">
+                    <span>Moonshot Kimi 2.6</span>
+                  </label>
+                  <label class="reg-form-overlay-provider-option" data-requires-key="xai">
+                    <input type="radio"
+                           name="reg-form-vlm-provider"
+                           value="xai"
+                           onchange="regSelectVlmProvider('xai')">
+                    <span>xAI Grok 4.2</span>
+                  </label>
+                </div>
+              </div>
+
+              <p class="reg-form-assist-providers-empty" id="reg-form-assist-providers-empty" hidden>
+                <i class="ti ti-info-circle"></i>
+                Save an API key above to enable a model. With no key, assist runs canned suggestions.
+              </p>
+            </div>
+
+            <p class="reg-form-assist-key-hint">
+              Console power-users:
+              <code>smartStart.setApiKey('sk-ant-…')</code> ·
+              <code>smartStart.setMoonshotKey('sk-…')</code>.
+            </p>
+          </div>
+        </details>
+      </div>
+
+      <!-- Stage: loading OCR engine -->
+      <div data-reg-form-stage="loading" hidden>
+        <div class="reg-form-progress-block">
+          <div class="reg-form-progress-text" id="reg-form-progress-text">Loading OCR engine…</div>
+          <div class="reg-form-progress-track"><div class="reg-form-progress-bar" id="reg-form-progress-bar" style="width: 5%"></div></div>
+          <p class="reg-form-progress-hint">First use downloads Tesseract.js + pdf.js (~5 MB) from CDN. Subsequent uses are instant.</p>
+        </div>
+      </div>
+
+      <!-- Stage: extracting text -->
+      <div data-reg-form-stage="extracting" hidden>
+        <div class="reg-form-progress-block">
+          <div class="reg-form-progress-text" id="reg-form-progress-text-2">Extracting text…</div>
+          <div class="reg-form-progress-track"><div class="reg-form-progress-bar" style="width: 40%"></div></div>
+        </div>
+        <label class="reg-sample-input-label">Extracted text (real OCR)</label>
+        <pre id="reg-form-extracted" class="reg-form-extracted" data-demo="onramp.form.extracted"></pre>
+      </div>
+
+      <!-- Stage: detecting fields (Stage 2 canned) -->
+      <div data-reg-form-stage="detecting" hidden>
+        <div class="reg-form-progress-block">
+          <div class="reg-form-progress-text">Detecting field structure…</div>
+          <div class="reg-form-progress-track"><div class="reg-form-progress-bar" style="width: 85%"></div></div>
+        </div>
+        <label class="reg-sample-input-label">Extracted text</label>
+        <pre class="reg-form-extracted" data-reg-form-extracted-display></pre>
+      </div>
+
+      <!-- Stage: done (schema preview) -->
+      <div data-reg-form-stage="done" hidden>
+        <div id="reg-form-summary" class="reg-form-summary" data-demo="onramp.form.summary"></div>
+      </div>
+
+      <!-- Stage: error -->
+      <div data-reg-form-stage="error" hidden>
+        <div class="reg-form-error" id="reg-form-error" data-demo="onramp.form.error"></div>
+        <button class="btn-secondary" onclick="regSetFormStage('idle')"><i class="ti ti-arrow-back-up"></i> Try again</button>
+      </div>
+    </div>
+    <div class="overlay-foot">
+      <button class="btn-cancel" onclick="regCloseFormOnramp()">Cancel</button>
+      <button class="btn-primary" id="reg-form-use-btn" data-demo="onramp.form.use" onclick="regUseFormSeed()" disabled><i class="ti ti-arrow-right"></i> Use this schema</button>
+    </div>
+  </div>
+</div>
 
 <!-- ============ Participants directory ============ -->
 <section class="screen" data-screen="participants">
@@ -3589,73 +4276,21 @@
   </div>
 </div>
 
-<!-- Register new data element (admin) -->
-<div class="overlay-veil" id="register-de-modal" hidden>
-  <div class="overlay-card">
+<!-- Legacy register-de-modal removed in Impl F per ADR 0039 §8 — superseded
+     by the full registration canvas at data-screen="register-element". -->
+
+<!-- Test as operator modal (ADR 0039 §7 + Q8) — opened from the Review tab.
+     Renders the current schema with full Composer chrome (acting-as banner,
+     complexity pill, optional 3-step stepper) so admins can see exactly what
+     operators will encounter post-publish. Read-only — typed values discarded. -->
+<div class="overlay-veil" id="register-test-modal" hidden>
+  <div class="overlay-card xl" role="dialog" aria-labelledby="reg-test-title" aria-modal="true">
     <div class="overlay-head">
-      <div class="ic tx"><i class="ti ti-plus"></i></div>
-      <h4>Register a new data element <span style="font-size:11px;color:var(--g-50);font-weight:400;margin-left:6px">(admin only)</span></h4>
-      <button class="close" onclick="closeOverlay('register-de-modal')"><i class="ti ti-x"></i></button>
+      <div class="ic tx"><i class="ti ti-eye"></i></div>
+      <h4 id="reg-test-title">Test as operator</h4>
+      <button class="close" aria-label="Close" data-demo="test.close" onclick="regCloseTestModal()"><i class="ti ti-x"></i></button>
     </div>
-    <div class="overlay-body">
-      <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:12px">Drafts are visible only to DEX admins until promoted. Per <a href="#" onclick="event.preventDefault(); openAdrPanel('0013','Per-DEX-admin-curated data element catalog','agr')">ADR 0013</a>, every catalog entry needs a name, category, and an initial schema preview.</p>
-
-      <div class="mform-row">
-        <label for="register-de-name">Element name <span style="color:var(--red-50)">*</span></label>
-        <input id="register-de-name" type="text" placeholder="e.g. Bunker delivery confirmation" autocomplete="off" oninput="updateRegisterDePreview()">
-      </div>
-
-      <div class="mform-row">
-        <label for="register-de-category">Category <span style="color:var(--red-50)">*</span></label>
-        <select id="register-de-category" onchange="updateRegisterDePreview()">
-          <option value="">— Pick a category —</option>
-          <option>Trade documents</option>
-          <option>Logistics &amp; tracking</option>
-          <option>Bunker &amp; fuel</option>
-          <option>Finance &amp; invoicing</option>
-          <option>Customs &amp; regulatory</option>
-          <option>Subcontractor management</option>
-          <option>Site safety</option>
-          <option>Patient records</option>
-          <option>Lab &amp; imaging</option>
-        </select>
-      </div>
-
-      <div class="mform-row">
-        <label for="register-de-description">Short description</label>
-        <textarea id="register-de-description" rows="2" placeholder="One-line description shown under the element name in the catalog"></textarea>
-      </div>
-
-      <div class="mform-row mform-row-2">
-        <div>
-          <label for="register-de-version">Initial version</label>
-          <input id="register-de-version" type="text" value="v0.1" oninput="updateRegisterDePreview()">
-        </div>
-        <div>
-          <label for="register-de-complexity">Compose complexity</label>
-          <select id="register-de-complexity">
-            <option value="simple">Simple — single-page form</option>
-            <option value="high-stakes" selected>High-stakes — 3-step wizard</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-preview">
-        <p class="form-preview-label">Catalog preview</p>
-        <div class="form-preview-row">
-          <i class="ti ti-file-text" aria-hidden="true"></i>
-          <div>
-            <div class="form-preview-name" id="register-de-preview-name">Element name</div>
-            <div class="form-preview-meta" id="register-de-preview-meta">Draft · uncategorised</div>
-          </div>
-          <span class="version-badge draft" id="register-de-preview-version">v0.1</span>
-        </div>
-      </div>
-    </div>
-    <div class="overlay-foot">
-      <button class="btn-cancel" onclick="closeOverlay('register-de-modal')">Cancel</button>
-      <button class="btn-primary" id="register-de-submit" onclick="confirmRegisterDataElement()"><i class="ti ti-plus" aria-hidden="true"></i>Register as draft</button>
-    </div>
+    <div class="overlay-body" data-reg-test-body data-demo="review.test-modal-body"></div>
   </div>
 </div>
 
@@ -3972,36 +4607,52 @@
      defined elsewhere. Per ADR 0028 the multi-Pitstop layer is a parallel concern
      hooking into existing surfaces — keeping it as the final layer makes the dependency
      direction explicit. ===== -->
-<script src="scripts/state.js?v=p17"></script>
-<script src="scripts/access.js?v=p17"></script>
-<script src="scripts/workspace-storage.js?v=p17"></script>
+<script src="scripts/state.js?v=p60"></script>
+<script src="scripts/access.js?v=p60"></script>
+<script src="scripts/workspace-storage.js?v=p60"></script>
 <!-- workspace-fixtures.js — scene/inbox/MP fixture data extracted from state.js
      in Phase 7. Must load before workspace-bootstrap.js (which dereferences
      SCENE_SEEDS / INBOX_BY_DEX) but order vs. state.js doesn't matter — all
      references are guarded with `typeof X !== 'undefined'`. -->
-<script src="scripts/workspace-fixtures.js?v=p17"></script>
-<script src="scripts/workspace-bootstrap.js?v=p17"></script>
-<script src="scripts/workspace.js?v=p17"></script>
-<script src="scripts/components.js?v=p17"></script>
-<script src="scripts/theme.js?v=p17"></script>
-<script src="scripts/wizard.js?v=p17"></script>
-<script src="scripts/app.js?v=p17"></script>
+<script src="scripts/workspace-fixtures.js?v=p60"></script>
+<script src="scripts/workspace-bootstrap.js?v=p60"></script>
+<script src="scripts/workspace.js?v=p60"></script>
+<script src="scripts/components.js?v=p60"></script>
+<script src="scripts/theme.js?v=p60"></script>
+<script src="scripts/wizard.js?v=p60"></script>
+<script src="scripts/app.js?v=p60"></script>
+<script src="scripts/register-element.js?v=p60"></script>
+<script src="scripts/register-onramps.js?v=p60"></script>
+<!-- Smart Start assist (ADR 0040) — engine + UI primitives + fixtures.
+     Load order: fixtures before engine before UI primitives, all before the
+     demos (which exercise the integrated flow). -->
+<script src="scripts/fixtures/smart-start/canned-responses.js?v=p60"></script>
+<script src="scripts/fixtures/smart-start/confluence-pages.js?v=p60"></script>
+<script src="scripts/fixtures/smart-start/dex-references.js?v=p60"></script>
+<script src="scripts/smart-start-assist-prompts.js?v=p60"></script>
+<script src="scripts/smart-start-assist-live.js?v=p60"></script>
+<script src="scripts/smart-start-assist.js?v=p60"></script>
+<script src="scripts/smart-start-assist-ui.js?v=p60"></script>
 <!-- Auto-demo runner (ADR 0034) — load order: runtime first, then each flow self-registers, then the launcher reads the registry. -->
-<script src="scripts/demos/runtime.js?v=p17"></script>
-<script src="scripts/demos/lib/seed-helpers.js?v=p17"></script>
-<script src="scripts/demos/first-agreement.js?v=p17"></script>
-<script src="scripts/demos/extend.js?v=p17"></script>
-<script src="scripts/demos/approve.js?v=p17"></script>
-<script src="scripts/demos/cross-dex.js?v=p17"></script>
-<script src="scripts/demos/compose-message.js?v=p17"></script>
-<script src="scripts/demos/suspend.js?v=p17"></script>
-<script src="scripts/demos/watch-and-digest.js?v=p17"></script>
-<script src="scripts/demos/teammate-claim.js?v=p17"></script>
-<script src="scripts/demos/distribute-pack.js?v=p17"></script>
-<script src="scripts/demos/triage-failures.js?v=p17"></script>
-<script src="scripts/demos/acting-as-sp.js?v=p17"></script>
-<script src="scripts/demos/pitstop-scope.js?v=p17"></script>
-<script src="scripts/demos/index.js?v=p17"></script>
+<script src="scripts/demos/runtime.js?v=p60"></script>
+<script src="scripts/demos/lib/seed-helpers.js?v=p60"></script>
+<script src="scripts/demos/first-agreement.js?v=p60"></script>
+<script src="scripts/demos/extend.js?v=p60"></script>
+<script src="scripts/demos/approve.js?v=p60"></script>
+<script src="scripts/demos/cross-dex.js?v=p60"></script>
+<script src="scripts/demos/compose-message.js?v=p60"></script>
+<script src="scripts/demos/suspend.js?v=p60"></script>
+<script src="scripts/demos/watch-and-digest.js?v=p60"></script>
+<script src="scripts/demos/teammate-claim.js?v=p60"></script>
+<script src="scripts/demos/distribute-pack.js?v=p60"></script>
+<script src="scripts/demos/triage-failures.js?v=p60"></script>
+<script src="scripts/demos/acting-as-sp.js?v=p60"></script>
+<script src="scripts/demos/pitstop-scope.js?v=p60"></script>
+<script src="scripts/demos/register-element.js?v=p60"></script>
+<script src="scripts/demos/register-element-with-assist.js?v=p60"></script>
+<script src="scripts/demos/register-element-with-assist-live.js?v=p60"></script>
+<script src="scripts/demos/version-element.js?v=p60"></script>
+<script src="scripts/demos/index.js?v=p60"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>
 <script src="scripts/pitstop.js"></script>

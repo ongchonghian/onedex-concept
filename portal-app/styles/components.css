@@ -703,11 +703,15 @@ tr.row-highlight-pulse > td {
   border-radius: var(--r-xl);
   width: 100%;
   max-width: 480px;
+  max-height: calc(100vh - var(--sp-8) * 2);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   box-shadow: var(--shadow-modal);
 }
 .overlay-card.lg { max-width: 560px; }
 .overlay-card.sm { max-width: 360px; }
+.overlay-card.xl { max-width: 880px; }   /* Used by registration on-ramp + test-as-operator modals (Impl C/D/F) with side-by-side grids that need >560px to breathe. */
 .overlay-head {
   padding: 14px 18px;
   border-bottom: 0.5px solid var(--g-90);
@@ -730,13 +734,20 @@ tr.row-highlight-pulse > td {
 .overlay-head h4 { font-size: var(--fs-body); font-weight: var(--fw-medium); flex: 1; }
 .overlay-head .close { padding: 6px; background: transparent; border: none; cursor: pointer; }
 .overlay-head .close i { font-size: 18px; color: var(--g-50); }
-.overlay-body { padding: var(--sp-4) 18px; }
+.overlay-head { flex: 0 0 auto; }
+.overlay-body {
+  padding: var(--sp-4) 18px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
 .overlay-foot {
   padding: var(--sp-3) 18px;
   border-top: 0.5px solid var(--g-90);
   display: flex;
   gap: var(--sp-2);
   justify-content: flex-end;
+  flex: 0 0 auto;
 }
 
 /* ---------- Modal form rows (label-on-top) ----------

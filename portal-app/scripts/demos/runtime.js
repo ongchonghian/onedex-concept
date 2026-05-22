@@ -22,7 +22,7 @@
 
   const flows = new Map();
 
-  const VALID_ACTIONS = new Set(['goto', 'annotate', 'click', 'type', 'select', 'wait', 'expect']);
+  const VALID_ACTIONS = new Set(['goto', 'annotate', 'click', 'type', 'select', 'wait', 'expect', 'call']);
 
   function registerFlow(spec) {
     if (!spec || typeof spec !== 'object') {
@@ -194,15 +194,19 @@
 
   function positionCallout(bubble, anchorEl) {
     const tail = bubble.querySelector('.demo-callout-tail');
-    if (!anchorEl) {
-      // Fall back to bottom-center
+    // Fall back to bottom-center when the anchor is missing OR has been
+    // collapsed to 0×0 by display:none / hidden attribute. Without this guard,
+    // hidden anchors (e.g. an inactive tab panel still in the DOM) would
+    // resolve `getBoundingClientRect()` to all-zero coords and the callout
+    // would render in the viewport top-left, looking like it failed to mount.
+    const rect = anchorEl ? anchorEl.getBoundingClientRect() : null;
+    if (!anchorEl || !rect || (rect.width === 0 && rect.height === 0)) {
       bubble.style.left = '50%';
       bubble.style.top = (window.innerHeight - 180) + 'px';
       bubble.style.transform = 'translateX(-50%)';
       if (tail) tail.style.display = 'none';
       return;
     }
-    const rect = anchorEl.getBoundingClientRect();
     bubble.style.transform = '';
     // Default: place below the target
     let top = rect.bottom + 14;
@@ -213,6 +217,10 @@
       top = rect.top - bubbleRect.height - 14;
       placement = 'above';
     }
+    // Clamp top to viewport so a callout can't render below the fold or
+    // above the visible area when its anchor sits outside the viewport
+    // (e.g. an inactive tab panel that's still in the DOM but invisible).
+    top = Math.max(12, Math.min(top, window.innerHeight - bubbleRect.height - 12));
     let left = rect.left + rect.width / 2 - bubbleRect.width / 2;
     left = Math.max(12, Math.min(left, window.innerWidth - bubbleRect.width - 12));
     bubble.style.left = left + 'px';
@@ -397,8 +405,39 @@
         break;
 
       case 'expect': {
-        const found = $(step.target);
+        // Optional polling — when step.timeoutMs is set, poll every 250ms
+        // until the selector resolves OR the timeout fires. Used for waits
+        // that exceed normal UI transitions (e.g. live VLM/LLM extraction
+        // can take 30-180s per page; a one-shot match would always fail).
+        // When timeoutMs is omitted the original one-shot behaviour applies
+        // — short transitions don't pay for a polling loop.
+        let found = $(step.target);
+        if (!found && step.timeoutMs) {
+          const deadline = Date.now() + step.timeoutMs;
+          while (!found && Date.now() < deadline) {
+            if (runtime.stopped) return;
+            await sleep(250);
+            found = $(step.target);
+          }
+        }
         if (!found) {
+          // Diagnostic dump on failure — surfaces the most common JSDOM
+          // expect-failure causes (wrong DEX theme, capability gate hiding
+          // the target, target screen not active, prior flow's leftover
+          // state) so demo authors can localise without rebuilding the
+          // session manually.
+          try {
+            console.warn('[demo expect failed]', {
+              selector:    step.target,
+              stepIndex:   runtime && runtime.stepIndex,
+              timeoutMs:   step.timeoutMs || 'one-shot',
+              bodyClasses: document.body.className,
+              activeScreens: Array.from(document.querySelectorAll('.screen.active')).map(s => s.getAttribute('data-screen')),
+              activeUserId: (window.workspace && window.workspace.meta && window.workspace.meta.activeUserId) || null,
+              activeDexId:  (window.workspace && window.workspace.meta && window.workspace.meta.activeDexId) || null,
+              targetExistsAnywhere: !!document.querySelector(step.target.replace(/\.active /, ' ')),
+            });
+          } catch (e) { /* best-effort */ }
           throw new Error(`expect: selector "${step.target}" not found in DOM`);
         }
         // Headless mode (per ADR 0037) is presence-only — JSDOM has no
@@ -425,13 +464,31 @@
         runtime.annotateCount++;
         if (!runtime.headless) {
           const anchorEl = step.anchor ? $(step.anchor) : null;
+          const anchorVisible = !!(anchorEl && anchorEl.getBoundingClientRect().width > 0);
           if (anchorEl && typeof anchorEl.scrollIntoView === 'function') {
             anchorEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            await sleep(200);
+            // 400ms covers most smooth-scroll completions; the previous 200ms
+            // sometimes returned before the scroll finished, so the cursor
+            // and callout would position against a still-moving rect.
+            await sleep(400);
             moveCursorToElement(anchorEl);
           }
           showCallout({ anchor: step.anchor, label: step.label, rationale: step.rationale });
           updateControlBar();
+          // Telemetry — print which step mounted, against which anchor, and
+          // whether that anchor was actually findable + visible. Helps when
+          // a step appears to "not show" — the log shows whether the callout
+          // mounted but mispositioned or never reached this branch at all.
+          try {
+            console.info('[demo annotate]', {
+              stepIndex: runtime.stepIndex,
+              label:     step.label,
+              anchor:    step.anchor || null,
+              anchorFound:   !!anchorEl,
+              anchorVisible,
+              dwell:     step.dwell || 1800,
+            });
+          } catch (e) { /* best-effort */ }
         }
         await sleep(step.dwell || 1800);
         break;
@@ -483,6 +540,23 @@
       case 'wait':
         await sleep(step.ms || 600);
         break;
+
+      case 'call': {
+        // Invoke a globally-exposed helper by name. Used by demo flows whose
+        // setup can't be expressed as a sequence of clicks (e.g. simulating
+        // a successful PDF VLM extraction without driving a real File drop).
+        // The function must be on `window` — demo flows aren't allowed to
+        // reach into module-scoped state directly. Args pass through.
+        const fnName = step.fn || step.target;
+        const fn = fnName ? window[fnName] : null;
+        if (typeof fn !== 'function') {
+          throw new Error('call: ' + fnName + ' is not a function on window');
+        }
+        const result = fn.apply(null, Array.isArray(step.args) ? step.args : []);
+        if (result && typeof result.then === 'function') await result;
+        await settle(step.after || 200);
+        break;
+      }
     }
   }
 

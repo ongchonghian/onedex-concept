@@ -81,6 +81,15 @@ function switchDex(dex, opts) {
   updatePillText(config.label, dex);
   if (!opts.skipWorkspaceMeta && typeof patchWorkspaceMeta === 'function') {
     patchWorkspaceMeta({ activeDexId: dex });
+    // Slice 5.8 — re-resolve activeUserId for the current persona on the new
+    // DEX. Platform-admin maps to a different person per DEX via
+    // PLATFORM_ADMIN_BY_DEX (Kagura on TX/HX, Beatrix on BX); participant
+    // already picked up colleagues via the same mechanism. Skip when pinned.
+    if (typeof resolveActiveUserId === 'function' && typeof currentPersona === 'string' &&
+        (typeof pinnedActiveUserId !== 'string' || !pinnedActiveUserId)) {
+      const _resolved = resolveActiveUserId(currentPersona, dex);
+      if (_resolved) patchWorkspaceMeta({ activeUserId: _resolved });
+    }
   }
   themeInboxContent(dex);
   // Flow-ribbon refresh removed in Phase 5 of ADR 0034 alongside the rail.
