@@ -5382,14 +5382,257 @@ body.compose-cross-dex-pending #compose-next { opacity: 0.45; pointer-events: no
   margin-top: 2px;
 }
 .reg-field-row {
-  display: grid;
-  grid-template-columns: 16px 1.5fr 1fr auto auto 24px;
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
   padding: 8px;
   border: 0.5px solid var(--g-95);
   border-radius: var(--r-sm);
   background: var(--surface);
+  min-width: 0;                                     /* allow children to shrink */
+  overflow: hidden;                                 /* prevent row from breaching its parent */
+}
+/* Flex sizing for each child position. Order matches regBuildFieldRow's
+ * appendChild sequence: handle, name, type, required, description, group
+ * picker, (composite chips | assist chip), delete. */
+.reg-field-row > .reg-field-handle      { flex: 0 0 16px; }
+.reg-field-row > .reg-field-name-input  { flex: 1 1 160px; min-width: 120px; }
+.reg-field-row > .reg-field-type-select { flex: 0 1 140px; min-width: 120px; }
+.reg-field-row > .reg-field-required    { flex: 0 0 auto; white-space: nowrap; }
+.reg-field-row > .reg-field-description-input { flex: 1 1 160px; min-width: 100px; }
+.reg-field-row > .reg-field-group-picker { flex: 0 1 130px; min-width: 110px; }
+.reg-field-row > .reg-field-presentation-btn { flex: 0 0 32px; }
+.reg-field-row > .reg-field-delete      { flex: 0 0 28px; }
+
+/* IMPL-4/5: Presentation panel icon button (Q5a/b/c locked). Theme-tinted
+ * background when overrides are active so Sarah can scan a 30-field draft
+ * and spot custom presentation instantly. */
+.reg-field-presentation-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  color: var(--g-50);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.reg-field-presentation-btn:hover {
+  background: var(--g-97);
+  color: var(--g-20);
+  border-color: var(--g-70);
+}
+.reg-field-presentation-btn[data-has-override="true"] {
+  background: var(--theme-95);
+  color: var(--theme-30);
+  border-color: var(--theme-80);
+}
+.reg-field-presentation-btn[data-has-override="true"]:hover {
+  background: var(--theme-90);
+}
+.reg-field-presentation-btn[data-open="true"] {
+  background: var(--g-90);
+  color: var(--g-10);
+  border-color: var(--g-60);
+}
+.reg-field-presentation-btn[data-open="true"][data-has-override="true"] {
+  background: var(--theme-80);
+  color: var(--theme-10);
+}
+
+/* Peer expander — sits below the row. Uses the existing
+ * .reg-field-expander base (border + arrow notch) and overrides the left-
+ * accent colour so Sarah can tell at a glance whether she's looking at a
+ * pick list editor (theme-tinted) or a Presentation panel (slate-tinted). */
+.reg-field-presentation-expander {
+  border-left-color: var(--g-60) !important;
+}
+.reg-presentation-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--g-95);
+}
+.reg-presentation-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--g-30);
+  flex: 1;
+}
+.reg-presentation-close {
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: none;
+  color: var(--g-50);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.reg-presentation-close:hover { background: var(--g-95); color: var(--g-10); }
+
+/* Each row inside the panel: label · control · note */
+.reg-presentation-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.reg-presentation-row + .reg-presentation-row {
+  border-top: 1px dashed var(--g-95);
+}
+.reg-presentation-row-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--g-40);
+}
+.reg-presentation-row-note {
+  font-size: 11px;
+  color: var(--g-60);
+  font-style: italic;
+  text-align: right;
+}
+.reg-presentation-readonly {
+  color: var(--g-20);
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  padding: 4px 8px;
+  background: var(--g-97);
+  border-radius: var(--r-sm);
+  display: inline-block;
+  width: fit-content;
+}
+
+/* Hint override dropdown styled to look interactive (not a plain native
+ * select) so Sarah can tell it's the editable cell of the row. */
+.reg-presentation-hint-select {
+  padding: 5px 10px;
+  border: 1px solid var(--theme-80);
+  background: var(--theme-95);
+  color: var(--theme-20);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.reg-presentation-hint-select:hover { background: var(--theme-90); }
+.reg-presentation-hint-select:focus {
+  outline: none;
+  border-color: var(--theme-50);
+  box-shadow: 0 0 0 2px var(--theme-95);
+}
+
+.reg-presentation-reset,
+.reg-presentation-revert {
+  padding: 4px 10px;
+  background: white;
+  border: 1px solid var(--g-80);
+  color: var(--g-20);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  cursor: pointer;
+  margin-left: 8px;
+}
+.reg-presentation-reset:hover,
+.reg-presentation-revert:hover {
+  background: var(--g-97);
+  border-color: var(--g-60);
+}
+
+/* Origin annotation row — text input + sparkle indicator OR revert button */
+.reg-presentation-row-origin .reg-presentation-origin-input {
+  padding: 5px 8px;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  font: inherit;
+  background: white;
+  min-width: 0;
+}
+.reg-presentation-row-origin .reg-presentation-origin-input:focus {
+  outline: none;
+  border-color: var(--theme-50);
+  box-shadow: 0 0 0 2px var(--theme-95);
+}
+.reg-presentation-sparkle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--theme-30);
+  background: var(--theme-95);
+  border: 1px solid var(--theme-90);
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* Anchor-jump link (labels deduplication) */
+.reg-presentation-anchor-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid var(--g-90);
+  color: var(--g-30);
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.reg-presentation-anchor-jump:hover {
+  background: var(--g-97);
+  border-color: var(--theme-80);
+  color: var(--theme-20);
+}
+/* Flash highlight on jump target so Sarah's eye finds the picklist editor. */
+.reg-field-expander--flash {
+  animation: reg-presentation-flash 1.2s ease-out;
+}
+@keyframes reg-presentation-flash {
+  0%   { box-shadow: 0 0 0 0 var(--theme-50); background: var(--theme-95); }
+  50%  { box-shadow: 0 0 0 4px var(--theme-95); background: var(--theme-95); }
+  100% { box-shadow: 0 0 0 0 transparent; background: var(--g-99); }
+}
+.reg-field-row > .reg-field-handle {
+  cursor: grab;
+  color: var(--g-60);
+}
+.reg-field-row > .reg-field-handle:active { cursor: grabbing; }
+/* Drag states (UX-9) — drag origin dims, drop targets show insertion line. */
+.reg-field-row--dragging { opacity: 0.4; }
+.reg-field-row--drop-before { box-shadow: 0 -2px 0 0 var(--theme-50); }
+.reg-field-row--drop-after  { box-shadow: 0 2px 0 0 var(--theme-50); }
+.reg-field-group-heading--drop-target {
+  background: var(--theme-95);
+  border-radius: var(--r-sm);
+  outline: 2px dashed var(--theme-50);
+  outline-offset: 2px;
+}
+/* UX-23: while a manual pointer-drag is in progress, force the grabbing
+ * cursor everywhere and suppress text-selection so the user's mouse drag
+ * doesn't accidentally highlight text in adjacent inputs. */
+body.reg-dragging-in-progress,
+body.reg-dragging-in-progress * {
+  cursor: grabbing !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 .reg-field-row:hover { border-color: var(--g-90); }
 .reg-field-handle {
@@ -5453,6 +5696,1217 @@ body.compose-cross-dex-pending #compose-next { opacity: 0.45; pointer-events: no
   width: 100%;
 }
 .reg-add-field:hover { border-color: var(--theme-50); background: var(--theme-98); }
+
+/* Toolbar holding both "Add field" and "Add disclaimer text". Plan 0002 §E3
+ * keeps the two visually adjacent but distinct so Sarah doesn't conflate
+ * disclaimer (presentation) with field (data). */
+.reg-field-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.reg-field-toolbar .reg-add-field { margin-top: 0; flex: 1 1 auto; }
+.reg-add-disclaimer,
+.reg-add-group {
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px dashed var(--g-90);
+  border-radius: var(--r-sm);
+  color: var(--g-30);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.reg-add-disclaimer:hover,
+.reg-add-group:hover { border-color: var(--g-60); background: var(--g-98); }
+
+/* Per-row group picker (UX-7) — sits in the row's chip cluster. Compact pill
+ * shape distinct from the field-type select so it doesn't read as a duplicate
+ * type-selector. Folder icon prefix + readable min-width make it discoverable
+ * as a group control rather than a generic chevron. */
+.reg-field-group-picker {
+  padding: 4px 28px 4px 26px;                /* room for chevron + folder glyph */
+  font-size: 11px;
+  background:
+    /* small folder icon at the left edge — keeps the control identifiable as
+     * a group control without needing a separate icon element */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 4h5l2 3h9a1 1 0 0 1 1 1v11a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-13a1 1 0 0 1 1 -1'/></svg>") no-repeat 6px center white;
+  border: 1px solid var(--g-90);
+  color: var(--g-30);
+  border-radius: 10px;
+  cursor: pointer;
+  min-width: 110px;
+  max-width: 180px;
+  appearance: auto;                           /* keep native dropdown chevron */
+  font-weight: 500;
+}
+.reg-field-group-picker:hover {
+  background-color: var(--g-97);
+  border-color: var(--g-80);
+  color: var(--g-10);
+}
+.reg-field-group-picker:focus {
+  outline: none;
+  border-color: var(--theme-50);
+  box-shadow: 0 0 0 2px var(--theme-95);
+}
+/* Visually distinguish the "no group" state — italic + muted so Sarah can
+ * scan field rows and spot the ungrouped ones at a glance. */
+.reg-field-group-picker option[value="__none__"] { font-style: italic; color: var(--g-50); }
+.reg-field-group-picker option[value="__new__"]  { font-weight: 600; color: var(--theme-30); }
+
+/* Empty-group placeholder shown under a group heading with no fields. Tells
+ * Sarah how to populate it without having to discover the group picker. */
+.reg-field-group-empty {
+  padding: 10px 12px;
+  margin: 4px 0 8px 0;
+  font-size: 12px;
+  color: var(--g-50);
+  font-style: italic;
+  background: var(--g-99);
+  border: 1px dashed var(--g-90);
+  border-radius: var(--r-sm);
+}
+
+/* -- D1: pick list inline expander -- */
+
+.reg-field-expander {
+  margin-top: -1px;                     /* overlap field-row's bottom border */
+  padding: 12px 16px 14px 18px;
+  background: var(--g-99, #fafafa);
+  border: 1px solid var(--g-90, #ddd);
+  border-top: none;
+  border-left: 3px solid var(--theme-50, #c0c);
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+  font-size: 13px;
+  position: relative;
+}
+/* Visual "this belongs to the row above" connector — small arrow notch at the
+ * top-left that points up into the field row, making the parent-child
+ * relationship unambiguous at a glance. */
+.reg-field-expander::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 16px;
+  width: 12px;
+  height: 12px;
+  background: var(--g-99, #fafafa);
+  border-left: 1px solid var(--g-90, #ddd);
+  border-top: 1px solid var(--g-90, #ddd);
+  transform: rotate(45deg);
+}
+.reg-field-expander[data-depth="2"] {
+  background: var(--g-97, #f5f5f5);
+  margin-left: 16px;
+}
+.reg-field-expander[data-depth="2"]::before { background: var(--g-97, #f5f5f5); }
+.reg-field-expander[data-depth="3"] {
+  background: var(--g-95, #efefef);
+  margin-left: 32px;
+}
+.reg-field-expander[data-depth="3"]::before { background: var(--g-95, #efefef); }
+
+.reg-picklist-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 84px 28px;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.reg-picklist-col-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--g-50);
+  font-weight: 600;
+}
+.reg-picklist-col-hint {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--g-60);
+  font-style: italic;
+}
+.reg-picklist-options { display: flex; flex-direction: column; gap: 4px; }
+.reg-picklist-option,
+.reg-picklist-add-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px;
+  gap: 8px;
+  align-items: center;
+}
+/* Existing options carry a companion toggle (84px) + remove button (28px)
+ * in addition to the value/label columns. */
+.reg-picklist-option { grid-template-columns: 1fr 1fr 84px 28px; }
+
+/* Per-option companion-field toggle (UX-10). Subtle pill so it doesn't
+ * compete with the value/label inputs for attention. */
+.reg-picklist-companion {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--g-90);
+  border-radius: 10px;
+  font-size: 11px;
+  color: var(--g-40);
+  background: white;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.reg-picklist-companion:hover { background: var(--g-97); }
+.reg-picklist-companion input[type="checkbox"] { margin: 0; cursor: pointer; }
+.reg-picklist-companion input[type="checkbox"]:checked + .reg-picklist-companion-label {
+  color: var(--theme-30);
+  font-weight: 500;
+}
+.reg-picklist-companion input[disabled],
+.reg-picklist-companion input[disabled] + .reg-picklist-companion-label {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* UX-11 Promote-to-group row — sits at the bottom of the picklist expander
+ * as a quiet affordance. Not loud enough to compete with the per-option
+ * editing, but discoverable. */
+.reg-picklist-promote-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--g-95);
+}
+.reg-picklist-promote-hint {
+  font-size: 12px;
+  color: var(--g-50);
+  font-style: italic;
+}
+.reg-picklist-promote {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: white;
+  border: 1px solid var(--g-80);
+  border-radius: var(--r-sm);
+  color: var(--g-20);
+  font-size: 12px;
+  cursor: pointer;
+}
+.reg-picklist-promote:hover {
+  background: var(--theme-95);
+  border-color: var(--theme-50);
+  color: var(--theme-20);
+}
+
+/* UX-12 Demote-to-enum button — lives on the group heading title row, right
+ * of the field count badge. Quiet, theme-tinted button. Disabled state is
+ * visible (muted + cursor: not-allowed) and tooltip explains why. */
+.reg-field-group-demote {
+  margin-left: 12px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--g-80);
+  border-radius: var(--r-sm);
+  color: var(--g-30);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+.reg-field-group-demote:hover:not(:disabled) {
+  background: var(--theme-95);
+  border-color: var(--theme-50);
+  color: var(--theme-20);
+}
+.reg-field-group-demote:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* UX-36a — Restate-as-table button. Same visual language as demote, sitting
+ * on the group heading title row. Triggers the forward Class-3 restatement
+ * (group → array of repeating rows). */
+.reg-field-group-restate {
+  margin-left: 8px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--g-80);
+  border-radius: var(--r-sm);
+  color: var(--g-30);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+.reg-field-group-restate:hover:not(:disabled) {
+  background: var(--theme-95);
+  border-color: var(--theme-50);
+  color: var(--theme-20);
+}
+.reg-field-group-restate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* UX-36b — Flatten-to-group button. Lives at the bottom of an array
+ * expander when itemType=object with ≥1 child. Wider footprint than the
+ * group-heading buttons since the array expander has more breathing room. */
+.reg-array-restate-row {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--g-95);
+  display: flex;
+  justify-content: flex-end;
+}
+.reg-field-array-flatten {
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid var(--g-80);
+  border-radius: var(--r-sm);
+  color: var(--g-30);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.reg-field-array-flatten:hover:not(:disabled) {
+  background: var(--theme-95);
+  border-color: var(--theme-50);
+  color: var(--theme-20);
+}
+.reg-picklist-value,
+.reg-picklist-label {
+  padding: 5px 8px;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  font: inherit;
+  background: white;
+}
+.reg-picklist-value:focus,
+.reg-picklist-label:focus {
+  outline: none;
+  border-color: var(--theme-50);
+  box-shadow: 0 0 0 2px var(--theme-95);
+}
+.reg-picklist-remove {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  color: var(--g-50);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+}
+.reg-picklist-remove:hover { background: var(--neg-95, #fee); color: var(--neg-40, #c00); }
+
+.reg-picklist-add-row {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--g-95);
+  grid-template-columns: 1fr 1fr 80px;
+}
+.reg-picklist-add {
+  padding: 5px 10px;
+  background: white;
+  border: 1px solid var(--g-80);
+  border-radius: var(--r-sm);
+  color: var(--g-20);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.reg-picklist-add:hover { background: var(--g-97); border-color: var(--g-60); }
+
+.reg-picklist-floor-banner {
+  margin: 0 0 12px 0;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.5;
+}
+.reg-picklist-floor-banner i { flex-shrink: 0; margin-top: 1px; font-size: 14px; }
+.reg-picklist-floor-banner code,
+.reg-picklist-floor-banner strong { font-weight: 600; }
+.reg-picklist-floor-banner--warn {
+  background: var(--neg-95, #fee);
+  color: var(--neg-30, #800);
+  border: 1px solid var(--neg-90, #fcc);
+}
+.reg-picklist-floor-banner--soft {
+  background: var(--warn-95, #fff8e0);
+  color: var(--warn-20, #654);
+  border: 1px solid var(--warn-90, #fec);
+}
+.reg-picklist-floor-banner--ok { display: none; }
+
+/* -- D2: array expander — inline-sentence item-type picker -- */
+
+.reg-array-helper {
+  font-size: 12px;
+  color: var(--g-50);
+  margin-bottom: 8px;
+  font-style: italic;
+  line-height: 1.5;
+}
+.reg-array-itemrow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--g-20);
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid var(--g-95);
+  border-radius: var(--r-sm);
+  flex-wrap: wrap;
+}
+.reg-array-sentence {
+  color: var(--g-30);
+}
+/* Inline dropdown styled to flow within the sentence rather than look like
+ * a separate type-selector. Subtle border + matched background. */
+.reg-array-itemtype-select {
+  padding: 3px 8px;
+  border: 1px solid var(--theme-80);
+  background: var(--theme-95);
+  color: var(--theme-20);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.reg-array-itemtype-select:hover { background: var(--theme-90); }
+.reg-array-itemtype-select:focus {
+  outline: none;
+  border-color: var(--theme-50);
+  box-shadow: 0 0 0 2px var(--theme-95);
+}
+
+/* Wrapper around the recursive editor when item type is enum/object. Visual
+ * indent + header so it's clear "this defines the item shape, not new fields
+ * on the parent". */
+.reg-array-itemshape {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid var(--g-95);
+  border-left: 2px solid var(--theme-80);
+  border-radius: var(--r-sm);
+}
+.reg-array-itemshape-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  color: var(--g-40);
+  margin-bottom: 8px;
+}
+
+/* -- D3: nested object expander -- */
+
+.reg-object-helper {
+  font-size: 12px;
+  color: var(--g-50);
+  margin-bottom: 8px;
+  font-style: italic;
+}
+.reg-object-children {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  padding-left: 12px;
+  border-left: 2px solid var(--theme-95);
+}
+.reg-object-children[data-depth-indicator="d2"] { border-left-color: var(--theme-90); }
+.reg-object-children[data-depth-indicator="d3"] { border-left-color: var(--theme-80); }
+.reg-field-row-nested {
+  background: white;
+  border: 1px solid var(--g-95);
+  /* Override the parent's tight 6-column grid — at depth 2+ the row is already
+   * indented + padded, so we have less horizontal room. Give the name input
+   * priority (180px min), keep the type select compact, and let the
+   * description wrap to a second line on narrow widths. */
+  grid-template-columns: minmax(180px, 1.5fr) minmax(120px, 0.9fr) auto minmax(160px, 1fr) 24px;
+  gap: 6px;
+  padding: 6px;
+}
+.reg-field-row-nested .reg-field-name-input,
+.reg-field-row-nested .reg-field-description-input {
+  min-width: 0;                                       /* prevents grid blowout */
+  width: 100%;
+}
+/* On narrow drawers / deep nests, wrap the description below the row rather
+ * than crush every field into invisible widths. */
+@media (max-width: 1100px) {
+  .reg-field-row-nested {
+    grid-template-columns: minmax(180px, 1fr) minmax(120px, 0.8fr) auto 24px;
+  }
+  .reg-field-row-nested .reg-field-description-input {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+  }
+}
+.reg-object-add {
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px dashed var(--g-90);
+  border-radius: var(--r-sm);
+  color: var(--theme-50);
+  font: inherit;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.reg-object-add:hover { border-color: var(--theme-50); background: var(--theme-98); }
+
+.reg-depth-cap-chip {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: var(--g-95);
+  color: var(--g-30);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  display: inline-block;
+}
+
+/* -- D4: composite-input chip + origin annotation -- */
+
+.reg-composite-subtype-chip {
+  padding: 4px 8px;
+  border: 1px solid var(--theme-80);
+  background: var(--theme-95);
+  color: var(--theme-30);
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.reg-composite-origin-chip {
+  padding: 3px 8px;
+  background: var(--g-95);
+  color: var(--g-40);
+  border-radius: 10px;
+  font-size: 11px;
+  font-style: italic;
+  border: 1px solid var(--g-90);
+}
+.reg-composite-unmux {
+  padding: 4px 8px;
+  background: var(--g-95);
+  color: var(--g-60);
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  cursor: not-allowed;
+}
+
+/* -- E3: disclaimer row variant -- */
+
+.reg-field-row-disclaimer {
+  background: var(--g-97, #f6f6f6) !important;
+  border-color: var(--g-90) !important;
+  align-items: stretch;
+}
+.reg-disclaimer-icon {
+  color: var(--g-50);
+  display: flex;
+  align-items: center;
+}
+.reg-disclaimer-body {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  background: white;
+  font: inherit;
+  font-style: italic;
+  resize: vertical;
+  min-height: 38px;
+}
+.reg-disclaimer-body:focus {
+  outline: none;
+  border-color: var(--theme-50);
+  box-shadow: 0 0 0 2px var(--theme-95);
+}
+
+/* -- D6: skeleton recursion -- */
+
+.reg-skeleton-array {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--g-99);
+  border-radius: var(--r-sm);
+}
+.reg-skeleton-array-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reg-skeleton-array-item-label {
+  font-size: 11px;
+  color: var(--g-50);
+  min-width: 48px;
+}
+/* UX-37 — array-of-objects rendered as a true table in Composer Preview. */
+.reg-skeleton-array-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11px;
+  background: var(--bg-1);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.reg-skeleton-array-table th,
+.reg-skeleton-array-table td {
+  border: 0.5px solid var(--g-95);
+  padding: 5px 7px;
+  vertical-align: top;
+  text-align: left;
+}
+.reg-skeleton-array-table th {
+  font-size: 10.5px;
+  font-weight: var(--fw-medium);
+  color: var(--g-30);
+  background: var(--g-98);
+  white-space: nowrap;
+}
+.reg-skeleton-array-table-actions { width: 22px; text-align: center; }
+.reg-skeleton-array-rm {
+  color: var(--g-60);
+  font-size: 13px;
+  line-height: 1;
+}
+.reg-skeleton-array-add {
+  align-self: flex-start;
+  font-size: 11px;
+  color: var(--g-40);
+  border: 0.5px dashed var(--g-80);
+  border-radius: var(--r-sm);
+  padding: 2px 8px;
+  margin-top: 2px;
+}
+.reg-skeleton-object {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--g-99);
+  border-radius: var(--r-sm);
+  border-left: 2px solid var(--theme-95);
+  margin-left: 4px;
+}
+.reg-skeleton-truncated {
+  font-size: 11px;
+  color: var(--g-50);
+  font-style: italic;
+}
+.reg-skeleton-disclaimer {
+  padding: 6px 10px;
+  background: var(--g-97);
+  color: var(--g-40);
+  font-size: 12px;
+  font-style: italic;
+  border-radius: var(--r-sm);
+  border-left: 2px solid var(--g-80);
+}
+
+/* UX-32 — group-level Presentation icon button on the group heading.
+ * Mirrors the per-field .reg-field-presentation-btn styling. */
+.reg-field-group-heading-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reg-group-presentation-btn {
+  margin-left: 8px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  color: var(--g-50);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.reg-group-presentation-btn:hover {
+  background: var(--g-97);
+  color: var(--g-20);
+  border-color: var(--g-70);
+}
+.reg-group-presentation-btn[data-has-override="true"] {
+  background: var(--theme-95);
+  color: var(--theme-30);
+  border-color: var(--theme-80);
+}
+.reg-group-presentation-btn[data-has-override="true"]:hover { background: var(--theme-90); }
+.reg-group-presentation-btn[data-open="true"] {
+  background: var(--g-90);
+  color: var(--g-10);
+  border-color: var(--g-60);
+}
+
+/* Group-level Presentation expander — peer-style, indented under heading */
+.reg-group-presentation-expander {
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+/* UX-32 group-hint styling — visual differentiation in the field-builder UI
+ * so Sarah can see her override take effect. Production Composer reads the
+ * same hint from x-group-presentation. */
+.reg-field-group-heading[data-group-hint="card"] {
+  background: white;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+.reg-field-group-heading[data-group-hint="accordion"]::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 6px;
+  color: var(--g-50);
+  font-size: 11px;
+}
+.reg-field-group-heading[data-group-hint="table"] {
+  background: var(--theme-99, var(--g-99));
+  border-left: 3px solid var(--theme-50);
+  padding-left: 8px;
+}
+
+/* UX-22: Likert (Survey matrix) inline editor — rows + shared option scale. */
+.reg-likert-helper {
+  font-size: 12px;
+  color: var(--g-50);
+  margin-bottom: 10px;
+  font-style: italic;
+  line-height: 1.5;
+}
+.reg-likert-section {
+  margin-top: 12px;
+  padding: 10px;
+  background: white;
+  border: 1px solid var(--g-95);
+  border-radius: var(--r-sm);
+}
+.reg-likert-section + .reg-likert-section {
+  border-left: 2px solid var(--theme-90);
+}
+.reg-likert-section-header {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--g-95);
+}
+.reg-likert-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--g-30);
+}
+.reg-likert-section-hint {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--g-60);
+  font-style: italic;
+}
+.reg-likert-list { display: flex; flex-direction: column; gap: 4px; }
+.reg-likert-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 28px;
+  gap: 8px;
+  align-items: center;
+}
+.reg-likert-row-add {
+  grid-template-columns: 120px 1fr 80px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--g-95);
+}
+.reg-likert-key,
+.reg-likert-label {
+  padding: 5px 8px;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  font: inherit;
+  background: white;
+}
+.reg-likert-key { font-family: ui-monospace, monospace; font-size: 12px; }
+.reg-likert-key:focus,
+.reg-likert-label:focus {
+  outline: none;
+  border-color: var(--theme-50);
+  box-shadow: 0 0 0 2px var(--theme-95);
+}
+
+/* Skeleton grid for the Composer Preview — actual HTML table */
+.reg-skeleton-likert {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  background: white;
+  border: 1px solid var(--g-95);
+  border-radius: var(--r-sm);
+}
+.reg-skeleton-likert th,
+.reg-skeleton-likert td {
+  padding: 4px 6px;
+  border: 1px solid var(--g-95);
+  text-align: center;
+}
+.reg-skeleton-likert thead th {
+  background: var(--g-99);
+  color: var(--g-30);
+  font-weight: 500;
+}
+.reg-skeleton-likert-corner { background: var(--g-97) !important; }
+.reg-skeleton-likert-question {
+  text-align: left !important;
+  background: var(--g-99);
+  color: var(--g-20);
+  font-weight: 400;
+}
+.reg-skeleton-likert-empty {
+  padding: 8px;
+  background: var(--g-99);
+  border-radius: var(--r-sm);
+}
+
+/* UX-20: skeleton widgets that reflect presentation-hint overrides. The
+ * Composer Preview pane now renders each variant distinctly so Sarah can
+ * see at a glance what her override picked. */
+.reg-skeleton-input textarea,
+textarea.reg-skeleton-input {
+  width: 100%;
+  min-height: 60px;
+  padding: 6px 8px;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  font: inherit;
+  resize: vertical;
+}
+.reg-skeleton-input[type="range"] { width: 100%; }
+.reg-skeleton-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.reg-skeleton-radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.reg-skeleton-segmented-group {
+  display: inline-flex;
+  border: 1px solid var(--g-80);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: white;
+}
+.reg-skeleton-segmented-option {
+  padding: 4px 10px;
+  background: white;
+  border: none;
+  border-right: 1px solid var(--g-90);
+  color: var(--g-30);
+  font-size: 12px;
+  cursor: pointer;
+}
+.reg-skeleton-segmented-option:last-child { border-right: none; }
+.reg-skeleton-segmented-option.is-selected {
+  background: var(--theme-90);
+  color: var(--theme-20);
+  font-weight: 500;
+}
+.reg-skeleton-switch {
+  display: inline-flex;
+  align-items: center;
+  width: 36px;
+  height: 20px;
+  background: var(--g-90);
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.reg-skeleton-switch input { display: none; }
+.reg-skeleton-switch-knob {
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  transition: left 120ms ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+.reg-skeleton-switch input:checked ~ .reg-skeleton-switch-knob { left: 18px; }
+.reg-skeleton-switch:has(input:checked) { background: var(--theme-50); }
+
+/* -- ADR 0041: Smart Start refit — button, drawer, cards, cascade -- */
+
+.reg-fields-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.reg-fields-header h3 { margin: 0; }
+.reg-structural-review-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--theme-95);
+  border: 1px solid var(--theme-80);
+  border-radius: var(--r-sm);
+  color: var(--theme-30);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.reg-structural-review-btn:hover { background: var(--theme-90); }
+.reg-structural-review-badge {
+  display: inline-block;
+  min-width: 20px;
+  padding: 2px 6px;
+  background: var(--theme-40);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* Outlines applied to field rows whose ids are in the hovered card's
+ * mergedFromFieldIds, so Sarah can see which rows are about to merge. */
+.reg-field-row--refit-target {
+  outline: 2px solid var(--theme-50) !important;
+  outline-offset: 2px;
+  background: var(--theme-98) !important;
+}
+
+/* Drawer — right-side panel with clickable backdrop. Slimmer than the original
+ * 40% so the JSON preview / Composer Preview / CTAs underneath remain partly
+ * visible as context. Backdrop dims content but doesn't block visibility. */
+.reg-refit-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.18);
+  z-index: 49;
+  cursor: pointer;
+  animation: reg-refit-fade-in 120ms ease-out;
+}
+.reg-refit-drawer {
+  position: fixed;
+  top: 70px;
+  right: 0;
+  bottom: 0;
+  width: 380px;
+  max-width: 90vw;
+  background: white;
+  border-left: 1px solid var(--g-90);
+  box-shadow: -8px 0 24px rgba(0,0,0,0.12);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  animation: reg-refit-slide-in 180ms ease-out;
+}
+/* The display: flex above overrides the browser's default [hidden]{display:none}
+ * for HTML5 hidden attributes. Restore the hidden semantics explicitly. */
+.reg-refit-drawer[hidden],
+.reg-refit-backdrop[hidden] { display: none !important; }
+@keyframes reg-refit-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes reg-refit-slide-in {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+.reg-refit-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--g-95);
+}
+.reg-refit-drawer-titlewrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.reg-refit-drawer-header h3 { margin: 0; font-size: 16px; }
+.reg-refit-subtitle {
+  font-size: 11px;
+  color: var(--g-50);
+}
+.reg-refit-drawer-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: var(--g-97);
+  border: 1px solid var(--g-90);
+  color: var(--g-30);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 500;
+}
+.reg-refit-drawer-close:hover {
+  background: var(--g-95);
+  border-color: var(--g-80);
+  color: var(--g-10);
+}
+.reg-refit-drawer-close-label { font-size: 12px; }
+
+.reg-refit-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.reg-refit-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--g-50);
+  font-size: 13px;
+}
+.reg-refit-drawer-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--g-95);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.reg-refit-rerun {
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid var(--g-80);
+  border-radius: var(--r-sm);
+  color: var(--g-20);
+  font-size: 12px;
+  cursor: pointer;
+}
+.reg-refit-rerun:hover { background: var(--g-97); border-color: var(--g-60); }
+.reg-refit-rerun-hint {
+  font-size: 11px;
+  color: var(--g-60);
+  font-style: italic;
+}
+
+/* Card — one per active suggestion. */
+.reg-refit-card {
+  padding: 12px;
+  background: var(--g-99);
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reg-refit-card:hover { border-color: var(--theme-80); background: var(--theme-99, var(--g-99)); }
+.reg-refit-card:focus { outline: 2px solid var(--theme-50); outline-offset: -2px; }
+.reg-refit-card-header { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.reg-refit-card-kind {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--theme-30);
+}
+.reg-refit-card-confidence {
+  font-size: 10px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.reg-refit-conf-high   { background: var(--theme-90); color: var(--theme-20); }
+.reg-refit-conf-medium { background: var(--warn-95, #fff4d6); color: var(--warn-30, #855); }
+.reg-refit-conf-low    { background: var(--g-95); color: var(--g-40); border: 1px solid var(--g-80); }
+
+.reg-refit-card-summary {
+  font-size: 14px;
+  color: var(--g-20);
+}
+.reg-refit-card-merged {
+  font-size: 12px;
+  color: var(--g-50);
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+}
+.reg-refit-card-sources {
+  font-size: 11px;
+  color: var(--g-50);
+}
+.reg-refit-sources-label {
+  font-weight: 600;
+  color: var(--g-30);
+}
+.reg-refit-card-preview {
+  margin: 0;
+  padding: 8px;
+  background: white;
+  border: 1px solid var(--g-95);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.reg-refit-card-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.reg-refit-accept,
+.reg-refit-edit,
+.reg-refit-reject {
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid;
+}
+.reg-refit-accept {
+  background: var(--theme-40);
+  border-color: var(--theme-40);
+  color: white;
+}
+.reg-refit-accept:hover { background: var(--theme-30); border-color: var(--theme-30); }
+.reg-refit-edit {
+  background: white;
+  border-color: var(--g-80);
+  color: var(--g-20);
+}
+.reg-refit-edit:hover { background: var(--g-97); border-color: var(--g-60); }
+.reg-refit-reject {
+  background: white;
+  border-color: var(--g-80);
+  color: var(--g-40);
+}
+.reg-refit-reject:hover { background: var(--neg-98, #fef5f5); border-color: var(--neg-80, #f99); color: var(--neg-40, #a00); }
+
+/* Cascade banner (ADR 0041 §5) — appears below preview when accepting a
+ * suggestion that would invalidate validation rules. */
+.reg-refit-cascade {
+  padding: 10px;
+  background: var(--warn-95, #fff4d6);
+  border: 1px solid var(--warn-80, #fed078);
+  border-radius: var(--r-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+.reg-refit-cascade-header {
+  font-weight: 600;
+  color: var(--warn-20, #654);
+}
+.reg-refit-cascade-item {
+  padding: 8px;
+  background: white;
+  border: 1px solid var(--warn-90, #fed8a0);
+  border-radius: var(--r-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reg-refit-cascade-item--resolved { opacity: 0.6; }
+.reg-refit-cascade-item--skipped {
+  border-color: var(--neg-80, #f99);
+  background: var(--neg-98, #fef5f5);
+}
+.reg-refit-cascade-rule code {
+  display: block;
+  margin-top: 4px;
+  padding: 4px 6px;
+  background: var(--g-97);
+  border-radius: var(--r-sm);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+.reg-refit-cascade-matched {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--g-50);
+}
+.reg-refit-cascade-actions {
+  display: flex;
+  gap: 6px;
+}
+.reg-refit-cascade-btn {
+  padding: 4px 10px;
+  background: white;
+  border: 1px solid var(--g-80);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  cursor: pointer;
+}
+.reg-refit-cascade-btn:hover { background: var(--g-97); border-color: var(--g-60); }
+.reg-refit-cascade-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--theme-30);
+}
+.reg-refit-cascade-tag--warn { color: var(--neg-30, #a00); }
+.reg-refit-cascade-commit {
+  margin-top: 4px;
+  padding: 6px 12px;
+  background: var(--theme-40);
+  border: 1px solid var(--theme-40);
+  border-radius: var(--r-sm);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.reg-refit-cascade-commit:disabled {
+  background: var(--g-90);
+  border-color: var(--g-90);
+  color: var(--g-50);
+  cursor: not-allowed;
+}
 
 /* -- Smart Start assist (ADR 0040) — chip, popover, caveat banner -- */
 
@@ -6113,6 +7567,83 @@ body.compose-cross-dex-pending #compose-next { opacity: 0.45; pointer-events: no
   border-radius: 8px;
   text-transform: none;
   letter-spacing: 0;
+}
+/* UX-33 — group-wrapper variants. Each variant reshapes the OUTER container
+ * so operators can see what end users will experience under the chosen
+ * x-group-presentation hint. Field rendering inside is unchanged. */
+.reg-skeleton-group { display: flex; flex-direction: column; }
+.reg-skeleton-group--section { gap: 6px; }
+.reg-skeleton-group--section > .reg-skeleton-group-body {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.reg-skeleton-group--card {
+  gap: 6px;
+  border: 0.5px solid var(--g-95);
+  border-radius: var(--r-md);
+  background: var(--g-99);
+  padding: 12px 14px;
+}
+.reg-skeleton-group--card > .reg-skeleton-group-heading {
+  margin-top: 0;
+  border-bottom-color: var(--g-90);
+}
+.reg-skeleton-group--card > .reg-skeleton-group-body {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.reg-skeleton-group--accordion { gap: 0; }
+.reg-skeleton-group-details {
+  border: 0.5px solid var(--g-95);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+}
+.reg-skeleton-group-details > summary.reg-skeleton-group-heading {
+  margin: 0;
+  padding: 8px 10px;
+  border-bottom: none;
+  cursor: pointer;
+  list-style: none;
+}
+.reg-skeleton-group-details > summary.reg-skeleton-group-heading::-webkit-details-marker { display: none; }
+.reg-skeleton-group-details > summary.reg-skeleton-group-heading::before {
+  content: '▸';
+  font-size: 10px;
+  color: var(--g-50);
+  margin-right: 4px;
+  transition: transform 120ms ease;
+  display: inline-block;
+}
+.reg-skeleton-group-details[open] > summary.reg-skeleton-group-heading::before {
+  transform: rotate(90deg);
+}
+.reg-skeleton-group-details > .reg-skeleton-group-body {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 10px;
+  border-top: 0.5px solid var(--g-95);
+}
+.reg-skeleton-group--table { gap: 6px; overflow-x: auto; }
+.reg-skeleton-group-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11.5px;
+}
+.reg-skeleton-group-table > caption.reg-skeleton-group-heading {
+  caption-side: top;
+  text-align: left;
+  margin-top: 0;
+}
+.reg-skeleton-group-table th,
+.reg-skeleton-group-table td {
+  border: 0.5px solid var(--g-95);
+  padding: 6px 8px;
+  vertical-align: top;
+  text-align: left;
+}
+.reg-skeleton-group-table th {
+  font-size: 10.5px;
+  font-weight: var(--fw-medium);
+  color: var(--g-30);
+  background: var(--g-98);
+  white-space: nowrap;
 }
 .reg-skeleton-label { font-size: 11.5px; color: var(--g-30); font-weight: var(--fw-medium); }
 .reg-skeleton-hint { font-size: 10.5px; color: var(--g-70); }
@@ -7047,6 +8578,41 @@ body.compose-cross-dex-pending #compose-next { opacity: 0.45; pointer-events: no
   margin-bottom: var(--sp-3);
 }
 .reg-test-field { display: flex; flex-direction: column; gap: 4px; }
+/* UX-37 — array-of-objects table in the Test-as-operator preview. Matches
+ * the Composer Preview's table treatment so operators see the same shape. */
+.reg-test-field--array { gap: 6px; }
+.reg-test-array-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11.5px;
+  background: var(--bg-1);
+}
+.reg-test-array-table th,
+.reg-test-array-table td {
+  border: 0.5px solid var(--g-90);
+  padding: 7px 9px;
+  vertical-align: top;
+  text-align: left;
+}
+.reg-test-array-table th {
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  color: var(--g-30);
+  background: var(--g-99);
+  white-space: nowrap;
+}
+.reg-test-array-table td input,
+.reg-test-array-table td select { width: 100%; box-sizing: border-box; }
+.reg-test-array-table-actions { width: 28px; text-align: center; }
+.reg-test-array-rm { color: var(--g-60); font-size: 14px; line-height: 1; }
+.reg-test-array-add {
+  align-self: flex-start;
+  font-size: 11px;
+  color: var(--g-40);
+  border: 0.5px dashed var(--g-80);
+  border-radius: var(--r-sm);
+  padding: 3px 9px;
+}
 .reg-test-group {
   border: 0.5px solid var(--g-90);
   border-radius: var(--r-md);
@@ -7085,6 +8651,91 @@ body.compose-cross-dex-pending #compose-next { opacity: 0.45; pointer-events: no
   color: var(--g-50);
   font-style: italic;
 }
+/* UX-34 — group-wrapper variants on Test-as-operator preview, mirroring the
+ * Composer Preview hints so operators see the same shape end users will. */
+.reg-test-group--section {
+  border: none;
+  padding: 0;
+  margin-top: 16px;
+  gap: 8px;
+}
+.reg-test-group--section > .reg-test-group-title {
+  padding: 0 0 4px 0;
+  border-bottom: 0.5px solid var(--g-90);
+}
+.reg-test-group--card {
+  /* default visual — bordered surface — already matches .reg-test-group base. */
+}
+.reg-test-group--accordion {
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-md);
+  padding: 0;
+  margin: 12px 0 0;
+  background: var(--bg-1);
+  display: block;
+}
+.reg-test-group--accordion > summary.reg-test-group-title {
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.reg-test-group--accordion > summary.reg-test-group-title::-webkit-details-marker { display: none; }
+.reg-test-group--accordion > summary.reg-test-group-title::before {
+  content: '▸';
+  font-size: 10px;
+  color: var(--g-50);
+  display: inline-block;
+  transition: transform 120ms ease;
+}
+.reg-test-group--accordion[open] > summary.reg-test-group-title::before {
+  transform: rotate(90deg);
+}
+.reg-test-group--accordion > .reg-test-field,
+.reg-test-group--accordion > .reg-test-group-rationale {
+  margin: 0 14px;
+}
+.reg-test-group--accordion > .reg-test-field:last-child { margin-bottom: 14px; }
+.reg-test-group--accordion > .reg-test-group-rationale {
+  padding: 8px 0 0;
+  border-top: 0.5px solid var(--g-95);
+}
+.reg-test-group--table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 12px;
+}
+.reg-test-group--table > caption.reg-test-group-title {
+  caption-side: top;
+  text-align: left;
+  padding: 0 0 6px 0;
+}
+.reg-test-group--table .reg-test-group-rationale-cap {
+  caption-side: top;
+  text-align: left;
+  font-size: 11px;
+  color: var(--g-50);
+  font-style: italic;
+  padding: 0 0 6px 0;
+}
+.reg-test-group--table th,
+.reg-test-group--table td {
+  border: 0.5px solid var(--g-90);
+  padding: 8px 10px;
+  vertical-align: top;
+  text-align: left;
+}
+.reg-test-group--table th {
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  color: var(--g-30);
+  background: var(--g-99);
+  white-space: nowrap;
+}
+.reg-test-group--table td input,
+.reg-test-group--table td select { width: 100%; }
 .reg-test-label { font-size: 11.5px; color: var(--g-30); font-weight: var(--fw-medium); }
 .reg-test-field input,
 .reg-test-field select {

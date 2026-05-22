@@ -405,7 +405,32 @@ const SMART_START_CANNED_RESPONSES = {
           liveEval: { ranAgainst: 'smart-start-sample', result: 'pass' },
           alternatives: []
         }
-      ]
+      ],
+
+      /* refitSuggestions[] — ADR 0040 §17 Layer 2 self-audit output. Empty
+       * for this fixture because the env-site-obs canned extraction was clean
+       * (no flat per-cell tables, no radio-cluster mis-extractions). Populated
+       * fixtures land in Phase 2 when realistic class-3 examples are wired in;
+       * for now the prototype demos refit via the autosave-debounced name-
+       * pattern scan in [`register-element.js`](../../register-element.js)
+       * (regRefit_scanNamePatterns), which catches `<noun>_<n>_<attr>` keys
+       * Sarah adds by hand. Shape of an entry, when populated, mirrors
+       * ADR 0040 §32's universal envelope:
+       *
+       *   {
+       *     id, tab: 'schema',
+       *     kind: 'structural-restatement.merge-to-array-object',
+       *     payload: {
+       *       operation: 'merge-to-array-object',
+       *       mergedFromFieldIds: [...],  // resolved at runtime
+       *       proposedField: { name, type: 'array', items: {...} }
+       *     },
+       *     sources: [{ type: 'name-pattern' | 'bbox-cluster' | ..., ... }],
+       *     confidence: 'high' | 'medium' | 'low',
+       *     caveats: []
+       *   }
+       */
+      refitSuggestions: []
     }
   ],
 
