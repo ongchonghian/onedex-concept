@@ -7062,59 +7062,12 @@ function regRefit_proposedChildToField(name, p, isRequired) {
   if (Array.isArray(p.enum)) {
     resolvedType = 'enum';
   }
-  // UX-46b — also detect internal-model enum convention.
-  if (p.validation && Array.isArray(p.validation.enumValues)) {
-    resolvedType = 'enum';
-  }
   const child = regBlankField(name, resolvedType);
   child.required = !!isRequired;
   if (p.title && p.title !== humanizeFieldName(name)) child.title = p.title;
   if (p.description) child.description = p.description;
-  // JSON Schema convention.
   if (Array.isArray(p.enum)) {
     child.validation.enumValues = p.enum.slice();
-  }
-  // Internal-model convention — enumValues / enumLabels on p.validation.
-  if (p.validation) {
-    if (Array.isArray(p.validation.enumValues) && !child.validation.enumValues) {
-      child.validation.enumValues = p.validation.enumValues.slice();
-    }
-    if (p.validation.enumLabels && typeof p.validation.enumLabels === 'object' && !child.validation.enumLabels) {
-      child.validation.enumLabels = Object.assign({}, p.validation.enumLabels);
-    }
-  }
-  // Nested children — recurse via regDeepCloneField for internal-model
-  // children, or via recursive call for JSON Schema properties.
-  if (p.type === 'object') {
-    if (Array.isArray(p.children) && p.children.length) {
-      child.children = p.children.map(function (c) { return regDeepCloneField(c); });
-    } else if (p.properties && Object.keys(p.properties).length) {
-      child.children = Object.keys(p.properties).map(function (n) {
-        return regRefit_proposedChildToField(n, p.properties[n], (p.required || []).indexOf(n) !== -1);
-      });
-    }
-  }
-  // Array item shape — mirrors the parent-level dual-convention handling.
-  if (p.type === 'array' && p.items) {
-    if (p.items.type === 'object' && p.items.properties) {
-      child.validation.itemType = 'object';
-      child.validation.itemChildren = Object.keys(p.items.properties).map(function (n) {
-        return regRefit_proposedChildToField(n, p.items.properties[n], (p.items.required || []).indexOf(n) !== -1);
-      });
-    } else if (Array.isArray(p.items.enum)) {
-      child.validation.itemType = 'enum';
-      child.validation.itemEnumValues = p.items.enum.slice();
-    } else {
-      child.validation.itemType = p.items.type || 'string';
-    }
-  } else if (p.type === 'array' && p.validation && p.validation.itemType) {
-    child.validation.itemType = p.validation.itemType;
-    if (Array.isArray(p.validation.itemChildren) && p.validation.itemChildren.length) {
-      child.validation.itemChildren = p.validation.itemChildren.map(function (c) { return regDeepCloneField(c); });
-    }
-    if (Array.isArray(p.validation.itemEnumValues)) {
-      child.validation.itemEnumValues = p.validation.itemEnumValues.slice();
-    }
   }
   return child;
 }
