@@ -5517,6 +5517,22 @@ body.compose-cross-dex-pending #compose-next { opacity: 0.45; pointer-events: no
   display: inline-block;
   width: fit-content;
 }
+/* Settled-value chip for the locked-hint case (ADR 0040 §17 UX-46). Distinct
+ * from .reg-presentation-readonly above: that's the monospace code-value
+ * archetype used for raw values; this is a label-weight flat chip that reads
+ * as "the resolved presentation for this field type" — there is no other
+ * possible value, not "here's a code string". */
+.reg-presentation-resolved {
+  color: var(--g-30);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px dashed var(--g-85);
+  border-radius: var(--r-sm);
+  display: inline-block;
+  width: fit-content;
+}
 
 /* Hint override dropdown styled to look interactive (not a plain native
  * select) so Sarah can tell it's the editable cell of the row. */
@@ -6055,6 +6071,87 @@ body.reg-dragging-in-progress * {
 }
 .reg-picklist-floor-banner--ok { display: none; }
 
+/* UX-47 — Pick list multi-select toggle. Sits between the floor banner and
+ * the columns header so Sarah can flip single↔multi without leaving the
+ * expander. Subtle but persistent — this is a structural choice, not a
+ * per-option detail. */
+.reg-picklist-multi-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px 0;
+  padding: 4px 10px;
+  border: 1px solid var(--g-90);
+  border-radius: 12px;
+  background: white;
+  font-size: 12px;
+  color: var(--g-30);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.reg-picklist-multi-toggle:hover { background: var(--g-97); }
+.reg-picklist-multi-toggle input[type="checkbox"] { margin: 0; cursor: pointer; }
+.reg-picklist-multi-toggle input[type="checkbox"]:checked + .reg-picklist-multi-toggle-label {
+  color: var(--theme-30);
+  font-weight: 500;
+}
+
+/* UX-47 — checkbox-group skeleton for array<enum> with hint='checkboxes'. */
+.reg-skeleton-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  background: var(--g-99, #fafafa);
+}
+.reg-skeleton-checkbox-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--g-30);
+}
+.reg-skeleton-checkbox-option input[type="checkbox"] { margin: 0; }
+.reg-skeleton-multiselect {
+  font-size: 12px;
+  padding: 4px;
+  border: 1px solid var(--g-90);
+  border-radius: var(--r-sm);
+  background: white;
+  min-width: 180px;
+}
+
+/* UX-47 — Test-as-operator checkbox group + multiselect mirror the skeleton's
+ * shape but use the test-modal colour tokens. */
+.reg-test-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--g-85);
+  border-radius: var(--r-sm);
+  background: white;
+}
+.reg-test-checkbox-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--g-20);
+}
+.reg-test-checkbox-option input[type="checkbox"] { margin: 0; cursor: pointer; }
+.reg-test-field--multiselect select[multiple] {
+  font-size: 13px;
+  padding: 4px;
+  border: 1px solid var(--g-85);
+  border-radius: var(--r-sm);
+  background: white;
+  min-width: 220px;
+}
+
 /* -- D2: array expander — inline-sentence item-type picker -- */
 
 .reg-array-helper {
@@ -6270,7 +6367,7 @@ body.reg-dragging-in-progress * {
   border-collapse: collapse;
   width: 100%;
   font-size: 11px;
-  background: var(--bg-1);
+  background: var(--surface);
   border-radius: var(--r-sm);
   overflow: hidden;
 }
@@ -6290,18 +6387,37 @@ body.reg-dragging-in-progress * {
 }
 .reg-skeleton-array-table-actions { width: 22px; text-align: center; }
 .reg-skeleton-array-rm {
+  background: transparent;
+  border: none;
+  padding: 0;
   color: var(--g-60);
   font-size: 13px;
   line-height: 1;
+  cursor: pointer;
+  border-radius: var(--r-sm);
 }
+.reg-skeleton-array-rm:hover { color: var(--g-20); background: var(--g-95); }
+.reg-skeleton-array-rm:focus-visible { outline: 2px solid var(--theme-50); outline-offset: 1px; }
 .reg-skeleton-array-add {
   align-self: flex-start;
   font-size: 11px;
   color: var(--g-40);
+  background: transparent;
   border: 0.5px dashed var(--g-80);
   border-radius: var(--r-sm);
   padding: 2px 8px;
   margin-top: 2px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.reg-skeleton-array-add:hover {
+  color: var(--theme-20);
+  border-color: var(--theme-80);
+  background: var(--theme-98);
+}
+.reg-skeleton-array-add:focus-visible {
+  outline: 2px solid var(--theme-50);
+  outline-offset: 1px;
 }
 .reg-skeleton-object {
   display: flex;
@@ -6605,6 +6721,15 @@ textarea.reg-skeleton-input {
   border-radius: 10px;
   text-align: center;
 }
+/* Slice 13 follow-up — audit-only count (applied-from-spec-sheet, no pending
+ * refit). Visually distinct so Sarah knows the drawer has content but no
+ * fresh review work. */
+.reg-structural-review-badge.reg-refit-count-applied-only {
+  background: var(--surface);
+  color: var(--theme-30);
+  border: 0.5px solid var(--theme-80);
+  font-weight: var(--fw-medium);
+}
 
 /* Outlines applied to field rows whose ids are in the hovered card's
  * mergedFromFieldIds, so Sarah can see which rows are about to merge. */
@@ -6706,6 +6831,115 @@ textarea.reg-skeleton-input {
   text-align: center;
   color: var(--g-50);
   font-size: 13px;
+}
+
+/* Slice 13 — Applied-from-spec-sheet section in the refit drawer */
+.reg-refit-applied-from-spec {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--g-90);
+}
+.reg-refit-applied-summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--g-30);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  border-radius: var(--r-xs);
+  user-select: none;
+}
+.reg-refit-applied-summary::-webkit-details-marker { display: none; }
+.reg-refit-applied-summary:hover { background: var(--g-99); }
+.reg-refit-applied-summary i { color: var(--theme-30); }
+.reg-refit-applied-summary strong { color: var(--g-10); font-weight: var(--fw-medium); }
+.reg-refit-applied-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.reg-refit-applied-card {
+  background: var(--theme-99, var(--g-99));
+  border: 0.5px solid var(--g-95);
+  border-left: 2px solid var(--theme-70);
+  border-radius: var(--r-xs);
+  padding: 8px 10px;
+  font-size: 11.5px;
+}
+.reg-refit-applied-card.reg-refit-applied-conf-high   { border-left-color: var(--success-50, var(--theme-50)); }
+.reg-refit-applied-card.reg-refit-applied-conf-medium { border-left-color: var(--theme-50); }
+.reg-refit-applied-card.reg-refit-applied-conf-low    { border-left-color: var(--warning-50, #d4a017); }
+.reg-refit-applied-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+.reg-refit-applied-kind {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: var(--fw-medium);
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--g-95);
+  color: var(--g-10);
+}
+.reg-refit-applied-field {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--g-10);
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+.reg-refit-applied-conf {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--g-50);
+}
+.reg-refit-applied-bulk {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--theme-30);
+  background: var(--theme-95);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+.reg-refit-applied-rationale {
+  color: var(--g-30);
+  font-size: 11.5px;
+  margin-bottom: 3px;
+}
+.reg-refit-applied-trail {
+  color: var(--g-50);
+  font-size: 11px;
+}
+.reg-refit-applied-trail code {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  background: var(--surface);
+  padding: 0 4px;
+  border-radius: 2px;
+  white-space: pre-wrap;
+}
+.reg-refit-applied-trail-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 9.5px;
+  font-weight: var(--fw-medium);
+  color: var(--g-50);
+}
+.reg-refit-applied-trail-engine {
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--g-50);
+  font-style: italic;
 }
 .reg-refit-drawer-footer {
   padding: 12px 16px;
@@ -7594,7 +7828,7 @@ textarea.reg-skeleton-input {
 .reg-skeleton-group-details {
   border: 0.5px solid var(--g-95);
   border-radius: var(--r-sm);
-  background: var(--bg-1);
+  background: var(--surface);
 }
 .reg-skeleton-group-details > summary.reg-skeleton-group-heading {
   margin: 0;
@@ -7771,6 +8005,669 @@ textarea.reg-skeleton-input {
   vertical-align: top;
 }
 .reg-sample-table code { font-family: var(--font-mono); font-size: 11.5px; color: var(--g-10); }
+
+/* -- Spec sheet tile disabled-state (ADR 0042 — refit-mode pending UI wiring) -- */
+.reg-onramp-tile.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.reg-onramp-tile.is-disabled:hover { background: var(--surface); border-color: var(--g-90); }
+
+/* -- Element spec sheet on-ramp (ADR 0042) -- */
+.reg-spec-sheet-resume {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: var(--sp-2);
+  background: var(--theme-99);
+  border: 0.5px solid var(--theme-90);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+}
+.reg-spec-sheet-resume-label {
+  font-size: 11px;
+  color: var(--g-50);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: var(--fw-medium);
+}
+.reg-spec-sheet-resume-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--surface);
+  border: 0.5px solid var(--theme-80);
+  border-radius: 999px;
+  color: var(--theme-20);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.reg-spec-sheet-resume-btn:hover { background: var(--theme-95); }
+.reg-spec-sheet-resume-btn i { font-size: 13px; }
+.reg-spec-sheet-resume-hint { color: var(--g-50); font-size: 11px; }
+.reg-spec-sheet-dropzone {
+  border: 1.5px dashed var(--g-90);
+  border-radius: var(--r-sm);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-sub);
+  margin-bottom: var(--sp-3);
+}
+.reg-spec-sheet-drop-hint {
+  font-size: 12px;
+  color: var(--g-30);
+  margin: 0;
+}
+.reg-spec-sheet-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--sp-3);
+  padding: 8px 10px;
+  background: var(--surface-sub);
+  border: 0.5px solid var(--g-95);
+  border-radius: var(--r-sm);
+}
+.reg-spec-sheet-picker-label {
+  font-size: 11px;
+  color: var(--g-50);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: var(--fw-medium);
+  margin-right: 4px;
+}
+.reg-spec-sheet-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 12px;
+  border: 0.5px solid var(--g-90);
+  background: var(--surface);
+  color: var(--g-30);
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.reg-spec-sheet-chip:hover { background: var(--g-99); }
+.reg-spec-sheet-chip.is-active {
+  background: var(--theme-95);
+  border-color: var(--theme-70);
+  color: var(--theme-20);
+  font-weight: var(--fw-medium);
+}
+.reg-spec-sheet-preview-wrap { display: flex; flex-direction: column; gap: 6px; }
+.reg-spec-sheet-preview-label {
+  font-size: 11px;
+  color: var(--g-50);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: var(--fw-medium);
+}
+.reg-spec-sheet-preview {
+  background: var(--surface);
+  border: 0.5px solid var(--g-95);
+  border-radius: var(--r-sm);
+  padding: 12px;
+  min-height: 220px;
+  max-height: 360px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+.reg-spec-sheet-empty { color: var(--g-50); font-style: italic; padding: 12px 0; }
+.reg-spec-sheet-error { color: var(--danger-30); }
+.reg-spec-sheet-meta {
+  font-size: 11px;
+  color: var(--g-50);
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 0.5px solid var(--g-95);
+}
+.reg-spec-sheet-warn-count { color: var(--warning-30); font-weight: var(--fw-medium); }
+.reg-spec-sheet-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.reg-spec-sheet-table th {
+  text-align: left;
+  font-weight: var(--fw-medium);
+  color: var(--g-50);
+  padding: 4px 6px;
+  border-bottom: 0.5px solid var(--g-95);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.reg-spec-sheet-table td {
+  padding: 4px 6px;
+  border-bottom: 0.5px solid var(--g-98);
+  vertical-align: top;
+}
+.reg-spec-sheet-table td.row-num {
+  color: var(--g-60);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  width: 28px;
+  text-align: right;
+}
+.reg-spec-sheet-table code { font-family: var(--font-mono); font-size: 11.5px; color: var(--g-10); }
+.reg-spec-sheet-table tr.has-warning { background: var(--warning-99); }
+.reg-spec-sheet-warn-chip {
+  display: inline-block;
+  font-size: 10.5px;
+  padding: 1px 6px;
+  background: var(--warning-95);
+  color: var(--warning-20);
+  border-radius: 999px;
+  margin-left: 4px;
+}
+.reg-spec-sheet-prose {
+  color: var(--g-50);
+  font-style: italic;
+  font-size: 11px;
+}
+
+/* -- LLM suggestion rendering inside the spec-sheet preview -- */
+.reg-spec-sheet-llm-status {
+  color: var(--theme-30);
+  font-weight: var(--fw-medium);
+}
+.reg-spec-sheet-llm-summary {
+  color: var(--theme-20);
+  font-weight: var(--fw-medium);
+}
+.reg-spec-sheet-sug-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--theme-95);
+  border: 0.5px solid var(--theme-80);
+  border-radius: 999px;
+  color: var(--theme-20);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.reg-spec-sheet-sug-badge:hover { background: var(--theme-90); }
+.reg-spec-sheet-sug-none {
+  color: var(--g-70);
+  font-size: 11px;
+}
+.reg-spec-sheet-sug-expansion {
+  background: var(--theme-99);
+}
+.reg-spec-sheet-sug-expansion > td {
+  padding: 10px 14px !important;
+  background: var(--theme-99) !important;
+}
+.reg-spec-sheet-sug-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reg-spec-sheet-sug-card {
+  background: var(--surface);
+  border-left: 3px solid var(--theme-70);
+  border-radius: var(--r-xs);
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.reg-spec-sheet-sug-conf-high  { border-left-color: var(--success-30, var(--theme-50)); }
+.reg-spec-sheet-sug-conf-medium { border-left-color: var(--theme-50); }
+.reg-spec-sheet-sug-conf-low   { border-left-color: var(--warning-50, #d4a017); }
+.reg-spec-sheet-sug-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.reg-spec-sheet-sug-kind {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  color: var(--g-10);
+  background: var(--g-95);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.reg-spec-sheet-sug-conf {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--g-50);
+}
+.reg-spec-sheet-sug-rationale {
+  color: var(--g-30);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.reg-spec-sheet-sug-verbatim {
+  font-size: 11px;
+  color: var(--g-30);
+}
+.reg-spec-sheet-sug-verbatim-label {
+  color: var(--g-50);
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.reg-spec-sheet-sug-verbatim code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--g-98);
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: pre-wrap;
+}
+.reg-spec-sheet-sug-payload {
+  margin-top: 6px;
+  font-size: 11px;
+}
+.reg-spec-sheet-sug-payload summary {
+  color: var(--g-50);
+  cursor: pointer;
+  font-size: 11px;
+}
+.reg-spec-sheet-sug-actions {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 4px;
+}
+.reg-spec-sheet-sug-accept,
+.reg-spec-sheet-sug-reject {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: inherit;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 0.5px solid transparent;
+}
+.reg-spec-sheet-sug-accept {
+  background: var(--success-95, var(--theme-95));
+  color: var(--success-20, var(--theme-20));
+  border-color: var(--success-80, var(--theme-80));
+}
+.reg-spec-sheet-sug-accept:hover { background: var(--success-90, var(--theme-90)); }
+.reg-spec-sheet-sug-reject {
+  background: var(--surface);
+  color: var(--g-30);
+  border-color: var(--g-90);
+}
+.reg-spec-sheet-sug-reject:hover { background: var(--g-99); }
+.reg-spec-sheet-sug-allset {
+  padding: 8px 12px;
+  background: var(--g-99);
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  color: var(--g-50);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.reg-spec-sheet-llm-accepted { color: var(--success-30, var(--theme-30)); font-weight: var(--fw-medium); }
+.reg-spec-sheet-llm-rejected { color: var(--g-50); }
+.reg-spec-sheet-bulk-accept {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: inherit;
+  border-radius: 999px;
+  background: var(--theme-95);
+  color: var(--theme-20);
+  border: 0.5px solid var(--theme-80);
+  cursor: pointer;
+  margin-left: 4px;
+}
+.reg-spec-sheet-bulk-accept:hover { background: var(--theme-90); }
+
+/* Slice 17 — extraction-state banner (running / ready / failed) */
+@keyframes reg-spinner { to { transform: rotate(360deg); } }
+@keyframes reg-spec-extract-flash {
+  0%   { box-shadow: 0 0 0 0 var(--theme-50); }
+  60%  { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.reg-spec-sheet-extract-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 0 0 var(--sp-2);
+  border-radius: var(--r-sm);
+  border: 0.5px solid var(--g-90);
+  background: var(--surface);
+  font-size: 12px;
+  color: var(--g-30);
+}
+.reg-spec-sheet-extract-banner:empty { display: none; }
+.reg-spec-sheet-extract-banner > i { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.reg-spec-sheet-extract-body { flex: 1; }
+.reg-spec-sheet-extract-body strong { display: block; color: var(--g-10); font-size: 13px; margin-bottom: 2px; }
+.reg-spec-sheet-extract-body span { color: var(--g-30); }
+.reg-spec-sheet-extract-hint { color: var(--g-50); font-size: 11.5px; margin-top: 4px; }
+.reg-spec-sheet-extract-source {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--g-50); background: var(--g-99);
+  padding: 0 5px; border-radius: 2px; margin-left: 4px;
+}
+.reg-spec-sheet-extract-banner.is-pending-confirm {
+  background: var(--g-99);
+  border-color: var(--g-90);
+}
+.reg-spec-sheet-extract-banner.is-pending-confirm > i { color: var(--theme-30); }
+.reg-spec-sheet-extract-banner.is-pending-confirm strong code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--surface);
+  padding: 0 5px;
+  border-radius: 2px;
+  color: var(--g-10);
+}
+.reg-spec-sheet-extract-banner.is-running {
+  background: var(--theme-99);
+  border-color: var(--theme-80);
+}
+.reg-spec-sheet-extract-banner.is-running > i { color: var(--theme-30); }
+.reg-spec-sheet-extract-spin { animation: reg-spinner 1.2s linear infinite; }
+.reg-spec-sheet-extract-banner.is-ready {
+  background: var(--theme-95);
+  border-color: var(--theme-70);
+}
+.reg-spec-sheet-extract-banner.is-ready > i { color: var(--theme-20); }
+.reg-spec-sheet-extract-banner.is-ready strong { color: var(--theme-10, var(--g-10)); }
+.reg-spec-sheet-extract-banner.is-empty {
+  background: var(--g-99);
+}
+.reg-spec-sheet-extract-banner.is-empty > i { color: var(--success-30, var(--theme-30)); }
+.reg-spec-sheet-extract-banner.is-failed {
+  background: var(--warning-99, #fff8e1);
+  border-color: var(--warning-70, #d4a017);
+  color: var(--g-20);
+}
+.reg-spec-sheet-extract-banner.is-failed > i { color: var(--warning-30, #b07a00); }
+.reg-spec-sheet-extract-banner.is-flash {
+  animation: reg-spec-extract-flash 1.4s ease-out;
+}
+.reg-spec-sheet-extract-bulk {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-family: inherit;
+  font-weight: var(--fw-medium);
+  background: var(--surface);
+  color: var(--theme-20);
+  border: 0.5px solid var(--theme-70);
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: center;
+}
+.reg-spec-sheet-extract-bulk:hover { background: var(--theme-90); }
+
+/* Slice 16 — diagnostics panel */
+.reg-spec-sheet-diag-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: inherit;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--g-30);
+  border: 0.5px solid var(--g-90);
+  cursor: pointer;
+}
+.reg-spec-sheet-diag-toggle:hover { background: var(--g-99); }
+.reg-spec-sheet-diag-panel {
+  margin: 10px 0 16px;
+  padding: 12px 14px;
+  background: var(--g-99);
+  border: 0.5px solid var(--g-95);
+  border-radius: var(--r-xs);
+  font-size: 11.5px;
+}
+.reg-spec-sheet-diag-section {
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--g-95);
+}
+.reg-spec-sheet-diag-section:last-of-type { border-bottom: 0; }
+.reg-spec-sheet-diag-section-title {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--g-50);
+  font-weight: var(--fw-medium);
+  margin-bottom: 6px;
+}
+.reg-spec-sheet-diag-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+.reg-spec-sheet-diag-grid dt {
+  color: var(--g-50);
+}
+.reg-spec-sheet-diag-grid dd {
+  margin: 0;
+  color: var(--g-10);
+}
+.reg-spec-sheet-diag-grid code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+.reg-spec-sheet-diag-hint {
+  color: var(--g-50);
+  font-size: 11px;
+  font-style: italic;
+}
+.reg-spec-sheet-diag-warn {
+  color: var(--warning-30, #d4a017);
+  font-weight: var(--fw-medium);
+}
+.reg-spec-sheet-diag-good {
+  color: var(--success-30, var(--theme-30));
+  font-weight: var(--fw-medium);
+}
+.reg-spec-sheet-diag-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  margin-top: 4px;
+}
+.reg-spec-sheet-diag-table th,
+.reg-spec-sheet-diag-table td {
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: 0.5px solid var(--g-98);
+}
+.reg-spec-sheet-diag-table th {
+  color: var(--g-50);
+  font-weight: var(--fw-medium);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--surface);
+}
+.reg-spec-sheet-diag-table tr.is-fail td { background: var(--warning-99, #fffaeb); }
+.reg-spec-sheet-diag-table code {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  background: var(--surface);
+  padding: 0 4px;
+  border-radius: 2px;
+}
+.reg-spec-sheet-diag-calibration {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border-radius: var(--r-xs);
+  font-size: 11.5px;
+}
+.reg-spec-sheet-diag-foot {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 0.5px dashed var(--g-90);
+  font-size: 10.5px;
+  color: var(--g-50);
+  font-style: italic;
+}
+.reg-spec-sheet-diag-foot code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: var(--surface);
+  padding: 0 4px;
+  border-radius: 2px;
+  font-style: normal;
+}
+
+/* -- Refit-mode header + diff cards (ADR 0042 §7) -- */
+.reg-spec-sheet-refit-header {
+  margin: 0 0 var(--sp-3) 0;
+}
+.reg-spec-sheet-refit-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--theme-95);
+  border: 0.5px solid var(--theme-80);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--theme-20);
+}
+.reg-spec-sheet-refit-label {
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+.reg-spec-sheet-refit-element {
+  font-weight: var(--fw-medium);
+  font-size: 13px;
+  color: var(--g-10);
+}
+.reg-spec-sheet-refit-version {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--g-30);
+  background: var(--surface);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.reg-spec-sheet-refit-l0count { color: var(--g-50); font-size: 11px; }
+.reg-spec-sheet-diff-add      { color: var(--success-30, var(--theme-30)); font-weight: var(--fw-medium); }
+.reg-spec-sheet-diff-modify   { color: var(--theme-30); font-weight: var(--fw-medium); }
+.reg-spec-sheet-diff-conflict { color: var(--warning-30, #d4a017); font-weight: var(--fw-medium); }
+.reg-spec-sheet-diff-remove   { color: var(--danger-30, #c44); font-weight: var(--fw-medium); }
+.reg-spec-sheet-diff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: var(--sp-2);
+}
+.reg-spec-sheet-diff-card {
+  background: var(--surface);
+  border: 0.5px solid var(--g-95);
+  border-left: 3px solid var(--g-80);
+  border-radius: var(--r-xs);
+  padding: 10px 14px;
+}
+.reg-spec-sheet-diff-card.kind-add              { border-left-color: var(--success-50, var(--theme-50)); }
+.reg-spec-sheet-diff-card.kind-modify-untouched { border-left-color: var(--theme-50); }
+.reg-spec-sheet-diff-card.kind-edit-conflict,
+.reg-spec-sheet-diff-card.kind-delete-conflict  { border-left-color: var(--warning-50, #d4a017); }
+.reg-spec-sheet-diff-card.kind-remove           { border-left-color: var(--danger-50, #c44); }
+.reg-spec-sheet-diff-card.is-accepted { background: var(--theme-99); }
+.reg-spec-sheet-diff-card.is-rejected { opacity: 0.6; }
+.reg-spec-sheet-diff-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.reg-spec-sheet-diff-kind {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: var(--fw-medium);
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--g-95);
+  color: var(--g-10);
+}
+.reg-spec-sheet-diff-kind.kind-add              { background: var(--success-95, var(--theme-95)); color: var(--success-20, var(--theme-20)); }
+.reg-spec-sheet-diff-kind.kind-modify-untouched { background: var(--theme-95); color: var(--theme-20); }
+.reg-spec-sheet-diff-kind.kind-edit-conflict,
+.reg-spec-sheet-diff-kind.kind-delete-conflict  { background: var(--warning-95, #fff5d6); color: var(--warning-20, #6e4a00); }
+.reg-spec-sheet-diff-kind.kind-remove           { background: var(--danger-95, #fde5e5); color: var(--danger-20, #7a0000); }
+.reg-spec-sheet-diff-field {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--g-10);
+  background: var(--g-98);
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+.reg-spec-sheet-diff-touched {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--warning-30, #d4a017);
+}
+.reg-spec-sheet-diff-actions { margin-left: auto; display: inline-flex; gap: 4px; }
+.reg-spec-sheet-diff-toggle {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 8px; font-size: 11px; font-family: inherit;
+  background: var(--surface); border: 0.5px solid var(--g-90);
+  border-radius: 4px; cursor: pointer; color: var(--g-30);
+}
+.reg-spec-sheet-diff-toggle.is-on {
+  background: var(--theme-95); border-color: var(--theme-70); color: var(--theme-20);
+  font-weight: var(--fw-medium);
+}
+.reg-spec-sheet-diff-toggle:hover { background: var(--g-99); }
+.reg-spec-sheet-diff-toggle.is-on:hover { background: var(--theme-90); }
+.reg-spec-sheet-diff-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--g-30);
+}
+.reg-spec-sheet-diff-body:has(> :nth-child(1):last-child) { grid-template-columns: 1fr; }
+.reg-spec-sheet-diff-body:has(> :nth-child(2):last-child) { grid-template-columns: 1fr 1fr; }
+.reg-spec-sheet-diff-side { padding: 6px 8px; background: var(--g-99); border-radius: var(--r-xs); }
+.reg-spec-sheet-diff-side strong { color: var(--g-10); display: block; margin-bottom: 2px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+.reg-spec-sheet-diff-side code { font-family: var(--font-mono); font-size: 11px; background: var(--surface); padding: 0 4px; border-radius: 2px; }
+.reg-spec-sheet-diff-req { color: var(--danger-30, #c44); font-weight: var(--fw-medium); font-size: 10px; }
+.reg-spec-sheet-diff-opt { color: var(--g-50); font-size: 10px; }
+
+.reg-spec-sheet-sug-payload pre {
+  margin: 4px 0 0 0;
+  padding: 6px 8px;
+  background: var(--g-98);
+  border-radius: var(--r-xs);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  white-space: pre-wrap;
+  max-height: 180px;
+  overflow-y: auto;
+}
 
 /* -- Plain English on-ramp -- */
 .reg-nl-grid {
@@ -7996,6 +8893,332 @@ textarea.reg-skeleton-input {
   margin-bottom: var(--sp-3);
 }
 
+/* ========== ADR 0044 §2 — Form-path LLM overlay panel (slice 25) ========== */
+.reg-form-overlay-panel {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--theme-99, #f8f9ff);
+  border: 0.5px solid var(--theme-90, #d8def0);
+  border-radius: var(--r-md);
+}
+.reg-form-overlay-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.reg-form-overlay-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--g-10);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.reg-form-overlay-title--error { color: var(--neg-30, #a00); }
+.reg-form-overlay-tier {
+  font-size: 11px;
+  color: var(--g-50);
+  font-style: italic;
+}
+.reg-form-overlay-tier--mock { color: var(--warn-20, #654); }
+.reg-form-overlay-blurb {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--g-30);
+  line-height: 1.5;
+}
+.reg-form-overlay-progress {
+  margin: 0;
+  font-size: 12px;
+  color: var(--g-30);
+  padding: 8px 12px;
+  background: white;
+  border: 0.5px dashed var(--theme-90);
+  border-radius: var(--r-sm);
+}
+.reg-form-overlay-progress--error {
+  border-color: var(--neg-90, #fcc);
+  background: var(--neg-95, #fee);
+  color: var(--neg-30, #800);
+}
+.reg-form-overlay-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.reg-form-overlay-hint {
+  font-size: 11px;
+  color: var(--g-50);
+  font-style: italic;
+}
+.reg-form-overlay-section {
+  margin-top: 16px;
+}
+.reg-form-overlay-section-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--g-40);
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.reg-form-overlay-card {
+  background: white;
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--g-20);
+}
+.reg-form-overlay-card--conflict {
+  border-left: 3px solid var(--warn-50, #c80);
+}
+.reg-form-overlay-card--accepted {
+  background: var(--pos-99, #f0fff0);
+  border-color: var(--pos-90, #cfc);
+}
+.reg-form-overlay-card--rejected {
+  opacity: 0.55;
+  background: var(--g-99, #fafafa);
+}
+.reg-form-overlay-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.reg-form-overlay-card-kind {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--theme-30);
+  background: var(--theme-95);
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+.reg-form-overlay-card-field {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--g-20);
+}
+.reg-form-overlay-card-conf {
+  margin-left: auto;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--g-50);
+}
+.reg-form-overlay-card-conf--high   { color: var(--pos-30, #060); font-weight: 600; }
+.reg-form-overlay-card-conf--medium { color: var(--g-40); }
+.reg-form-overlay-card-conf--low    { color: var(--warn-30, #840); }
+.reg-form-overlay-card-conf--conflict { color: var(--warn-30); font-weight: 600; }
+.reg-form-overlay-card-rationale {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--g-30);
+  line-height: 1.5;
+}
+.reg-form-overlay-card-proposal,
+.reg-form-overlay-card-source {
+  font-size: 11px;
+  color: var(--g-40);
+  margin: 4px 0;
+}
+.reg-form-overlay-card-proposal code,
+.reg-form-overlay-card-source code {
+  font-family: monospace;
+  font-size: 11px;
+  background: var(--g-97);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.reg-form-overlay-card-source q {
+  font-style: italic;
+  color: var(--g-30);
+}
+.reg-form-overlay-card-versus {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 6px 0;
+}
+.reg-form-overlay-card-versus-side {
+  padding: 6px 8px;
+  background: var(--g-97);
+  border-radius: 4px;
+}
+.reg-form-overlay-card-versus-side--llm {
+  background: var(--warn-95, #fff8e0);
+}
+.reg-form-overlay-card-versus-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--g-50);
+  margin-bottom: 4px;
+}
+.reg-form-overlay-card-versus-side code {
+  font-family: monospace;
+  font-size: 11px;
+  word-break: break-all;
+}
+.reg-form-overlay-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.reg-form-overlay-card-actions button {
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+/* Diagnostics panel — slice 26. Mirrors the spec-sheet diagnostics layout. */
+.reg-form-overlay-diagnostics {
+  margin-top: 16px;
+  padding: 10px 12px;
+  background: var(--g-99, #fafafa);
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-sm);
+}
+.reg-form-overlay-diagnostics-summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--g-30);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.reg-form-overlay-diagnostics-summary::-webkit-details-marker { display: none; }
+.reg-form-overlay-diagnostics-summary::before { content: '▸ '; color: var(--g-50); }
+.reg-form-overlay-diagnostics[open] .reg-form-overlay-diagnostics-summary::before { content: '▾ '; }
+.reg-form-overlay-diagnostics-body {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.reg-form-overlay-diag-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--g-40);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.reg-form-overlay-diag-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 11px;
+}
+.reg-form-overlay-diag-grid dt { color: var(--g-50); }
+.reg-form-overlay-diag-grid dd { margin: 0; color: var(--g-20); }
+.reg-form-overlay-diag-grid code { font-family: monospace; font-size: 11px; }
+.reg-form-overlay-diag-hint {
+  font-size: 10px;
+  color: var(--g-50);
+  font-style: italic;
+}
+.reg-form-overlay-diag-warn {
+  font-size: 10px;
+  color: var(--warn-30, #840);
+  font-weight: 600;
+}
+.reg-form-overlay-diag-ok {
+  font-size: 10px;
+  color: var(--pos-30, #060);
+  font-weight: 600;
+}
+.reg-form-overlay-diag-table {
+  width: 100%;
+  font-size: 11px;
+  border-collapse: collapse;
+}
+.reg-form-overlay-diag-table th {
+  text-align: left;
+  font-size: 10px;
+  color: var(--g-50);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 0.5px solid var(--g-90);
+  padding: 4px 8px;
+}
+.reg-form-overlay-diag-table td {
+  padding: 4px 8px;
+  border-bottom: 0.5px dotted var(--g-95);
+  color: var(--g-20);
+}
+.reg-form-overlay-diag-table code {
+  font-family: monospace;
+  font-size: 11px;
+}
+.reg-form-overlay-diag-bar {
+  display: inline-block;
+  height: 6px;
+  background: var(--theme-50, #4060c0);
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-right: 6px;
+  max-width: 60%;
+}
+
+/* ADR 0044 / slice 27 — form-path refit header pill. Mirrors the
+ * spec-sheet refit header so reviewers see consistent affordances across
+ * on-ramps. */
+.reg-form-refit-header {
+  margin-bottom: 12px;
+}
+.reg-form-refit-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--warn-95, #fff8e0);
+  border: 0.5px solid var(--warn-90, #fec);
+  border-left: 3px solid var(--warn-50, #c80);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  color: var(--g-20);
+}
+.reg-form-refit-pill i { color: var(--warn-30, #840); }
+.reg-form-refit-label {
+  font-weight: 600;
+  color: var(--warn-30, #840);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.reg-form-refit-element {
+  font-weight: 600;
+}
+.reg-form-refit-version {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--g-30);
+  padding: 2px 6px;
+  background: white;
+  border-radius: 3px;
+}
+.reg-form-refit-l0count {
+  font-size: 11px;
+  color: var(--g-50);
+  font-style: italic;
+}
+
 /* ========== Impl E — Compose complexity tab ========== */
 .reg-complexity-body { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); }
 .reg-complexity-intro h2 { font-size: var(--fs-h3); line-height: var(--lh-h3); color: var(--g-10); margin-bottom: 6px; }
@@ -8143,6 +9366,17 @@ textarea.reg-skeleton-input {
   border-radius: var(--r-sm);
   overflow: hidden;
 }
+.reg-rules-sample-empty {
+  background: var(--g-98);
+  border-style: dashed;
+}
+.reg-rules-sample-empty-body {
+  padding: 10px;
+  font-size: 12px;
+  color: var(--g-40);
+  margin: 0;
+  line-height: 1.5;
+}
 .reg-rules-sample-head {
   padding: 6px 10px;
   background: var(--g-95);
@@ -8204,6 +9438,7 @@ textarea.reg-skeleton-input {
 .reg-rule-status.is-passed  { background: var(--green-95, #e6f7eb); color: var(--green-30, #15784e); }
 .reg-rule-status.is-failed  { background: var(--red-98); color: var(--red-50); }
 .reg-rule-status.is-errored { background: var(--amber-95, #fff3cd); color: #b07d00; }
+.reg-rule-status.is-pending { background: var(--g-95, #f1f3f5); color: var(--g-40, #495057); }
 .reg-rule-scope {
   font-size: 9.5px;
   font-weight: var(--fw-medium);
@@ -8256,6 +9491,50 @@ textarea.reg-skeleton-input {
 }
 
 .reg-rules-actions { display: flex; justify-content: flex-start; }
+
+/* UX-46b — staleness banner + per-rule pill */
+.reg-rules-stale-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--amber-95, #fff3cd);
+  border: 0.5px solid #e0c36b;
+  border-radius: var(--r-sm);
+  font-size: 12.5px;
+  color: #6b5900;
+  margin-bottom: 10px;
+}
+.reg-rules-stale-banner i { font-size: 16px; flex-shrink: 0; }
+.reg-rules-stale-banner span { flex: 1; }
+.reg-rules-stale-regen {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: var(--fw-medium);
+  background: var(--surface);
+  border: 0.5px solid #c6a800;
+  border-radius: var(--r-sm);
+  color: #6b5900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.reg-rules-stale-regen:hover { background: #fff8d6; border-color: #a58a00; }
+.reg-rules-stale-regen i { font-size: 13px; }
+.reg-rule-stale-pill {
+  font-size: 9px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+  background: var(--amber-95, #fff3cd);
+  color: #8a6d00;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.reg-rule--stale { border-color: #e0c36b; }
 
 .reg-rules-suggested {
   background: var(--theme-98);
@@ -8585,7 +9864,7 @@ textarea.reg-skeleton-input {
   border-collapse: collapse;
   width: 100%;
   font-size: 11.5px;
-  background: var(--bg-1);
+  background: var(--surface);
 }
 .reg-test-array-table th,
 .reg-test-array-table td {
@@ -8604,14 +9883,50 @@ textarea.reg-skeleton-input {
 .reg-test-array-table td input,
 .reg-test-array-table td select { width: 100%; box-sizing: border-box; }
 .reg-test-array-table-actions { width: 28px; text-align: center; }
-.reg-test-array-rm { color: var(--g-60); font-size: 14px; line-height: 1; }
+.reg-test-array-rm {
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  color: var(--g-60);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+}
+.reg-test-array-rm:hover { color: var(--g-20); background: var(--g-95); }
+.reg-test-array-rm:focus-visible { outline: 2px solid var(--theme-50); outline-offset: 1px; }
 .reg-test-array-add {
   align-self: flex-start;
   font-size: 11px;
   color: var(--g-40);
+  background: transparent;
   border: 0.5px dashed var(--g-80);
   border-radius: var(--r-sm);
   padding: 3px 9px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.reg-test-array-add:hover {
+  color: var(--theme-20);
+  border-color: var(--theme-80);
+  background: var(--theme-98);
+}
+.reg-test-array-add:focus-visible {
+  outline: 2px solid var(--theme-50);
+  outline-offset: 1px;
+}
+.reg-test-array-locked-note {
+  align-self: flex-start;
+  font-size: 11px;
+  color: var(--g-50);
+  font-style: italic;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.reg-test-array-rowlabel {
+  font-weight: 500;
+  color: var(--g-20);
 }
 .reg-test-group {
   border: 0.5px solid var(--g-90);
@@ -8671,7 +9986,7 @@ textarea.reg-skeleton-input {
   border-radius: var(--r-md);
   padding: 0;
   margin: 12px 0 0;
-  background: var(--bg-1);
+  background: var(--surface);
   display: block;
 }
 .reg-test-group--accordion > summary.reg-test-group-title {
@@ -8887,7 +10202,7 @@ textarea.reg-skeleton-input {
   z-index: 9000;
 }
 .reg-cartesian-modal {
-  background: var(--bg-1);
+  background: var(--surface);
   border-radius: var(--r-lg);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
   width: 560px; max-width: calc(100vw - 32px);
@@ -9054,7 +10369,7 @@ textarea.reg-skeleton-input {
   padding: 10px;
   border: 0.5px solid var(--g-90);
   border-radius: var(--r-sm);
-  background: var(--bg-1);
+  background: var(--surface);
   max-height: 360px;
   overflow-y: auto;
 }
@@ -9097,3 +10412,402 @@ textarea.reg-skeleton-input {
   gap: 8px;
   justify-content: flex-end;
 }
+
+/* UX-41c — review-required canvas badge. Subtle amber left-border on flagged
+ * rows so Sarah's eye catches uncertainty without alert fatigue. Authoring
+ * remains unblocked; pre-flight publish is what halts. */
+.reg-field-row--review-required {
+  border-left: 3px solid var(--y-50, #e8a317);
+  background: linear-gradient(90deg, var(--y-95, #fff8e6) 0%, transparent 8%);
+}
+.reg-field-row--review-required::before {
+  content: '⚠ Review';
+  position: absolute;
+  top: -8px;
+  left: 8px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--y-30, #8a5a08);
+  background: var(--y-95, #fff8e6);
+  border: 0.5px solid var(--y-80, #fde293);
+  border-radius: 8px;
+  padding: 1px 7px;
+  letter-spacing: 0.3px;
+  pointer-events: none;
+}
+.reg-field-row--review-required {
+  position: relative;
+}
+
+/* UX-42 (Fix D) — array-expander matrix-prose hint. Appears when items are
+ * primitive but the field description or group rationale describes a matrix.
+ * Same amber palette as the review-required badge for visual consistency. */
+.reg-array-matrix-hint {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--y-95, #fff8e6);
+  border: 0.5px solid var(--y-80, #fde293);
+  border-radius: var(--r-sm);
+  font-size: 11.5px;
+  color: var(--g-20);
+  line-height: 1.5;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.reg-array-matrix-hint-icon {
+  color: var(--y-30, #8a5a08);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* UX-43c — Smart Start analysing banner. Non-blocking amber strip at the top
+ * of the canvas with per-tab progress dots. */
+.reg-assist-banner {
+  background: var(--y-95, #fff8e6);
+  border: 0.5px solid var(--y-80, #fde293);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  margin: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--g-20);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.reg-assist-banner-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reg-assist-banner-spinner {
+  color: var(--theme-50);
+  font-size: 13px;
+  animation: reg-assist-spin 2s linear infinite;
+  display: inline-block;
+}
+@keyframes reg-assist-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.reg-assist-banner-text { flex: 1; }
+.reg-assist-banner-elapsed-total {
+  color: var(--g-50);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.reg-assist-banner-tabs {
+  display: flex;
+  gap: 14px;
+  font-size: 11.5px;
+  color: var(--g-30);
+  align-items: center;
+}
+.reg-assist-banner-tabs > span { display: inline-flex; align-items: center; gap: 4px; }
+.reg-assist-banner-dot {
+  display: inline-block;
+  font-size: 11px;
+  width: 14px;
+  text-align: center;
+}
+.reg-assist-banner-dot--pending { color: var(--g-60); }
+.reg-assist-banner-dot--ok { color: var(--g-30); font-weight: 600; }
+.reg-assist-banner-dot--failed { color: var(--r-50, #d24a55); font-weight: 600; }
+.reg-assist-banner-dot--rate-limited { color: var(--y-30, #8a5a08); font-weight: 600; }
+.reg-assist-banner-elapsed {
+  font-size: 10.5px;
+  color: var(--g-50);
+  font-variant-numeric: tabular-nums;
+}
+.reg-assist-banner-warning {
+  padding: 6px 8px;
+  background: rgba(255, 200, 0, 0.15);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  color: var(--g-20);
+}
+
+/* UX-43d — Was-Pinned sub-list at the bottom of the Structural Review drawer.
+ * Holds suggestions that became stale because Sarah edited the underlying
+ * field. Collapsed by default; expand to review. */
+.reg-refit-was-pinned {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--g-95);
+}
+.reg-refit-was-pinned-header {
+  background: transparent;
+  border: none;
+  padding: 6px 8px;
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+  color: var(--g-40);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.reg-refit-was-pinned-header:hover { color: var(--g-20); }
+.reg-refit-was-pinned-caret {
+  font-size: 10px;
+  width: 12px;
+  display: inline-block;
+}
+.reg-refit-was-pinned-subtle {
+  color: var(--g-60);
+  font-size: 11px;
+  font-style: italic;
+}
+.reg-refit-was-pinned-body {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reg-refit-card--stale {
+  opacity: 0.75;
+  background: var(--g-99);
+}
+.reg-refit-stale-banner {
+  font-size: 11px;
+  color: var(--y-30, #8a5a08);
+  background: var(--y-95, #fff8e6);
+  border-bottom: 0.5px solid var(--y-80, #fde293);
+  padding: 5px 8px;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+}
+
+/* UX-44 — row-identifier guidance banner. Appears one-time inside fresh
+ * array<object> items-shape editors to teach the Pick-list-driven row
+ * population workflow. */
+.reg-row-identifier-guidance {
+  background: linear-gradient(180deg, var(--theme-95, #f7f2ff) 0%, var(--theme-99, #fbf9ff) 100%);
+  border: 0.5px solid var(--theme-80, #d8c7f5);
+  border-radius: var(--r-md);
+  padding: 10px 12px 10px 14px;
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  font-size: 11.5px;
+  color: var(--g-20);
+  line-height: 1.55;
+}
+.reg-row-identifier-guidance-icon {
+  font-size: 16px;
+  line-height: 1;
+  padding-top: 2px;
+}
+.reg-row-identifier-guidance-body code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.reg-row-identifier-guidance-dismiss {
+  background: transparent;
+  border: none;
+  color: var(--g-50);
+  font-size: 14px;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-sm);
+  padding: 0;
+  align-self: start;
+}
+.reg-row-identifier-guidance-dismiss:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--g-20);
+}
+
+/* UX-45 — fixed-vs-dynamic rows segmented control. Sits at the top of the
+ * items-shape editor so Sarah commits to the table's semantic before
+ * authoring details. */
+.reg-array-row-mode {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: var(--g-99);
+  border: 0.5px solid var(--g-95);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reg-array-row-mode-label {
+  font-size: 11.5px;
+  font-weight: var(--fw-medium);
+  color: var(--g-30);
+}
+.reg-array-row-mode-seg {
+  display: inline-flex;
+  border: 0.5px solid var(--g-85);
+  border-radius: var(--r-sm);
+  background: white;
+  overflow: hidden;
+  align-self: flex-start;
+}
+.reg-array-row-mode-btn {
+  background: transparent;
+  border: none;
+  padding: 6px 12px;
+  font-size: 11.5px;
+  color: var(--g-30);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-right: 0.5px solid var(--g-90);
+}
+.reg-array-row-mode-btn:last-child { border-right: none; }
+.reg-array-row-mode-btn:hover { background: var(--theme-99); }
+.reg-array-row-mode-btn.is-active {
+  background: var(--theme-50);
+  color: white;
+  font-weight: var(--fw-medium);
+}
+.reg-array-row-mode-hint {
+  font-size: 10.5px;
+  color: var(--g-50);
+  font-style: italic;
+}
+.reg-skeleton-array-rowlabel {
+  font-weight: var(--fw-medium);
+  color: var(--g-20);
+  font-size: 11.5px;
+}
+.reg-skeleton-array-locked-note {
+  align-self: flex-start;
+  font-size: 11px;
+  color: var(--g-50);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* Source-region viewer modal — opened from "View region" link on grounded
+ * assist suggestion source rows. Renders the operator's uploaded document
+ * with a bbox overlay highlighting the cited region. */
+.reg-source-region-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.reg-source-region-modal.is-open { display: flex; }
+.reg-source-region-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+}
+.reg-source-region-panel {
+  position: relative;
+  background: var(--theme-100, #fff);
+  border-radius: var(--r-md, 12px);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  max-width: 820px;
+  width: 90vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.reg-source-region-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 0.5px solid var(--g-95);
+}
+.reg-source-region-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+}
+.reg-source-region-meta {
+  margin: 4px 0 0 0;
+  font-size: 11.5px;
+  color: var(--g-50);
+  font-family: var(--font-mono);
+}
+.reg-source-region-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--g-40);
+  padding: 4px;
+}
+.reg-source-region-close:hover { color: var(--g-20); }
+.reg-source-region-body {
+  padding: 20px;
+  overflow: auto;
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  background: var(--g-98, #fafafa);
+}
+.reg-source-region-canvas-wrap {
+  position: relative;
+  display: inline-block;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  background: #fff;
+}
+.reg-source-region-canvas-wrap canvas,
+.reg-source-region-image {
+  display: block;
+}
+.reg-source-region-bbox {
+  position: absolute;
+  border: 2px solid rgba(234, 88, 12, 0.95);
+  background: rgba(234, 88, 12, 0.18);
+  pointer-events: none;
+  border-radius: 2px;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.18);
+}
+.reg-source-region-excerpt {
+  padding: 12px 20px;
+  border-top: 0.5px solid var(--g-95);
+  background: var(--g-99, #fcfcfd);
+  font-size: 12.5px;
+  color: var(--g-30);
+  line-height: 1.5;
+}
+.reg-source-region-excerpt-label {
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  color: var(--g-50);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 6px;
+}
+.reg-source-region-loading,
+.reg-source-region-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px;
+  color: var(--g-40);
+  text-align: center;
+  max-width: 420px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.reg-source-region-fallback i,
+.reg-source-region-loading i {
+  font-size: 28px;
+  color: var(--g-50);
+}
+.reg-spin { animation: reg-spin 1s linear infinite; }
+@keyframes reg-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }

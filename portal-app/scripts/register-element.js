@@ -92,7 +92,14 @@ const REG_FIELD_TYPES = [
   { value: 'array',           label: 'List of values' },
   { value: 'object',          label: 'Nested object' },
   { value: 'composite-input', label: 'Composite input' },
-  { value: 'likert-matrix',   label: 'Survey matrix' }
+  { value: 'likert-matrix',   label: 'Survey matrix' },
+  // Attachment — a canvas-level discriminator that serialises to the canonical
+  // array<{filename, file_content}> wire shape used by drp-schema.json's
+  // `attachments` property. file_content is a base64-encoded string on push/
+  // provide flows and an S3 key on receive flows (the description prose
+  // captures both semantics). Treated as a leaf-shaped type in the canvas
+  // (no expander, no child editing) because the items shape is fixed.
+  { value: 'attachment',      label: 'Attachment (base64)' }
 ];
 
 /* Maximum nesting depth in the builder per ADR 0039 §5. Top-level fields are
@@ -123,8 +130,141 @@ function regBlankField(name, type) {
     title: undefined,                          // UX-40 — optional display-label override; absent means "fall back to humanizeFieldName(name)"
     description: '',
     validation: {},
-    group: null
+    group: null,
+    reviewRequired: undefined                  // UX-41c — closed-vocab flag for unresolved extraction ambiguity; pre-flight publish halts when set
   };
+}
+
+/* ADR 0045 §1 — Recursive deep-clone with fresh IDs at every nesting level.
+ * Used by registerOnramp_completeWithSeed and regForkFromElement so both
+ * handoff paths produce isolated copies with no shared references to the
+ * source. Clones: validation (including itemChildren), children, default,
+ * presentation, examples, xSource, _companionFor. Flat fields pass through
+ * cheaply (no children/itemChildren to recurse into). */
+function regDeepCloneField(source) {
+  if (!source || typeof source !== 'object') return regBlankField('');
+  const f = Object.assign(regBlankField(source.name || ''), {
+    type:           source.type || 'string',
+    required:       !!source.required,
+    title:          source.title || undefined,
+    description:    source.description || '',
+    group:          source._group || source.group || null,
+    reviewRequired: (typeof regIsValidReviewFlag === 'function' && regIsValidReviewFlag(source.reviewRequired))
+                      ? source.reviewRequired : undefined
+  });
+
+  // --- Validation (deep) ---
+  const sv = source.validation || {};
+  f.validation = {};
+  // Copy scalar validation keys.
+  ['pattern', 'minimum', 'maximum', 'minLength', 'maxLength',
+   'minItems', 'maxItems', 'itemType', 'subType'].forEach(k => {
+    if (sv[k] !== undefined) f.validation[k] = sv[k];
+  });
+  // Enum values/labels (shallow-safe — arrays of primitives / objects of strings).
+  if (Array.isArray(sv.enumValues))   f.validation.enumValues  = sv.enumValues.slice();
+  if (sv.enumLabels)                  f.validation.enumLabels  = Object.assign({}, sv.enumLabels);
+  if (Array.isArray(sv.itemEnumValues)) f.validation.itemEnumValues = sv.itemEnumValues.slice();
+  if (sv.itemEnumLabels)              f.validation.itemEnumLabels = Object.assign({}, sv.itemEnumLabels);
+  // Likert rows/options (array of small objects).
+  if (Array.isArray(sv.likertRows))    f.validation.likertRows    = sv.likertRows.map(r => Object.assign({}, r));
+  if (Array.isArray(sv.likertOptions)) f.validation.likertOptions = sv.likertOptions.map(o => Object.assign({}, o));
+  // itemChildren — recursive clone with fresh IDs.
+  if (Array.isArray(sv.itemChildren)) {
+    f.validation.itemChildren = sv.itemChildren.map(c => regDeepCloneField(c));
+  }
+
+  // --- Children (object-type nested fields) — recursive clone ---
+  if (Array.isArray(source.children)) {
+    f.children = source.children.map(c => regDeepCloneField(c));
+  }
+
+  // --- Default rows (array of plain objects — deep-copy via JSON) ---
+  if (Array.isArray(source.default) && source.default.length) {
+    f.default = JSON.parse(JSON.stringify(source.default));
+  }
+
+  // --- Examples ---
+  if (Array.isArray(source.examples) && source.examples.length) {
+    f.examples = source.examples.slice();
+  }
+
+  // --- Presentation snapshot ---
+  const sp = source.presentation || {};
+  const legacyOrigin = sv.originAnnotation;
+  const origin = sp.originAnnotation || legacyOrigin;
+  if (origin || sp.hintOverride || sp.rowLabels || sp.optionLabels) {
+    f.presentation = {};
+    if (origin) {
+      f.presentation.originAnnotation = origin;
+      f.presentation.originAnnotationFromSeed = sp.originAnnotationFromSeed || origin;
+    }
+    if (sp.hintOverride)  f.presentation.hintOverride  = sp.hintOverride;
+    if (sp.rowLabels)     f.presentation.rowLabels     = Object.assign({}, sp.rowLabels);
+    if (sp.optionLabels)  f.presentation.optionLabels  = Object.assign({}, sp.optionLabels);
+  }
+
+  // --- Sidecars (shallow-safe — flat objects) ---
+  if (source._companionFor) f._companionFor = Object.assign({}, source._companionFor);
+  if (source.xSource)       f.xSource       = Object.assign({}, source.xSource);
+  if (source.readOnly)      f.readOnly      = true;
+  if (source.visibleWhen)   f.visibleWhen   = source.visibleWhen;
+  if (source.disclaimerText !== undefined) f.disclaimerText = source.disclaimerText;
+
+  return f;
+}
+
+/* UX-41c — closed Phase-1 vocabulary for the review-required flag. Adding
+ * new values is a wire-format change; document in ADR 0040 §17 before
+ * extending. */
+const REG_REVIEW_REQUIRED_VOCAB = new Set([
+  'unresolved_structural_suffix',              // VLM/LLM emitted primitive with _table/_matrix/_grid/_chart/_list suffix
+  'possible_matrix_description'                // Detector saw matrix-prose signal but no co-signal — medium confidence flag
+]);
+
+function regIsValidReviewFlag(value) {
+  return typeof value === 'string' && REG_REVIEW_REQUIRED_VOCAB.has(value);
+}
+
+/* UX-41c — collect all fields currently carrying a review flag (across top
+ * level and array-item children). Used by the pre-flight publish blocker
+ * and the canvas badge counter. */
+function regCollectReviewFlaggedFields() {
+  const flagged = [];
+  (regDraft.fields || []).forEach(f => {
+    if (f && regIsValidReviewFlag(f.reviewRequired)) {
+      flagged.push({ path: f.name, field: f, reason: f.reviewRequired });
+    }
+    // Walk into array-of-object item children.
+    const v = f && f.validation;
+    if (f && f.type === 'array' && v && Array.isArray(v.itemChildren)) {
+      v.itemChildren.forEach(c => {
+        if (c && regIsValidReviewFlag(c.reviewRequired)) {
+          flagged.push({ path: f.name + '.items.' + c.name, field: c, reason: c.reviewRequired });
+        }
+      });
+    }
+  });
+  return flagged;
+}
+
+/* UX-41c — explicit dismissal. Clears the flag and fires an audit event.
+ * The decisionRationale is captured so a regulator can answer "why did Sarah
+ * decide this wasn't a table?". */
+function regDismissReviewFlag(field, decisionRationale) {
+  if (!field || !regIsValidReviewFlag(field.reviewRequired)) return false;
+  const previousReason = field.reviewRequired;
+  field.reviewRequired = undefined;
+  regAuditLog_append('review-flag-dismissed', 'human', {
+    fieldId: field.id,
+    fieldName: field.name,
+    previousReason,
+    decisionRationale: decisionRationale || 'sarah-judged-not-a-table'
+  });
+  regRenderFields();
+  regRenderJsonPreview();
+  regScheduleAutosave();
+  return true;
 }
 
 /* Synthetic disclaimer row per ADR 0040 §17's static-disclaimer structural
@@ -161,7 +301,14 @@ const REG_PRESENTATION_ALTERNATIVES = {
   // array.* — branched lookup via regAlternativesFor
 };
 const REG_ARRAY_PRESENTATION_ALTERNATIVES = {
-  'enum':    ['multiselect', 'checkboxes'],
+  // First entry is the derived default per regSetHintOverride's contract.
+  // 'checkboxes' is the default for array<enum> because the source forms
+  // we extract from (e.g., Nurse Counselling 'Psychosocial History
+  // Language') render as a visible checkbox group, not a multi-select
+  // dropdown — operators read all options at a glance and tick what
+  // applies. 'multiselect' is the override for dense vocabularies where
+  // a checkbox group would dominate the form.
+  'enum':    ['checkboxes', 'multiselect'],
   'object':  ['data-grid', 'repeater-block']
   // array.string / array.number / etc. — no overrides
 };
@@ -261,18 +408,29 @@ function regToggleGroupPresentation(groupName) {
 }
 
 /* Has-override predicate. Drives the icon's active-state styling. Returns true
- * when the field carries any non-derived presentation value the panel exposes. */
+ * when the field carries any *effective* override under the current field type
+ * — persisted values that aren't applicable to the current type don't count.
+ * ADR 0040 §17 UX-46: state preserves, display gates. The persisted value stays
+ * in field.presentation for the type-change-and-back round-trip case; this
+ * predicate validates applicability so the toggle's "custom override active"
+ * tint never lies about the wire. */
 function regHasPresentationOverride(field) {
-  const p = field && field.presentation;
+  if (!field) return false;
+  const p = field.presentation;
   if (!p) return false;
-  if (p.hintOverride) return true;
-  // originAnnotation is "overridden" when it differs from the seed snapshot.
-  if (p.originAnnotation && p.originAnnotationFromSeed &&
+  if (p.hintOverride) {
+    const alts = regAlternativesFor(field);
+    if (alts && alts.indexOf(p.hintOverride) !== -1) return true;
+  }
+  // originAnnotation divergence only counts when the field is still composite-input.
+  if (field.type === 'composite-input' &&
+      p.originAnnotation && p.originAnnotationFromSeed &&
       p.originAnnotation !== p.originAnnotationFromSeed) return true;
-  // rowLabels / optionLabels are presentation values — count their presence
-  // as an override since they aren't auto-derived from any other source.
-  if (p.rowLabels && Object.keys(p.rowLabels).length) return true;
-  if (p.optionLabels && Object.keys(p.optionLabels).length) return true;
+  // rowLabels / optionLabels are only meaningful for likert-matrix today.
+  if (field.type === 'likert-matrix') {
+    if (p.rowLabels && Object.keys(p.rowLabels).length) return true;
+    if (p.optionLabels && Object.keys(p.optionLabels).length) return true;
+  }
   return false;
 }
 
@@ -345,10 +503,13 @@ function regDeriveHint(field) {
     case 'enum':           return 'radio';
     case 'array': {
       const it = field.validation && field.validation.itemType;
-      if (it === 'enum')   return 'multiselect';
+      // Default array<enum> → checkboxes (visible, source-form-faithful).
+      // 'multiselect' is available as an override for dense vocabularies.
+      if (it === 'enum')   return 'checkboxes';
       if (it === 'object') return 'data-grid';
       return 'text';
     }
+    case 'attachment':     return 'file-upload';
     case 'object':         return 'fieldset';
     case 'likert-matrix':  return 'likert-scale';
     case 'composite-input': {
@@ -481,6 +642,22 @@ function buildPresentationEntry(f) {
   return entry;
 }
 
+/* Detect the canonical attachment wire shape: an array whose items are an
+ * object with required filename + file_content (both strings). Tolerates
+ * extra metadata (description, additional properties) so a slightly-
+ * customised attachment (e.g., mime_type) still round-trips through the
+ * canvas type. */
+function _isAttachmentShape(prop) {
+  if (!prop || prop.type !== 'array') return false;
+  const items = prop.items;
+  if (!items || items.type !== 'object') return false;
+  const itemProps = items.properties || {};
+  if (!itemProps.filename || !itemProps.file_content) return false;
+  if (itemProps.filename.type !== 'string') return false;
+  if (itemProps.file_content.type !== 'string') return false;
+  return true;
+}
+
 function fieldToSchemaProperty(f) {
   const prop = {};
   const v = f.validation || {};
@@ -528,6 +705,36 @@ function fieldToSchemaProperty(f) {
       if (requiredRows.length) prop.required = requiredRows;
       break;
     }
+    case 'attachment': {
+      // Canonical attachment wire shape — mirrors drp-schema.json's
+      // `attachments` property exactly. Array of objects, each carrying a
+      // filename + a file_content (base64 on push/provide; S3 key on
+      // receive). The items shape is fixed; the canvas doesn't expose its
+      // children. Emits minItems:1 to mirror the production-canonical
+      // contract (if the array is present, it has ≥1 attachment).
+      prop.type = 'array';
+      if (v.minItems === undefined) prop.minItems = 1;
+      prop.items = {
+        type: 'object',
+        required: ['file_content', 'filename'],
+        properties: {
+          filename: {
+            type: 'string',
+            title: 'Filename',
+            description: 'file name with extension. ex:invoice_123.pdf',
+            minLength: 1
+          },
+          file_content: {
+            type: 'string',
+            title: 'File Content',
+            description: '/push or /provide : Base64 Encoded Content\n\n/receive : file_content is S3 bucket key value (use "GET" /files/{file_id} to get Base64 Encoded Content)\n',
+            minLength: 1
+          }
+        },
+        description: 'attachment file type for CDI'
+      };
+      break;
+    }
     default:         prop.type = 'string';
   }
   // UX-40 — emit `title` (display label) per JSON Schema convention. Always
@@ -542,6 +749,10 @@ function fieldToSchemaProperty(f) {
   // JSON Schema extension keyword so it travels with the property entry
   // (no nesting under a separate sidecar needed for Phase-1).
   if (f.visibleWhen) prop['x-visible-when'] = f.visibleWhen;
+  // UX-41c — review-required flag travels via x-review-required extension
+  // keyword. Pre-flight publish halts when present; canvas surfaces it
+  // visually.
+  if (regIsValidReviewFlag(f.reviewRequired)) prop['x-review-required'] = f.reviewRequired;
   if (f.type !== 'composite-input' && v.pattern) prop.pattern = v.pattern;
   if (v.minimum !== undefined) prop.minimum = v.minimum;
   if (v.maximum !== undefined) prop.maximum = v.maximum;
@@ -554,6 +765,16 @@ function fieldToSchemaProperty(f) {
   if (f.type === 'array' && Array.isArray(f.default) && f.default.length) {
     prop.default = f.default;
   }
+  // UX-45 — fixed-row cardinality constraint. Emitted only when both ends
+  // are set (locked-mode encoding); a partial set isn't valid.
+  if (f.type === 'array' && v.minItems !== undefined && v.maxItems !== undefined) {
+    prop.minItems = v.minItems;
+    prop.maxItems = v.maxItems;
+  }
+  // UX-45 — readOnly on a property tells Composer to render this column
+  // as a label, not an editable input. Applied per-property for the row
+  // identifier in locked mode.
+  if (f.readOnly) prop.readOnly = true;
   return prop;
 }
 
@@ -645,9 +866,25 @@ function fieldFromSchemaProperty(name, p, isRequired, presEntry) {
   if (p.title && p.title !== humanizeFieldName(name)) f.title = p.title;
   f.description = p.description || '';
   if (p['x-visible-when']) f.visibleWhen = p['x-visible-when'];
+  // UX-41c — round-trip review flag iff it's in the closed Phase-1 vocab.
+  // Unknown reason strings drop silently rather than corrupting the model.
+  if (regIsValidReviewFlag(p['x-review-required'])) f.reviewRequired = p['x-review-required'];
   if (p.examples) f.examples = p.examples;
   // UX-39 — pick up array `default` rows when re-importing.
   if (p.type === 'array' && Array.isArray(p.default)) f.default = p.default;
+  // UX-45 — fixed-row constraint round-trip. Stored on validation so the
+  // row-mode segmented control's regArrayRowsLocked() derivation works.
+  if (p.type === 'array' && typeof p.minItems === 'number') {
+    if (!f.validation) f.validation = {};
+    f.validation.minItems = p.minItems;
+  }
+  if (p.type === 'array' && typeof p.maxItems === 'number') {
+    if (!f.validation) f.validation = {};
+    f.validation.maxItems = p.maxItems;
+  }
+  // UX-45 — readOnly on the property round-trips to f.readOnly so the
+  // locked-mode encoding survives serialise → parse.
+  if (p.readOnly) f.readOnly = true;
   const pres = presEntry || {};
 
   // Type derivation. Order: presentation hint for likert-scale and
@@ -682,6 +919,12 @@ function fieldFromSchemaProperty(name, p, isRequired, presEntry) {
     f.type = 'enum';
     f.validation.enumValues = p.enum.slice();
     if (pres.labels) f.validation.enumLabels = Object.assign({}, pres.labels);
+  }
+  else if (p.type === 'array' && _isAttachmentShape(p)) {
+    // Canonical attachment wire shape — array of objects with required
+    // filename + file_content. Reconstructed as a leaf-shaped 'attachment'
+    // field; the items shape stays canonical, no children exposed.
+    f.type = 'attachment';
   }
   else if (p.type === 'array') {
     f.type = 'array';
@@ -1257,6 +1500,13 @@ function regBuildFieldRow(field, idx) {
 
   const row = document.createElement('div');
   row.className = 'reg-field-row';
+  if (regIsValidReviewFlag(field.reviewRequired)) {
+    // UX-41c — flagged row gets a subtle amber treatment so Sarah's eye
+    // catches it without alert-fatigue noise. Authoring stays unblocked;
+    // pre-flight publish is what halts.
+    row.classList.add('reg-field-row--review-required');
+    row.setAttribute('data-review-reason', field.reviewRequired);
+  }
   row.setAttribute('data-field-id', field.id);
   // UX-23: drag-reorder via manual pointer-event tracking. HTML5
   // drag-and-drop was unreliable (handle-only didn't fire dragstart
@@ -1285,6 +1535,7 @@ function regBuildFieldRow(field, idx) {
     const sug = (typeof regAssistSuggestionForField === 'function')
       ? regAssistSuggestionForField(field) : null;
     if (sug) regAssist_maybeTrackEdit(sug, field);
+    regOnStructuralChange();                             // UX-46b
     regRenderJsonPreview();
     regRenderSkeleton();
     regScheduleAutosave();
@@ -1315,6 +1566,7 @@ function regBuildFieldRow(field, idx) {
       }
     }
     field.type = newType;
+    regOnStructuralChange();                             // UX-46b
     // Reset complex-type state on type change so stale values don't bleed.
     if (field.type !== 'object') delete field.children;
     if (field.type !== 'array' && field.validation) {
@@ -1335,6 +1587,13 @@ function regBuildFieldRow(field, idx) {
       delete field.validation.likertRows;
       delete field.validation.likertOptions;
     }
+    // ADR 0040 §17 UX-46: type change is a context break, not an incremental
+    // edit. Close the Presentation panel rather than reshape it in place — the
+    // row composition would otherwise mutate silently (origin-annotation row
+    // appears/disappears, hint dropdown swaps to/from the resolved chip), and
+    // there's no honest live-region story for that. Sarah re-opens to see the
+    // new shape. Persisted overrides stay in field.presentation untouched.
+    _regPresentationOpenIds.delete(field.id);
     const sug = (typeof regAssistSuggestionForField === 'function')
       ? regAssistSuggestionForField(field) : null;
     if (sug) regAssist_maybeTrackEdit(sug, field);
@@ -1418,6 +1677,7 @@ function regBuildFieldRow(field, idx) {
   descInput.addEventListener('input', () => {
     field.description = descInput.value;
     regRenderJsonPreview();
+    regRenderSkeleton();                      // UX-46 — skeleton renders description as a hint; keep in sync
     regScheduleAutosave();
   });
   row.appendChild(descInput);
@@ -1454,6 +1714,7 @@ function regBuildFieldRow(field, idx) {
     if (regDraft.assist && regDraft.assist.fieldIdToSuggestionId) {
       delete regDraft.assist.fieldIdToSuggestionId[field.id];
     }
+    regOnStructuralChange();                             // UX-46b
     regRenderFields();
     regRenderJsonPreview();
     regRenderSkeleton();
@@ -1522,6 +1783,7 @@ function regBuildDisclaimerRow(field, idx) {
   body.addEventListener('input', () => {
     field.disclaimerText = body.value;
     regRenderJsonPreview();
+    regRenderSkeleton();                      // UX-46 — skeleton shows the disclaimer text; refresh on every keystroke
     regScheduleAutosave();
   });
   row.appendChild(body);
@@ -1815,8 +2077,11 @@ function regBuildPresentationToggle(field) {
   btn.type = 'button';
   btn.className = 'reg-field-presentation-btn';
   const hasOverride = regHasPresentationOverride(field);
+  const isOpen = regIsPresentationOpen(field);
   if (hasOverride) btn.setAttribute('data-has-override', 'true');
-  if (regIsPresentationOpen(field)) btn.setAttribute('data-open', 'true');
+  if (isOpen) btn.setAttribute('data-open', 'true');
+  btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  btn.setAttribute('aria-controls', 'reg-presentation-panel-' + field.id);
   btn.setAttribute('aria-label', 'Presentation settings for ' + (field.name || 'field'));
   btn.setAttribute('title', hasOverride
     ? 'Presentation: custom override active — click to view/edit'
@@ -1834,13 +2099,20 @@ function regBuildPresentationExpander(field) {
   const wrap = document.createElement('div');
   wrap.className = 'reg-field-expander reg-field-presentation-expander';
   wrap.setAttribute('data-field-id', field.id);
+  // ADR 0040 §17 UX-46: labelled region (not <fieldset>/<legend> — the panel
+  // is a heterogeneous settings surface, not a single logical input).
+  const panelId = 'reg-presentation-panel-' + field.id;
+  const titleId = 'reg-presentation-title-' + field.id;
+  wrap.id = panelId;
+  wrap.setAttribute('role', 'region');
+  wrap.setAttribute('aria-labelledby', titleId);
 
   // Header
   const header = document.createElement('div');
   header.className = 'reg-presentation-header';
   header.innerHTML =
     '<i class="ti ti-adjustments-horizontal" aria-hidden="true"></i> ' +
-    '<span class="reg-presentation-title">Presentation settings</span>';
+    '<span class="reg-presentation-title" id="' + titleId + '">Presentation settings</span>';
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
   closeBtn.className = 'reg-presentation-close';
@@ -1872,20 +2144,24 @@ function regBuildPresentationExpander(field) {
 function regBuildPresentationHintRow(field) {
   const row = document.createElement('div');
   row.className = 'reg-presentation-row';
-  const label = document.createElement('span');
-  label.className = 'reg-presentation-row-label';
-  label.textContent = 'Hint';
-  row.appendChild(label);
 
   const alts = regAlternativesFor(field);
   const resolved = regResolveHint(field);
   const derived = regDeriveHint(field);
 
   if (!alts || alts.length < 2) {
-    // Non-overridable: show resolved hint as a read-only tag with a brief
-    // explanation of why it's locked.
+    // Non-overridable: show the resolved hint as a settled chip with a brief
+    // explanation of why it's locked. Uses the dedicated .reg-presentation-resolved
+    // class (not the borrowed monospace .reg-presentation-readonly archetype
+    // used elsewhere for code/JSON snippets) so the chip reads as a settled
+    // value rather than a code value. ADR 0040 §17 forbids exposing a dropdown
+    // here — a disabled select would falsely imply choice was available.
+    const lockedLabel = document.createElement('span');
+    lockedLabel.className = 'reg-presentation-row-label';
+    lockedLabel.textContent = 'Hint';
+    row.appendChild(lockedLabel);
     const tag = document.createElement('span');
-    tag.className = 'reg-presentation-readonly';
+    tag.className = 'reg-presentation-resolved';
     tag.textContent = resolved;
     row.appendChild(tag);
     const note = document.createElement('span');
@@ -1895,9 +2171,16 @@ function regBuildPresentationHintRow(field) {
     return row;
   }
 
+  const selectId = 'reg-presentation-hint-' + field.id;
+  const label = document.createElement('label');
+  label.className = 'reg-presentation-row-label';
+  label.setAttribute('for', selectId);
+  label.textContent = 'Hint';
+  row.appendChild(label);
+
   const select = document.createElement('select');
   select.className = 'reg-presentation-hint-select';
-  select.setAttribute('aria-label', 'Presentation hint override');
+  select.id = selectId;
   alts.forEach(h => {
     const opt = document.createElement('option');
     opt.value = h;
@@ -1916,6 +2199,7 @@ function regBuildPresentationHintRow(field) {
     reset.type = 'button';
     reset.className = 'reg-presentation-reset';
     reset.textContent = 'Reset';
+    reset.setAttribute('aria-label', 'Reset hint to derived default (' + derived + ')');
     reset.setAttribute('title', 'Reset to derived default (' + derived + ')');
     reset.addEventListener('click', () => {
       regSetHintOverride(field, derived);                 // same as default → clears override
@@ -1926,17 +2210,19 @@ function regBuildPresentationHintRow(field) {
 }
 
 function regHintLockedReason(field) {
-  if (field.type === 'composite-input') return '(derived from sub-type — change via the row\'s sub-type chip)';
-  if (field.type === 'date' || field.type === 'datetime') return '(no alternatives — calendar widgets are widget-resolver concerns)';
-  if (field.type === 'disclaimer') return '(disclaimer rows render as inline text)';
-  return '(no overrides available for this type)';
+  if (field.type === 'composite-input') return 'Composite fields render by sub-type — change the sub-type chip on the field row.';
+  if (field.type === 'date' || field.type === 'datetime') return 'Date fields always render as a calendar widget.';
+  if (field.type === 'disclaimer') return 'Disclaimer rows render as inline text.';
+  return 'No alternative renderings for this field type.';
 }
 
 function regBuildPresentationOriginRow(field) {
   const row = document.createElement('div');
   row.className = 'reg-presentation-row reg-presentation-row-origin';
-  const label = document.createElement('span');
+  const inputId = 'reg-presentation-origin-' + field.id;
+  const label = document.createElement('label');
   label.className = 'reg-presentation-row-label';
+  label.setAttribute('for', inputId);
   label.textContent = 'Origin annotation';
   row.appendChild(label);
 
@@ -1948,9 +2234,9 @@ function regBuildPresentationOriginRow(field) {
   const input = document.createElement('input');
   input.type = 'text';
   input.className = 'reg-presentation-origin-input';
+  input.id = inputId;
   input.value = live;
   input.placeholder = 'e.g. Original form: 6 boxes';
-  input.setAttribute('aria-label', 'Origin annotation');
   input.addEventListener('input', () => {
     regSetOriginAnnotation(field, input.value);
     // Re-render to refresh the sparkle indicator on first divergence
@@ -1969,6 +2255,7 @@ function regBuildPresentationOriginRow(field) {
     revert.type = 'button';
     revert.className = 'reg-presentation-revert';
     revert.textContent = 'Revert';
+    revert.setAttribute('aria-label', 'Revert origin annotation to extracted text: "' + snapshot + '"');
     revert.setAttribute('title', 'Revert to the extracted text: "' + snapshot + '"');
     revert.addEventListener('click', () => {
       regRevertOriginAnnotation(field);
@@ -2150,7 +2437,8 @@ const REG_COMPLEX_TYPES_FOR_DEMOTE = new Set([
   'array',            // structured list — can't reduce to one label
   'object',           // structured record — can't reduce to one label
   'composite-input',  // structured single-value with sub-type metadata
-  'likert-matrix'     // structured rows×options grid — can't reduce to one label
+  'likert-matrix',    // structured rows×options grid — can't reduce to one label
+  'attachment'        // file-list with binary content — can't reduce to one label
 ]);
 
 /* Human-readable type labels for the demote tooltip + confirm dialog. */
@@ -2165,7 +2453,8 @@ const REG_TYPE_LABELS_FOR_DEMOTE = {
   'array':            'List of values',
   'object':           'Nested object',
   'composite-input':  'Composite input',
-  'likert-matrix':    'Survey matrix'
+  'likert-matrix':    'Survey matrix',
+  'attachment':       'Attachment (base64)'
 };
 
 /* Demote a group's non-complex fields into a single Pick list. Complex fields
@@ -2692,6 +2981,31 @@ function regCommitCartesianRestatement(opts) {
   arrayField.group = outlierChildren.length > 0 ? groupName : null;      // stays in group if outliers remain
   // The group is preserved IFF there are outliers; otherwise we delete it.
 
+  // UX-45 — Cartesian decomposition is semantically a paper-form table with
+  // KNOWN rows (one per detected prefix). Pre-populate defaults + lock
+  // cardinality + mark the row identifier read-only so Sarah lands in
+  // "Fixed labels" mode by default. Without this, regArrayRowsLocked()
+  // returns false, the segmented control shows "Chosen by operator" as
+  // active, and clicking "Fixed labels" is silently blocked because the
+  // lock guard requires pre-populated defaults — making the toggle look
+  // broken. Sarah can still flip to "Chosen by operator" to unlock if she
+  // wants spreadsheet semantics. Mirrors regPrePopulateDefaultsFromEnum's
+  // row shape: row[rowName] = prefix value; boolean columns → false;
+  // other column types stay absent (sparse defaults per Q10).
+  const defaultRows = enumValues.map(prefix => {
+    const row = {};
+    row[rowName] = prefix;
+    itemChildren.forEach(c => {
+      if (c.name === rowName) return;
+      if (c.type === 'boolean') row[c.name] = false;
+    });
+    return row;
+  });
+  arrayField.default = defaultRows;
+  arrayField.validation.minItems = defaultRows.length;
+  arrayField.validation.maxItems = defaultRows.length;
+  rowField.readOnly = true;
+
   // Splice: replace the in-matrix source fields with the new array field.
   // Outliers stay in place (they keep their group pointer + position).
   const inMatrixNames = new Set();
@@ -2721,6 +3035,19 @@ function regCommitCartesianRestatement(opts) {
 
   // Full audit payload per Q7 — preserves the source metadata for forensic
   // recovery even though it's been dropped from the live schema.
+  // UX-41c — clear any review flags on the source fields; the restatement
+  // is the resolution. Fires an audit event so the regulatory record shows
+  // *which* flagged fields were resolved by which restatement.
+  const flaggedResolved = namedFields
+    .filter(f => regIsValidReviewFlag(f.reviewRequired))
+    .map(f => ({ id: f.id, name: f.name, reason: f.reviewRequired }));
+  if (flaggedResolved.length) {
+    regAuditLog_append('review-flag-resolved-by-restatement', 'human', {
+      resolvedBy: 'cartesian-restatement',
+      flaggedFields: flaggedResolved
+    });
+  }
+
   regAuditLog_append('manual-restatement-applied', 'human', {
     direction: 'group-to-array',
     variant: 'cartesian-decomposition',
@@ -2884,7 +3211,17 @@ function regSlugifyForKey(s) {
 
 function regHasCompanion(field, optionValue) {
   const name = regCompanionFieldName(field, optionValue);
-  return (regDraft.fields || []).some(f => f.name === name);
+  return (regDraft.fields || []).some(f => {
+    if (f.name === name) return true;
+    // Slice 20 — also detect companions via _companionFor metadata. Lets
+    // spec-sheet imports surface non-canonical names (e.g.,
+    // `psychosocial_history_language_others` rather than the canonical
+    // `psychosocial_history_language_5_specify`) as bona-fide companions
+    // without rename gymnastics.
+    if (f._companionFor && f._companionFor.base === field.name
+        && String(f._companionFor.option) === String(optionValue)) return true;
+    return false;
+  });
 }
 
 /* Multi-select enum (selectionMode: "multiple") would map to JSON Schema
@@ -2952,6 +3289,78 @@ function regToggleCompanionField(field, optionValue, on) {
 
 /* Two-column option list (value | label) with Enter/comma to add, drag-reorder,
  * remove. Floor-enforcement banner for 0/1 options. Per Plan 0002 §D1. */
+/* UX-47 — flip an enum field between single-select (type='enum') and
+ * multi-select (type='array', itemType='enum') in place, preserving
+ * enumValues/enumLabels across the swap. Resolves the real field when the
+ * caller passes the synthetic inner item produced by regBuildSyntheticItemField
+ * (so the toggle inside the recursive picklist expander operates on the
+ * parent array, not the synthetic). */
+function regToggleEnumMulti(field, isMulti) {
+  // Resolve the real field. The synthetic inner item's `_parentArrayId`
+  // points back to the parent array field; standalone enums have no marker.
+  let realField = field;
+  if (field && field._parentArrayId) {
+    const all = regCollectAllFields();
+    realField = all.find(f => f.id === field._parentArrayId);
+    if (!realField) return;
+  }
+  if (!realField) return;
+  // Defensive scope guard — refuse to mutate a field that isn't either a
+  // top-level field on regDraft.fields OR the synthetic inner item of an
+  // array<enum>. Flipping the type of an itemChild of an array<object> (a
+  // table row identifier or column) or a child of a nested object would
+  // break the parent's structural contract; the UI normally hides the
+  // toggle in those contexts, this guard makes the safety symmetric on
+  // the data side too.
+  const topLevel = (regDraft.fields || []).some(f => f === realField);
+  if (!topLevel && !field._isArrayItem) return;
+
+  if (isMulti) {
+    // single enum → array<enum>. Preserve enumValues/enumLabels on the
+    // new itemEnumValues/itemEnumLabels keys.
+    if (realField.type !== 'enum') return;
+    const v = realField.validation || {};
+    const values = Array.isArray(v.enumValues) ? v.enumValues.slice() : [];
+    const labels = (v.enumLabels && typeof v.enumLabels === 'object')
+      ? Object.assign({}, v.enumLabels) : {};
+    realField.type = 'array';
+    realField.validation = {
+      itemType: 'enum',
+      itemEnumValues: values,
+      itemEnumLabels: labels
+    };
+  } else {
+    // array<enum> → single enum. Reverse the move.
+    if (realField.type !== 'array') return;
+    const v = realField.validation || {};
+    if (v.itemType !== 'enum') return;
+    const values = Array.isArray(v.itemEnumValues) ? v.itemEnumValues.slice() : [];
+    const labels = (v.itemEnumLabels && typeof v.itemEnumLabels === 'object')
+      ? Object.assign({}, v.itemEnumLabels) : {};
+    realField.type = 'enum';
+    realField.validation = { enumValues: values, enumLabels: labels };
+  }
+
+  regAuditLog_append('enum-multi-toggled', 'human', {
+    fieldId: realField.id,
+    fieldName: realField.name,
+    newShape: isMulti ? 'array<enum>' : 'enum'
+  });
+
+  regRenderFields();
+  regRenderJsonPreview();
+  regRenderSkeleton();
+  regScheduleAutosave();
+}
+
+/* Best-effort field-id lookup across top-level fields. Used by the multi-
+ * select toggle to find the parent array field from a synthetic inner item.
+ * Top-level lookup is sufficient because synthetic items only exist one
+ * level down (the array expander recurses one level for enum items). */
+function regCollectAllFields() {
+  return (regDraft.fields || []).slice();
+}
+
 function regBuildPickListExpander(field, depth) {
   const expander = document.createElement('div');
   expander.className = 'reg-field-expander reg-field-expander-picklist';
@@ -2970,6 +3379,43 @@ function regBuildPickListExpander(field, depth) {
   const banner = document.createElement('div');
   banner.className = 'reg-picklist-floor-banner';
   expander.appendChild(banner);
+
+  // UX-47 — single-vs-multi selection toggle. When checked: single-enum
+  // flips to array<enum>; when unchecked on the synthetic inner item:
+  // array<enum> flips back to single-enum. State derived from whether
+  // we're rendering for the real enum field or the synthetic inner item.
+  //
+  // Visibility guard: only render at the top level (depth=1) or on the
+  // synthetic inner item of an array<enum> (`_isArrayItem`). For
+  // itemChildren of array<object> tables and children of nested object
+  // fields, flipping the enum to array<enum> in-place breaks the parent's
+  // structural contract — e.g., the row identifier of a table must stay
+  // single-valued, otherwise the table cell renderers (row-label resolver,
+  // checkbox-column event handlers) lose their referent and the table UI
+  // visibly breaks. Sarah can still get nested multi-select by changing
+  // the row's type to "List of values" + setting the item type to "Pick
+  // list" — the proper structural restatement.
+  const isToggleScopeValid = (depth === 1) || !!field._isArrayItem;
+  if (isToggleScopeValid) {
+  const multiRow = document.createElement('label');
+  multiRow.className = 'reg-picklist-multi-toggle';
+  multiRow.setAttribute('title',
+    'When operators should be able to pick more than one option (e.g., ' +
+    '"languages spoken"), turn this on. Stored as an array of values ' +
+    'instead of a single value.');
+  const multiCheck = document.createElement('input');
+  multiCheck.type = 'checkbox';
+  multiCheck.checked = !!field._isArrayItem;
+  multiCheck.addEventListener('change', () => {
+    regToggleEnumMulti(field, multiCheck.checked);
+  });
+  const multiLabel = document.createElement('span');
+  multiLabel.className = 'reg-picklist-multi-toggle-label';
+  multiLabel.textContent = 'Allow multiple selections';
+  multiRow.appendChild(multiCheck);
+  multiRow.appendChild(multiLabel);
+  expander.appendChild(multiRow);
+  }                                                                    // end isToggleScopeValid
 
   function refreshFloorBanner() {
     const n = field.validation.enumValues.length;
@@ -3048,6 +3494,7 @@ function regBuildPickListExpander(field, depth) {
         if (!v) return;
         field.validation.enumLabels[v] = labelInput.value;
         regRenderJsonPreview();
+        regRenderSkeleton();                  // UX-46 — skeleton renders enum option labels; refresh on edit
         regScheduleAutosave();
       });
       opt.appendChild(labelInput);
@@ -3244,6 +3691,36 @@ function regBuildArrayExpander(field, depth) {
   itemRow.appendChild(labelPost);
   expander.appendChild(itemRow);
 
+  // UX-42 (Fix D) — contextual hint when items are primitive but the
+  // containing group's rationale (or field description) mentions matrix
+  // prose. Surfaces the gap right where Sarah is configuring the item type,
+  // so she catches the issue before publish.
+  if (depth === 1) {
+    const currentItemType = field.validation.itemType || 'string';
+    const isPrimitiveItem = REG_PRIMITIVE_FOR_MATRIX_CHECK.has(currentItemType);
+    if (isPrimitiveItem) {
+      const fieldDescMatches = regRefit_descriptionLooksLikeMatrix(field.description);
+      let groupRationaleMatches = false;
+      if (field.group && Array.isArray(regDraft._groups)) {
+        const grp = regDraft._groups.find(g => g.name === field.group);
+        if (grp && grp.rationale && regRefit_descriptionLooksLikeMatrix(grp.rationale)) {
+          groupRationaleMatches = true;
+        }
+      }
+      if (fieldDescMatches || groupRationaleMatches) {
+        const hint = document.createElement('div');
+        hint.className = 'reg-array-matrix-hint';
+        const src = groupRationaleMatches ? 'group rationale mentions checkboxes/grid'
+          : 'field description mentions matrix prose';
+        hint.innerHTML = '<span class="reg-array-matrix-hint-icon">⚠</span> ' +
+          '<span>The ' + src + ' — items are currently ' + currentItemType +
+          ', but you may want <strong>nested object</strong> so each row has ' +
+          'its own column properties (e.g., row label + checkbox cells).</span>';
+        expander.appendChild(hint);
+      }
+    }
+  }
+
   // Recurse for complex item types, respecting the depth cap.
   const it = field.validation.itemType;
   if (it === 'enum' || it === 'object') {
@@ -3252,6 +3729,16 @@ function regBuildArrayExpander(field, depth) {
     } else {
       const subWrap = document.createElement('div');
       subWrap.className = 'reg-array-itemshape';
+
+      // UX-45 + ADR 0045 §2 — segmented control for fixed-vs-dynamic rows.
+      // Lives at the top of the items-shape editor (above the "Define the
+      // shape" header) so Sarah commits to the table's semantic before
+      // authoring details. Depth-1 cap lifted per ADR 0045 — downstream
+      // functions are depth-agnostic; depth-3 cap fires before this renders.
+      if (it === 'object') {
+        subWrap.appendChild(regBuildArrayRowModeSegment(field));
+      }
+
       const subHeader = document.createElement('div');
       subHeader.className = 'reg-array-itemshape-header';
       subHeader.textContent = it === 'enum'
@@ -3268,12 +3755,13 @@ function regBuildArrayExpander(field, depth) {
     }
   }
 
-  // UX-39 — pre-populate defaults from the items' enum. The default-rows
-  // panel sits between the items-shape editor and the reverse-restatement
-  // affordance because it's closer to "authoring the array's data" than
-  // "reshaping the array". Only top-level arrays — same constraint as
-  // UX-36b (nested-array defaults open a deeper cardinality question).
-  if (depth === 1 && it === 'object') {
+  // UX-39 + ADR 0045 §2 — pre-populate defaults from the items' enum. The
+  // default-rows panel sits between the items-shape editor and the reverse-
+  // restatement affordance. Depth-1 cap lifted alongside the segmented
+  // control (functionally coupled — manages the defaults that "Fixed labels"
+  // creates). Without this panel at nested depths, Sarah could lock rows
+  // but not see, edit, or clear the defaults.
+  if (it === 'object') {
     expander.appendChild(regBuildArrayDefaultsPanel(field));
   }
 
@@ -3625,7 +4113,8 @@ function regBuildArrayDefaultsCellInput(child, currentVal, onChange) {
  *     gives destructive consent via an inline keep/remove choice).
  *   - Preserve manual edits to surviving rows.
  * Audit event captures the delta payload. */
-function regPrePopulateDefaultsFromEnum(field) {
+function regPrePopulateDefaultsFromEnum(field, opts) {
+  opts = opts || {};
   const eligible = regCanPrePopulateFromEnum(field);
   if (!eligible) return false;
   const { enumKid, values } = eligible;
@@ -3647,7 +4136,9 @@ function regPrePopulateDefaultsFromEnum(field) {
 
   // Confirmation gate. Click 1 (no existing defaults) → simple confirm.
   // Click 2+ → detailed merge summary.
-  if (typeof window.confirm === 'function') {
+  // skipConfirm: true bypasses the dialog — used by the one-click
+  // "Fixed labels" auto-populate path in regSetArrayRowsLocked.
+  if (!opts.skipConfirm && typeof window.confirm === 'function') {
     let msg;
     if (existingDefaults.length === 0) {
       msg = 'Pre-populate "' + (field.name || 'array') + '" with ' + values.length +
@@ -3765,6 +4256,11 @@ function regBuildSyntheticItemField(parentField) {
       id: parentField.id + '__item',
       name: '(item)',
       type: 'enum',
+      // Marker + parent pointer so the picklist expander's multi-select
+      // toggle knows it's running for the inner item of an array<enum> and
+      // can route the flip-to-single operation to the parent array field.
+      _isArrayItem: true,
+      _parentArrayId: parentField.id,
       validation: {
         get enumValues() { return v.itemEnumValues; },
         set enumValues(x) { v.itemEnumValues = x; },
@@ -3780,7 +4276,12 @@ function regBuildSyntheticItemField(parentField) {
       name: '(item)',
       type: 'object',
       validation: {},
-      children: v.itemChildren
+      children: v.itemChildren,
+      // UX-44 — marker so the nested-object expander knows this is an
+      // array-item context and can use "+ Add column" instead of
+      // "+ Add nested field" + show the row-identifier guidance banner.
+      _isArrayItem: true,
+      _parentArrayId: parentField.id
     };
   }
   return null;
@@ -3799,15 +4300,37 @@ function regBuildNestedObjectExpander(field, depth) {
 
   if (!Array.isArray(field.children)) field.children = [];
 
+  // UX-44 — detect array-item context via the synthetic field marker.
+  // Determines copy: "column" vs "nested field" + onboarding-banner trigger.
+  const isArrayItem = !!field._isArrayItem;
+
   // Auto-create 1 empty child if this object has none yet — fights the
   // "empty reads as done" failure mode per Plan 0002 §D3.
   if (field.children.length === 0) {
     field.children.push(regBlankField('', 'string'));
   }
 
+  // UX-44 — onboarding banner for fresh array<object> items. Surfaces the
+  // row-identifier-as-enum workflow once the operator opens an items-shape
+  // editor where the only child is the empty-enum scaffold. Dismissable via
+  // localStorage so subsequent edits don't see it again.
+  if (isArrayItem) {
+    const looksLikeFreshScaffold = field.children.length === 1 &&
+      field.children[0].type === 'enum' &&
+      (field.children[0].name === 'row_identifier' || field.children[0].name === 'row_label') &&
+      (!(field.children[0].validation && field.children[0].validation.enumValues) ||
+        field.children[0].validation.enumValues.length === 0);
+    const dismissed = regGuidanceDismissed('row-identifier-onboarding');
+    if (looksLikeFreshScaffold && !dismissed) {
+      expander.appendChild(regBuildRowIdentifierGuidanceBanner());
+    }
+  }
+
   const helper = document.createElement('div');
   helper.className = 'reg-object-helper';
-  helper.textContent = 'Add nested properties or delete all rows to accept any object.';
+  helper.textContent = isArrayItem
+    ? 'Each row of the table will have these columns. Define the row identifier (typically a Pick list) and the data columns.'
+    : 'Add nested properties or delete all rows to accept any object.';
   expander.appendChild(helper);
 
   const childList = document.createElement('div');
@@ -3825,7 +4348,9 @@ function regBuildNestedObjectExpander(field, depth) {
     const addBtn = document.createElement('button');
     addBtn.type = 'button';
     addBtn.className = 'reg-object-add';
-    addBtn.innerHTML = '<i class="ti ti-plus"></i> Add nested field';
+    addBtn.innerHTML = isArrayItem
+      ? '<i class="ti ti-plus"></i> Add column'
+      : '<i class="ti ti-plus"></i> Add nested field';
     addBtn.addEventListener('click', () => {
       field.children.push(regBlankField('', 'string'));
       regRenderFields();
@@ -3837,6 +4362,261 @@ function regBuildNestedObjectExpander(field, depth) {
   }
 
   return expander;
+}
+
+/* UX-45 — build the "Rows are: Fixed labels | Chosen by operator" segmented
+ * control at the top of the items-shape editor. Locked mode encodes:
+ *   - minItems = maxItems = field.default.length (forces fixed cardinality)
+ *   - row identifier carries x-readonly so Composer renders it as a label
+ *   - add/remove-row affordances disabled at runtime
+ * Dynamic mode (default for new arrays): no min/max constraint, no readonly,
+ * pickers + add/remove enabled. Refit-scaffold arrays (deepen / Cartesian)
+ * default to LOCKED because the source artefact has fixed rows. */
+function regBuildArrayRowModeSegment(field) {
+  const wrap = document.createElement('div');
+  wrap.className = 'reg-array-row-mode';
+
+  const label = document.createElement('span');
+  label.className = 'reg-array-row-mode-label';
+  label.textContent = 'Rows are:';
+  wrap.appendChild(label);
+
+  const seg = document.createElement('div');
+  seg.className = 'reg-array-row-mode-seg';
+  seg.setAttribute('role', 'radiogroup');
+  seg.setAttribute('aria-label', 'Row identifier mode');
+
+  const isLocked = regArrayRowsLocked(field);
+
+  const lockedBtn = document.createElement('button');
+  lockedBtn.type = 'button';
+  lockedBtn.className = 'reg-array-row-mode-btn' + (isLocked ? ' is-active' : '');
+  lockedBtn.setAttribute('role', 'radio');
+  lockedBtn.setAttribute('aria-checked', isLocked ? 'true' : 'false');
+  lockedBtn.innerHTML = '<i class="ti ti-lock" aria-hidden="true"></i> Fixed labels';
+  lockedBtn.title = 'Each row\'s identifier is pre-assigned. Operator cannot add or remove rows; only fill cell values.';
+  lockedBtn.addEventListener('click', () => regAttemptLockArrayRows(field, lockedBtn));
+
+  const dynamicBtn = document.createElement('button');
+  dynamicBtn.type = 'button';
+  dynamicBtn.className = 'reg-array-row-mode-btn' + (!isLocked ? ' is-active' : '');
+  dynamicBtn.setAttribute('role', 'radio');
+  dynamicBtn.setAttribute('aria-checked', !isLocked ? 'true' : 'false');
+  dynamicBtn.innerHTML = '<i class="ti ti-list" aria-hidden="true"></i> Chosen by operator';
+  dynamicBtn.title = 'Each row\'s identifier is chosen at runtime from the Pick list. Operator can add and remove rows freely.';
+  dynamicBtn.addEventListener('click', () => regSetArrayRowsLocked(field, false));
+
+  seg.appendChild(lockedBtn);
+  seg.appendChild(dynamicBtn);
+  wrap.appendChild(seg);
+
+  const hint = document.createElement('div');
+  hint.className = 'reg-array-row-mode-hint';
+  hint.textContent = isLocked
+    ? 'Paper-form style: ' + ((field.default && field.default.length) || 0) +
+      ' fixed rows. Operators check cells; they cannot add or remove rows.'
+    : 'Spreadsheet style: operators add rows as needed and pick the row identifier per row.';
+  wrap.appendChild(hint);
+
+  return wrap;
+}
+
+/* UX-45 — derive the locked state from the schema's encoding. A row is
+ * "locked" when minItems == maxItems AND there's at least one default row.
+ * This is the inverse of the writer below. */
+function regArrayRowsLocked(field) {
+  if (!field || field.type !== 'array') return false;
+  const v = field.validation || {};
+  const hasDefaults = Array.isArray(field.default) && field.default.length > 0;
+  return !!(v.minItems !== undefined &&
+            v.maxItems !== undefined &&
+            v.minItems === v.maxItems &&
+            hasDefaults);
+}
+
+/* UX-45 — set/clear the locked state. Encoding:
+ *   locked = true  → minItems = maxItems = default.length;
+ *                    row_identifier child gets readOnly = true
+ *   locked = false → delete minItems/maxItems; clear readOnly on row identifier
+ * Pre-population happens via UX-39's flow; locked mode requires default rows
+ * to exist (the lock has nothing to lock against otherwise). */
+/* Click handler for the segmented control's "Fixed labels" button. When
+ * the field already has an eligible enum row identifier with values, this
+ * just delegates to regSetArrayRowsLocked which pre-populates + locks in
+ * one step (no toast). When the row identifier is empty (or still a bare
+ * string from VLM extraction) and the form-on-ramp's source image is
+ * cached, we first invoke the targeted VLM recovery to populate the row
+ * taxonomy, THEN lock. This is what gives Sarah an actual single-click
+ * path from "Chosen by operator" → "Fixed labels" on tables whose row
+ * identifiers came through empty. */
+async function regAttemptLockArrayRows(field, btn) {
+  if (!field || field.type !== 'array') return;
+  const v = field.validation || {};
+  const itemChildren = v.itemChildren || [];
+
+  // Detect "empty row identifier" — either a string child marked required,
+  // or an enum child with no values yet.
+  const emptyRowId = itemChildren.find(c =>
+    c && (c.type === 'enum' || (c.type === 'string' && c.required)) &&
+    (!c.validation || !Array.isArray(c.validation.enumValues) ||
+      c.validation.enumValues.length === 0)
+  );
+
+  const sourceCached = typeof regDraft !== 'undefined' && regDraft &&
+    regDraft.source && regDraft.source.uploadedFile &&
+    regDraft.source.uploadedFile.dataUrl;
+  const canVlm = typeof window._regFormSeed_applyVlmRowLabelRecovery === 'function' &&
+    sourceCached && emptyRowId;
+
+  if (canVlm) {
+    // Brief "Recovering…" button state while the VLM call runs.
+    const prevHtml = btn ? btn.innerHTML : null;
+    const prevDisabled = btn ? btn.disabled : false;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader-2"></i> Recovering row labels…';
+    }
+    try {
+      // Wrap the field in a single-field "seed" shape the recovery walker
+      // expects, then unwrap.
+      await window._regFormSeed_applyVlmRowLabelRecovery({ fields: [field] });
+    } catch (err) {
+      console.warn('[reg-element] VLM row-label recovery on Fixed-labels click failed:', err);
+    }
+    if (btn) {
+      btn.disabled = prevDisabled;
+      btn.innerHTML = prevHtml;
+    }
+    // The recovery itself populates defaults + locks (it's the same logic
+    // the form-seed handoff path uses). If it succeeded, the field is now
+    // locked. Re-render and exit.
+    if (regArrayRowsLocked(field)) {
+      regRenderFields();
+      regRenderSkeleton();
+      regRenderJsonPreview();
+      regScheduleAutosave();
+      return;
+    }
+  }
+
+  // No VLM recovery available, or it failed — fall back to the original
+  // path (which auto-pre-populates from an existing enum, or toasts when
+  // there's nothing to seed from).
+  regSetArrayRowsLocked(field, true);
+}
+
+function regSetArrayRowsLocked(field, locked) {
+  if (!field || field.type !== 'array') return;
+  if (!field.validation) field.validation = {};
+  const v = field.validation;
+  const defaults = Array.isArray(field.default) ? field.default : [];
+
+  // Find the row-identifier child (the single enum-typed child, conventionally
+  // named row_identifier from UX-44's scaffold or whatever Sarah renamed it to).
+  const itemChildren = v.itemChildren || [];
+  const rowIdChild = itemChildren.find(c => c.type === 'enum');
+
+  if (locked) {
+    // Locked requires default rows to fix the cardinality. When the row
+    // identifier already has Pick-list values but no defaults are
+    // populated yet (the common shape after VLM extraction or after
+    // structural-review accept), auto-pre-populate as part of the lock —
+    // a single-click "Fixed labels" instead of the previous two-step
+    // (Pre-populate → Lock) that left Sarah staring at an unactionable
+    // toast. Falls back to the original prompt only when the Pick list
+    // has no values to seed the rows with.
+    let workingDefaults = defaults;
+    if (workingDefaults.length === 0) {
+      const eligible = (typeof regCanPrePopulateFromEnum === 'function')
+        ? regCanPrePopulateFromEnum(field) : null;
+      if (eligible && typeof regPrePopulateDefaultsFromEnum === 'function') {
+        regPrePopulateDefaultsFromEnum(field, { skipConfirm: true });
+        workingDefaults = Array.isArray(field.default) ? field.default : [];
+      }
+    }
+    if (workingDefaults.length === 0) {
+      if (typeof window.toast === 'function') {
+        window.toast('Locked rows need pre-populated default rows. Add Pick list values, then click Fixed labels again.');
+      }
+      return;
+    }
+    v.minItems = workingDefaults.length;
+    v.maxItems = workingDefaults.length;
+    if (rowIdChild) rowIdChild.readOnly = true;
+    regAuditLog_append('array-rows-locked', 'human', {
+      fieldId: field.id,
+      fieldName: field.name,
+      rowCount: workingDefaults.length,
+      rowIdentifier: rowIdChild ? rowIdChild.name : null
+    });
+  } else {
+    delete v.minItems;
+    delete v.maxItems;
+    if (rowIdChild) delete rowIdChild.readOnly;
+    regAuditLog_append('array-rows-unlocked', 'human', {
+      fieldId: field.id,
+      fieldName: field.name
+    });
+  }
+
+  regRenderFields();
+  regRenderSkeleton();
+  regRenderJsonPreview();
+  regScheduleAutosave();
+}
+
+/* UX-44 — one-time guidance banner explaining the row-identifier-as-enum
+ * workflow. Surfaces when Sarah lands on a fresh array<object> items-shape
+ * editor (single empty-enum scaffold child). Dismiss persists in localStorage.
+ *
+ * Why this is needed: the schema model represents row identifiers as values
+ * in an enum column, not as a separate "row label" concept. Sarah's mental
+ * model (from spreadsheets) is "row labels are fixed identifiers on the left
+ * edge". The banner bridges the gap. */
+function regBuildRowIdentifierGuidanceBanner() {
+  const banner = document.createElement('div');
+  banner.className = 'reg-row-identifier-guidance';
+  banner.innerHTML =
+    '<div class="reg-row-identifier-guidance-icon" aria-hidden="true">💡</div>' +
+    '<div class="reg-row-identifier-guidance-body">' +
+      '<strong>How tables work here:</strong> ' +
+      'each row is one record with the columns below. ' +
+      'The <strong>Row Identifier</strong> column (a Pick list) determines which row this is — ' +
+      'add its values (e.g., <code>plain</code>, <code>edta</code>, <code>urine</code>), then ' +
+      '<strong>Pre-populate from Pick list</strong> on the array to generate one default row per value. ' +
+      'Add more data columns with <strong>+ Add column</strong>.' +
+    '</div>' +
+    '<button type="button" class="reg-row-identifier-guidance-dismiss" ' +
+      'aria-label="Dismiss guidance">×</button>';
+  const dismissBtn = banner.querySelector('.reg-row-identifier-guidance-dismiss');
+  dismissBtn.addEventListener('click', () => {
+    regGuidanceDismiss('row-identifier-onboarding');
+    banner.remove();
+  });
+  return banner;
+}
+
+/* UX-44 — dismissable-guidance persistence. Keyed by a short slug so future
+ * onboarding banners can share the same plumbing. Falls back to in-memory
+ * Set when localStorage is unavailable (jsdom tests). */
+const _regGuidanceDismissedInMemory = new Set();
+function regGuidanceDismissed(slug) {
+  try {
+    const raw = window.localStorage.getItem('reg-guidance-dismissed');
+    if (!raw) return _regGuidanceDismissedInMemory.has(slug);
+    return JSON.parse(raw).indexOf(slug) !== -1;
+  } catch (e) {
+    return _regGuidanceDismissedInMemory.has(slug);
+  }
+}
+function regGuidanceDismiss(slug) {
+  _regGuidanceDismissedInMemory.add(slug);
+  try {
+    const raw = window.localStorage.getItem('reg-guidance-dismissed');
+    const list = raw ? JSON.parse(raw) : [];
+    if (list.indexOf(slug) === -1) list.push(slug);
+    window.localStorage.setItem('reg-guidance-dismissed', JSON.stringify(list));
+  } catch (e) { /* in-memory fallback already applied */ }
 }
 
 /* A nested child row — same shape as a top-level row but slimmer (no group
@@ -3856,6 +4636,7 @@ function regBuildNestedChildRow(child, idx, parent, parentDepth) {
   nameInput.addEventListener('input', () => {
     child.name = nameInput.value.trim().replace(/\s+/g, '_').toLowerCase();
     regRenderJsonPreview();
+    regRenderSkeleton();                      // UX-46 — child name drives column header in array<object> skeleton
     regScheduleAutosave();
   });
   row.appendChild(nameInput);
@@ -3913,6 +4694,7 @@ function regBuildNestedChildRow(child, idx, parent, parentDepth) {
   reqCheck.addEventListener('change', () => {
     child.required = reqCheck.checked;
     regRenderJsonPreview();
+    regRenderSkeleton();                      // UX-46 — required affects column-header asterisk
     regScheduleAutosave();
   });
   reqWrap.appendChild(reqCheck);
@@ -3928,6 +4710,7 @@ function regBuildNestedChildRow(child, idx, parent, parentDepth) {
   descInput.addEventListener('input', () => {
     child.description = descInput.value;
     regRenderJsonPreview();
+    regRenderSkeleton();                      // UX-46 — child description renders as cell tooltip
     regScheduleAutosave();
   });
   row.appendChild(descInput);
@@ -4250,6 +5033,91 @@ function regBuildDepthCapChip() {
   return chip;
 }
 
+/* ---------- Schema fingerprint + rule staleness (UX-46b) ---------- */
+
+/* Lightweight structural fingerprint of regDraft.fields — a sorted JSON of
+ * [{name, type}] pairs. Used to stamp assist-generated rules at creation
+ * time and detect staleness when the schema changes under them. Not crypto
+ * — just a string comparison. Walks top-level fields and one level of
+ * children/itemChildren for sensitivity to nested changes. */
+function regComputeSchemaFingerprint() {
+  const extract = (fields) => (fields || []).filter(f => f.type !== 'disclaimer').map(f => {
+    const entry = { n: f.name || '', t: f.type || '' };
+    if (Array.isArray(f.children) && f.children.length) {
+      entry.c = extract(f.children);
+    }
+    if (f.validation && Array.isArray(f.validation.itemChildren) && f.validation.itemChildren.length) {
+      entry.ic = extract(f.validation.itemChildren);
+    }
+    return entry;
+  });
+  return JSON.stringify(extract(regDraft.fields || []));
+}
+
+/* Central hook for structural schema changes — updates the fingerprint and
+ * timestamp, then re-renders the Rules tab badge so stale rules become
+ * visible. Called from field add/remove, type change, rename, refit merge,
+ * promote/demote. */
+function regOnStructuralChange() {
+  regDraft.schemaFingerprint = regComputeSchemaFingerprint();
+  regDraft.lastStructuralChangeAt = new Date().toISOString();
+  // Re-render the Rules tab if it's already mounted so the staleness
+  // banner appears immediately.
+  if (typeof regRenderRulesTab === 'function') regRenderRulesTab();
+}
+
+/* Predicate: is this rule stale relative to the current schema? Only
+ * meaningful for assist-generated rules that carry a _generatedAtFingerprint
+ * stamp. Returns false for manually added rules (no stamp). */
+function regRuleIsStale(rule) {
+  if (!rule || !rule._generatedAtFingerprint) return false;
+  return rule._generatedAtFingerprint !== (regDraft.schemaFingerprint || '');
+}
+
+/* Re-generate validation rules: clear stale assist-generated rules that
+ * the operator hasn't manually edited, regenerate the deterministic
+ * suggestions, and re-stamp survivors. */
+function regRegenerateStaleRules() {
+  const assist = regDraft.assist;
+  if (!assist) return;
+  const ruleToSug = assist.ruleIdToSuggestionId || {};
+  const staleIds = [];
+  (regDraft.rules || []).forEach(r => {
+    if (!regRuleIsStale(r)) return;
+    // Only clear rules that are still linked to assist AND haven't been
+    // manually edited (accept-state is still 'pending' or 'accepted').
+    const sugId = ruleToSug[r.id];
+    if (!sugId) return;
+    const state = regAssist_acceptStateFor(sugId);
+    if (state === 'edited') return;                     // operator touched it — keep
+    staleIds.push(r.id);
+  });
+  if (staleIds.length) {
+    regDraft.rules = (regDraft.rules || []).filter(r => staleIds.indexOf(r.id) === -1);
+    staleIds.forEach(id => {
+      delete ruleToSug[id];
+      regAuditLog_append('stale-rule-cleared-on-regenerate', 'engine', { ruleId: id });
+    });
+  }
+  // Re-stamp surviving assist rules with the current fingerprint so they
+  // don't show as stale again until the next structural change.
+  const fp = regComputeSchemaFingerprint();
+  (regDraft.rules || []).forEach(r => {
+    if (r._generatedAtFingerprint) r._generatedAtFingerprint = fp;
+  });
+  regDraft.schemaFingerprint = fp;
+  regRenderRulesTab();
+  regScheduleAutosave();
+  if (typeof window.toast === 'function') {
+    window.toast('Re-generated: ' + staleIds.length + ' stale rule' +
+      (staleIds.length === 1 ? '' : 's') + ' cleared. Deterministic suggestions refreshed.');
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.regRegenerateStaleRules = regRegenerateStaleRules;
+}
+
 /* ---------- Smart Start assist integration (ADR 0040) ---------- */
 
 /* Audit log — append-only event stream per ADR 0040 Q9. Events carry their
@@ -4299,6 +5167,102 @@ function regBeginAssistRun() {
     onramp: regDraft.source && regDraft.source.onramp,
     dexId:  regDraft.dex
   });
+}
+
+/* UX-43c — Smart Start analysing banner. Top-of-canvas amber strip with
+ * per-tab progress dots. Non-blocking — Sarah can keep editing. Auto-
+ * dismisses ~3s after the final tab completes. Surfaces rate-limited tabs
+ * prominently so degraded suggestions are visible. */
+
+const _regAssistBannerState = {
+  visible: false,
+  startedAt: null,
+  tabs: { schema: 'pending', complexity: 'pending', rules: 'pending', pack: 'pending' },
+  elapsedMs: {},
+  dismissTimer: null
+};
+
+function regAssistBanner_onRunStart(info) {
+  _regAssistBannerState.visible = true;
+  _regAssistBannerState.startedAt = Date.now();
+  _regAssistBannerState.tabs = { schema: 'pending', complexity: 'pending', rules: 'pending', pack: 'pending' };
+  _regAssistBannerState.elapsedMs = {};
+  if (_regAssistBannerState.dismissTimer) {
+    clearTimeout(_regAssistBannerState.dismissTimer);
+    _regAssistBannerState.dismissTimer = null;
+  }
+  regAssistBanner_render();
+}
+
+function regAssistBanner_onTabArrival(result) {
+  if (!result || !result.tab) return;
+  // Map tab status to banner status code.
+  const code = result.status === 'ok'
+    ? 'ok'
+    : (result.status === 'rate-limited' ? 'rate-limited' : 'failed');
+  _regAssistBannerState.tabs[result.tab] = code;
+  if (typeof result.elapsedMs === 'number') {
+    _regAssistBannerState.elapsedMs[result.tab] = result.elapsedMs;
+  }
+  regAssistBanner_render();
+  // Schedule auto-dismiss when all tabs have arrived.
+  const allDone = Object.values(_regAssistBannerState.tabs).every(s => s !== 'pending');
+  if (allDone) {
+    if (_regAssistBannerState.dismissTimer) clearTimeout(_regAssistBannerState.dismissTimer);
+    _regAssistBannerState.dismissTimer = setTimeout(() => {
+      _regAssistBannerState.visible = false;
+      regAssistBanner_render();
+    }, 3000);
+  }
+}
+
+function regAssistBanner_render() {
+  let host = document.querySelector('[data-reg-assist-banner]');
+  if (!_regAssistBannerState.visible) {
+    if (host) host.remove();
+    return;
+  }
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'reg-assist-banner';
+    host.setAttribute('data-reg-assist-banner', '');
+    // Mount above the canvas's tab content area. Fall back to body if the
+    // canvas root isn't found.
+    const canvas = document.querySelector('[data-screen="register-element"]') || document.body;
+    canvas.insertBefore(host, canvas.firstChild);
+  }
+  const t = _regAssistBannerState.tabs;
+  const elapsed = Math.round((Date.now() - (_regAssistBannerState.startedAt || Date.now())) / 1000);
+  const dotFor = (status) => {
+    if (status === 'ok') return '<span class="reg-assist-banner-dot reg-assist-banner-dot--ok">✓</span>';
+    if (status === 'failed') return '<span class="reg-assist-banner-dot reg-assist-banner-dot--failed">✗</span>';
+    if (status === 'rate-limited') return '<span class="reg-assist-banner-dot reg-assist-banner-dot--rate-limited">⊘</span>';
+    return '<span class="reg-assist-banner-dot reg-assist-banner-dot--pending">⏳</span>';
+  };
+  const elapsedFor = (tab) => {
+    const ms = _regAssistBannerState.elapsedMs[tab];
+    return ms ? ' <span class="reg-assist-banner-elapsed">' + Math.round(ms / 1000) + 's</span>' : '';
+  };
+  const rateLimitedTabs = Object.keys(t).filter(k => t[k] === 'rate-limited');
+  host.innerHTML =
+    '<div class="reg-assist-banner-row">' +
+      '<span class="reg-assist-banner-spinner" aria-hidden="true">✦</span>' +
+      '<span class="reg-assist-banner-text">' +
+        '<strong>Smart Start is analysing your schema</strong>' +
+        ' · suggestions arriving · your edits are saved' +
+      '</span>' +
+      '<span class="reg-assist-banner-elapsed-total">' + elapsed + 's</span>' +
+    '</div>' +
+    '<div class="reg-assist-banner-tabs">' +
+      dotFor(t.schema)     + ' <span>schema</span>'     + elapsedFor('schema') +
+      dotFor(t.complexity) + ' <span>complexity</span>' + elapsedFor('complexity') +
+      dotFor(t.rules)      + ' <span>rules</span>'      + elapsedFor('rules') +
+      dotFor(t.pack)       + ' <span>pack</span>'       + elapsedFor('pack') +
+    '</div>' +
+    (rateLimitedTabs.length
+      ? '<div class="reg-assist-banner-warning">⚠ ' + rateLimitedTabs.join(', ') +
+        ' rate-limited — re-run from the Structural Review drawer when ready.</div>'
+      : '');
 }
 
 /* Render the degradation banner above the tab content. Slice 5 surfaces live
@@ -4450,7 +5414,10 @@ function regApplyAssistRun(result) {
         expression: (s.payload && s.payload.expression) || '',
         on_failure: (s.payload && s.payload.on_failure) || '',
         applies_at: (s.payload && s.payload.appliesAt) || 'validation',
-        scope: (s.payload && s.payload.scope) || null
+        scope: (s.payload && s.payload.scope) || null,
+        // UX-46b — stamp the schema fingerprint at generation time so we
+        // can detect staleness after structural changes.
+        _generatedAtFingerprint: regComputeSchemaFingerprint()
       };
       regDraft.rules = regDraft.rules || [];
       regDraft.rules.push(rule);
@@ -4701,6 +5668,7 @@ function regAssistCountForTab(tab) {
 
 function regAddField() {
   regDraft.fields.push(regBlankField());
+  regOnStructuralChange();                               // UX-46b
   regRenderFields();
   regRenderJsonPreview();
   regRenderSkeleton();
@@ -4842,6 +5810,7 @@ function regAddDisclaimer() {
   regDraft.fields.push(regBlankDisclaimer(''));
   regRenderFields();
   regRenderJsonPreview();
+  regRenderSkeleton();                        // UX-46 — disclaimers render in the skeleton; must refresh on add
   regScheduleAutosave();
   setTimeout(() => {
     const rows = document.querySelectorAll('[data-reg-field-list] .reg-field-row-disclaimer');
@@ -4872,8 +5841,15 @@ function regEnsureRefitState() {
       suggestionsById: {},
       dismissed: {},
       lastRerunAt: null,
-      drawerOpen: false
+      drawerOpen: false,
+      // Slice 13 — accepted LLM suggestions piped in from the spec-sheet
+      // on-ramp's commit step. Read-only (decisions already made); rendered
+      // as a separate section in the drawer below pending refit cards.
+      appliedFromSpecSheet: []
     };
+  }
+  if (!Array.isArray(regDraft.refit.appliedFromSpecSheet)) {
+    regDraft.refit.appliedFromSpecSheet = [];
   }
   return regDraft.refit;
 }
@@ -4891,21 +5867,35 @@ function regRefit_updateBadge() {
   const badge = document.querySelector('[data-reg-refit-count]');
   if (!btn || !badge) return;
   const active = regRefit_activeSuggestions();
+  const applied = (regEnsureRefitState().appliedFromSpecSheet || []).length;
   // Button is always visible if there's any refit machinery available, even
   // with 0 active suggestions — Sarah can still Re-run. Hide only when the
   // schema is empty (no fields to merge yet) and no fixture has run.
   const hasAnyFields = (regDraft.fields || []).some(f => f.type !== 'disclaimer');
-  if (!hasAnyFields && active.length === 0) {
+  if (!hasAnyFields && active.length === 0 && applied === 0) {
     btn.hidden = true;
     return;
   }
   btn.hidden = false;
-  if (active.length === 0) {
+  if (active.length === 0 && applied === 0) {
     badge.hidden = true;
     badge.textContent = '0';
-  } else {
+  } else if (active.length > 0) {
     badge.hidden = false;
     badge.textContent = String(active.length);
+    badge.title = active.length + ' pending structural-restatement suggestion' +
+      (active.length === 1 ? '' : 's') +
+      (applied > 0 ? ' · plus ' + applied + ' accepted-from-spec-sheet for audit review below' : '');
+    badge.classList.remove('reg-refit-count-applied-only');
+  } else {
+    // No pending refit suggestions, but applied entries exist — show the
+    // applied count with a distinct visual treatment so Sarah knows the
+    // drawer has audit content even when there's no fresh review work.
+    badge.hidden = false;
+    badge.textContent = String(applied);
+    badge.title = applied + ' accepted-from-spec-sheet suggestion' +
+      (applied === 1 ? '' : 's') + ' (audit only — already applied)';
+    badge.classList.add('reg-refit-count-applied-only');
   }
 }
 
@@ -4964,7 +5954,25 @@ function regRefit_renderCards() {
   if (!target) return;
   target.innerHTML = '';
   const active = regRefit_activeSuggestions();
-  if (active.length === 0) {
+
+  // UX-43d — partition suggestions into fresh and stale via the per-kind
+  // staleness predicates. Stale ones land in the Was-Pinned sub-list at the
+  // bottom of the drawer rather than competing for attention with the fresh
+  // ones at the top.
+  const fresh = [];
+  const stale = [];
+  active.forEach(s => {
+    const verdict = regCheckStaleness(s);
+    if (verdict.stale) {
+      stale.push({ suggestion: s, verdict });
+    } else {
+      fresh.push(s);
+    }
+  });
+
+  const applied = regEnsureRefitState().appliedFromSpecSheet || [];
+
+  if (fresh.length === 0 && stale.length === 0 && applied.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'reg-refit-empty';
     empty.textContent = regEnsureRefitState().lastRerunAt
@@ -4973,7 +5981,286 @@ function regRefit_renderCards() {
     target.appendChild(empty);
     return;
   }
-  active.forEach(s => target.appendChild(regRefit_buildCard(s)));
+
+  // Fresh cards first — schema-tab suggestions sort before others within
+  // fresh (structural-restatement kinds carry the schema tab implicitly).
+  const tabOrder = ['schema', 'complexity', 'rules', 'pack'];
+  fresh.sort((a, b) => (tabOrder.indexOf(a.tab) - tabOrder.indexOf(b.tab)));
+  fresh.forEach(s => target.appendChild(regRefit_buildCard(s)));
+
+  // Was-Pinned sub-list — collapsed-by-default summary; expand to reveal
+  // stale cards with the "schema changed since this was suggested" banner.
+  if (stale.length > 0) {
+    target.appendChild(regRefit_buildWasPinnedList(stale));
+  }
+
+  // Slice 13 — Applied-from-spec-sheet section: read-only audit cards for
+  // LLM suggestions Sarah already accepted in the on-ramp. Decisions are
+  // committed; this is the audit trail surface.
+  if (applied.length > 0) {
+    target.appendChild(regRefit_buildAppliedFromSpecSheetList(applied));
+  }
+}
+
+/* Slice 13 / ADR 0044 §6 — read-only section showing accepted LLM
+ * suggestions piped in from any on-ramp's overlay (spec-sheet xlsx, paper
+ * form, or future on-ramps). Sarah saw and accepted these in the modal;
+ * once on the canvas they're audit-only (no accept/reject controls).
+ *
+ * The section title + icon adapt to the dominant engine so Sarah sees
+ * "Applied from spec sheet" for a pure xlsx import, "Applied from paper
+ * form" for a pure form import, and "Applied from on-ramp" when both
+ * contributed in the same authoring session.
+ *
+ * UX: default-expanded regardless of count. The user's mental model when
+ * opening the drawer is "show me what's in here"; collapsing-by-default on
+ * larger lists was making the section invisible to operators who didn't
+ * realise a section existed below the summary line. They can collapse
+ * manually if they want a tidier view. */
+function regRefit_buildAppliedFromSpecSheetList(applied) {
+  const wrap = document.createElement('details');
+  wrap.className = 'reg-refit-applied-from-spec';
+  wrap.open = true;
+  const summary = document.createElement('summary');
+  summary.className = 'reg-refit-applied-summary';
+
+  // Detect the dominant engine. source.suggested.engine carries the on-ramp
+  // identifier ('spec-xlsx-llm', 'form-vlm-llm', 'dialect-plugin', …).
+  // Bucket by source kind so we can show the right pill.
+  const engines = applied.map(a =>
+    (a.source && a.source.suggested && a.source.suggested.engine) || 'unknown'
+  );
+  const isFromXlsx = engines.some(e => e === 'spec-xlsx-llm' || e === 'dialect-plugin');
+  const isFromForm = engines.some(e => e === 'form-vlm-llm');
+  let icon, label;
+  if (isFromForm && !isFromXlsx) {
+    icon  = 'ti-file-text';
+    label = 'Applied from paper form';
+  } else if (isFromXlsx && !isFromForm) {
+    icon  = 'ti-file-spreadsheet';
+    label = 'Applied from spec sheet';
+  } else if (isFromForm && isFromXlsx) {
+    icon  = 'ti-file-import';
+    label = 'Applied from on-ramps';
+  } else {
+    icon  = 'ti-file-import';
+    label = 'Applied from on-ramp';
+  }
+  summary.innerHTML = '<i class="ti ' + icon + '"></i> ' + label + ' · ' +
+    '<strong>' + applied.length + '</strong> accepted suggestion' + (applied.length === 1 ? '' : 's');
+  wrap.appendChild(summary);
+
+  const list = document.createElement('div');
+  list.className = 'reg-refit-applied-list';
+  applied.forEach(a => list.appendChild(regRefit_buildAppliedCard(a)));
+  wrap.appendChild(list);
+  return wrap;
+}
+
+function regRefit_buildAppliedCard(applied) {
+  const card = document.createElement('div');
+  card.className = 'reg-refit-applied-card reg-refit-applied-conf-' + (applied.confidence || 'medium');
+
+  // Hover highlight on the affected field row
+  function highlight(on) {
+    const row = document.querySelector('[data-reg-field-list] [data-field-id]');
+    if (!row) return;
+    document.querySelectorAll('[data-reg-field-list] [data-field-id]').forEach(r => {
+      const nameInput = r.querySelector('input[type="text"]');
+      if (nameInput && nameInput.value === applied.field) {
+        r.classList.toggle('reg-field-row--refit-target', on);
+      }
+    });
+  }
+  card.addEventListener('mouseenter', () => highlight(true));
+  card.addEventListener('mouseleave', () => highlight(false));
+
+  const head = document.createElement('div');
+  head.className = 'reg-refit-applied-head';
+  head.innerHTML =
+    '<span class="reg-refit-applied-kind">' + escapeHtml(applied.kind) + '</span>' +
+    '<code class="reg-refit-applied-field">' + escapeHtml(applied.field) + '</code>' +
+    '<span class="reg-refit-applied-conf">' + escapeHtml(applied.confidence || 'medium') + '</span>' +
+    (applied.bulk ? '<span class="reg-refit-applied-bulk">bulk</span>' : '');
+  card.appendChild(head);
+
+  if (applied.rationale) {
+    const r = document.createElement('div');
+    r.className = 'reg-refit-applied-rationale';
+    r.textContent = applied.rationale;
+    card.appendChild(r);
+  }
+
+  const src = applied.source && applied.source.suggested && applied.source.suggested.from;
+  if (src) {
+    const trail = document.createElement('div');
+    trail.className = 'reg-refit-applied-trail';
+    const provider = src.llmProvider ? src.llmProvider : 'mock';
+    const model = src.llmModel ? src.llmModel : '';
+    trail.innerHTML =
+      '<span class="reg-refit-applied-trail-label">From ' + escapeHtml(src.column || '?') + ':</span> ' +
+      '<code>' + escapeHtml(src.verbatimSource || '') + '</code>' +
+      ' <span class="reg-refit-applied-trail-engine">' +
+        escapeHtml(provider) + (model ? ' · ' + escapeHtml(model) : '') +
+      '</span>';
+    card.appendChild(trail);
+  }
+
+  return card;
+}
+
+/* UX-43d — per-kind staleness predicates. A suggestion is stale when the
+ * specific attribute it intends to mutate has been edited by Sarah since the
+ * seed snapshot. Predicates are keyed by suggestion.kind; unknown kinds fall
+ * back to a structural-only diff (default predicate). */
+const REG_STALENESS_PREDICATES = {
+  // UX-42 Fix C — deepen-array-items targets validation.itemType. Stale when
+  // Sarah has already deepened the items herself (or deleted the array).
+  'structural-restatement.deepen-array-items': (sug) => {
+    const src = regFindFieldDeep((sug.payload.mergedFromFieldIds || [])[0]);
+    if (!src) return { stale: true, reason: 'source-field-deleted' };
+    const currentItemType = (src.validation && src.validation.itemType) || 'string';
+    const wasItemType = sug.payload.currentItemType || 'string';
+    if (currentItemType !== wasItemType) {
+      return { stale: true, reason: 'itemType-already-changed',
+        from: wasItemType, to: currentItemType };
+    }
+    return { stale: false };
+  },
+  // UX-38 — merge-to-table pivots an object's children into array-of-objects.
+  // Stale when the source object has changed type or its children were
+  // restructured.
+  'structural-restatement.merge-to-table': (sug) => {
+    const src = regFindFieldDeep((sug.payload.mergedFromFieldIds || [])[0]);
+    if (!src) return { stale: true, reason: 'source-field-deleted' };
+    if (src.type === 'array' && src.validation && src.validation.itemType === 'object') {
+      return { stale: true, reason: 'already-restated-to-array-of-objects' };
+    }
+    return { stale: false };
+  },
+  // UX-41b — upgrade-primitive-to-table. Stale when the source field's type
+  // is no longer primitive (Sarah upgraded it herself).
+  'structural-restatement.upgrade-primitive-to-table': (sug) => {
+    const src = regFindFieldDeep((sug.payload.mergedFromFieldIds || [])[0]);
+    if (!src) return { stale: true, reason: 'source-field-deleted' };
+    if (src.type === 'array' || src.type === 'object') {
+      return { stale: true, reason: 'already-upgraded-to-' + src.type };
+    }
+    return { stale: false };
+  },
+  // UX-31 — merge-mutex-pair targets two boolean siblings. Stale when either
+  // source has been deleted or one's type is no longer boolean.
+  'structural-restatement.merge-mutex-pair-to-enum': (sug) => {
+    const ids = sug.payload.mergedFromFieldIds || [];
+    for (const id of ids) {
+      const src = regFindFieldDeep(id);
+      if (!src) return { stale: true, reason: 'source-field-deleted' };
+      if (src.type !== 'boolean') {
+        return { stale: true, reason: 'source-field-no-longer-boolean',
+          fieldName: src.name, currentType: src.type };
+      }
+    }
+    return { stale: false };
+  },
+  // Legacy kind (replaced by upgrade-primitive-to-table in UX-41b). Treat
+  // identically.
+  'structural-restatement.upgrade-string-to-table': (sug) => {
+    return REG_STALENESS_PREDICATES['structural-restatement.upgrade-primitive-to-table'](sug);
+  }
+};
+
+/* Default predicate for any suggestion kind without an explicit rule. Uses
+ * the structural-only diff fallback per Q3's option (b). */
+function regStaleness_defaultPredicate(sug) {
+  const ids = sug.payload && sug.payload.mergedFromFieldIds || [];
+  for (const id of ids) {
+    const src = regFindFieldDeep(id);
+    if (!src) return { stale: true, reason: 'source-field-deleted' };
+  }
+  return { stale: false };
+}
+
+/* Evaluate staleness for a single suggestion. Returns
+ *   { stale: false }
+ *     when the suggestion is still applicable to the current schema state.
+ *   { stale: true, reason: <slug>, ...extras }
+ *     when Sarah has already changed the underlying field.
+ */
+function regCheckStaleness(suggestion) {
+  if (!suggestion || !suggestion.kind) return { stale: false };
+  const predicate = REG_STALENESS_PREDICATES[suggestion.kind] || regStaleness_defaultPredicate;
+  try {
+    return predicate(suggestion);
+  } catch (e) {
+    console.warn('[regCheckStaleness] predicate threw for ' + suggestion.kind + ':', e);
+    return { stale: false };                                       // fail open — better to surface than to silently hide
+  }
+}
+
+/* UX-43d — build the collapsed "Was-Pinned" sub-list at the bottom of the
+ * drawer. Each stale suggestion carries the verdict's reason in a small
+ * banner above its card so Sarah understands why it was de-prioritised. */
+function regRefit_buildWasPinnedList(stalePackets) {
+  const wrap = document.createElement('div');
+  wrap.className = 'reg-refit-was-pinned';
+  const header = document.createElement('button');
+  header.type = 'button';
+  header.className = 'reg-refit-was-pinned-header';
+  header.setAttribute('aria-expanded', 'false');
+  header.innerHTML = '<span class="reg-refit-was-pinned-caret">▸</span> ' +
+    stalePackets.length + ' suggestion' + (stalePackets.length === 1 ? '' : 's') +
+    ' skipped <span class="reg-refit-was-pinned-subtle">(your edits changed them)</span>';
+  const body = document.createElement('div');
+  body.className = 'reg-refit-was-pinned-body';
+  body.hidden = true;
+  stalePackets.forEach(({ suggestion, verdict }) => {
+    const card = regRefit_buildCard(suggestion);
+    card.classList.add('reg-refit-card--stale');
+    const banner = document.createElement('div');
+    banner.className = 'reg-refit-stale-banner';
+    banner.textContent = '⚠ Schema changed since this was suggested: ' +
+      regRefit_stalenessReasonLabel(verdict);
+    card.insertBefore(banner, card.firstChild);
+    body.appendChild(card);
+    // Fire the audit event once on initial render (de-duped by suggestion id
+    // and the dismissed marker — re-renders don't re-emit).
+    if (!suggestion._stalenessAudited) {
+      regAuditLog_append('suggestion-stale-on-arrival', 'engine', {
+        suggestionId: suggestion.id,
+        kind: suggestion.kind,
+        stalenessReason: verdict.reason,
+        details: verdict
+      });
+      suggestion._stalenessAudited = true;
+    }
+  });
+  header.addEventListener('click', () => {
+    const expanded = header.getAttribute('aria-expanded') === 'true';
+    header.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    body.hidden = expanded;
+    header.querySelector('.reg-refit-was-pinned-caret').textContent = expanded ? '▸' : '▾';
+  });
+  wrap.appendChild(header);
+  wrap.appendChild(body);
+  return wrap;
+}
+
+function regRefit_stalenessReasonLabel(verdict) {
+  switch (verdict.reason) {
+    case 'source-field-deleted':
+      return 'the source field was deleted.';
+    case 'itemType-already-changed':
+      return 'item type was changed from `' + verdict.from + '` to `' + verdict.to + '`.';
+    case 'already-restated-to-array-of-objects':
+      return 'the source object was already restated as an array of objects.';
+    case 'already-upgraded-to-array':
+    case 'already-upgraded-to-object':
+      return 'the source field was already upgraded.';
+    case 'source-field-no-longer-boolean':
+      return verdict.fieldName + ' is no longer a boolean (now ' + verdict.currentType + ').';
+    default:
+      return (verdict.reason || 'unknown reason') + '.';
+  }
 }
 
 /* Build a single suggestion card. Cards carry the ADR 0040 §32 envelope's
@@ -5320,23 +6607,44 @@ function regRefit_commitMerge(suggestion, { ruleDispositions }) {
   const firstId = mergedIds[0];
   const firstIdx = (regDraft.fields || []).findIndex(f => f.id === firstId);
 
+  // UX-43a — capture the first source field (and any with reviewRequired)
+  // BEFORE removing them from regDraft.fields. The first source carries
+  // metadata the survivor must preserve: group, title, description, required,
+  // reviewRequired (resolved on merge). Doing this lookup AFTER the splice
+  // destroys the reference.
+  const sourceFields = mergedIds.map(fid => regFindFieldDeep(fid)).filter(Boolean);
+  const originField = sourceFields[0] || null;
+  const flaggedSources = sourceFields.filter(f => regIsValidReviewFlag(f.reviewRequired));
+
   // Capture the names so the audit log + Element-version sidecar can record
   // "what fields became this?" (ADR 0041 §7's mergedFrom provenance).
-  const mergedNames = mergedIds.map(fid => {
-    const f = regFindFieldDeep(fid);
-    return f ? f.name : null;
-  }).filter(Boolean);
+  const mergedNames = sourceFields.map(f => f.name).filter(Boolean);
 
   // Remove every merged-away field from the top-level list. (Phase 1 assumes
   // merges target top-level fields. Nested-field merges are Phase 2.)
   regDraft.fields = (regDraft.fields || []).filter(f => mergedIds.indexOf(f.id) === -1);
 
-  // Build the surviving field from the proposed shape. Convert the proposed
-  // JSON-Schema-style payload into the internal field model.
-  const survivor = regRefit_proposedToField(proposed);
+  // Build the surviving field from the proposed shape. UX-43a — pass the
+  // first source field as `originField` so orthogonal metadata (group, title,
+  // required, description) survives the structural transform.
+  const survivor = regRefit_proposedToField(proposed, originField);
   // Stamp provenance — mergedFrom carries the names that were merged away.
   if (!survivor.validation) survivor.validation = {};
   survivor.mergedFrom = mergedNames;
+
+  // UX-43a / UX-41c — when source fields carried a review flag, the merge
+  // resolves it. Fire the dedicated audit event so the regulatory trail shows
+  // which restatement closed which uncertainty marker.
+  if (flaggedSources.length) {
+    regAuditLog_append('review-flag-resolved-by-restatement', 'human', {
+      resolvedBy: 'refit-suggestion-accept',
+      suggestionId: suggestion.id,
+      kind: suggestion.kind,
+      flaggedFields: flaggedSources.map(f => ({
+        id: f.id, name: f.name, reason: f.reviewRequired
+      }))
+    });
+  }
 
   // Insert at the original position of the first merged-away field.
   if (firstIdx >= 0) {
@@ -5344,6 +6652,51 @@ function regRefit_commitMerge(suggestion, { ruleDispositions }) {
   } else {
     regDraft.fields.push(survivor);
   }
+
+  // Post-accept VLM recovery — when the restatement landed an
+  // array<object> shape with an empty row identifier AND the source
+  // image is still cached from the form on-ramp upload, fire the
+  // targeted VLM call to populate the row taxonomy. The earlier OCR-
+  // based heuristic inside regRefit_proposedToField runs first (it
+  // already executed); this is the upgrade path that uses vision
+  // grounding instead of text parsing. Async, fire-and-forget — the
+  // commit returns immediately and a re-render lands when recovery
+  // finishes.
+  (function attemptVlmRowLabelRecovery() {
+    if (!survivor || survivor.type !== 'array') return;
+    const v = survivor.validation || {};
+    if (v.itemType !== 'object' || !Array.isArray(v.itemChildren)) return;
+    const hasEmpty = v.itemChildren.some(c =>
+      c && (c.type === 'enum' || (c.type === 'string' && c.required)) &&
+      (!c.validation || !Array.isArray(c.validation.enumValues) ||
+        c.validation.enumValues.length === 0)
+    );
+    if (!hasEmpty) return;
+    const sourceCached = typeof regDraft !== 'undefined' && regDraft &&
+      regDraft.source && regDraft.source.uploadedFile &&
+      regDraft.source.uploadedFile.dataUrl;
+    if (!sourceCached) return;
+    const recover = typeof window !== 'undefined' &&
+      window._regFormSeed_applyVlmRowLabelRecovery;
+    if (typeof recover !== 'function') return;
+    if (typeof window.toast === 'function') {
+      window.toast('Recovering row labels from source form…');
+    }
+    Promise.resolve()
+      .then(() => recover({ fields: [survivor] }))
+      .then(recovered => {
+        if (recovered) {
+          regRenderFields();
+          regRenderSkeleton();
+          regRenderJsonPreview();
+          regScheduleAutosave();
+          if (typeof window.toast === 'function') {
+            window.toast('Row labels recovered + table locked to Fixed labels.');
+          }
+        }
+      })
+      .catch(err => console.warn('[reg-element] post-accept VLM recovery failed:', err));
+  })();
 
   // Audit events — accept + any orphan-rule outcomes.
   regAuditLog_append('suggestion-structural-restatement-accepted', 'human', {
@@ -5368,6 +6721,9 @@ function regRefit_commitMerge(suggestion, { ruleDispositions }) {
   const r = regEnsureRefitState();
   r.dismissed[suggestion.id] = { dismissedAt: new Date().toISOString(), reason: 'accepted' };
 
+  // UX-46b — structural change from merge.
+  regOnStructuralChange();
+
   // Re-render everything that depends on the field list.
   regRenderFields();
   regRenderJsonPreview();
@@ -5377,14 +6733,220 @@ function regRefit_commitMerge(suggestion, { ruleDispositions }) {
   regScheduleAutosave();
 
   if (typeof window.toast === 'function') {
-    window.toast('Merged ' + mergedNames.length + ' fields into "' + survivor.name + '"');
+    const staleCount = (regDraft.rules || []).filter(regRuleIsStale).length;
+    const staleSuffix = staleCount
+      ? ' — review Rules tab for ' + staleCount + ' potentially stale rule' + (staleCount === 1 ? '' : 's')
+      : '';
+    window.toast('Merged ' + mergedNames.length + ' fields into "' + survivor.name + '"' + staleSuffix);
   }
 }
 
 /* Convert the proposed JSON-schema-style field (from suggestion payload) into
  * the internal field model. Handles enum, array<object>, array<enum>, object,
- * and primitive shapes. */
-function regRefit_proposedToField(proposed) {
+ * and primitive shapes.
+ *
+ * UX-43a — optional `originField` second argument carries the SOURCE field's
+ * metadata that's orthogonal to the structural transform: group, title,
+ * description, reviewRequired, required (when not explicitly overridden by
+ * the proposal). Without this, accepted merges would silently destroy the
+ * source field's group membership (it lands in "Other fields") and any
+ * Sarah-authored title/description — a trust-erosion bug because the change
+ * looks invisible to her in the field-row UI. */
+/* Best-effort recovery of row-identifier vocabulary at restate-time. Used by
+ * regRefit_proposedToField when the structural review handed us an
+ * upgrade-primitive-to-table or deepen-array-items proposal whose row
+ * identifier ships as an empty enum (`enum: []`) because the original VLM
+ * extraction collapsed the matrix and lost the cell data.
+ *
+ * Two sources searched, in this order:
+ *   1. Parenthesised comma-separated lists in the source field's description.
+ *      Catches descriptions like "specimen types (plain, edta, fluoride, …)".
+ *   2. Cached per-page OCR text on regDraft.source.ocrTextByPage (populated
+ *      by the form on-ramp's LLM overlay). Captures the longest vertical
+ *      run of short capitalised tokens on the source field's page — the
+ *      shape a paper-form matrix's row label column typically takes after
+ *      Tesseract OCR.
+ *
+ * Both heuristics are deliberately conservative — they only fire when ≥2
+ * non-stopword candidates emerge — to avoid hallucinating row labels from
+ * unrelated form text. When neither yields, the Pick list stays empty and
+ * Sarah authors manually, exactly as before. */
+function _regRefit_autoFillRowIdentifierFromSource(arrayField, originField) {
+  if (!arrayField || !arrayField.validation) return;
+  const itemChildren = arrayField.validation.itemChildren;
+  if (!Array.isArray(itemChildren) || !itemChildren.length) return;
+  // Find the row-identifier child: the first enum child whose enumValues
+  // is empty. Multiple enum columns wouldn't typically appear in a fresh
+  // restate, but if Sarah had renamed `row_identifier` to something
+  // semantic, this still picks it up via type.
+  const rowId = itemChildren.find(c =>
+    c && c.type === 'enum' &&
+    (!c.validation || !Array.isArray(c.validation.enumValues) || c.validation.enumValues.length === 0)
+  );
+  if (!rowId) return;
+
+  const labels = _regRefit_extractCandidateRowLabels(originField);
+  if (labels.length < 2) return;                                     // not enough signal
+
+  rowId.validation = rowId.validation || {};
+  const enumValues = [];
+  const enumLabels = {};
+  // Title-case the display label when the source token was all-lowercase
+  // (description-prose case) so the Pick list reads cleanly. OCR-captured
+  // tokens are already capitalised so this is a no-op for them.
+  const prettify = (s) => {
+    if (!s) return s;
+    if (/^[a-z]/.test(s)) return s.charAt(0).toUpperCase() + s.slice(1);
+    return s;
+  };
+  labels.forEach(label => {
+    const wire = regSlugifyForKey(label);
+    if (!wire || enumValues.indexOf(wire) !== -1) return;
+    enumValues.push(wire);
+    enumLabels[wire] = prettify(label);
+  });
+  if (enumValues.length < 2) return;
+  rowId.validation.enumValues = enumValues;
+  rowId.validation.enumLabels = enumLabels;
+  if (typeof regAuditLog_append === 'function') {
+    regAuditLog_append('restate-row-identifier-auto-filled', 'engine', {
+      fieldName: arrayField.name,
+      rowIdentifierName: rowId.name,
+      candidateCount: enumValues.length,
+      source: 'description-and-ocr-heuristic'
+    });
+  }
+}
+
+const _REG_REFIT_ROW_LABEL_STOPWORDS = new Set([
+  // Single-word common form chrome — should never be a row label.
+  'clinic','lab','required','optional','yes','no','date','time','signature',
+  'name','from','to','the','and','or','if','for','of','in','on','this',
+  'page','print','submit','cancel','save','total','sum','signed','tick',
+  'mandatory','select','checkbox','field','form','sample','type','column',
+  'row','rows','columns','tests','test','required.','notes','remarks',
+  'please','specify','phone','fax','address','clinic.','lab.',
+  // Section/region headers — captured by the relaxed run-detection when
+  // the OCR puts them on lines adjacent to actual row labels.
+  'nature','specimen','header','footer','patient','tube','list','section',
+  'note','notes:','attach','remarks:','remark','document','title','reminder',
+  'official','collection','collection.','laboratory','medical',
+  // Two-word column-header phrases. The OCR layout for paper forms often
+  // captures the header line (e.g., "Sample Type  Clinic  Lab") inside the
+  // label-run because "Sample Type" passes the 2-word labelPattern. Filter
+  // here so they don't leak into the enum.
+  'sample type','sub type','sub-type','test type','sample id','row id',
+  'item type','column header','nature of','of specimen','specimen type'
+  // NOTE: 'others' is intentionally NOT a stopword — it's a legitimate
+  // enum value on many forms (the "Others (please specify)" pattern).
+]);
+
+function _regRefit_extractCandidateRowLabels(sourceField) {
+  if (!sourceField) return [];
+  const collected = [];
+
+  // ---- 1. Description prose: capture parenthesised enumerations.
+  const desc = String(sourceField.description || '');
+  const groups = desc.match(/\(([^)]+)\)/g) || [];
+  groups.forEach(g => {
+    const inner = g.replace(/^\(|\)$/g, '');
+    // Need commas/semicolons + ≥3 entries to be worth pulling
+    const items = inner.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    if (items.length >= 3 && items.every(s => s.length <= 40)) {
+      items.forEach(t => collected.push(t));
+    }
+  });
+
+  // ---- 2. Cached OCR text on the source's page (when available).
+  const page = sourceField._page;
+  if (page && typeof regDraft !== 'undefined' &&
+      regDraft.source && regDraft.source.ocrTextByPage) {
+    const ocr = regDraft.source.ocrTextByPage[page] || '';
+    const lines = ocr.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    // Lab forms often place row labels in side-by-side columns (e.g., the
+    // Innoquest form lays "Plain ... Urine" / "EDTA ... Stool" / … in two
+    // columns separated by wide whitespace runs). Split each line on
+    // ≥2-space runs first; extract any token that matches the label
+    // pattern from each line (vs. requiring EVERY token to match, which
+    // is too strict for noisy Tesseract output). Then find the longest
+    // run of lines with ≥1 label-shaped token — tolerating up to 2
+    // consecutive non-matching "noise" lines mid-run (page numbers,
+    // section headers, OCR artefacts).
+    const labelPattern = /^[A-Z][A-Za-z]{1,20}(?:\s+[A-Z]?[A-Za-z]{1,20})?\*{0,2}$/;
+    const singleWordPattern = /^[A-Z][A-Za-z]{2,20}\*{0,2}$/;
+    // Two tokenisation strategies for finding label runs. Run BOTH and
+    // keep the longer winner so a form whose row labels are buried among
+    // other words ("1 Plain Tube") doesn't lose to a header line that
+    // happened to match the strict pattern.
+    //   Pass A — split on ≥2-space runs (preserves 2-word labels like
+    //     "Sample Type"). Best for clean column layouts.
+    //   Pass B — split on any whitespace, single-word pattern only. Best
+    //     for lab forms where each row line includes index numbers,
+    //     punctuation, or trailing column words.
+    const passA = lines.map(line => {
+      const tokens = line.split(/\s{2,}|\t+/).map(s => s.trim()).filter(Boolean);
+      const matching = tokens.filter(t => labelPattern.test(t));
+      return matching.length ? matching : null;
+    });
+    const passB = lines.map(line => {
+      const words = line.split(/\s+/).map(s => s.trim()).filter(Boolean);
+      const matching = words.filter(w => singleWordPattern.test(w));
+      return matching.length ? matching : null;
+    });
+
+    const findBestRun = (lineLabelTokens) => {
+      let runStart = -1;
+      let noiseStreak = 0;
+      let bestRun = [];
+      const tryFlushRun = (endExclusive) => {
+        if (runStart < 0) return;
+        const window = lineLabelTokens.slice(runStart, endExclusive);
+        const labelLines = window.filter(t => t).length;
+        if (labelLines >= 3) {
+          const run = window.reduce((acc, tokens) => tokens ? acc.concat(tokens) : acc, []);
+          if (run.length > bestRun.length) bestRun = run;
+        }
+      };
+      for (let i = 0; i < lineLabelTokens.length; i++) {
+        if (lineLabelTokens[i]) {
+          if (runStart < 0) runStart = i;
+          noiseStreak = 0;
+        } else if (runStart >= 0) {
+          noiseStreak++;
+          if (noiseStreak > 2) {
+            tryFlushRun(i - noiseStreak + 1);
+            runStart = -1;
+            noiseStreak = 0;
+          }
+        }
+      }
+      tryFlushRun(lineLabelTokens.length);
+      return bestRun;
+    };
+
+    const runA = findBestRun(passA);
+    const runB = findBestRun(passB);
+    const winner = runA.length >= runB.length ? runA : runB;
+    winner.forEach(t => collected.push(String(t).replace(/\*+$/, '').trim()));
+  }
+
+  // De-dupe; strip stopwords; cap at 20 (forms with more rows are rare and
+  // the extra noise risk isn't worth the corner case).
+  const seen = new Set();
+  const out = [];
+  collected.forEach(c => {
+    const trimmed = String(c).trim();
+    if (!trimmed) return;
+    const lower = trimmed.toLowerCase();
+    if (_REG_REFIT_ROW_LABEL_STOPWORDS.has(lower)) return;
+    if (seen.has(lower)) return;
+    seen.add(lower);
+    out.push(trimmed);
+  });
+  return out.slice(0, 20);
+}
+
+function regRefit_proposedToField(proposed, originField) {
   const f = regBlankField(proposed.name || '', 'string');
   if (proposed.required) f.required = true;
   if (proposed.description) f.description = proposed.description;
@@ -5395,6 +6957,14 @@ function regRefit_proposedToField(proposed) {
       f.validation.itemType = 'object';
       f.validation.itemChildren = Object.keys(items.properties || {}).map(n =>
         regRefit_proposedChildToField(n, items.properties[n], (items.required || []).indexOf(n) !== -1));
+      // When the proposal handed us a row-identifier Pick list with NO
+      // options (the empty-enum scaffold from upgrade-primitive-to-table
+      // and deepen-array-items at register-element.js:7292/7162), try to
+      // recover the row taxonomy from the originField's description prose
+      // and the cached source OCR text. Without this, every Restate-as-
+      // table accept dropped Sarah into an empty Pick list with no clue
+      // where the row labels should come from.
+      _regRefit_autoFillRowIdentifierFromSource(f, originField);
     } else if (Array.isArray(items.enum) && items.enum.length) {
       f.validation.itemType = 'enum';
       f.validation.itemEnumValues = items.enum.slice();
@@ -5411,14 +6981,53 @@ function regRefit_proposedToField(proposed) {
   } else {
     f.type = proposed.type || 'string';
   }
+
+  // UX-46b — transfer internal-model enum convention (validation.enumValues /
+  // enumLabels) when the proposed field uses the regDraft field-model shape
+  // rather than JSON Schema's enum:[…]. Covers merge-mutex-pair-to-enum whose
+  // proposal already sits in regDraft-model form. Guard: only when the JSON
+  // Schema branch above didn't already set enumValues (proposed.enum wins).
+  if (proposed.validation) {
+    if (Array.isArray(proposed.validation.enumValues) && !f.validation.enumValues) {
+      f.validation.enumValues = proposed.validation.enumValues.slice();
+    }
+    if (proposed.validation.enumLabels && typeof proposed.validation.enumLabels === 'object' && !f.validation.enumLabels) {
+      f.validation.enumLabels = Object.assign({}, proposed.validation.enumLabels);
+    }
+  }
+
+  // UX-43a — carry over metadata that's orthogonal to the structural change.
+  // `required` and `description` are propagated only when the proposal didn't
+  // explicitly set them (proposed wins on conflict). `group` and `title` are
+  // always preserved from origin (the suggestion has no opinion on these).
+  // `reviewRequired` is cleared — the merge is the resolution.
+  if (originField) {
+    if (originField.group && !f.group) f.group = originField.group;
+    if (originField.title && !f.title) f.title = originField.title;
+    if (originField.description && !f.description) f.description = originField.description;
+    if (originField.required && !proposed.required) f.required = true;
+    // reviewRequired intentionally NOT carried — accepting the merge IS
+    // the human deliberation that resolves the flag (cleared, not preserved).
+  }
   return f;
 }
 
 function regRefit_proposedChildToField(name, p, isRequired) {
-  const child = regBlankField(name, p.type || 'string');
+  // UX-44 — a proposed child with `enum: []` (the empty-enum guidance
+  // placeholder from deepen-array-items) must become a regBlankField of
+  // type 'enum' with `validation.enumValues = []`, not a primitive string.
+  // Otherwise Sarah sees a Text input where the enum scaffold should be.
+  let resolvedType = p.type || 'string';
+  if (Array.isArray(p.enum)) {
+    resolvedType = 'enum';
+  }
+  const child = regBlankField(name, resolvedType);
   child.required = !!isRequired;
   if (p.title && p.title !== humanizeFieldName(name)) child.title = p.title;
   if (p.description) child.description = p.description;
+  if (Array.isArray(p.enum)) {
+    child.validation.enumValues = p.enum.slice();
+  }
   return child;
 }
 
@@ -5969,61 +7578,131 @@ function regRefit_descriptionLooksLikeMatrix(text) {
   return REG_MATRIX_PROSE_PATTERNS.some(re => re.test(text));
 }
 
+/* UX-41b — structural-suffix regex shared with the deterministic validator.
+ * Mirrors smart-start-assist-live.js's SMART_START_STRUCTURAL_SUFFIX_REGEX,
+ * intentionally duplicated here because the live script is loaded
+ * conditionally; the refit scanner runs purely from register-element.js. */
+const REG_STRUCTURAL_SUFFIX_REGEX = /_(table|matrix|grid|chart|list)$/i;
+const REG_PRIMITIVE_FOR_MATRIX_CHECK = new Set([
+  'string', 'number', 'integer', 'boolean', 'enum'
+]);
+
 function regRefit_scanForStringMatrixDescription() {
+  // Renamed in spirit (UX-41b — `regRefit_checkPrimitiveFieldForMatrixIndicators`)
+  // but the public entrypoint keeps its original name for backward compatibility
+  // with existing call sites in the scan-orchestrator.
   const r = regEnsureRefitState();
-  (regDraft.fields || []).forEach(f => regRefit_checkStringFieldForMatrixDescription(f, r));
+  (regDraft.fields || []).forEach(f => {
+    regRefit_checkPrimitiveFieldForMatrixIndicators(f, r);
+    // UX-42 (Fix C) — also catch the "shallow array" failure: the VLM got the
+    // cardinality right (array) but kept items as a primitive when the source
+    // visual is a matrix with checkbox/input columns. The detector for this
+    // is sibling to the primitive-field check above.
+    regRefit_checkShallowArrayForMatrixIndicators(f, r);
+  });
 }
 
-function regRefit_checkStringFieldForMatrixDescription(field, r) {
-  if (!field || field.type !== 'string') return;
-  if (!regRefit_descriptionLooksLikeMatrix(field.description)) return;
+/* UX-42 (Fix C) — shallow-array detector. Fires when:
+ *   field.type === 'array' AND
+ *   itemType is primitive (string/number/integer/boolean/enum) AND
+ *   matrix-prose signal present in either field description OR containing
+ *     group's rationale.
+ *
+ * The array's existence + primitive items + matrix-prose corroboration is
+ * itself a 2-signal pair (the array shape says "rows are real"; the matrix-
+ * prose says "but the cells should be columns, not text"). No third signal
+ * required. Confidence: high when both description AND rationale match;
+ * medium with one. Always emits an `x-review-required:
+ * possible_matrix_description` flag so the canvas badge surfaces the issue
+ * even if Sarah doesn't open the Structural Review drawer. */
+function regRefit_checkShallowArrayForMatrixIndicators(field, r) {
+  if (!field || field.type !== 'array') return;
+  const v = field.validation || {};
+  const itemType = String(v.itemType || 'string').toLowerCase();
+  // Only fire when items are primitive; an array<object> is the correct
+  // matrix shape and doesn't need refit.
+  if (!REG_PRIMITIVE_FOR_MATRIX_CHECK.has(itemType)) return;
 
-  // De-dupe — don't re-propose for the same field.
+  // Probe the matrix-prose signals.
+  const hasDescription = regRefit_descriptionLooksLikeMatrix(field.description);
+  let hasGroupRationale = false;
+  let groupRationaleSnippet = '';
+  if (field.group && Array.isArray(regDraft._groups)) {
+    const grp = regDraft._groups.find(g => g.name === field.group);
+    if (grp && grp.rationale && regRefit_descriptionLooksLikeMatrix(grp.rationale)) {
+      hasGroupRationale = true;
+      groupRationaleSnippet = grp.rationale;
+    }
+  }
+  if (!hasDescription && !hasGroupRationale) return;                // no signal — no fire
+
+  // De-dupe.
   const existing = r.suggestions.find(s =>
-    s.kind === 'structural-restatement.upgrade-string-to-table' &&
+    s.kind === 'structural-restatement.deepen-array-items' &&
     s.payload && s.payload.mergedFromFieldIds &&
     s.payload.mergedFromFieldIds[0] === field.id);
   if (existing) return;
 
-  const sugId = 'refit_str2tbl_' + field.id + '_' + Math.random().toString(36).slice(2, 7);
+  // Confidence: corroborated → high; single signal → medium.
+  const confidence = (hasDescription && hasGroupRationale) ? 'high' : 'medium';
+
+  // Stamp the review flag on the array field so the canvas amber border
+  // surfaces it. Sarah can dismiss or accept the refit.
+  if (!regIsValidReviewFlag(field.reviewRequired)) {
+    field.reviewRequired = 'possible_matrix_description';
+  }
+
+  const signals = [];
+  if (hasDescription) {
+    const m = REG_MATRIX_PROSE_PATTERNS.map(re => (field.description || '').match(re)).find(Boolean);
+    signals.push({ kind: 'description-prose', detail: m ? m[0] : '(matched)', weight: 'medium' });
+  }
+  if (hasGroupRationale) {
+    const m = REG_MATRIX_PROSE_PATTERNS.map(re => groupRationaleSnippet.match(re)).find(Boolean);
+    signals.push({ kind: 'group-rationale', detail: m ? m[0] : '(matched)', weight: 'medium',
+      groupName: field.group });
+  }
+
+  const sugId = 'refit_deeparr_' + field.id + '_' + Math.random().toString(36).slice(2, 7);
   const sug = {
     id: sugId,
     tab: 'schema',
-    kind: 'structural-restatement.upgrade-string-to-table',
+    kind: 'structural-restatement.deepen-array-items',
     payload: {
-      operation: 'upgrade-string-to-table',
+      operation: 'deepen-array-items',
       mergedFromFieldIds: [field.id],
-      // The proposed array<object> has empty item properties — Sarah will
-      // need to author the columns by hand (since Layer 2 discarded them on
-      // the original extraction). Better than nothing: she gets the right
-      // structural shape immediately and can add columns + rows via the
-      // standard array editor.
       proposedField: {
         name: field.name,
         type: 'array',
         items: {
           type: 'object',
           properties: {
-            row_label: { type: 'string', description: 'Row identifier' }
+            // UX-44 — default the placeholder to an enum (Pick list) so the
+            // workflow to populate row identifiers is discoverable: Sarah
+            // sees "Pick list" + add-options affordance instead of a generic
+            // text input. Empty enum prompts her to author the row taxonomy
+            // (then UX-39 pre-populate creates one row per value).
+            row_identifier: { type: 'string', enum: [], title: 'Row Identifier' }
           },
-          required: ['row_label']
+          required: ['row_identifier']
         },
         description: field.description || '',
-        _seedRows: []                                  // empty — data was lost upstream
+        _seedRows: []                                                // empty — cells were never extracted
       },
-      rationale: 'The field is type "string" but its description prose describes a structured matrix/table/grid. This is the canonical signature of Layer 2 collapsing a `table` structuralRegion into a single text blob (the row + column data was discarded during extraction). Upgrading restores the canonical array<object> shape; columns must be authored manually since the original cell data is gone.'
+      signals,
+      currentItemType: itemType,
+      rationale: 'Array "' + field.name + '" has primitive items (`' + itemType +
+        '`) but the source artefact describes a matrix with cells' +
+        (hasGroupRationale ? ' (group "' + field.group + '" rationale: "' +
+          groupRationaleSnippet.slice(0, 80) + (groupRationaleSnippet.length > 80 ? '…' : '') + '")' : '') +
+        '. The VLM got the cardinality right (it IS an array of rows) but left ' +
+        'the cell structure undefined. Deepen items to `object` and author the ' +
+        'columns (e.g., row identifier + per-cell boolean/string properties).'
     },
-    sources: [{
-      type: 'description-prose-heuristic',
-      ref: field.name,
-      matchedPhrase: REG_MATRIX_PROSE_PATTERNS.map(re => {
-        const m = (field.description || '').match(re);
-        return m ? m[0] : null;
-      }).find(Boolean),
-      currentType: field.type
-    }],
-    confidence: 'medium',
-    caveats: ['Original row + column data was discarded by Layer 2 — columns must be re-authored manually. Consider re-running Smart Start assist if the source artefact is still attached.']
+    sources: signals.map(s => ({ type: 'signal:' + s.kind, ref: field.name, detail: s.detail })),
+    confidence,
+    caveats: ['Original cell values were not extracted — only the row count was preserved. ' +
+      'Author the column properties manually after accepting.']
   };
 
   r.suggestions.push(sug);
@@ -6031,9 +7710,144 @@ function regRefit_checkStringFieldForMatrixDescription(field, r) {
   regAuditLog_append('suggestion-structural-restatement-emitted', 'engine', {
     suggestionId: sug.id,
     kind: sug.kind,
-    source: 'string-with-matrix-description-scan',
+    source: 'shallow-array-matrix-scan',
     fieldId: field.id,
-    fieldName: field.name
+    fieldName: field.name,
+    currentItemType: itemType,
+    signalKinds: signals.map(s => s.kind),
+    confidence
+  });
+}
+
+/* UX-41b — combined-signal firing matrix per Q3:
+ *
+ *   Signal: name has structural suffix (_table/_matrix/_grid/_chart/_list)  → smoking gun
+ *   Signal: field.description matches matrix prose                          → medium
+ *   Signal: containing group's rationale matches matrix prose               → weak (requires co-signal)
+ *
+ *   Firing decision:
+ *     suffix alone                                   → high  → auto-suggest
+ *     description alone                              → medium → auto-suggest (unchanged UX-30)
+ *     suffix + anything                              → high  → auto-suggest
+ *     description + group-rationale                  → high  → auto-suggest
+ *     group-rationale alone                          → no fire (too noisy)
+ *
+ *   Payload carries signals[] array for transparency in the drawer card. */
+function regRefit_checkPrimitiveFieldForMatrixIndicators(field, r) {
+  if (!field || !field.name) return;
+  const type = String(field.type || '').toLowerCase();
+  if (!REG_PRIMITIVE_FOR_MATRIX_CHECK.has(type)) return;
+
+  // Detect the three signals.
+  const hasSuffix = REG_STRUCTURAL_SUFFIX_REGEX.test(field.name);
+  const hasDescription = regRefit_descriptionLooksLikeMatrix(field.description);
+  let hasGroupRationale = false;
+  let groupRationaleSnippet = '';
+  if (field.group && Array.isArray(regDraft._groups)) {
+    const grp = regDraft._groups.find(g => g.name === field.group);
+    if (grp && grp.rationale && regRefit_descriptionLooksLikeMatrix(grp.rationale)) {
+      hasGroupRationale = true;
+      groupRationaleSnippet = grp.rationale;
+    }
+  }
+
+  // Firing matrix.
+  const fires =
+    hasSuffix ||                                                  // smoking gun
+    hasDescription ||                                             // medium-confidence single (legacy UX-30)
+    (hasDescription && hasGroupRationale);                        // corroborated
+  if (!fires) return;
+
+  // Confidence resolution.
+  const coSignals = (hasSuffix ? 1 : 0) + (hasDescription ? 1 : 0) + (hasGroupRationale ? 1 : 0);
+  let confidence;
+  if (hasSuffix) confidence = 'high';                             // suffix alone or corroborated
+  else if (hasDescription && hasGroupRationale) confidence = 'high';
+  else confidence = 'medium';                                     // description alone
+
+  // De-dupe.
+  const existing = r.suggestions.find(s =>
+    s.kind === 'structural-restatement.upgrade-primitive-to-table' &&
+    s.payload && s.payload.mergedFromFieldIds &&
+    s.payload.mergedFromFieldIds[0] === field.id);
+  if (existing) return;
+
+  // Build the signals[] payload for transparency.
+  const signals = [];
+  if (hasSuffix) {
+    const m = field.name.match(REG_STRUCTURAL_SUFFIX_REGEX);
+    signals.push({ kind: 'name-suffix', detail: '_' + (m && m[1] || 'suffix'), weight: 'high' });
+  }
+  if (hasDescription) {
+    const m = REG_MATRIX_PROSE_PATTERNS.map(re => (field.description || '').match(re))
+      .find(Boolean);
+    signals.push({ kind: 'description-prose', detail: m ? m[0] : '(matched)', weight: 'medium' });
+  }
+  if (hasGroupRationale) {
+    const m = REG_MATRIX_PROSE_PATTERNS.map(re => groupRationaleSnippet.match(re)).find(Boolean);
+    signals.push({ kind: 'group-rationale', detail: m ? m[0] : '(matched)', weight: 'weak',
+      groupName: field.group });
+  }
+
+  // Build the proposed shape — empty items.properties (data was lost).
+  const sugId = 'refit_prim2tbl_' + field.id + '_' + Math.random().toString(36).slice(2, 7);
+  const sug = {
+    id: sugId,
+    tab: 'schema',
+    kind: 'structural-restatement.upgrade-primitive-to-table',
+    payload: {
+      operation: 'upgrade-primitive-to-table',
+      mergedFromFieldIds: [field.id],
+      proposedField: {
+        // Strip the structural suffix from the new array's name.
+        name: hasSuffix
+          ? field.name.replace(REG_STRUCTURAL_SUFFIX_REGEX, '')
+          : field.name,
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            // UX-44 — default the placeholder to an enum (Pick list) so the
+            // workflow to populate row identifiers is discoverable: Sarah
+            // sees "Pick list" + add-options affordance instead of a generic
+            // text input. Empty enum prompts her to author the row taxonomy
+            // (then UX-39 pre-populate creates one row per value).
+            row_identifier: { type: 'string', enum: [], title: 'Row Identifier' }
+          },
+          required: ['row_identifier']
+        },
+        description: field.description || '',
+        _seedRows: []                                              // empty — original cell data was lost
+      },
+      signals,                                                     // transparency: why this fired
+      sourceFieldType: type,                                        // for the audit trail
+      rationale: (hasSuffix
+        ? 'Field "' + field.name + '" carries a structural suffix (`_' +
+          field.name.match(REG_STRUCTURAL_SUFFIX_REGEX)[1] +
+          '`) on a primitive type — a category error signalling the VLM/LLM ' +
+          'collapsed a `table` structural-region into a primitive blob.'
+        : 'Field "' + field.name + '" has matrix-prose in its description' +
+          (hasGroupRationale ? ' AND its containing group\'s rationale corroborates' : '') +
+          ' — likely a collapsed `table` structural-region.') +
+        ' Upgrading restores the canonical array<object> shape; columns must ' +
+        'be authored manually since the original cell data was lost during extraction.'
+    },
+    sources: signals.map(s => ({ type: 'signal:' + s.kind, ref: field.name, detail: s.detail })),
+    confidence,
+    caveats: ['Original row + column data was discarded during extraction — columns must be re-authored manually. ' +
+      'Consider re-running Smart Start assist if the source artefact is still attached.']
+  };
+
+  r.suggestions.push(sug);
+  r.suggestionsById[sug.id] = sug;
+  regAuditLog_append('suggestion-structural-restatement-emitted', 'engine', {
+    suggestionId: sug.id,
+    kind: sug.kind,
+    source: 'primitive-matrix-indicator-scan',
+    fieldId: field.id,
+    fieldName: field.name,
+    signalKinds: signals.map(s => s.kind),
+    confidence
   });
 }
 
@@ -6303,7 +8117,10 @@ function regRenderSkeleton() {
       fieldsWrap.appendChild(groupNode);
     }
   } else {
-    regDraft.fields.forEach(renderField);
+    // UX-46 — pass only the field; raw `forEach(renderField)` would also
+    // pass the index as the 2nd arg, which renderField would interpret as
+    // a DOM target and then call appendChild on a number.
+    regDraft.fields.forEach(f => renderField(f));
   }
   compositeWrap.appendChild(fieldsWrap);
 
@@ -6650,15 +8467,23 @@ function regBuildSkeletonArray(f, depth) {
     // communicate "this is a repeating dataset".
     const hasDefaults = Array.isArray(f.default) && f.default.length > 0;
     const renderRows = hasDefaults ? f.default : [{}, {}];
-    renderRows.forEach(row => {
+    // UX-45 — in locked mode, row identifier renders as a plain label (not
+    // a picker), and the add/remove-row affordances are hidden.
+    const isLocked = (typeof regArrayRowsLocked === 'function') && regArrayRowsLocked(f);
+    // Build a single row's TR. Extracted as a closure so the + Add row
+     // handler can produce identically-shaped extra rows in unlocked mode.
+    const buildRow = (row) => {
       const tr = document.createElement('tr');
       children.forEach(c => {
         const td = document.createElement('td');
-        // UX-39 — when the row carries a value for this column, render an
-        // input pre-filled with that value (so Sarah sees what operators
-        // will see on first render). Otherwise fall back to the bare
-        // skeleton input.
-        if (hasDefaults && c.name in row) {
+        const isRowIdentifier = isLocked && c.readOnly === true;
+        if (isRowIdentifier && (c.name in row)) {
+          const labelEl = document.createElement('span');
+          labelEl.className = 'reg-skeleton-array-rowlabel';
+          const labels = (c.validation && c.validation.enumLabels) || {};
+          labelEl.textContent = labels[row[c.name]] || row[c.name];
+          td.appendChild(labelEl);
+        } else if (hasDefaults && (c.name in row)) {
           td.appendChild(regBuildSkeletonInputWithValue(c, row[c.name], depth + 1));
         } else {
           td.appendChild(regBuildSkeletonInput(c, depth + 1));
@@ -6667,29 +8492,101 @@ function regBuildSkeletonArray(f, depth) {
       });
       const tdAct = document.createElement('td');
       tdAct.className = 'reg-skeleton-array-table-actions';
-      const rmBtn = document.createElement('span');
-      rmBtn.className = 'reg-skeleton-array-rm';
-      rmBtn.textContent = '×';
-      rmBtn.setAttribute('aria-hidden', 'true');
-      tdAct.appendChild(rmBtn);
+      // UX-45 — hide remove-row affordance when rows are locked.
+      if (!isLocked) {
+        const rmBtn = document.createElement('button');
+        rmBtn.type = 'button';
+        rmBtn.className = 'reg-skeleton-array-rm';
+        rmBtn.textContent = '×';
+        rmBtn.setAttribute('aria-label', 'Remove row');
+        rmBtn.addEventListener('click', () => {
+          // Local preview-only mutation — leave at least one row visible
+          // so the table doesn't collapse to a broken empty state.
+          if (tbody.children.length > 1) tr.remove();
+        });
+        tdAct.appendChild(rmBtn);
+      }
       tr.appendChild(tdAct);
-      tbody.appendChild(tr);
-    });
+      return tr;
+    };
+    renderRows.forEach(row => tbody.appendChild(buildRow(row)));
     table.appendChild(tbody);
     wrap.appendChild(table);
-    const addBtn = document.createElement('span');
-    addBtn.className = 'reg-skeleton-array-add';
-    addBtn.textContent = '+ Add row';
-    addBtn.setAttribute('aria-hidden', 'true');
-    wrap.appendChild(addBtn);
+    // UX-45 — hide add-row affordance when rows are locked. In unlocked mode
+    // the affordance is interactive and appends a fresh empty row to the
+    // preview (local DOM mutation only — Composer Preview is a sketch, not a
+    // schema editor, so extra rows do NOT mutate field.default).
+    if (!isLocked) {
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'reg-skeleton-array-add';
+      addBtn.textContent = '+ Add row';
+      addBtn.setAttribute('aria-label', 'Add row (preview only)');
+      addBtn.addEventListener('click', () => {
+        tbody.appendChild(buildRow({}));
+      });
+      wrap.appendChild(addBtn);
+    } else {
+      const lockNote = document.createElement('span');
+      lockNote.className = 'reg-skeleton-array-locked-note';
+      lockNote.innerHTML = '<i class="ti ti-lock" aria-hidden="true"></i> ' +
+        renderRows.length + ' fixed row' + (renderRows.length === 1 ? '' : 's') +
+        ' — operators fill cells only';
+      wrap.appendChild(lockNote);
+    }
     return wrap;
   }
 
-  const synthetic = (itemType === 'enum')
-    ? { type: 'enum', validation: { enumValues: v.itemEnumValues || [], enumLabels: v.itemEnumLabels || {} } }
-    : (itemType === 'object')
-      ? { type: 'object', children: v.itemChildren || [] }
-      : { type: itemType, validation: {} };
+  // UX-47 — array<enum> renders as a multi-select widget driven by the
+  // resolved presentation hint, not as a stack of "Item 1/2/3" rows. The
+  // old per-item loop was a visual lie: array<enum> is a *single field with
+  // multiple values*, not a list of items each picking one value.
+  if (itemType === 'enum') {
+    const hint = (typeof regResolveHint === 'function') ? regResolveHint(f) : 'checkboxes';
+    const values = v.itemEnumValues || [];
+    const labels = v.itemEnumLabels || {};
+    if (!values.length) {
+      const empty = document.createElement('span');
+      empty.className = 'reg-skeleton-truncated';
+      empty.textContent = '(define the pick list options below)';
+      wrap.appendChild(empty);
+      return wrap;
+    }
+    if (hint === 'multiselect') {
+      const sel = document.createElement('select');
+      sel.multiple = true;
+      sel.className = 'reg-skeleton-multiselect';
+      sel.size = Math.min(Math.max(values.length, 3), 6);
+      values.forEach(val => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = labels[val] || val;
+        sel.appendChild(opt);
+      });
+      wrap.appendChild(sel);
+      return wrap;
+    }
+    // 'checkboxes' (default) — visible group of independent ticks.
+    const group = document.createElement('div');
+    group.className = 'reg-skeleton-checkbox-group';
+    values.forEach(val => {
+      const optLbl = document.createElement('label');
+      optLbl.className = 'reg-skeleton-checkbox-option';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      const span = document.createElement('span');
+      span.textContent = labels[val] || val;
+      optLbl.appendChild(cb);
+      optLbl.appendChild(span);
+      group.appendChild(optLbl);
+    });
+    wrap.appendChild(group);
+    return wrap;
+  }
+
+  const synthetic = (itemType === 'object')
+    ? { type: 'object', children: v.itemChildren || [] }
+    : { type: itemType, validation: {} };
 
   const ITEM_PREVIEW_COUNT = 3;
   for (let i = 0; i < ITEM_PREVIEW_COUNT; i++) {
@@ -6835,8 +8732,36 @@ function regOpenOnrampPicker() {
     }
     regClearAutosave();
   }
-  regResetDraft('new');
+  // Both entry points (registerElement_startNewElement, registerElement_
+  // startNewVersion) reset before calling this, so the mode here is already
+  // correct — this function is now purely UI (resume prompt + open modal).
+  // Heading + tile-state reflect mode. Spec sheet in version mode lands in a
+  // follow-up slice (refit-mode UI wiring); surface as disabled-with-tooltip
+  // so the operator sees the roadmap.
+  regApplyOnrampPickerMode(regDraft.mode || 'new');
   if (typeof openOverlay === 'function') openOverlay('register-onramp-picker');
+}
+
+/* Apply mode-aware chrome + tile enablement to the on-ramp picker overlay.
+ * Called by regOpenOnrampPicker each time the modal opens. */
+function regApplyOnrampPickerMode(mode) {
+  const heading = document.getElementById('reg-onramp-title');
+  if (heading) {
+    const dexLabelEl = heading.querySelector('[data-dex-label]');
+    const dexLabel = (dexLabelEl && dexLabelEl.textContent) || 'this DEX';
+    heading.textContent = (mode === 'version' ? 'New version on ' : 'New element on ') + dexLabel;
+  }
+  // Spec sheet refit-mode UI lands in the next slice (ADR 0042 §7 diff drawer
+  // wiring). For now, surface the tile as disabled in version-mode with a
+  // tooltip so the operator sees the roadmap.
+  const specTile = document.querySelector('[data-demo="onramp.spec-sheet"]');
+  if (specTile) {
+    specTile.removeAttribute('disabled');
+    specTile.classList.remove('is-disabled');
+    specTile.title = (mode === 'version')
+      ? 'Refit mode — picks an existing element, then diffs your updated XLSX against the prior published version (ADR 0042 §7).'
+      : 'ADR 0042 — fifth Smart Start seed on-ramp: deterministic XLSX/CSV parser where each row defines one field';
+  }
 }
 
 function regCloseOnrampPicker() {
@@ -6913,8 +8838,37 @@ function regDeriveIdFromName(name) {
 
 function regForkFromElement(elementId, elementName, fromVersion) {
   const source = FORK_SOURCE_SCHEMAS[elementId];
+  // ADR 0042 §7 — Spec-sheet refit intercept. When the picker was opened by
+  // the Spec-sheet on-ramp in version-mode, we don't fork-mutate regDraft
+  // here. Instead, hand the picked element's L0 schema back to the on-ramp
+  // module which captures it on _specCurrent and re-opens the on-ramp modal.
+  if (regDraft.mode === 'version-spec-sheet' && typeof window.regOnElementPickedForRefit === 'function') {
+    regCloseElementPicker();
+    window.regOnElementPickedForRefit({
+      elementId, elementName, fromVersion,
+      l0Fields: source ? source.fields.slice() : [],
+      l0Name: (source && source.name) || elementName || elementId,
+      l0Version: fromVersion || (source && source.latestVersion) || 'v1.0'
+    });
+    return;
+  }
+  // ADR 0044 / slice 27 — same intercept for the form on-ramp's version
+  // refit mode. The form module captures L0 + re-opens its modal.
+  if (regDraft.mode === 'version-form' && typeof window.regOnElementPickedForFormRefit === 'function') {
+    regCloseElementPicker();
+    window.regOnElementPickedForFormRefit({
+      elementId, elementName, fromVersion,
+      l0Fields: source ? source.fields.slice() : [],
+      l0Name: (source && source.name) || elementName || elementId,
+      l0Version: fromVersion || (source && source.latestVersion) || 'v1.0'
+    });
+    return;
+  }
   if (source) {
-    regDraft.fields = source.fields.map(f => Object.assign(regBlankField(f.name), f, { id: regNewFieldId() }));
+    // ADR 0045 §1 — recursive deep-clone with fresh IDs at every nesting
+    // level. Replaces the shallow Object.assign that shared child references
+    // with the source and left children without fresh IDs.
+    regDraft.fields = source.fields.map(f => regDeepCloneField(f));
     regDraft.meta.name = (regDraft.mode === 'version') ? source.name : ('Copy of ' + source.name);
     regDraft.meta.version = (regDraft.mode === 'version') ? bumpVersion(fromVersion || source.latestVersion) : 'v1.0';
   } else {
@@ -7190,7 +9144,38 @@ function regBuildIndicatorChip(detector, lit) {
  * only — the admin is authoring expressions against their own data.
  *
  * Returns { ok: boolean, error: string|null, value: any }. */
-function regEvalExpression(expression, payload) {
+/* UX-48 — JS strict-mode reserved words + literal-keyword set. Any field name
+ * matching one of these would either fail Function-constructor parsing
+ * ("Unexpected token 'class'") or shadow a meaningful global. Kept narrow:
+ * lists the words that V8 actually rejects as parameter names in strict mode
+ * + the three literal keywords (`true`/`false`/`null`) for completeness.
+ * Reserved-but-legal-as-params words like `arguments`, `eval`, `let`, `await`
+ * are intentionally excluded — V8 accepts them as params in strict-mode
+ * Function bodies, and excluding a real field named `let` would be more
+ * surprising than allowing the shadow. */
+const REG_JS_RESERVED_PARAM_NAMES = new Set([
+  'class', 'const', 'function', 'var', 'return', 'if', 'else', 'for', 'while',
+  'do', 'break', 'continue', 'switch', 'case', 'default', 'throw', 'try',
+  'catch', 'finally', 'new', 'delete', 'typeof', 'instanceof', 'in', 'of',
+  'void', 'this', 'super', 'import', 'export', 'from', 'enum', 'extends',
+  'implements', 'interface', 'package', 'private', 'protected', 'public',
+  'static', 'yield', 'true', 'false', 'null', 'undefined'
+]);
+
+/* UX-48 — predicate for "safe to pass as a Function-constructor parameter
+ * name". Valid JS identifier shape (letter/underscore/$, then alnum/_/$),
+ * not a reserved word that V8 would reject. Returning false means the key
+ * gets silently dropped from the evaluation context — the rule can't
+ * reference that field, but other rules referencing OTHER fields still
+ * evaluate cleanly. Failing one rule must not poison the whole panel. */
+function regIsSafeIdentifier(name) {
+  if (typeof name !== 'string' || !name) return false;
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name)) return false;
+  if (REG_JS_RESERVED_PARAM_NAMES.has(name)) return false;
+  return true;
+}
+
+function regEvalExpression(expression, payload, allFieldNames) {
   if (!expression || !expression.trim()) return { ok: true, error: null, value: undefined };
   const helpers = {
     sum: arr => (Array.isArray(arr) ? arr.reduce((s, v) => s + (Number(v) || 0), 0) : 0),
@@ -7218,76 +9203,63 @@ function regEvalExpression(expression, payload) {
     oneOf: (value, ...options) => options.some(o => o == value)
   };
   const ctx = Object.assign({}, helpers, payload || {});
+  // UX-49 — seed every known draft field name into the evaluation context
+  // so expressions that reference fields without example values resolve to
+  // `null` instead of throwing a strict-mode ReferenceError ("X is not
+  // defined"). Payload fields with real values win (already in ctx);
+  // the rest get `null` — naturally failing most checks without false PASSes.
+  // Falls back to regDraft.fields when no explicit list is supplied.
+  var _fieldNames = allFieldNames;
+  if (!_fieldNames && typeof regDraft !== 'undefined' && Array.isArray(regDraft.fields)) {
+    _fieldNames = regDraft.fields.map(function(f) { return f.name; }).filter(Boolean);
+  }
+  if (Array.isArray(_fieldNames)) {
+    _fieldNames.forEach(function(n) { if (!(n in ctx)) ctx[n] = null; });
+  }
+  // UX-48 — filter context keys to *safe* JS identifiers before passing
+  // them to the Function constructor. Without this, a single payload key
+  // with a space/dot/hyphen/digit-prefix (e.g., a slugifier edge case, a
+  // legacy field name, or a payload from an external source) makes V8
+  // throw "Arg string terminates parameters early" — and *every* rule in
+  // the panel then evaluates as ERROR. Dropping the offending key keeps
+  // the rest of the panel working; rules that reference the dropped name
+  // surface the natural "X is not defined" instead. The fix lives here
+  // (the choke point) rather than at every call site that builds payloads
+  // because the boundary is the only point of variability we can't fully
+  // control (xlsx headers, JSON keys, third-party drafts).
   try {
-    const keys = Object.keys(ctx);
-    const fn = new Function(...keys, '"use strict"; return (' + expression + ');');
-    const value = fn(...keys.map(k => ctx[k]));
+    const safeKeys = Object.keys(ctx).filter(regIsSafeIdentifier);
+    const fn = new Function(...safeKeys, '"use strict"; return (' + expression + ');');
+    const value = fn(...safeKeys.map(k => ctx[k]));
     return { ok: !!value, error: null, value: value };
   } catch (e) {
     return { ok: false, error: e && e.message ? e.message : String(e), value: undefined };
   }
 }
 
-/* Synthesize a sample payload from the current schema. Used for live rule
- * evaluation when no real Smart Start sample is available. Pulls from each
- * field's `examples[0]` if present; otherwise type-defaults. */
+/* Build the evaluation payload from the operator's actual draft data.
+ *
+ * Per the UX directive: validation rules must only ever be evaluated against
+ * data the operator brought into the registration flow (examples extracted by
+ * the on-ramp from the uploaded form / sample JSON / plain-English seed), not
+ * against synthesised values. Synthesised defaults were misleading — they
+ * could make a rule "PASS" on data the operator never provided, which is
+ * indistinguishable from a real successful run.
+ *
+ * Contract: a field contributes to the payload only when `examples[0]` is set
+ * (the on-ramps populate this with the actual extracted value). Fields with
+ * no examples are omitted, which surfaces as `undefined` during expression
+ * evaluation — letting govaluate emit a clear "no draft data" signal instead
+ * of pretending a fabricated value validated. When no field has examples,
+ * the payload is `{}` and the rules panel hides the evaluation card entirely
+ * (see regRenderRulesTab).
+ */
 function regSynthesizeSamplePayload() {
   const payload = {};
-  const todayYear = new Date().getFullYear();
-  const todayIso  = new Date().toISOString().slice(0, 10);
-  // Pick a default that satisfies common auto-applied rule patterns. A flat
-  // 0 for integers tripped Year-sanity (>= 1900 && <= 2100) and balance/limit
-  // checks even though the rule itself was sound — the synthesised payload
-  // was the problem, not the rule.
   (regDraft.fields || []).forEach(f => {
     if (!f.name) return;
-    if (f.examples && f.examples.length) { payload[f.name] = f.examples[0]; return; }
-    const v = f.validation || {};
-    switch (f.type) {
-      case 'integer':
-      case 'number': {
-        // Year-shaped field name → current year so range rules pass.
-        if (/(^|_)year(s)?$/.test(f.name)) {
-          payload[f.name] = todayYear;
-          break;
-        }
-        if (v.minimum !== undefined && v.maximum !== undefined) {
-          // Midpoint of the explicit range — guarantees both >= min and <= max.
-          payload[f.name] = Math.round((Number(v.minimum) + Number(v.maximum)) / 2);
-        } else if (v.minimum !== undefined) {
-          payload[f.name] = Number(v.minimum);
-        } else if (v.maximum !== undefined) {
-          payload[f.name] = Math.min(0, Number(v.maximum));
-        } else {
-          payload[f.name] = 0;
-        }
-        break;
-      }
-      case 'boolean':  payload[f.name] = false; break;
-      case 'date':
-      case 'datetime':
-        payload[f.name] = (f.type === 'datetime') ? new Date().toISOString() : todayIso;
-        break;
-      case 'enum':     payload[f.name] = (v.enumValues && v.enumValues[0]) || ''; break;
-      case 'array':    payload[f.name] = []; break;
-      case 'object':   payload[f.name] = {}; break;
-      default: {
-        // String fields — try to satisfy any format check the canned rule
-        // suggester emits for this field's name. The detector in
-        // regSuggestedRules uses the same name-shape heuristics, so a
-        // matching default makes Range/Format rules render PASSES on a
-        // freshly-synthesised payload instead of misleading FAILS/ERROR.
-        const n = f.name;
-        const sample =
-            /(^|_)email$/.test(n)                               ? 'demo@example.com'
-          : /(^|_)nric$/.test(n)                                ? 'S1234567A'
-          : /(^|_)imo$/.test(n)                                 ? '1234567'
-          : /(^|_)(zip|postal_code)$/.test(n)                   ? '123456'
-          : /(^|_)(phone|mobile|contact_number)$/.test(n)        ? '+6512345678'
-          : /(tax_id|tin|ein|uen)/.test(n)                       ? 'A1B2C3D4E5'
-          : '';
-        payload[f.name] = sample;
-      }
+    if (f.examples && f.examples.length && f.examples[0] !== undefined && f.examples[0] !== null && f.examples[0] !== '') {
+      payload[f.name] = f.examples[0];
     }
   });
   return payload;
@@ -7614,7 +9586,14 @@ function regRenderRulesTab() {
   // invalidation hook).
   regDraft.samplePayload = regSynthesizeSamplePayload();
   const rules = regDraft.rules || [];
-  const evals = rules.map(r => regEvalExpression(r.expression, regDraft.samplePayload));
+  // When the operator has no draft data (empty samplePayload), don't run the
+  // evaluator at all — surface a neutral "pending" status per rule instead of
+  // ERROR-ing on every rule because variables are undefined. The
+  // evalResult.pending flag is consumed by regBuildRuleEditor.
+  const _hasDraftDataForEval = regDraft.samplePayload && Object.keys(regDraft.samplePayload).length > 0;
+  const evals = rules.map(r => _hasDraftDataForEval
+    ? regEvalExpression(r.expression, regDraft.samplePayload)
+    : { pending: true });
   const suggested = regSuggestedRules();
   _regSuggestionCache = suggested;
 
@@ -7679,16 +9658,44 @@ function regRenderRulesTab() {
       + '</div>'
     : '';
 
+  // Eval card: only render when the operator actually has draft data to
+  // evaluate against. An empty samplePayload means no field carried a real
+  // `examples[0]` value from the on-ramp — surfacing a "Live evaluation
+  // payload" card with `{}` (or worse, synthesised defaults) would imply
+  // the rules were validated when they weren't.
+  const hasDraftData = regDraft.samplePayload && Object.keys(regDraft.samplePayload).length > 0;
+  const evalCardHtml = hasDraftData
+    ? '<div class="reg-rules-sample">'
+      + '<div class="reg-rules-sample-head"><span>Evaluation payload (from your on-ramp sample)</span></div>'
+      + '<pre class="reg-rules-sample-body">' + escapeHtml(JSON.stringify(regDraft.samplePayload, null, 2)) + '</pre>'
+      + '</div>'
+    : '<div class="reg-rules-sample reg-rules-sample-empty">'
+      + '<div class="reg-rules-sample-head"><span>No draft data to evaluate against</span></div>'
+      + '<p class="reg-rules-sample-empty-body">Rules will be evaluated when the operator submits a Message via the Composer. Upload a form, paste a sample, or supply example values per field to preview rule outcomes here.</p>'
+      + '</div>';
+
+  // UX-46b — staleness banner when any assist-generated rule's fingerprint
+  // differs from the current schema.
+  const staleRules = rules.filter(regRuleIsStale);
+  const stalenessBannerHtml = staleRules.length
+    ? '<div class="reg-rules-stale-banner">'
+      + '<i class="ti ti-alert-triangle"></i> '
+      + '<span>Schema structure has changed since ' + staleRules.length
+      +   ' rule' + (staleRules.length === 1 ? '' : 's') + ' ' + (staleRules.length === 1 ? 'was' : 'were')
+      +   ' generated. Re-generate to get updated suggestions, or review each rule manually.</span>'
+      + '<button type="button" class="reg-rules-stale-regen" onclick="regRegenerateStaleRules()">'
+      +   '<i class="ti ti-refresh"></i> Re-generate rules</button>'
+      + '</div>'
+    : '';
+
   panel.innerHTML =
     '<div class="reg-rules-body">'
     +   '<div class="reg-rules-intro">'
     +     '<h2>Validation rules</h2>'
     +     '<p>govaluate-style expressions evaluated at Composer submission time per <em>ADR 0038</em>. Covers both <strong>per-field</strong> rules (formats, ranges, conditional requiredness) and <strong>cross-field</strong> rules (date order, sum-equals-total, mutual exclusivity, conditional companion fields) — anything that goes beyond what JSON Schema can express. Available helpers: <code>sum(), len(), abs(), today(), now(), matches(str, pattern), upper(), lower(), contains(arr, value), oneOf(value, ...options)</code>.</p>'
     +   '</div>'
-    +   '<div class="reg-rules-sample">'
-    +     '<div class="reg-rules-sample-head"><span>Live evaluation payload (synthesised from schema)</span></div>'
-    +     '<pre class="reg-rules-sample-body">' + escapeHtml(JSON.stringify(regDraft.samplePayload, null, 2)) + '</pre>'
-    +   '</div>'
+    +   stalenessBannerHtml
+    +   evalCardHtml
     +   '<div class="reg-rules-list" data-demo="register-canvas.rules-list">' + listHtml + '</div>'
     +   '<div class="reg-rules-actions">'
     +     '<button type="button" class="btn-secondary" data-demo="register-canvas.add-rule" onclick="regAddRule()"><i class="ti ti-plus"></i> Add custom rule</button>'
@@ -7699,15 +9706,25 @@ function regRenderRulesTab() {
   // Smart Start assist provenance chips (ADR 0040 Q14) — for each rule that
   // came from assist, append a chip to the rule's header and prepend a caveat
   // banner above the rule editor when applicable.
+  // UX-46b — also append a staleness pill when the rule's fingerprint is stale.
   if (typeof window.smartStartUi_buildChip === 'function' &&
       typeof regAssistSuggestionForRule === 'function') {
     rules.forEach(rule => {
       const sug = regAssistSuggestionForRule(rule);
-      if (!sug) return;
       const ruleNode = panel.querySelector('.reg-rule[data-rule-id="' + rule.id + '"]');
       if (!ruleNode) return;
       const head = ruleNode.querySelector('.reg-rule-head');
       const deleteBtn = ruleNode.querySelector('.reg-rule-delete');
+      // UX-46b — per-rule staleness pill (independent of assist chip).
+      if (regRuleIsStale(rule) && head && deleteBtn) {
+        const pill = document.createElement('span');
+        pill.className = 'reg-rule-stale-pill';
+        pill.textContent = '⚠ pre-change';
+        pill.title = 'This rule was generated before the most recent schema change and may reference outdated fields.';
+        head.insertBefore(pill, deleteBtn);
+        ruleNode.classList.add('reg-rule--stale');
+      }
+      if (!sug) return;
       if (head && deleteBtn) {
         const chip = window.smartStartUi_buildChip(sug, { dexId: regDraft.dex, acceptState: regAssist_acceptStateFor(sug.id) });
         head.insertBefore(chip, deleteBtn);
@@ -7724,10 +9741,14 @@ function regRenderRulesTab() {
 }
 
 function regBuildRuleEditor(rule, evalResult) {
-  const passed = evalResult.ok;
-  const errored = !!evalResult.error;
-  const statusClass = errored ? 'is-errored' : (passed ? 'is-passed' : 'is-failed');
-  const statusLabel = errored ? 'ERROR' : (passed ? 'PASSES' : 'FAILS');
+  // `pending` is set by the caller when there is no operator draft data to
+  // evaluate against — we render a neutral status chip rather than misleading
+  // PASS/FAIL/ERROR, which would imply a real evaluation ran.
+  const pending = !!(evalResult && evalResult.pending);
+  const passed = !pending && evalResult.ok;
+  const errored = !pending && !!evalResult.error;
+  const statusClass = pending ? 'is-pending' : errored ? 'is-errored' : (passed ? 'is-passed' : 'is-failed');
+  const statusLabel = pending ? 'PENDING DATA' : errored ? 'ERROR' : (passed ? 'PASSES' : 'FAILS');
   const errorBox = errored
     ? '<div class="reg-rule-error">Expression error: ' + escapeHtml(evalResult.error) + '</div>'
     : '';
@@ -7853,7 +9874,12 @@ function regRenderReviewTab() {
   regDraft.samplePayload = regSynthesizeSamplePayload();
   const fields = regDraft.fields || [];
   const rules = regDraft.rules || [];
-  const evals = rules.map(r => regEvalExpression(r.expression, regDraft.samplePayload));
+  // Same contract as regRenderRulesTab — skip evaluation when no draft data
+  // is available and let the renderer show a neutral PENDING DATA status.
+  const _reviewHasDraftDataForEval = regDraft.samplePayload && Object.keys(regDraft.samplePayload).length > 0;
+  const evals = rules.map(r => _reviewHasDraftDataForEval
+    ? regEvalExpression(r.expression, regDraft.samplePayload)
+    : { pending: true });
   const complexity = regDraft.composeComplexity;
   const residency = regDraft.governance.residencyStrict;
   const packSuggestions = regPackSuggestions();
@@ -7971,8 +9997,9 @@ function regRenderReviewTab() {
     : '<ul class="reg-review-rule-list">'
       + rules.map((r, i) => {
           const ev = evals[i];
-          const statusClass = ev.error ? 'is-errored' : (ev.ok ? 'is-passed' : 'is-failed');
-          const statusLabel = ev.error ? 'ERROR' : (ev.ok ? 'PASSES' : 'FAILS');
+          const evPending = !!(ev && ev.pending);
+          const statusClass = evPending ? 'is-pending' : ev.error ? 'is-errored' : (ev.ok ? 'is-passed' : 'is-failed');
+          const statusLabel = evPending ? 'PENDING DATA' : ev.error ? 'ERROR' : (ev.ok ? 'PASSES' : 'FAILS');
           const scopePill = r.scope === 'cross-field'
             ? '<span class="reg-rule-scope is-cross">cross-field</span>'
             : r.scope === 'field'
@@ -7991,10 +10018,19 @@ function regRenderReviewTab() {
           + '</li>';
         }).join('')
       + '</ul>';
-  const samplePayloadHtml = '<div class="reg-rules-sample reg-review-rules-sample">'
-    +   '<div class="reg-rules-sample-head"><span>Live evaluation payload (synthesised from schema)</span></div>'
-    +   '<pre class="reg-rules-sample-body">' + escapeHtml(JSON.stringify(regDraft.samplePayload, null, 2)) + '</pre>'
-    + '</div>';
+  // Mirror the rules-tab contract: only show the payload card when real
+  // operator draft data is available. Empty/no draft data → render a "no
+  // payload" panel instead so the Review tab doesn't claim a live eval ran.
+  const reviewHasDraftData = regDraft.samplePayload && Object.keys(regDraft.samplePayload).length > 0;
+  const samplePayloadHtml = reviewHasDraftData
+    ? '<div class="reg-rules-sample reg-review-rules-sample">'
+      + '<div class="reg-rules-sample-head"><span>Evaluation payload (from your on-ramp sample)</span></div>'
+      + '<pre class="reg-rules-sample-body">' + escapeHtml(JSON.stringify(regDraft.samplePayload, null, 2)) + '</pre>'
+      + '</div>'
+    : '<div class="reg-rules-sample reg-review-rules-sample reg-rules-sample-empty">'
+      + '<div class="reg-rules-sample-head"><span>No draft data evaluated</span></div>'
+      + '<p class="reg-rules-sample-empty-body">Rule statuses below are placeholders. Supply example values per field or re-run the on-ramp with a sample to preview evaluation outcomes.</p>'
+      + '</div>';
   const rulesSummaryHtml = '<div class="reg-review-section">'
     +   '<h3>Validation rules · ' + rules.length + '</h3>'
     +   samplePayloadHtml
@@ -8085,13 +10121,55 @@ function regPublish() {
   const fields = regDraft.fields || [];
   if (!regDraft.composeComplexity || fields.length === 0) return;
 
+  // UX-41c — pre-flight publish blocker. Halts the publication if any field
+  // (top-level or array-item child) still carries an x-review-required flag.
+  // Authoring is unblocked throughout; this is the regulatory gate that
+  // forces explicit human deliberation on uncertain extractions before the
+  // schema becomes immutable per ADR 0026.
+  const flagged = regCollectReviewFlaggedFields();
+  if (flagged.length) {
+    regAuditLog_append('publish-blocked-by-review-flags', 'system', {
+      flaggedCount: flagged.length,
+      flaggedPaths: flagged.map(f => f.path),
+      reasons: flagged.map(f => f.reason)
+    });
+    const reasonCounts = {};
+    flagged.forEach(f => { reasonCounts[f.reason] = (reasonCounts[f.reason] || 0) + 1; });
+    const reasonSummary = Object.keys(reasonCounts).map(r =>
+      '  · ' + r + ': ' + reasonCounts[r] + ' field' + (reasonCounts[r] === 1 ? '' : 's')
+    ).join('\n');
+    const pathPreview = flagged.slice(0, 8).map(f => '  · ' + f.path + '  (' + f.reason + ')').join('\n')
+      + (flagged.length > 8 ? '\n  · …' : '');
+    if (typeof window.alert === 'function') {
+      window.alert(
+        '⚠ Publish blocked — ' + flagged.length + ' field' + (flagged.length === 1 ? '' : 's') +
+        ' still need review.\n\n' +
+        'The Smart Start extraction was uncertain about these structural decisions. ' +
+        'Resolve each one before publishing.\n\n' +
+        'Reasons:\n' + reasonSummary + '\n\n' +
+        'Fields to review:\n' + pathPreview + '\n\n' +
+        'For each flagged field: either restate it as a table (if the source truly is a matrix) ' +
+        'or dismiss the flag with a rationale (if the primitive type is correct).'
+      );
+    }
+    return;                                              // pre-flight halt; no publication
+  }
+
   const dexCode = (typeof currentDexCode === 'function') ? currentDexCode() : 'tx';
-  const elementId = regDeriveIdFromName(regDraft.meta.name) + '-' + (regDraft.meta.version || 'v1.0');
+  // ADR 0043 — bare element id (no version suffix); workspace.dataElements is
+  // keyed by `${baseId}@${version}` so v1.0 and v1.1 of the same element can
+  // coexist. The catalogue stub uses the same versionRef as its id so two
+  // versions of the same element are distinguishable in DATA_ELEMENTS_BY_DEX.
+  const baseElementId = regDeriveIdFromName(regDraft.meta.name);
+  const elementVersion = regDraft.meta.version || 'v1.0';
+  const versionRef = baseElementId + '@' + elementVersion;
+  const elementId = versionRef;                  // legacy local name kept for downstream callers
   const newEntry = {
     kind: 'leaf',
-    id: elementId,
+    id: versionRef,
+    elementBaseId: baseElementId,
     name: regDraft.meta.name || 'Untitled element',
-    version: regDraft.meta.version || 'v1.0',
+    version: elementVersion,
     icon: 'file-text',
     publishedThisSession: true
   };
@@ -8114,6 +10192,38 @@ function regPublish() {
     }
   } catch (e) {
     console.warn('Could not append published element to catalogue:', e);
+  }
+
+  // ADR 0043 — persist the full Element version record to the workspace
+  // snapshot so it survives reload, can be picked by the Agreement wizard,
+  // and resolves at Composer time. The catalogue stub above (DATA_ELEMENTS_BY_DEX
+  // mutation) remains for the picker tree's render path; the full record is
+  // what carries the elementSchema, rules, complexity, and audit trail.
+  try {
+    const elementSchema = (typeof schemaFromFields === 'function') ? schemaFromFields(regDraft) : null;
+    const publishedAt = new Date().toISOString();
+    const ws = (typeof getWorkspace === 'function') ? getWorkspace() : null;
+    const publishedBy = (ws && ws.meta && ws.meta.activeUserId) || 'marcus';
+    const versionRecord = {
+      id:                baseElementId,
+      version:           elementVersion,
+      name:              regDraft.meta.name || 'Untitled element',
+      dexId:             dexCode,
+      publishedAt:       publishedAt,
+      publishedBy:       publishedBy,
+      elementSchema:     elementSchema,
+      composeComplexity: regDraft.composeComplexity || 'simple',
+      rules:             Array.isArray(regDraft.rules) ? JSON.parse(JSON.stringify(regDraft.rules)) : [],
+      pack:              regDraft.pack ? { id: regDraft.pack.id, name: regDraft.pack.name } : null,
+      auditTrail:        [{ kind: 'element-version-published', at: publishedAt, by: publishedBy }]
+    };
+    if (ws) {
+      ws.dataElements = ws.dataElements || {};
+      ws.dataElements[versionRef] = versionRecord;
+      if (typeof persistWorkspace === 'function') persistWorkspace();
+    }
+  } catch (e) {
+    console.warn('Could not persist Element version to workspace.dataElements:', e);
   }
 
   // Toast — single line per Q9 / ADR 0015 (no celebration modal).
@@ -8328,6 +10438,40 @@ function regRenderTestModal() {
   // the Test-as-operator preview. Without this branch, the field would fall
   // through renderTestInputOnly's default case and become a plain text
   // input — flat wrong for a repeating-row dataset.
+  //
+  // Add/remove rows are wired through delegation on the modal body
+  // (regTestModal_onClick below). Local to the modal session — row counts
+  // reset on every modal open per regRenderTestModal.
+  const buildTestRowHtml = (f, children, row, rowIdx, isLocked) => {
+    const hasRowValue = row && typeof row === 'object' && Object.keys(row).length > 0;
+    const cells = children.map(c => {
+      const isRowIdentifier = isLocked && c.readOnly === true;
+      if (isRowIdentifier && hasRowValue && (c.name in row)) {
+        // Locked mode: render the row-identifier as a plain label, not a picker.
+        const labels = (c.validation && c.validation.enumLabels) || {};
+        const display = labels[row[c.name]] || row[c.name];
+        return '<td><span class="reg-test-array-rowlabel">' + escapeHtml(String(display)) + '</span></td>';
+      }
+      const value = hasRowValue && (c.name in row) ? row[c.name] : undefined;
+      const inp = renderTestInputOnlyWithValue({
+        id: f.id + '__' + c.name + '__r' + rowIdx,
+        name: c.name,
+        type: c.type,
+        required: c.required,
+        validation: c.validation || {},
+        examples: c.examples
+      }, value);
+      return '<td>' + inp + '</td>';
+    }).join('')
+      + (isLocked
+        ? '<td class="reg-test-array-table-actions"></td>'
+        : '<td class="reg-test-array-table-actions">'
+          +   '<button type="button" class="reg-test-array-rm" '
+          +     'aria-label="Remove row" data-reg-test-rm-row>×</button>'
+          + '</td>');
+    return '<tr>' + cells + '</tr>';
+  };
+
   const renderTestArrayObjectTable = (f) => {
     const v = f.validation || {};
     const children = (v.itemChildren || []).filter(c => c && c.name);
@@ -8345,28 +10489,33 @@ function regRenderTestModal() {
     // existing footer's "Preview only — typed values are discarded" contract.
     const hasDefaults = Array.isArray(f.default) && f.default.length > 0;
     const renderRows = hasDefaults ? f.default : [{}];
-    const rowsHtml = renderRows.map((row, rowIdx) => {
-      const cells = children.map(c => {
-        const value = hasDefaults && (c.name in row) ? row[c.name] : undefined;
-        const inp = renderTestInputOnlyWithValue({
-          id: f.id + '__' + c.name + '__r' + rowIdx,
-          name: c.name,
-          type: c.type,
-          required: c.required,
-          validation: c.validation || {},
-          examples: c.examples
-        }, value);
-        return '<td>' + inp + '</td>';
-      }).join('') + '<td class="reg-test-array-table-actions"><span class="reg-test-array-rm" aria-hidden="true">×</span></td>';
-      return '<tr>' + cells + '</tr>';
-    }).join('');
-    return '<div class="reg-test-field reg-test-field--array">'
+    // UX-45 — locked mode (minItems == maxItems, fixed cardinality): hide
+    // the add/remove-row affordances and render row identifiers as labels.
+    // Mirrors the Composer Preview branch — both surfaces stay consistent
+    // per the three-surfaces rule.
+    const isLocked = (typeof regArrayRowsLocked === 'function') && regArrayRowsLocked(f);
+    const rowsHtml = renderRows.map((row, rowIdx) =>
+      buildTestRowHtml(f, children, row, rowIdx, isLocked)
+    ).join('');
+    const tail = isLocked
+      ? '<span class="reg-test-array-locked-note">'
+        +   '<i class="ti ti-lock" aria-hidden="true"></i> '
+        +   renderRows.length + ' fixed row' + (renderRows.length === 1 ? '' : 's')
+        +   ' — operators fill cells only'
+        + '</span>'
+      : '<button type="button" class="reg-test-array-add" '
+        +   'aria-label="Add row" data-reg-test-add-row>+ Add row</button>';
+    // data-reg-test-field-id + data-reg-test-next-row-idx let the delegated
+    // click handler append a fresh row with a unique row index for input IDs.
+    return '<div class="reg-test-field reg-test-field--array" '
+      +   'data-reg-test-field-id="' + escapeHtml(f.id) + '" '
+      +   'data-reg-test-next-row-idx="' + renderRows.length + '">'
       + '<span class="reg-test-label">' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' *' : '') + '</span>'
       + '<table class="reg-test-array-table">'
       +   '<thead><tr>' + cols + '</tr></thead>'
       +   '<tbody>' + rowsHtml + '</tbody>'
       + '</table>'
-      + '<span class="reg-test-array-add" aria-hidden="true">+ Add row</span>'
+      + tail
       + (f.description ? '<span class="reg-test-hint">' + escapeHtml(f.description) + '</span>' : '')
       + '</div>';
   };
@@ -8408,11 +10557,56 @@ function regRenderTestModal() {
     }
   };
 
+  // UX-47 — render array<enum> as a multi-select widget driven by the
+  // resolved hint. Mirrors regBuildSkeletonArray's branch so operators see
+  // what end users will see (three-surfaces rule).
+  const renderTestArrayEnum = (f) => {
+    const v = f.validation || {};
+    const values = v.itemEnumValues || [];
+    const labels = v.itemEnumLabels || {};
+    const hint = (typeof regResolveHint === 'function') ? regResolveHint(f) : 'checkboxes';
+    const inputId = 'reg-test-' + f.id;
+    const fieldName = 'reg-test-' + escapeHtml(f.name);
+    let widget;
+    if (!values.length) {
+      widget = '<span class="reg-test-hint">(define the pick list options first)</span>';
+    } else if (hint === 'multiselect') {
+      const size = Math.min(Math.max(values.length, 3), 6);
+      const opts = values.map(val =>
+        '<option value="' + escapeHtml(val) + '">' + escapeHtml(labels[val] || val) + '</option>'
+      ).join('');
+      widget = '<select id="' + inputId + '" multiple size="' + size + '"'
+        + ' data-demo="test.input.' + escapeHtml(f.name) + '"'
+        + ' onchange="regUpdateTestRuleEvals()">' + opts + '</select>';
+    } else {
+      // checkboxes (default)
+      widget = '<div class="reg-test-checkbox-group">' + values.map((val, i) =>
+        '<label class="reg-test-checkbox-option">'
+        +   '<input type="checkbox"'
+        +     ' name="' + fieldName + '"'
+        +     ' value="' + escapeHtml(val) + '"'
+        +     ' data-demo="test.input.' + escapeHtml(f.name) + '.' + escapeHtml(val) + '"'
+        +     ' onchange="regUpdateTestRuleEvals()">'
+        +   '<span>' + escapeHtml(labels[val] || val) + '</span>'
+        + '</label>'
+      ).join('') + '</div>';
+    }
+    return '<div class="reg-test-field reg-test-field--multiselect">'
+      + '<span class="reg-test-label">' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' *' : '') + '</span>'
+      + widget
+      + (f.description ? '<span class="reg-test-hint">' + escapeHtml(f.description) + '</span>' : '')
+      + '</div>';
+  };
+
   const renderField = (f) => {
     if (!f.name) return '';
     // UX-37 — branch on array-of-objects before the standard label wrapper.
     if (f.type === 'array' && (f.validation || {}).itemType === 'object') {
       return renderTestArrayObjectTable(f);
+    }
+    // UX-47 — array<enum> is a multi-select field, not a repeating-item list.
+    if (f.type === 'array' && (f.validation || {}).itemType === 'enum') {
+      return renderTestArrayEnum(f);
     }
     return '<label class="reg-test-field">'
       + '<span class="reg-test-label">' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' *' : '') + '</span>'
@@ -8506,6 +10700,46 @@ function regRenderTestModal() {
     + '</div>';
 
   body.innerHTML = html;
+  // Wire add/remove-row affordances on array<object> fields via event
+  // delegation. buildTestRowHtml is a closure-scoped helper, so we pass it
+  // through. Idempotent — replaces any prior handler on this body so we
+  // don't stack listeners across modal re-opens.
+  if (body._regTestRowHandler) body.removeEventListener('click', body._regTestRowHandler);
+  const rowHandler = (ev) => {
+    const addBtn = ev.target.closest('[data-reg-test-add-row]');
+    if (addBtn) {
+      const wrapper = addBtn.closest('[data-reg-test-field-id]');
+      if (!wrapper) return;
+      const fieldId = wrapper.getAttribute('data-reg-test-field-id');
+      const field = (regDraft.fields || []).find(f => f.id === fieldId);
+      if (!field) return;
+      const children = ((field.validation && field.validation.itemChildren) || []).filter(c => c && c.name);
+      const nextIdx = parseInt(wrapper.getAttribute('data-reg-test-next-row-idx') || '0', 10) || 0;
+      const tbody = wrapper.querySelector('.reg-test-array-table tbody');
+      if (!tbody) return;
+      const tmp = document.createElement('tbody');
+      // Add-row only fires in unlocked mode (the add button isn't rendered
+      // when locked), so isLocked here is always false.
+      tmp.innerHTML = buildTestRowHtml(field, children, {}, nextIdx, false);
+      const newRow = tmp.firstElementChild;
+      if (newRow) tbody.appendChild(newRow);
+      wrapper.setAttribute('data-reg-test-next-row-idx', String(nextIdx + 1));
+      regUpdateTestRuleEvals();
+      return;
+    }
+    const rmBtn = ev.target.closest('[data-reg-test-rm-row]');
+    if (rmBtn) {
+      const tbody = rmBtn.closest('tbody');
+      const tr = rmBtn.closest('tr');
+      if (tbody && tr && tbody.children.length > 1) {
+        tr.remove();
+        regUpdateTestRuleEvals();
+      }
+      return;
+    }
+  };
+  body.addEventListener('click', rowHandler);
+  body._regTestRowHandler = rowHandler;
   // Run an initial evaluation pass so the operator sees rule status before
   // typing anything — empty values surface required-when failures up front.
   regUpdateTestRuleEvals();
@@ -8528,14 +10762,22 @@ function regRenderActiveTabContent() {
 /* ---------- Entry points (called from app.js stubs) ---------- */
 
 function registerElement_startNewElement() {
+  // Explicit reset — symmetric with registerElement_startNewVersion. The
+  // on-ramp picker no longer resets on its own (it's a UI open, not a state
+  // mutation), so each entry point owns its own initial mode.
+  regResetDraft('new');
   regOpenOnrampPicker();
 }
 
 function registerElement_startNewVersion() {
-  // +New version skips the on-ramp picker — fork is the only seeder.
+  // +New version opens the same on-ramp picker as +New element so the
+  // operator can choose how to seed the version-bump. ADR 0042 §2: the Spec
+  // sheet on-ramp must be available in both flows. Fork stays the default
+  // path (clone the prior version's schema); Spec sheet refit-mode handles
+  // the "spec changed — re-import to refresh" case (lands in the next slice
+  // — currently surfaced as disabled with an explanatory tooltip).
   regResetDraft('version');
-  regDraft.source.onramp = 'fork';
-  regOpenElementPicker('version');
+  regOpenOnrampPicker();
 }
 
 /* ---------- Header-input listeners (wired on canvas mount via inline onchange) ---------- */
@@ -8646,4 +10888,33 @@ if (typeof window !== 'undefined') {
   window.regPrePopulateDefaultsFromEnum = regPrePopulateDefaultsFromEnum;
   window.regClearArrayDefaults = regClearArrayDefaults;
   window.regToggleArrayDefaultsEditor = regToggleArrayDefaultsEditor;
+  // UX-41c — review-flag plumbing exposed for tests + drawer card actions.
+  window.regCollectReviewFlaggedFields = regCollectReviewFlaggedFields;
+  window.regDismissReviewFlag = regDismissReviewFlag;
+  window.regIsValidReviewFlag = regIsValidReviewFlag;
+  // UX-43a — refit-accept transformer exposed for testing.
+  window.regRefit_proposedToField = regRefit_proposedToField;
+  // UX-43c — banner callbacks wired from the assist dispatcher.
+  window.regAssistBanner_onRunStart = regAssistBanner_onRunStart;
+  window.regAssistBanner_onTabArrival = regAssistBanner_onTabArrival;
+  // UX-43d — staleness predicates exposed for tests.
+  window.regCheckStaleness = regCheckStaleness;
+  // UX-45 — locked-rows helpers exposed for tests.
+  window.regArrayRowsLocked = regArrayRowsLocked;
+  window.regSetArrayRowsLocked = regSetArrayRowsLocked;
+  // UX-47 — multi-select toggle exposed for tests + spec-sheet apply flow.
+  window.regToggleEnumMulti = regToggleEnumMulti;
+  // UX-48 — safe-identifier predicate exposed for tests.
+  window.regIsSafeIdentifier = regIsSafeIdentifier;
+  // ADR 0044 §6 / slice 26 — drawer renderer for accepted on-ramp
+  // suggestions; exposed so cross-engine label tests can verify the
+  // section title adapts to the source.
+  window.regRefit_buildAppliedFromSpecSheetList = regRefit_buildAppliedFromSpecSheetList;
+  // Row-label recovery helpers — exposed so the form on-ramp's commit path
+  // can apply the same heuristic at handoff time (catches the case where
+  // the VLM emitted a structurally-correct array<object> but its row
+  // identifier's enum is empty — the structural review wouldn't fire on
+  // that, so an apply-only hook would miss it).
+  window._regRefit_extractCandidateRowLabels  = _regRefit_extractCandidateRowLabels;
+  window._regRefit_autoFillRowIdentifierFromSource = _regRefit_autoFillRowIdentifierFromSource;
 }
