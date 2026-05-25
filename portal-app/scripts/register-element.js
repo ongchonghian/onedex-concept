@@ -1050,6 +1050,17 @@ function regScheduleAutosave() {
   if (regAutosaveTimer) clearTimeout(regAutosaveTimer);
   regAutosaveTimer = setTimeout(() => {
     try {
+      // UX-46b — update schema fingerprint on the debounce pass rather
+      // than on every keystroke. This keeps the Rules tab staleness
+      // banner in sync without choking the refit scanners below.
+      if (typeof regComputeSchemaFingerprint === 'function') {
+        var fp = regComputeSchemaFingerprint();
+        if (fp !== regDraft.schemaFingerprint) {
+          regDraft.schemaFingerprint = fp;
+          regDraft.lastStructuralChangeAt = new Date().toISOString();
+        }
+      }
+
       // ADR 0041 §2 tier (b) — cheap autosave-debounced scans. Run locally,
       // no inference call. Emits refit suggestions when patterns matched.
       if (typeof regRefit_scanNamePatterns === 'function') regRefit_scanNamePatterns();
@@ -1535,7 +1546,6 @@ function regBuildFieldRow(field, idx) {
     const sug = (typeof regAssistSuggestionForField === 'function')
       ? regAssistSuggestionForField(field) : null;
     if (sug) regAssist_maybeTrackEdit(sug, field);
-    regOnStructuralChange();                             // UX-46b
     regRenderJsonPreview();
     regRenderSkeleton();
     regScheduleAutosave();
@@ -1566,7 +1576,6 @@ function regBuildFieldRow(field, idx) {
       }
     }
     field.type = newType;
-    regOnStructuralChange();                             // UX-46b
     // Reset complex-type state on type change so stale values don't bleed.
     if (field.type !== 'object') delete field.children;
     if (field.type !== 'array' && field.validation) {
