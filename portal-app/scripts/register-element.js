@@ -533,7 +533,7 @@ function regBuildPublishArtifacts(state) {
     elementSchema: regBuildElementSchemaArtifact(state),
     uiSchema: regBuildUiSchemaArtifact(state),
     uiRules: regBuildUiRulesArtifact(ruleArtifacts),
-    authoringMeta: regBuildAuthoringMetadataArtifact(ruleArtifacts)
+    authoringMetadata: regBuildAuthoringMetadataArtifact(ruleArtifacts)
   };
 }
 
@@ -10352,6 +10352,9 @@ function regPublish() {
     const uiRules = publishArtifacts && publishArtifacts.uiRules
       ? JSON.parse(JSON.stringify(publishArtifacts.uiRules))
       : {};
+    const authoringMetadata = publishArtifacts && (publishArtifacts.authoringMetadata || publishArtifacts.authoringMeta)
+      ? JSON.parse(JSON.stringify(publishArtifacts.authoringMetadata || publishArtifacts.authoringMeta))
+      : {};
     const publishedAt = new Date().toISOString();
     const ws = (typeof getWorkspace === 'function') ? getWorkspace() : null;
     const publishedBy = (ws && ws.meta && ws.meta.activeUserId) || 'marcus';
@@ -10365,6 +10368,7 @@ function regPublish() {
       elementSchema:     elementSchema,
       uiSchema:          uiSchema,
       uiRules:           uiRules,
+      authoringMetadata: authoringMetadata,
       composeComplexity: regDraft.composeComplexity || 'simple',
       rules:             Array.isArray(regDraft.rules) ? JSON.parse(JSON.stringify(regDraft.rules)) : [],
       pack:              regDraft.pack ? { id: regDraft.pack.id, name: regDraft.pack.name } : null,
