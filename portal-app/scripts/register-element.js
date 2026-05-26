@@ -521,29 +521,30 @@ function regDeriveHint(field) {
   }
 }
 
-/* Serialise the field-builder state to JSON Schema with the ADR 0040 §17
- * sidecar (x-presentation, x-presentation-order). Disclaimer rows are emitted
- * only into the sidecar, never into schema.properties. */
-function schemaFromFields(state) {
+/* Publish-artifact builders.
+ *
+ * Migration scaffold (commit 2): split publication into explicit surfaces so
+ * we can later remove schema `x-*` extensions without rewriting call sites.
+ * For now, schemaFromFields still returns the legacy x-* shape by projecting
+ * from these builders, preserving current behavior byte-for-byte. */
+function regBuildPublishArtifacts(state) {
+  const ruleArtifacts = regCollectRuleArtifacts(state);
+  return {
+    elementSchema: regBuildElementSchemaArtifact(state),
+    uiSchema: regBuildUiSchemaArtifact(state),
+    uiRules: regBuildUiRulesArtifact(ruleArtifacts),
+    authoringMeta: regBuildAuthoringMetadataArtifact(ruleArtifacts)
+  };
+}
+
+function regBuildElementSchemaArtifact(state) {
   const properties = {};
   const required = [];
-  const presentation = {};
-  const order = [];
-
   (state.fields || []).forEach(f => {
-    if (f.type === 'disclaimer') {
-      const key = regDisclaimerSyntheticKey(f);
-      presentation[key] = { hint: 'disclaimer-text', text: f.disclaimerText || '' };
-      order.push(key);
-      return;
-    }
-    if (!f.name) return;
+    if (!f || f.type === 'disclaimer' || !f.name) return;
     properties[f.name] = fieldToSchemaProperty(f);
     if (f.required) required.push(f.name);
-    presentation[f.name] = buildPresentationEntry(f);
-    order.push(f.name);
   });
-
   const schema = {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
     title: state.meta.name || 'Untitled element',
@@ -551,24 +552,106 @@ function schemaFromFields(state) {
     properties: properties
   };
   if (required.length) schema.required = required;
-  if (Object.keys(presentation).length) schema['x-presentation'] = presentation;
-  if (order.length) schema['x-presentation-order'] = order;
+  return schema;
+}
 
-  // UX-32 — group-level presentation sidecar. Emit one entry per group that
-  // carries a non-default hint OR a rationale (rationale is read-only VLM
-  // provenance and round-trips alongside the hint). Format keyed by group
-  // name to match the per-field x-presentation shape.
-  const groupPres = {};
+function regBuildUiSchemaArtifact(state) {
+  const presentation = {};
+  const order = [];
+  (state.fields || []).forEach(f => {
+    if (!f) return;
+    if (f.type === 'disclaimer') {
+      const key = regDisclaimerSyntheticKey(f);
+      presentation[key] = { hint: 'disclaimer-text', text: f.disclaimerText || '' };
+      order.push(key);
+      return;
+    }
+    if (!f.name) return;
+    presentation[f.name] = buildPresentationEntry(f);
+    order.push(f.name);
+  });
+
+  // UX-32 — group-level presentation sidecar.
+  const groups = {};
   (state._groups || []).forEach(g => {
     if (!g || !g.name) return;
     const hint = regResolveGroupHint(g);
     const entry = {};
     if (hint && hint !== regGroupPresentationDefault()) entry.hint = hint;
     if (g.rationale) entry.rationale = g.rationale;
-    if (Object.keys(entry).length) groupPres[g.name] = entry;
+    if (Object.keys(entry).length) groups[g.name] = entry;
   });
-  if (Object.keys(groupPres).length) schema['x-group-presentation'] = groupPres;
+
+  const uiSchema = {};
+  if (Object.keys(presentation).length) uiSchema.presentation = presentation;
+  if (order.length) uiSchema.order = order;
+  if (Object.keys(groups).length) uiSchema.groups = groups;
+  return uiSchema;
+}
+
+function regCollectRuleArtifacts(state) {
+  const visibility = {};
+  const reviewRequired = {};
+  (state.fields || []).forEach(f => {
+    if (!f || !f.name || f.type === 'disclaimer') return;
+    regCollectFieldRuleArtifacts(f, f.name, visibility, reviewRequired);
+  });
+  return { visibility, reviewRequired };
+}
+
+function regCollectFieldRuleArtifacts(field, path, visibility, reviewRequired) {
+  if (!field || !path) return;
+  if (field.visibleWhen) visibility[path] = field.visibleWhen;
+  if (regIsValidReviewFlag(field.reviewRequired)) reviewRequired[path] = field.reviewRequired;
+
+  if (field.type === 'object' && Array.isArray(field.children)) {
+    field.children.forEach(child => {
+      if (!child || !child.name || child.type === 'disclaimer') return;
+      regCollectFieldRuleArtifacts(child, path + '.' + child.name, visibility, reviewRequired);
+    });
+  }
+  const v = field.validation || {};
+  if (field.type === 'array' && v.itemType === 'object' && Array.isArray(v.itemChildren)) {
+    v.itemChildren.forEach(child => {
+      if (!child || !child.name || child.type === 'disclaimer') return;
+      regCollectFieldRuleArtifacts(child, path + '.items.' + child.name, visibility, reviewRequired);
+    });
+  }
+}
+
+function regBuildUiRulesArtifact(ruleArtifacts) {
+  const visibility = (ruleArtifacts && ruleArtifacts.visibility) || {};
+  if (!Object.keys(visibility).length) return {};
+  return { visibility: Object.assign({}, visibility) };
+}
+
+function regBuildAuthoringMetadataArtifact(ruleArtifacts) {
+  const reviewRequired = (ruleArtifacts && ruleArtifacts.reviewRequired) || {};
+  if (!Object.keys(reviewRequired).length) return {};
+  return { reviewRequired: Object.assign({}, reviewRequired) };
+}
+
+function regBuildLegacySchemaFromArtifacts(artifacts) {
+  const schema = Object.assign({}, artifacts.elementSchema || {});
+  const uiSchema = artifacts.uiSchema || {};
+  if (uiSchema.presentation && Object.keys(uiSchema.presentation).length) {
+    schema['x-presentation'] = uiSchema.presentation;
+  }
+  if (uiSchema.order && uiSchema.order.length) {
+    schema['x-presentation-order'] = uiSchema.order;
+  }
+  if (uiSchema.groups && Object.keys(uiSchema.groups).length) {
+    schema['x-group-presentation'] = uiSchema.groups;
+  }
   return schema;
+}
+
+/* Serialise the field-builder state to the legacy JSON Schema shape with
+ * ADR 0040 §17 sidecars (x-presentation / x-presentation-order / group hints).
+ * Internally this now projects from publish-artifact builders. */
+function schemaFromFields(state) {
+  const artifacts = regBuildPublishArtifacts(state);
+  return regBuildLegacySchemaFromArtifacts(artifacts);
 }
 
 /* Build the x-presentation entry for a single field. Mirrors schema nesting:
