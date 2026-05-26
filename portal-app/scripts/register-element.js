@@ -10346,6 +10346,9 @@ function regPublish() {
     const elementSchema = (typeof regStripSchemaExtensions === 'function')
       ? regStripSchemaExtensions(rawElementSchema)
       : rawElementSchema;
+    const uiSchema = publishArtifacts && publishArtifacts.uiSchema
+      ? JSON.parse(JSON.stringify(publishArtifacts.uiSchema))
+      : {};
     const publishedAt = new Date().toISOString();
     const ws = (typeof getWorkspace === 'function') ? getWorkspace() : null;
     const publishedBy = (ws && ws.meta && ws.meta.activeUserId) || 'marcus';
@@ -10357,6 +10360,7 @@ function regPublish() {
       publishedAt:       publishedAt,
       publishedBy:       publishedBy,
       elementSchema:     elementSchema,
+      uiSchema:          uiSchema,
       composeComplexity: regDraft.composeComplexity || 'simple',
       rules:             Array.isArray(regDraft.rules) ? JSON.parse(JSON.stringify(regDraft.rules)) : [],
       pack:              regDraft.pack ? { id: regDraft.pack.id, name: regDraft.pack.name } : null,
