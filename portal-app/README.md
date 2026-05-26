@@ -3,6 +3,18 @@
 Self-contained navigable prototype of the unified Dex portal. Honours dex-repo design tokens (SGTradex purple, SGBuildex blue, SGHealthdex teal — from `dex-monorepo/ui/libs/src/assets/scss/base/_colors.scss`) and Avenir typography. No build step — open `index.html` in any modern browser.
 
 This is the refactored version of the original single-file `portal-prototype.html`. Both still exist; this directory demonstrates a clean architecture with separated concerns.
+## Migration contract guardrails (RJSF hard cutover)
+
+For the active migration away from schema `x-*` extensions, treat these as non-negotiable project constraints:
+
+- Published `elementSchema` is interop-clean JSON Schema (no UI/runtime `x-*` keys).
+- Presentation/layout and runtime visibility publish as co-versioned UI artifacts (`uiSchema`, `uiRules`), not schema extensions.
+- Migration mode is hard cutover (no dual-publish window).
+- Rollback is an atomic active-version-pointer flip across immutable version history.
+- Pre-cutover `x-*` versions remain immutable history and are not rollback activation targets.
+- Post-cutover code and tests must not retain active `x-*` compatibility paths.
+
+See `../CONTEXT.md` for canonical terminology and evolving constraints.
 
 ---
 
