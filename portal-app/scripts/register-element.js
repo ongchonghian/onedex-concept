@@ -646,6 +646,19 @@ function regBuildLegacySchemaFromArtifacts(artifacts) {
   return schema;
 }
 
+/* Produce an interop-clean schema payload by removing all `x-*` extension keys
+ * recursively. Used by publish storage to enforce cutover purity while legacy
+ * authoring/preview flows are still migrating. */
+function regStripSchemaExtensions(node) {
+  if (Array.isArray(node)) return node.map(regStripSchemaExtensions);
+  if (!node || typeof node !== 'object') return node;
+  const out = {};
+  Object.keys(node).forEach(k => {
+    if (k.indexOf('x-') === 0) return;
+    out[k] = regStripSchemaExtensions(node[k]);
+  });
+  return out;
+}
 /* Serialise the field-builder state to the legacy JSON Schema shape with
  * ADR 0040 §17 sidecars (x-presentation / x-presentation-order / group hints).
  * Internally this now projects from publish-artifact builders. */
@@ -10324,7 +10337,15 @@ function regPublish() {
   // mutation) remains for the picker tree's render path; the full record is
   // what carries the elementSchema, rules, complexity, and audit trail.
   try {
-    const elementSchema = (typeof schemaFromFields === 'function') ? schemaFromFields(regDraft) : null;
+    const publishArtifacts = (typeof regBuildPublishArtifacts === 'function')
+      ? regBuildPublishArtifacts(regDraft)
+      : null;
+    const rawElementSchema = publishArtifacts && publishArtifacts.elementSchema
+      ? publishArtifacts.elementSchema
+      : ((typeof schemaFromFields === 'function') ? schemaFromFields(regDraft) : null);
+    const elementSchema = (typeof regStripSchemaExtensions === 'function')
+      ? regStripSchemaExtensions(rawElementSchema)
+      : rawElementSchema;
     const publishedAt = new Date().toISOString();
     const ws = (typeof getWorkspace === 'function') ? getWorkspace() : null;
     const publishedBy = (ws && ws.meta && ws.meta.activeUserId) || 'marcus';
