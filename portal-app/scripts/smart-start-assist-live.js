@@ -32,7 +32,12 @@
  * Kimi's vision-language line is the chosen VLM for PDF → field extraction. */
 const SMART_START_LIVE_ENDPOINT = 'https://api.anthropic.com/v1/messages';
 const SMART_START_LIVE_API_VERSION = '2023-06-01';
-const SMART_START_LIVE_MAX_TOKENS = 4096;
+// UX-42 (Fix A) — bumped 4096 → 16384 after observing JSON truncation on the
+// Innoquest lab-order form's schema overlay: response was 16447 chars at
+// `finish_reason: 'length'`, breaking safeParseJson at position 16447. The
+// reasoning model with a 30+ field seed needs more headroom; 16384 ≈ 4× safety
+// over the observed truncation point. The 180s timeout still bounds runaway calls.
+const SMART_START_LIVE_MAX_TOKENS = 16384;
 // 3 minutes. Kimi K2.6 vision calls with max_tokens=4096 from Singapore to
 // api.moonshot.ai have observed latencies of 90-150s — the previous 30s and
 // 120s budgets both aborted before the model finished. 180s is generous
@@ -83,10 +88,29 @@ const SMART_START_XAI_ENDPOINT  = 'https://api.x.ai/v1/chat/completions';
 const SMART_START_XAI_VLM_MODEL = 'grok-4.20-non-reasoning-latest';
 const SMART_START_XAI_LLM_MODEL = 'grok-4.20-reasoning';
 
+/* Alibaba Qwen — fourth provider. OpenAI-compatible Chat Completions endpoint
+ * at dashscope-intl.aliyuncs.com (Singapore region). qwen3.5-122b-a10b is a
+ * native multimodal MoE model — text, image, and video are all supported on
+ * the same model identifier, so we use it for both the LLM overlay and the
+ * VLM/text-extraction paths (same dispatch shape as Moonshot and xAI). */
+const SMART_START_QWEN_ENDPOINT  = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
+const SMART_START_QWEN_LLM_MODEL = 'qwen3.5-122b-a10b';
+const SMART_START_QWEN_VLM_MODEL = 'qwen3.5-122b-a10b';
+
 /* ============================================================
-   Public — overlay run (sequential per-tab calls)
+   Public — overlay run (parallel per-tab calls with per-tab arrival)
    ============================================================ */
 
+/* UX-43b — refactored from sequential to Promise.allSettled across all 4 tabs.
+ * Each tab's .then() fires `input.onTabArrival(tab, suggestions, status)` so
+ * the canvas can render drawer cards + update the per-tab progress banner as
+ * each completes (staircase progress feedback). Schema renders first in the
+ * drawer regardless of completion order. 429s retry once after 5s; second
+ * 429 → mark the tab rate-limited and surface in the banner.
+ *
+ * The final aggregate return shape matches the legacy contract so the existing
+ * callers (regApplyAssistRun) keep working — the per-tab arrival is additive,
+ * not replacing the batch result. */
 async function liveRunOverlay(input) {
   // Resolve provider preference. Defaults to anthropic for back-compat.
   const provider = smartStart_getOverlayProvider();
@@ -102,37 +126,75 @@ async function liveRunOverlay(input) {
   // Resolve grounding context from the fixtures — same shape the canned path
   // works with, but pulled live so the prompt sees current values.
   const ctx = smartStart_buildOverlayContext(input);
+  const onTabArrival = (typeof input.onTabArrival === 'function') ? input.onTabArrival : null;
+  const onRunStart = (typeof input.onRunStart === 'function') ? input.onRunStart : null;
 
-  // Sequential per-tab calls per ADR 0040 Q13. Each call returns its slice of
-  // suggestions; failures of one tab don't block the others, but Rules depends
-  // on Schema so a Schema failure short-circuits Rules.
-  const all = [];
-  const degraded = [];
-  let partial = false;
-  let schemaOk = false;
+  const tabs = ['schema', 'complexity', 'rules', 'pack'];
+  if (onRunStart) {
+    try { onRunStart({ tabs, provider }); } catch (e) { console.warn('[smart-start-assist-live] onRunStart threw:', e); }
+  }
 
-  const tryTab = async (tab) => {
+  const tryTabWithRetry = async (tab, attempt) => {
+    attempt = attempt || 1;
     try {
+      const startMs = Date.now();
       const s = await smartStart_callOverlay(tab, ctx, apiKey, provider);
-      all.push.apply(all, s);
-      return true;
+      return { tab, status: 'ok', suggestions: s, elapsedMs: Date.now() - startMs };
     } catch (e) {
-      console.warn('[smart-start-assist-live] ' + tab + ' overlay failed (' + provider + '):', e);
-      degraded.push(tab);
-      partial = true;
-      return false;
+      const msg = (e && e.message) || String(e);
+      const isRateLimit = /429|rate.?limit/i.test(msg);
+      if (isRateLimit && attempt === 1) {
+        console.warn('[smart-start-assist-live] ' + tab + ' hit rate limit; retrying after 5s backoff…');
+        await new Promise(r => setTimeout(r, 5000));
+        return tryTabWithRetry(tab, 2);
+      }
+      console.warn('[smart-start-assist-live] ' + tab + ' overlay failed (' + provider + ' attempt ' + attempt + '):', e);
+      return {
+        tab,
+        status: isRateLimit ? 'rate-limited' : 'failed',
+        suggestions: [],
+        error: msg
+      };
     }
   };
 
-  schemaOk = await tryTab('schema');
-  await tryTab('complexity');
-  await tryTab('pack');
-  if (schemaOk) {
-    await tryTab('rules');
-  } else {
-    degraded.push('rules-blocked-by-schema');
-    partial = true;
-  }
+  // Fire all 4 in parallel. Each .then() reports arrival to the canvas so
+  // drawer cards render incrementally as each tab completes.
+  const tabPromises = tabs.map(tab =>
+    tryTabWithRetry(tab).then(result => {
+      if (onTabArrival) {
+        try { onTabArrival(result); } catch (e) {
+          console.warn('[smart-start-assist-live] onTabArrival threw for ' + tab + ':', e);
+        }
+      }
+      return result;
+    })
+  );
+
+  const results = await Promise.allSettled(tabPromises);
+
+  // Aggregate the batch result for the legacy regApplyAssistRun caller.
+  const all = [];
+  const degraded = [];
+  let partial = false;
+  results.forEach(r => {
+    if (r.status !== 'fulfilled') {
+      // Promise.allSettled shouldn't ever reject our wrapped tryTabWithRetry,
+      // but guard for completeness.
+      degraded.push('unknown-tab-error');
+      partial = true;
+      return;
+    }
+    const tabResult = r.value;
+    if (tabResult.status === 'ok') {
+      all.push.apply(all, tabResult.suggestions || []);
+    } else {
+      partial = true;
+      degraded.push(tabResult.status === 'rate-limited'
+        ? tabResult.tab + ':rate-limited'
+        : tabResult.tab);
+    }
+  });
 
   return {
     suggestions: all,
@@ -164,6 +226,7 @@ async function liveExtractFieldsFromPdf(pageImageDataUrl, ctx) {
   let parsed;
   if (provider === 'anthropic') parsed = await smartStart_vlmCallAnthropic(prompt, pageImageDataUrl, apiKey);
   else if (provider === 'xai')  parsed = await smartStart_vlmCallXai(prompt, pageImageDataUrl, apiKey);
+  else if (provider === 'qwen') parsed = await smartStart_vlmCallQwen(prompt, pageImageDataUrl, apiKey);
   else                           parsed = await smartStart_vlmCallMoonshot(prompt, pageImageDataUrl, apiKey);
   return smartStart_normalizeExtraction(parsed, 'VLM');
 }
@@ -200,23 +263,63 @@ function smartStart_normalizeExtraction(parsed, label) {
     if (!fields.length) {
       throw new Error((label || 'Extraction') + ' response had groups[] but no fields');
     }
-    return { documentTitle, groups, fields };
+    return smartStart_validateStructuralSuffixes({ documentTitle, groups, fields });
   }
   if (Array.isArray(parsed.fields) && parsed.fields.length) {
     const tagged = parsed.fields.map(f => Object.assign({}, f, { _group: 'Fields' }));
-    return {
+    return smartStart_validateStructuralSuffixes({
       documentTitle,
       groups: [{ name: 'Fields', rationale: '', fields: tagged }],
       fields: tagged,
-    };
+    });
   }
   throw new Error((label || 'Extraction') + ' response missing groups[]/fields[]');
+}
+
+/* UX-41a — deterministic post-extraction validator. Scans the normalized
+ * extraction for the category-error pattern that the strengthened prompts
+ * forbid: a primitive type (string/number/integer/boolean/enum) with a
+ * structural-suffix name (_table/_matrix/_grid/_chart/_list). Each violation
+ * is annotated with `field.reviewRequired = "unresolved_structural_suffix"`
+ * on the field-builder model — at publish time the flag routes onto the
+ * bundle's `authoringMetadata.reviewRequired[<fieldPath>]` artefact, never
+ * into the interop-clean `elementSchema`. Sarah's editor surfaces it via the
+ * canvas badge + drawer card + pre-flight publish blocker per the UX-41c
+ * contract.
+ *
+ * Phase-1 contract: the validator FLAGS but does NOT retry the LLM call.
+ * The prompt language already tells the model the violation will be
+ * rejected and re-prompted — that deterrence carries the first-pass burden.
+ * Phase 2 may add a real API retry loop if violation rates stay high. */
+const SMART_START_STRUCTURAL_SUFFIX_REGEX = /_(table|matrix|grid|chart|list)$/i;
+const SMART_START_PRIMITIVE_TYPES = new Set([
+  'string', 'number', 'integer', 'boolean', 'enum'
+]);
+
+function smartStart_validateStructuralSuffixes(normalized) {
+  if (!normalized || !Array.isArray(normalized.fields)) return normalized;
+  let violationCount = 0;
+  normalized.fields.forEach(f => {
+    if (!f || !f.name || !f.type) return;
+    if (!SMART_START_PRIMITIVE_TYPES.has(String(f.type).toLowerCase())) return;
+    if (!SMART_START_STRUCTURAL_SUFFIX_REGEX.test(f.name)) return;
+    // Category error. Flag without mutating the type — preserves the
+    // operator's view of what the model emitted, surfaces a hard signal
+    // for review.
+    f.reviewRequired = 'unresolved_structural_suffix';
+    violationCount++;
+  });
+  if (violationCount > 0) {
+    console.warn('[smart-start] ' + violationCount + ' structural-suffix violation(s) flagged for review.');
+  }
+  return normalized;
 }
 
 /* Resolve a provider id to its operator-supplied API key. */
 function smartStart_keyFor(provider) {
   if (provider === 'anthropic') return smartStart_getApiKey();
   if (provider === 'xai')       return smartStart_getXaiKey();
+  if (provider === 'qwen')      return smartStart_getQwenKey();
   return smartStart_getMoonshotKey();   // 'moonshot' default
 }
 
@@ -224,6 +327,7 @@ function smartStart_keyFor(provider) {
 function smartStart_providerDisplayName(provider) {
   if (provider === 'anthropic') return 'Anthropic';
   if (provider === 'xai')       return 'xAI Grok';
+  if (provider === 'qwen')      return 'Alibaba Qwen';
   return 'Moonshot/Kimi';
 }
 
@@ -273,6 +377,7 @@ async function liveExtractFieldsFromText(text, ctx) {
   let parsed;
   if (provider === 'anthropic') parsed = await smartStart_textCallAnthropic(prompt, apiKey);
   else if (provider === 'xai')  parsed = await smartStart_textCallXai(prompt, apiKey);
+  else if (provider === 'qwen') parsed = await smartStart_textCallQwen(prompt, apiKey);
   else                           parsed = await smartStart_textCallMoonshot(prompt, apiKey);
   return smartStart_normalizeExtraction(parsed, 'Text-extraction');
 }
@@ -400,6 +505,63 @@ async function smartStart_callXai(body, apiKey) {
   return choice.message.content || '';
 }
 
+/* OpenAI-compatible Chat Completions fetch for Alibaba Qwen via DashScope's
+ * compatible-mode endpoint. Same Bearer-auth shape as Moonshot/xAI; the only
+ * thing that varies is the endpoint and the per-provider log label so
+ * DevTools diagnostics stay legible. */
+async function smartStart_callQwen(body, apiKey) {
+  const t0 = performance.now();
+  const bodyText = JSON.stringify(body);
+  console.info('[smart-start-assist] → Qwen request', {
+    endpoint: SMART_START_QWEN_ENDPOINT,
+    model: body.model,
+    max_tokens: body.max_tokens,
+    response_format: body.response_format,
+    request_size_kb: Math.round(bodyText.length / 1024),
+    messages_preview: (body.messages || []).map(m => ({
+      role: m.role,
+      content: typeof m.content === 'string' ? m.content.slice(0, 160) : (Array.isArray(m.content) ? m.content.map(c => c.type) : '?')
+    })),
+    fullBody: body
+  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SMART_START_LIVE_TIMEOUT_MS);
+  let response;
+  try {
+    response = await fetch(SMART_START_QWEN_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer ' + apiKey
+      },
+      body: bodyText,
+      signal: controller.signal
+    });
+  } catch (err) {
+    const elapsed = Math.round(performance.now() - t0);
+    console.warn('[smart-start-assist] Qwen fetch threw after ' + elapsed + 'ms:', err);
+    if (smartStart_isAbortError(err)) {
+      throw new Error('Qwen request timed out after ' + Math.round(SMART_START_LIVE_TIMEOUT_MS / 1000) + 's — the API took longer than expected. Try again, or reduce extraction scope.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error('Qwen ' + response.status + ': ' + text.slice(0, 200));
+  }
+  const json = await response.json();
+  const choice = (json.choices || [])[0];
+  if (!choice || !choice.message) throw new Error('No choices in Qwen response.');
+  const elapsed = Math.round(performance.now() - t0);
+  console.info('[smart-start-assist] ← Qwen response in ' + elapsed + 'ms', {
+    finish_reason: choice.finish_reason,
+    usage: json.usage
+  });
+  return choice.message.content || '';
+}
+
 /* Moonshot vision — OpenAI-compatible image_url content + json_object output. */
 async function smartStart_vlmCallMoonshot(prompt, pageImageDataUrl, apiKey) {
   const body = {
@@ -501,6 +663,7 @@ async function smartStart_callOverlay(tab, ctx, apiKey, provider) {
   let parsed;
   if (provider === 'anthropic')      parsed = await smartStart_callOverlayAnthropic(prompt, apiKey);
   else if (provider === 'xai')       parsed = await smartStart_callOverlayXai(prompt, apiKey);
+  else if (provider === 'qwen')      parsed = await smartStart_callOverlayQwen(prompt, apiKey);
   else                                parsed = await smartStart_callOverlayMoonshot(prompt, apiKey);
   if (!parsed) throw new Error('Could not parse overlay response for ' + tab);
 
@@ -545,6 +708,64 @@ async function smartStart_callOverlayAnthropic(prompt, apiKey) {
   const text = await smartStart_callAnthropic(body, apiKey);
   // Re-attach the prefill brace.
   return smartStart_safeParseJson('{' + text);
+}
+
+/* Qwen vision — OpenAI-compatible image_url content + json_object output.
+ * qwen3.5-122b-a10b is natively multimodal, so we send image + text on the
+ * same model identifier used for the LLM overlay. */
+async function smartStart_vlmCallQwen(prompt, pageImageDataUrl, apiKey) {
+  const body = {
+    model: SMART_START_QWEN_VLM_MODEL,
+    max_tokens: SMART_START_VLM_MAX_TOKENS,
+    messages: [
+      { role: 'system', content: prompt.system },
+      {
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: pageImageDataUrl } },
+          { type: 'text',      text: prompt.user }
+        ]
+      }
+    ],
+    response_format: { type: 'json_object' }
+  };
+  const text = await smartStart_callQwen(body, apiKey);
+  return smartStart_safeParseJson(text);
+}
+
+/* Qwen text — same shape as the overlay call, used by the docx text-extraction
+ * path. Distinct function so the prompt token budget (VLM-sized) is correct
+ * even though there's no image content. */
+async function smartStart_textCallQwen(prompt, apiKey) {
+  const body = {
+    model: SMART_START_QWEN_LLM_MODEL,
+    max_tokens: SMART_START_VLM_MAX_TOKENS,
+    messages: [
+      { role: 'system', content: prompt.system },
+      { role: 'user',   content: prompt.user }
+    ],
+    response_format: { type: 'json_object' }
+  };
+  const text = await smartStart_callQwen(body, apiKey);
+  return smartStart_safeParseJson(text);
+}
+
+async function smartStart_callOverlayQwen(prompt, apiKey) {
+  // OpenAI-compatible Chat Completions against DashScope's compatible-mode
+  // endpoint (Singapore region). qwen3.5-122b-a10b is a hybrid-thinking LLM;
+  // we keep thinking off (default false on the OpenAI-compat path) to mirror
+  // the other providers' latency budget. JSON output via response_format.
+  const body = {
+    model: SMART_START_QWEN_LLM_MODEL,
+    max_tokens: SMART_START_LIVE_MAX_TOKENS,
+    messages: [
+      { role: 'system', content: prompt.system },
+      { role: 'user',   content: prompt.user }
+    ],
+    response_format: { type: 'json_object' }
+  };
+  const text = await smartStart_callQwen(body, apiKey);
+  return smartStart_safeParseJson(text);
 }
 
 async function smartStart_callOverlayMoonshot(prompt, apiKey) {
@@ -839,10 +1060,25 @@ function smartStart_clearXaiKey() {
   try { window.localStorage.removeItem('smartStart.xaiKey'); } catch (e) {}
 }
 
+/* Alibaba Qwen key — powers the LLM overlay only (qwen3.5-122b-a10b is
+ * text-only; the VLM/text-extraction paths reject this provider explicitly). */
+function smartStart_getQwenKey() {
+  try { return window.localStorage.getItem('smartStart.qwenKey') || null; } catch (e) { return null; }
+}
+function smartStart_setQwenKey(key) {
+  try { window.localStorage.setItem('smartStart.qwenKey', String(key || '')); }
+  catch (e) { console.warn('[smart-start-assist] could not persist Qwen key:', e); }
+}
+function smartStart_clearQwenKey() {
+  try { window.localStorage.removeItem('smartStart.qwenKey'); } catch (e) {}
+}
+
 /* Allow-list of provider ids. Used by the get/set helpers so an unrecognised
  * value (e.g., a legacy 'kimi' or a typo) falls back to the default rather
- * than persisting an invalid state. */
-const SMART_START_PROVIDERS = ['anthropic', 'moonshot', 'xai'];
+ * than persisting an invalid state. All four providers are multimodal-
+ * capable: Qwen3.5-122B-A10B is natively multimodal, so it slots into both
+ * the overlay and VLM allowlists. */
+const SMART_START_PROVIDERS = ['anthropic', 'moonshot', 'xai', 'qwen'];
 
 /* Overlay provider preference — anthropic (default) | moonshot | xai. */
 function smartStart_getOverlayProvider() {
@@ -857,7 +1093,7 @@ function smartStart_setOverlayProvider(provider) {
   catch (e) { console.warn('[smart-start-assist] could not persist overlay provider:', e); }
 }
 
-/* VLM provider preference — moonshot (default) | anthropic | xai. */
+/* VLM provider preference — moonshot (default) | anthropic | xai | qwen. */
 function smartStart_getVlmProvider() {
   try {
     const v = window.localStorage.getItem('smartStart.vlmProvider');
@@ -870,10 +1106,35 @@ function smartStart_setVlmProvider(provider) {
   catch (e) { console.warn('[smart-start-assist] could not persist VLM provider:', e); }
 }
 
+/* Generic VLM call with a caller-supplied { system, user, prefill } prompt.
+ * Routes to the operator's selected VLM provider exactly the way the
+ * canonical liveExtractFieldsFromPdf does, but accepts any prompt — used
+ * by targeted post-extraction recovery flows (e.g., row-label recovery
+ * when the initial extraction left a matrix's row identifier empty).
+ *
+ * Returns the parsed JSON object from the model. Throws on missing key,
+ * unparseable response, or transport errors. */
+async function liveCallVlmWithPrompt(prompt, pageImageDataUrl) {
+  if (!pageImageDataUrl) throw new Error('No page image provided.');
+  if (!prompt || typeof prompt !== 'object' || !prompt.system) {
+    throw new Error('Prompt must be { system, user, prefill? }.');
+  }
+  const provider = smartStart_getVlmProvider();
+  const apiKey = smartStart_keyFor(provider);
+  if (!apiKey) {
+    throw new Error('No ' + smartStart_providerDisplayName(provider) + ' API key set for VLM.');
+  }
+  if (provider === 'anthropic') return smartStart_vlmCallAnthropic(prompt, pageImageDataUrl, apiKey);
+  if (provider === 'xai')       return smartStart_vlmCallXai(prompt, pageImageDataUrl, apiKey);
+  if (provider === 'qwen')      return smartStart_vlmCallQwen(prompt, pageImageDataUrl, apiKey);
+  return smartStart_vlmCallMoonshot(prompt, pageImageDataUrl, apiKey);
+}
+
 if (typeof window !== 'undefined') {
   window.liveRunOverlay              = liveRunOverlay;
   window.liveExtractFieldsFromPdf    = liveExtractFieldsFromPdf;
   window.liveExtractFieldsFromText   = liveExtractFieldsFromText;
+  window.liveCallVlmWithPrompt       = liveCallVlmWithPrompt;
   window.smartStart_getApiKey        = smartStart_getApiKey;
   window.smartStart_getMoonshotKey   = smartStart_getMoonshotKey;
   window.smartStart                  = window.smartStart || {};
@@ -886,6 +1147,9 @@ if (typeof window !== 'undefined') {
   window.smartStart.setXaiKey        = smartStart_setXaiKey;
   window.smartStart.clearXaiKey      = smartStart_clearXaiKey;
   window.smartStart.getXaiKey        = smartStart_getXaiKey;
+  window.smartStart.setQwenKey       = smartStart_setQwenKey;
+  window.smartStart.clearQwenKey     = smartStart_clearQwenKey;
+  window.smartStart.getQwenKey       = smartStart_getQwenKey;
   window.smartStart.getOverlayProvider = smartStart_getOverlayProvider;
   window.smartStart.setOverlayProvider = smartStart_setOverlayProvider;
   window.smartStart.getVlmProvider     = smartStart_getVlmProvider;
@@ -896,5 +1160,8 @@ if (typeof window !== 'undefined') {
   window.SMART_START_XAI_ENDPOINT    = SMART_START_XAI_ENDPOINT;
   window.SMART_START_XAI_VLM_MODEL   = SMART_START_XAI_VLM_MODEL;
   window.SMART_START_XAI_LLM_MODEL   = SMART_START_XAI_LLM_MODEL;
+  window.SMART_START_QWEN_ENDPOINT   = SMART_START_QWEN_ENDPOINT;
+  window.SMART_START_QWEN_LLM_MODEL  = SMART_START_QWEN_LLM_MODEL;
+  window.SMART_START_QWEN_VLM_MODEL  = SMART_START_QWEN_VLM_MODEL;
   window.SMART_START_PROVIDERS       = SMART_START_PROVIDERS;
 }

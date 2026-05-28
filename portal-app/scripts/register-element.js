@@ -521,12 +521,12 @@ function regDeriveHint(field) {
   }
 }
 
-/* Publish-artifact builders.
- *
- * Migration scaffold (commit 2): split publication into explicit surfaces so
- * we can later remove schema `x-*` extensions without rewriting call sites.
- * For now, schemaFromFields still returns the legacy x-* shape by projecting
- * from these builders, preserving current behavior byte-for-byte. */
+/* Publish-artifact builders. Split publication into explicit surfaces — an
+ * interop-clean elementSchema (no `x-*` keys) plus co-versioned uiSchema,
+ * uiRules, and authoringMetadata artefacts that travel together on the
+ * Element-version record. This is the canonical write path post-cutover; the
+ * legacy `schemaFromFields` projector that re-injected `x-*` into a single
+ * schema artefact has been retired. */
 function regBuildPublishArtifacts(state) {
   const ruleArtifacts = regCollectRuleArtifacts(state);
   return {
@@ -631,24 +631,11 @@ function regBuildAuthoringMetadataArtifact(ruleArtifacts) {
   return { reviewRequired: Object.assign({}, reviewRequired) };
 }
 
-function regBuildLegacySchemaFromArtifacts(artifacts) {
-  const schema = Object.assign({}, artifacts.elementSchema || {});
-  const uiSchema = artifacts.uiSchema || {};
-  if (uiSchema.presentation && Object.keys(uiSchema.presentation).length) {
-    schema['x-presentation'] = uiSchema.presentation;
-  }
-  if (uiSchema.order && uiSchema.order.length) {
-    schema['x-presentation-order'] = uiSchema.order;
-  }
-  if (uiSchema.groups && Object.keys(uiSchema.groups).length) {
-    schema['x-group-presentation'] = uiSchema.groups;
-  }
-  return schema;
-}
-
 /* Produce an interop-clean schema payload by removing all `x-*` extension keys
- * recursively. Used by publish storage to enforce cutover purity while legacy
- * authoring/preview flows are still migrating. */
+ * recursively. Belt-and-braces over regBuildElementSchemaArtifact, which still
+ * emits `x-visible-when` / `x-review-required` on individual property nodes
+ * (fieldToSchemaProperty preserves them for inspection); publish strips them
+ * unconditionally so the version record's elementSchema is interop-clean. */
 function regStripSchemaExtensions(node) {
   if (Array.isArray(node)) return node.map(regStripSchemaExtensions);
   if (!node || typeof node !== 'object') return node;
@@ -658,13 +645,6 @@ function regStripSchemaExtensions(node) {
     out[k] = regStripSchemaExtensions(node[k]);
   });
   return out;
-}
-/* Serialise the field-builder state to the legacy JSON Schema shape with
- * ADR 0040 §17 sidecars (x-presentation / x-presentation-order / group hints).
- * Internally this now projects from publish-artifact builders. */
-function schemaFromFields(state) {
-  const artifacts = regBuildPublishArtifacts(state);
-  return regBuildLegacySchemaFromArtifacts(artifacts);
 }
 
 /* Build the x-presentation entry for a single field. Mirrors schema nesting:
@@ -911,17 +891,94 @@ function buildNestedProperties(children) {
   return { properties, required };
 }
 
-/* Parse a JSON Schema (as produced above, or coming from a fork source) back
- * into the field-builder model. Reads x-presentation + x-presentation-order
- * for hints, labels, and synthetic disclaimer rows. Lossy for constructs the
- * builder can't express (oneOf, allOf, dependencies, deep nesting > 3) — those
- * round-trip via the JSON editor in Impl D/E. */
-function fieldsFromSchema(schema) {
+/* Extract a legacy uiSchema view from a pre-cutover JSON Schema's x-* keys.
+ * Used as a fallback by fieldsFromSchema when callers pass only a schema (no
+ * bundle options) — i.e. they are re-importing a pre-cutover persisted draft.
+ * Returns the same shape regBuildUiSchemaArtifact would produce. */
+function _legacyUiSchemaFromSchema(schema) {
+  const out = {};
+  const presentation = schema && schema['x-presentation'];
+  const order = schema && schema['x-presentation-order'];
+  const groups = schema && schema['x-group-presentation'];
+  if (presentation && typeof presentation === 'object') out.presentation = presentation;
+  if (Array.isArray(order)) out.order = order.slice();
+  if (groups && typeof groups === 'object') out.groups = groups;
+  return out;
+}
+
+/* Recursively collect x-visible-when off a legacy schema, keyed by dotted
+ * field path. Mirrors regCollectFieldRuleArtifacts's path scheme so the
+ * resulting visibility map is compatible with the bundle-mode reader. */
+function _legacyUiRulesFromSchema(schema) {
+  const visibility = {};
+  function walk(s, parentPath) {
+    const props = (s && s.properties) || {};
+    Object.keys(props).forEach(k => {
+      const ps = props[k];
+      const fieldPath = parentPath ? parentPath + '.' + k : k;
+      if (ps && ps['x-visible-when']) visibility[fieldPath] = ps['x-visible-when'];
+      if (ps && ps.type === 'object') walk(ps, fieldPath);
+      if (ps && ps.type === 'array' && ps.items && ps.items.type === 'object') walk(ps.items, fieldPath + '.items');
+    });
+  }
+  walk(schema, '');
+  return Object.keys(visibility).length ? { visibility: visibility } : {};
+}
+
+/* Recursively collect x-review-required off a legacy schema, keyed by dotted
+ * field path. Same shape as authoringMetadata.reviewRequired in the bundle. */
+function _legacyAuthoringMetadataFromSchema(schema) {
+  const reviewRequired = {};
+  function walk(s, parentPath) {
+    const props = (s && s.properties) || {};
+    Object.keys(props).forEach(k => {
+      const ps = props[k];
+      const fieldPath = parentPath ? parentPath + '.' + k : k;
+      if (ps && regIsValidReviewFlag(ps['x-review-required'])) reviewRequired[fieldPath] = ps['x-review-required'];
+      if (ps && ps.type === 'object') walk(ps, fieldPath);
+      if (ps && ps.type === 'array' && ps.items && ps.items.type === 'object') walk(ps.items, fieldPath + '.items');
+    });
+  }
+  walk(schema, '');
+  return Object.keys(reviewRequired).length ? { reviewRequired: reviewRequired } : {};
+}
+
+/* Parse a JSON Schema back into the field-builder model.
+ *
+ * Bundle-shape input (post-RJSF-cutover):
+ *   fieldsFromSchema(bundle.elementSchema, {
+ *     uiSchema:          bundle.uiSchema,
+ *     uiRules:           bundle.uiRules,
+ *     authoringMetadata: bundle.authoringMetadata
+ *   })
+ * Presentation comes from `uiSchema.presentation` / `uiSchema.order`, visibility
+ * from `uiRules.visibility` keyed by dotted field-path, review-required flags
+ * from `authoringMetadata.reviewRequired` keyed by field-path.
+ *
+ * Legacy single-arg form (pre-cutover draft restore only):
+ *   fieldsFromSchema(legacySchema)   // reads x-presentation / x-presentation-order
+ *                                    // / x-visible-when / x-review-required off
+ *                                    // the schema itself
+ *
+ * Lossy for constructs the builder can't express (oneOf, allOf, dependencies,
+ * deep nesting > 3) — those round-trip via the JSON editor in Impl D/E. */
+function fieldsFromSchema(schema, options) {
   if (!schema || typeof schema !== 'object') return [];
+  options = options || {};
   const props = schema.properties || {};
   const requiredSet = new Set(Array.isArray(schema.required) ? schema.required : []);
-  const presentation = schema['x-presentation'] || {};
-  const orderArr = Array.isArray(schema['x-presentation-order']) ? schema['x-presentation-order'] : null;
+
+  // Prefer bundle artefacts when supplied. Legacy x-* on the schema is the
+  // fallback for re-importing pre-cutover persisted drafts.
+  const uiSchema = options.uiSchema || _legacyUiSchemaFromSchema(schema);
+  const uiRules  = options.uiRules  || _legacyUiRulesFromSchema(schema);
+  const authoringMetadata = options.authoringMetadata || _legacyAuthoringMetadataFromSchema(schema);
+
+  const presentation = (uiSchema && uiSchema.presentation) || {};
+  const orderArr = (uiSchema && Array.isArray(uiSchema.order)) ? uiSchema.order : null;
+  const visibilityByPath = (uiRules && uiRules.visibility) || {};
+  const reviewRequiredByPath = (authoringMetadata && authoringMetadata.reviewRequired) || {};
+
   const out = [];
   const seen = new Set();
 
@@ -943,7 +1000,7 @@ function fieldsFromSchema(schema) {
     }
     const p = props[name];
     if (!p) return;
-    const f = fieldFromSchemaProperty(name, p, requiredSet.has(name), presentation[name]);
+    const f = fieldFromSchemaProperty(name, p, requiredSet.has(name), presentation[name], name, visibilityByPath, reviewRequiredByPath);
     out.push(f);
   });
   return out;
@@ -951,8 +1008,12 @@ function fieldsFromSchema(schema) {
 
 /* Recursive helper: parse a single property + its presentation entry into a
  * field-model entry. Recurses into nested objects (children) and into array
- * items (itemType + itemEnumValues + itemChildren). */
-function fieldFromSchemaProperty(name, p, isRequired, presEntry) {
+ * items (itemType + itemEnumValues + itemChildren).
+ *
+ * `fieldPath` is the dotted path used to look up bundle-side artefacts
+ * (uiRules.visibility, authoringMetadata.reviewRequired). For array items the
+ * caller appends `.items` between the array name and the child name. */
+function fieldFromSchemaProperty(name, p, isRequired, presEntry, fieldPath, visibilityByPath, reviewRequiredByPath) {
   const f = regBlankField(name);
   f.required = !!isRequired;
   // UX-40 — preserve incoming `title` as an explicit author override only when
@@ -961,10 +1022,18 @@ function fieldFromSchemaProperty(name, p, isRequired, presEntry) {
   // re-emission stays clean (no redundant `title` storage in the model).
   if (p.title && p.title !== humanizeFieldName(name)) f.title = p.title;
   f.description = p.description || '';
-  if (p['x-visible-when']) f.visibleWhen = p['x-visible-when'];
-  // UX-41c — round-trip review flag iff it's in the closed Phase-1 vocab.
-  // Unknown reason strings drop silently rather than corrupting the model.
-  if (regIsValidReviewFlag(p['x-review-required'])) f.reviewRequired = p['x-review-required'];
+  // Visibility — prefer bundle uiRules.visibility lookup by path. Legacy x-*
+  // on the property is the fallback path for pre-cutover draft restore only.
+  const pathKey = fieldPath || name;
+  const bundleVisibility = visibilityByPath && visibilityByPath[pathKey];
+  if (bundleVisibility) f.visibleWhen = bundleVisibility;
+  else if (p['x-visible-when']) f.visibleWhen = p['x-visible-when'];
+  // UX-41c — review flag prefers bundle authoringMetadata.reviewRequired
+  // lookup; falls back to the legacy x-* extension. Closed Phase-1 vocab in
+  // both paths — unknown reason strings drop silently.
+  const bundleReview = reviewRequiredByPath && reviewRequiredByPath[pathKey];
+  if (regIsValidReviewFlag(bundleReview)) f.reviewRequired = bundleReview;
+  else if (regIsValidReviewFlag(p['x-review-required'])) f.reviewRequired = p['x-review-required'];
   if (p.examples) f.examples = p.examples;
   // UX-39 — pick up array `default` rows when re-importing.
   if (p.type === 'array' && Array.isArray(p.default)) f.default = p.default;
@@ -1034,7 +1103,7 @@ function fieldFromSchemaProperty(name, p, isRequired, presEntry) {
       f.validation.itemType = 'object';
       const itemPres = pres.items || {};
       const subPres = itemPres.properties || {};
-      f.validation.itemChildren = nestedFieldsFromSchema(items, subPres);
+      f.validation.itemChildren = nestedFieldsFromSchema(items, subPres, pathKey + '.items', visibilityByPath, reviewRequiredByPath);
     } else if (items.format === 'date')      f.validation.itemType = 'date';
     else if (items.format === 'date-time')   f.validation.itemType = 'datetime';
     else if (items.type === 'boolean')       f.validation.itemType = 'boolean';
@@ -1045,7 +1114,7 @@ function fieldFromSchemaProperty(name, p, isRequired, presEntry) {
   else if (p.type === 'object') {
     f.type = 'object';
     const subPres = (pres.properties) || {};
-    f.children = nestedFieldsFromSchema(p, subPres);
+    f.children = nestedFieldsFromSchema(p, subPres, pathKey, visibilityByPath, reviewRequiredByPath);
   }
   else if (p.type === 'boolean') f.type = 'boolean';
   else if (p.type === 'integer') f.type = 'integer';
@@ -1106,12 +1175,13 @@ function fieldFromSchemaProperty(name, p, isRequired, presEntry) {
   return f;
 }
 
-function nestedFieldsFromSchema(parentSchema, presentationProps) {
+function nestedFieldsFromSchema(parentSchema, presentationProps, parentPath, visibilityByPath, reviewRequiredByPath) {
   const subProps = parentSchema.properties || {};
   const subRequired = new Set(Array.isArray(parentSchema.required) ? parentSchema.required : []);
-  return Object.keys(subProps).map(n =>
-    fieldFromSchemaProperty(n, subProps[n] || {}, subRequired.has(n), presentationProps[n])
-  );
+  return Object.keys(subProps).map(n => {
+    const childPath = parentPath ? parentPath + '.' + n : n;
+    return fieldFromSchemaProperty(n, subProps[n] || {}, subRequired.has(n), presentationProps[n], childPath, visibilityByPath, reviewRequiredByPath);
+  });
 }
 
 /* ---------- JSON syntax highlighter (inline, ~40 lines, no external dep) ----------
@@ -3041,7 +3111,7 @@ function regCommitCartesianRestatement(opts) {
 
   // Build itemChildren (field-model objects) — mirror the items.properties
   // shape we already computed but as the field-model representation that
-  // round-trips through schemaFromFields / fieldsFromSchema.
+  // round-trips through regBuildPublishArtifacts / fieldsFromSchema.
   const itemChildren = [];
 
   // Row identifier (enum) — wire values are the lowercase prefixes; labels
@@ -8155,8 +8225,18 @@ function regRefit_ingestFromAssistResponse(refitArr) {
 function regRenderJsonPreview() {
   const target = document.querySelector('[data-reg-json-preview]');
   if (!target) return;
-  const schema = schemaFromFields(regDraft);
-  const text = JSON.stringify(schema, null, 2);
+  // Show the publish bundle Sarah will actually land on the version record:
+  // an interop-clean elementSchema (no `x-*` keys) plus the co-versioned
+  // uiSchema / uiRules / authoringMetadata artefacts. Matches what `regPublish`
+  // writes per the RJSF hard cutover.
+  const artifacts = regBuildPublishArtifacts(regDraft);
+  const bundle = {
+    elementSchema:     regStripSchemaExtensions(artifacts.elementSchema),
+    uiSchema:          artifacts.uiSchema || {},
+    uiRules:           artifacts.uiRules || {},
+    authoringMetadata: artifacts.authoringMetadata || {}
+  };
+  const text = JSON.stringify(bundle, null, 2);
   target.innerHTML = regHighlightJson(text);
 }
 
@@ -10337,24 +10417,11 @@ function regPublish() {
   // mutation) remains for the picker tree's render path; the full record is
   // what carries the elementSchema, rules, complexity, and audit trail.
   try {
-    const publishArtifacts = (typeof regBuildPublishArtifacts === 'function')
-      ? regBuildPublishArtifacts(regDraft)
-      : null;
-    const rawElementSchema = publishArtifacts && publishArtifacts.elementSchema
-      ? publishArtifacts.elementSchema
-      : ((typeof schemaFromFields === 'function') ? schemaFromFields(regDraft) : null);
-    const elementSchema = (typeof regStripSchemaExtensions === 'function')
-      ? regStripSchemaExtensions(rawElementSchema)
-      : rawElementSchema;
-    const uiSchema = publishArtifacts && publishArtifacts.uiSchema
-      ? JSON.parse(JSON.stringify(publishArtifacts.uiSchema))
-      : {};
-    const uiRules = publishArtifacts && publishArtifacts.uiRules
-      ? JSON.parse(JSON.stringify(publishArtifacts.uiRules))
-      : {};
-    const authoringMetadata = publishArtifacts && (publishArtifacts.authoringMetadata || publishArtifacts.authoringMeta)
-      ? JSON.parse(JSON.stringify(publishArtifacts.authoringMetadata || publishArtifacts.authoringMeta))
-      : {};
+    const publishArtifacts = regBuildPublishArtifacts(regDraft);
+    const elementSchema    = regStripSchemaExtensions(publishArtifacts.elementSchema);
+    const uiSchema         = JSON.parse(JSON.stringify(publishArtifacts.uiSchema || {}));
+    const uiRules          = JSON.parse(JSON.stringify(publishArtifacts.uiRules || {}));
+    const authoringMetadata = JSON.parse(JSON.stringify(publishArtifacts.authoringMetadata || {}));
     const publishedAt = new Date().toISOString();
     const ws = (typeof getWorkspace === 'function') ? getWorkspace() : null;
     const publishedBy = (ws && ws.meta && ws.meta.activeUserId) || 'marcus';
@@ -11023,7 +11090,8 @@ if (typeof window !== 'undefined') {
   window.regDemoTypeIntoFirstTestInput = regDemoTypeIntoFirstTestInput;
   window.regRenderCanvasFooter = regRenderCanvasFooter;
   // Expose helpers for tests (Impl G adds proper test coverage).
-  window.schemaFromFields = schemaFromFields;
+  window.regBuildPublishArtifacts = regBuildPublishArtifacts;
+  window.regStripSchemaExtensions = regStripSchemaExtensions;
   window.fieldsFromSchema = fieldsFromSchema;
   window.regHighlightJson = regHighlightJson;
   // Expose a getter for the working draft so smoke tests and demo runners can

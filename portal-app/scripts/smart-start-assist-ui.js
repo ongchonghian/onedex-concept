@@ -178,7 +178,12 @@ function smartStartUi_openPopover(suggestion, anchorEl, ctx) {
       '<span class="reg-assist-popover-conf reg-assist-popover-conf-' + (suggestion.confidence || 'medium') + '">' +
         smartStart_escapeHtml(confLabel) + '</span>' +
     '</span>' +
-    (suggestion.liveEval ? (
+    // "Live eval" badge only surfaces when the evaluation actually ran
+    // against the operator's real on-ramp payload. The canned fixtures use
+    // `ranAgainst: 'smart-start-sample'` (a synthesised payload) — surfacing
+    // a "Live eval" label there would mislead the operator into thinking
+    // the suggestion was validated on real data. Suppress in that case.
+    (suggestion.liveEval && suggestion.liveEval.ranAgainst && suggestion.liveEval.ranAgainst !== 'smart-start-sample' ? (
       '<span class="reg-assist-popover-status-item">' +
         '<span class="reg-assist-popover-status-label">Live eval:</span> ' +
         '<span class="reg-assist-popover-eval reg-assist-popover-eval-' + (suggestion.liveEval.result || 'na') + '">' +
@@ -306,9 +311,22 @@ function smartStartUi_buildSourceRow(source, ctx) {
       action.href = actionUrl;
       action.target = '_blank';
       action.rel = 'noopener noreferrer';
+    } else if (source.type === 'pdf-region') {
+      // Open the operator's uploaded source document with the cited
+      // page/bbox highlighted. The viewer lives in register-onramps.js
+      // so it has direct access to the lazy-loaded pdf.js dependency.
+      action.href = '#';
+      action.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (typeof window.regOpenSourceRegionViewer === 'function') {
+          window.regOpenSourceRegionViewer(source);
+        } else {
+          console.warn('[smart-start-assist] source-region viewer not loaded; falling back to no-op');
+        }
+      });
     } else {
       action.href = '#';
-      action.addEventListener('click', (e) => { e.preventDefault(); /* Slice 1: no-op for PDF region viewer */ });
+      action.addEventListener('click', (e) => { e.preventDefault(); });
     }
     action.innerHTML = '<i class="ti ti-external-link" aria-hidden="true"></i> ' + smartStart_escapeHtml(actionLabel);
     row.appendChild(action);
@@ -387,9 +405,12 @@ function smartStartUi_actionButton(label, variant, onClick) {
 }
 
 function smartStartUi_liveEvalLabel(le) {
+  // Only surfaced when ranAgainst is a real operator payload (the synthesised-
+  // sample case is filtered upstream). Label reflects that without invoking
+  // "sample" anymore.
   switch (le && le.result) {
-    case 'pass':       return 'PASS on Smart Start sample';
-    case 'fail':       return 'FAIL on Smart Start sample';
+    case 'pass':       return 'PASS on your draft data';
+    case 'fail':       return 'FAIL on your draft data';
     case 'parseError': return 'Parse error';
     default:           return 'Not applicable';
   }

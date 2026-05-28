@@ -74,6 +74,38 @@ function nextId(prefix, collection) {
   return `${prefix}-${String(count).padStart(4, '0')}`;
 }
 
+/* resolveElementSnapshot (ADR 0043) — capture {id, version, source} for an
+   Agreement at creation time. Looks for a workspace.dataElements entry whose
+   name matches the draft's element name within the same DEX; if found, returns
+   the latest published version (by publishedAt) as source='published'. Otherwise
+   returns a slug-derived id under source='seed' so the seeded fixture elements
+   resolve to their scenario-driven Composer path per ADR 0043 sub-decision 6. */
+function resolveElementSnapshot(dataElement, dexId, workspace) {
+  const name = (dataElement && dataElement.name) || '';
+  const trimmed = String(name).trim().toLowerCase();
+  if (!trimmed) return { id: '', version: '', source: 'seed' };
+
+  // Scan workspace.dataElements for the latest matching version in this DEX.
+  const matches = [];
+  const map = (workspace && workspace.dataElements) || {};
+  Object.keys(map).forEach(ref => {
+    const rec = map[ref];
+    if (!rec || rec.dexId !== dexId) return;
+    if (String(rec.name || '').trim().toLowerCase() !== trimmed) return;
+    matches.push(rec);
+  });
+  if (matches.length) {
+    matches.sort((a, b) => String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')));
+    const latest = matches[0];
+    return { id: latest.id, version: latest.version, source: 'published' };
+  }
+
+  // Slug fallback for seeded fixture elements that never had a full
+  // elementSchema published. Composer routes these to the scenario-driven path.
+  const slug = trimmed.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return { id: slug, version: '', source: 'seed' };
+}
+
 function createAgreementDraft(context = {}) {
   const workspace = ensureWorkspaceLoaded();
   const draftId = nextId('draft-agr', workspace.agreementDrafts);
@@ -118,6 +150,7 @@ function submitAgreementDraft(draftId) {
   const agreementId = `AGR-2026-${String(5800 + Object.keys(workspace.agreements).length + 1).padStart(4, '0')}`;
   const inboxItemId = nextId('inbox-agr', workspace.inboxItems);
   const counterpartyOrgId = resolveCounterpartyOrgId(draft.counterparty.name, workspace.orgs);
+  const elementSnapshot = resolveElementSnapshot(draft.dataElement, draft.dexId, workspace);
 
   workspace.agreements[agreementId] = {
     agreementId,
@@ -131,6 +164,11 @@ function submitAgreementDraft(draftId) {
     counterpartyOrgName: draft.counterparty.name,
     title: `${draft.dataElement.name} with ${draft.counterparty.name}`,
     dataElementSummary: clone(draft.dataElement),
+    // ADR 0043 — element snapshot key for Composer resolution. `source='published'`
+    // when a workspace.dataElements entry matched at creation time; `source='seed'`
+    // for slug-fallback against the seeded fixture catalogue. The display tuple
+    // dataElementSummary above is preserved for renderers.
+    elementSnapshot,
     terms: {
       effectiveFrom: new Date().toLocaleDateString('en-GB', {
         day: 'numeric',
@@ -918,6 +956,86 @@ function recordComposerMessage(scenarioConfig, opts) {
   return clone(record);
 }
 
+/* recordSchemaDrivenMessage (ADR 0043 sub-decision 8) — persist a Composer
+   submission for an Agreement whose element resolves to a workspace-persisted
+   Element version. Sibling to recordComposerMessage; differs in that it reads
+   from the Agreement record + workspace.dataElements rather than a scenario
+   config, and stamps a payload {schemaRef, values, submittedAt, submittedBy,
+   rulesEval} so the Message detail view can re-render the form. */
+function recordSchemaDrivenMessage(agreementId, elementVersionRef, values, idempotencyKey, rulesEval) {
+  const workspace = ensureWorkspaceLoaded();
+  if (!agreementId) return null;
+  const agreement = workspace.agreements[agreementId];
+  if (!agreement) return null;
+
+  const dexId = agreement.dexId || workspace.meta.activeDexId;
+  const userId = workspace.meta.activeUserId;
+  const userOrgId = (typeof USERS !== 'undefined' && USERS[userId])
+    ? USERS[userId].primaryOrgId
+    : agreement.operatorOrgId;
+
+  const seq = (Object.keys(workspace.messages).length + 1).toString().padStart(4, '0');
+  const messageId = `MSG-${dexId.toUpperCase()}-${seq}`;
+  const nowISO = new Date().toISOString();
+  const counterpartyOrgName = agreement.counterpartyOrgName || 'Counterparty';
+  const rec = workspace.dataElements ? workspace.dataElements[elementVersionRef] : null;
+
+  const record = {
+    messageId,
+    dexId,
+    direction: 'sent',
+    flow: 'push',
+    status: 'delivered',
+    owner: null,
+    closed: false,
+    closedAt: null,
+    closedBy: null,
+    closeReason: null,
+    closeReasonText: null,
+    retryCount: 0,
+    idempotencyKey: idempotencyKey || `idem_${messageId.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
+    operatorOrgId: userOrgId,
+    agreementId,
+    counterpartyOrgId: agreement.counterpartyOrgId,
+    counterparty: {
+      name: counterpartyOrgName,
+      initials: counterpartyOrgName.split(' ').map((p) => p[0]).join('').slice(0, 2)
+    },
+    pitstop: null,
+    element: {
+      name: (rec && rec.name) || (agreement.dataElementSummary && agreement.dataElementSummary.name) || 'Message',
+      version: (rec && rec.version) || ''
+    },
+    elementSnapshot: agreement.elementSnapshot ? clone(agreement.elementSnapshot) : null,
+    payload: {
+      schemaRef:   elementVersionRef,
+      values:      values || {},
+      submittedAt: nowISO,
+      submittedBy: userId,
+      rulesEval:   Array.isArray(rulesEval) ? rulesEval : []
+    },
+    errorLine: null,
+    errorIcon: null,
+    timeDisplay: 'just now',
+    newArrival: true,
+    queued: false,
+    actions: ['view'],
+    activity: [{
+      kind: 'composer-submitted',
+      ts: nowISO,
+      actorUserId: userId,
+      note: 'Submitted via schema-driven Composer (ADR 0043)'
+    }],
+    createdAt: nowISO,
+    updatedAt: nowISO,
+    spawnedByDoctor: false
+  };
+
+  workspace.messages[messageId] = record;
+  persistWorkspace();
+  return clone(record);
+}
+
 function deleteMessageRecord(messageId) {
   const workspace = ensureWorkspaceLoaded();
   if (!workspace.messages[messageId]) return false;
@@ -1584,6 +1702,8 @@ window.getShowClosedMessagesPref = getShowClosedMessagesPref;
 window.setShowClosedMessagesPref = setShowClosedMessagesPref;
 window.simulateMessageRecord = simulateMessageRecord;
 window.recordComposerMessage = recordComposerMessage;
+window.recordSchemaDrivenMessage = recordSchemaDrivenMessage;
+window.resolveElementSnapshot = resolveElementSnapshot;
 window.deleteMessageRecord = deleteMessageRecord;
 window.clearSimulatedMessages = clearSimulatedMessages;
 window.simulateAgreementRecord = simulateAgreementRecord;

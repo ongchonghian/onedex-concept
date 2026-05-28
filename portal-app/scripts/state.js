@@ -549,8 +549,9 @@ const DATA_ELEMENTS_BY_DEX = {
    Shape: { elementId: { name, latestVersion, fields: [...] } }
    Field shape mirrors the field-builder's in-memory model (register-element.js):
      { name, type, required, description?, validation?, examples? }
-   The schemaFromFields() serialiser in register-element.js converts these to
-   JSON Schema; fieldsFromSchema() (its inverse) is the import path. */
+   regBuildPublishArtifacts() in register-element.js serialises these to the
+   publish bundle (elementSchema + uiSchema + uiRules + authoringMetadata);
+   fieldsFromSchema(elementSchema, bundle) is the import path. */
 const FORK_SOURCE_SCHEMAS = {
   'bill-of-lading': {
     name: 'Bill of Lading',

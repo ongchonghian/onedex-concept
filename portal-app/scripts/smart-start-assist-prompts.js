@@ -103,6 +103,46 @@ function smartStartPrompts_extractFieldsFromPdf(ctx) {
     'domain-agnostic — it applies equally to inspection sheets, logistics',
     'manifests, lab forms, surveys, and any other tabular intake pattern.',
     '',
+    'NO STRUCTURAL SUFFIXES ON PRIMITIVE TYPES (CRITICAL, UX-41 Lever 1):',
+    'Never emit a field whose `name` ends in a structural suffix',
+    '(`_table`, `_matrix`, `_grid`, `_chart`, `_list`) as a PRIMITIVE type',
+    '(`string`, `number`, `integer`, `boolean`, `enum`). These suffixes are',
+    'structural indicators — if you find yourself wanting to append one to a',
+    'field name, that is a signal the underlying region is a `table`',
+    'structural-region that you must NOT collapse into a primitive.',
+    '',
+    'INVALID OUTPUTS (will be rejected by the post-validator and re-prompted):',
+    '  ✗ { "name": "specimen_table",    "type": "string"  }',
+    '  ✗ { "name": "results_matrix",    "type": "string"  }',
+    '  ✗ { "name": "diagnoses_grid",    "type": "string"  }',
+    '  ✗ { "name": "vital_signs_chart", "type": "string"  }',
+    '  ✗ { "name": "tasks_list",        "type": "string"  }',
+    '  ✗ { "name": "severity_matrix",   "type": "enum"    }   ← enum is a constrained primitive',
+    '  ✗ { "name": "lab_table",         "type": "boolean" }',
+    '',
+    'CORRECT DECOMPOSITION of a matrix region (e.g., specimen × destination):',
+    '  {',
+    '    "name": "specimens",',
+    '    "type": "array",',
+    '    "items": {',
+    '      "type": "object",',
+    '      "properties": {',
+    '        "sample_type": { "type": "string", "enum": ["plain","edta","urine",...] },',
+    '        "clinic":      { "type": "boolean" },',
+    '        "lab":         { "type": "boolean" }',
+    '      },',
+    '      "required": ["sample_type"]',
+    '    }',
+    '  }',
+    '',
+    'BIDIRECTIONAL SYMMETRY: If you would have named a field with a structural',
+    'suffix, you have only two valid choices:',
+    '  (a) The suffix accurately describes the region — emit',
+    '      `structuralRegion: "table"` with the cells decomposed as columns.',
+    '  (b) The suffix is wrong (the region is actually a standalone single-value) —',
+    '      STRIP the suffix from the name and emit the primitive type.',
+    'Emitting `type: "string"` with a `_table` suffix is a category error.',
+    '',
     'Return JSON only, conforming exactly to the schema:',
     '',
     '{',
@@ -193,20 +233,42 @@ function smartStartPrompts_overlaySchema(ctx) {
     '  checkbox-cluster          type: "array", items: { type: "string", enum: [...] }',
     '  table                     type: "array", items: { type: "object", properties: { <col>: {...} } }',
     '                            — columns become item properties, typed per cell',
-    '                            — row labels persist in x-presentation.rowLabels',
+    '                            — row labels persist on uiSchema.presentation.<field>.rowLabels',
     '                            — NEVER emit `string` for a `table` region',
     '  repeated-pattern          type: "array", items: { type: "object" }',
     '  sub-form-group            type: "object", properties: {...}',
     '  likert-matrix             type: "object", properties: { <q>: { enum: [...sharedScale] } }',
-    '  composite-input.*         type: "string" with pattern, x-presentation.hint:"composite-*"',
+    '  composite-input.*         type: "string" with pattern; uiSchema.presentation.<field>.hint:"composite-*"',
     '  signature-block           type: "string", format: "data-url"',
     '  attachment-zone           type: "array", items: { type: "string", format: "uri" }',
-    '  static-disclaimer         no `properties` entry; emit synthetic _static_N in x-presentation',
+    '  static-disclaimer         no `properties` entry; emit synthetic _static_N in uiSchema.presentation + uiSchema.order',
     '',
     'If a `table` region\'s columns are unclear, STILL emit `type: "array",',
     'items: { type: "object", properties: {} }` — the empty properties object',
     'is recoverable downstream via refit. Collapsing to `type: "string"`',
     'destroys the structural intent permanently.',
+    '',
+    'STRUCTURAL-SUFFIX SYMMETRY RULE (LOAD-BEARING, UX-41 Lever 1.5).',
+    'A field NAME containing a structural suffix (`_table`, `_matrix`, `_grid`,',
+    '`_chart`, `_list`) UPGRADES the field\'s effective `structuralRegion` to',
+    '`table`, regardless of what the VLM classifier emitted. If you see such',
+    'a name in the seed data, you have exactly two valid choices:',
+    '',
+    '  (a) The suffix accurately describes the region — emit',
+    '      `type: "array", items: { type: "object", properties: {...} }`',
+    '      with the cells decomposed as columns. If columns are unknown,',
+    '      emit `items.properties: {}` (empty) for refit to recover.',
+    '',
+    '  (b) The suffix is wrong — STRIP it from the name and emit the',
+    '      primitive type that actually fits.',
+    '',
+    'Emitting a primitive (`string`/`number`/`integer`/`boolean`/`enum`) with',
+    'a structural suffix on the name is a CATEGORY ERROR — the post-validator',
+    'will reject the output and re-prompt once with the violation surfaced.',
+    'A second violation drops the field with `authoringMetadata.reviewRequired',
+    '["<fieldPath>"] = "unresolved_structural_suffix"` for Sarah\'s manual review',
+    '(authoringMetadata is co-versioned with elementSchema/uiSchema/uiRules but',
+    'never published into the interop-clean elementSchema).',
     '',
     'Output strictly JSON: { "suggestions": [ <Suggestion>, ... ] }',
     '',
@@ -258,7 +320,25 @@ function smartStartPrompts_overlayComplexity(ctx) {
     '  - High-volume operational data with no signature → simple',
     '  - Signature / attestation fields → high-stakes',
     '',
-    'Include a concise reason in payload.reason.',
+    'Suggestion shape (kind="complexity-pick"):',
+    '{',
+    '  "id": "sug-complexity-<slug>",',
+    '  "tab": "complexity",',
+    '  "kind": "complexity-pick",',
+    '  "payload": {',
+    '    "choice": "simple" | "high-stakes",',
+    '    "reason": "<one concise sentence>"',
+    '  },',
+    '  "sources": [{ "type": "pdf-region|confluence-section|reference-doc|sibling-element|sample-payload", "ref": "…", "excerpt": "…" }],',
+    '  "confidence": "high|medium|low",',
+    '  "caveats": ["…"]',
+    '}',
+    '',
+    'SOURCES ARE MANDATORY (grounding constraint). Cite the field name(s),',
+    'Confluence section, reference passage, or sibling Element that drove the',
+    'choice — e.g., a PII-shaped field name from the seed, a regulatory clause',
+    'from reference-docs, or a sibling Element with a known complexity. A',
+    'complexity suggestion with no sources WILL be dropped.',
     '',
     'Output strictly JSON: { "suggestions": [ <Suggestion> ] } — single-element array.'
   ].join('\n');
@@ -398,6 +478,19 @@ function smartStartPrompts_systemPreamble() {
     '               "normally"), OR caveats triggered.',
     'Caveats demote, never promote. Sibling-only never reaches "high".',
     '',
+    'PUBLISHED-ARTEFACT CONTRACT (RJSF hard cutover, CONTEXT.md `x-*` zero-residue):',
+    'When this prototype publishes an Element version it produces a co-versioned',
+    'bundle of four artefacts:',
+    '  • elementSchema     — interop-clean JSON Schema (NO `x-*` keys)',
+    '  • uiSchema          — presentation/layout: { presentation, order, groups }',
+    '  • uiRules           — runtime UI rules: { visibility: { <fieldPath>: expr } }',
+    '  • authoringMetadata — authoring-only flags (e.g. reviewRequired) — never',
+    '                        published into elementSchema',
+    'Suggestion payloads should describe field-builder model state (`name`, `type`,',
+    '`validation`, `items`, `properties`, `rowLabels`, …) — never schema `x-*`',
+    'extension keys. The serialiser routes presentation hints to uiSchema and',
+    'visibility expressions to uiRules at publish time.',
+    '',
     'OUTPUT: strict JSON. Begin with `{`. No prose around the JSON.'
   ].join('\n');
 }
@@ -407,6 +500,45 @@ function smartStartPrompts_systemPreamble() {
  * are surfaced as such (don't silently omit them — the model should know what
  * sources it had access to).
  */
+/* Format a field's validation state for inclusion in the assist prompt.
+ * Captures the post-on-ramp / post-acceptance mutations so the LLM has the
+ * full current shape, not just type+required. Returns null when there's
+ * nothing meaningful to surface. */
+function _smartStart_formatFieldValidation(f) {
+  if (!f || !f.validation || typeof f.validation !== 'object') return null;
+  const v = f.validation;
+  const bits = [];
+  if (Array.isArray(v.enumValues) && v.enumValues.length) {
+    const labelsObj = v.enumLabels || {};
+    const items = v.enumValues.map(val => {
+      const label = labelsObj[String(val)];
+      return label ? (String(val) + '=' + label) : String(val);
+    });
+    bits.push('enum=[' + items.join(', ') + ']');
+  }
+  if (v.itemType) {
+    bits.push('items=' + v.itemType);
+    if (Array.isArray(v.itemEnumValues) && v.itemEnumValues.length) {
+      bits.push('itemEnum=[' + v.itemEnumValues.join(', ') + ']');
+    }
+  }
+  if (v.minLength !== undefined) bits.push('minLength=' + v.minLength);
+  if (v.maxLength !== undefined) bits.push('maxLength=' + v.maxLength);
+  if (v.minimum !== undefined) bits.push('minimum=' + v.minimum);
+  if (v.maximum !== undefined) bits.push('maximum=' + v.maximum);
+  if (v.pattern) bits.push('pattern=' + JSON.stringify(v.pattern));
+  if (v.decimalPlaces !== undefined) bits.push('decimalPlaces=' + v.decimalPlaces);
+  if (v.minItems !== undefined) bits.push('minItems=' + v.minItems);
+  if (v.maxItems !== undefined) bits.push('maxItems=' + v.maxItems);
+  if (Array.isArray(v.allowedFileExtensions) && v.allowedFileExtensions.length) {
+    bits.push('allowedExtensions=' + JSON.stringify(v.allowedFileExtensions));
+  }
+  if (v.conditionalRequired && v.conditionalRequired.condition) {
+    bits.push('conditionalRequired="' + v.conditionalRequired.condition + '"');
+  }
+  return bits.length ? bits.join(', ') : null;
+}
+
 function smartStartPrompts_renderInputs(ctx) {
   const parts = [];
 
@@ -420,11 +552,30 @@ function smartStartPrompts_renderInputs(ctx) {
     parts.push('Description: ' + ((ctx.seed.meta && ctx.seed.meta.description) || '(none)'));
     parts.push('Fields (' + (ctx.seed.fields || []).length + '):');
     (ctx.seed.fields || []).forEach(f => {
+      // Surface the field's CURRENT state including any validation that
+      // upstream on-ramps may have applied (e.g., accepted spec-sheet
+      // suggestions mutate type/validation in place). Without this the
+      // assist LLM sees a degraded view and re-proposes settled work.
       parts.push('  - ' + (f.name || '(unnamed)') + ' (' + (f.type || 'string') + ')' +
         (f.required ? ' [required]' : '') +
         (f.description ? ' — ' + f.description : ''));
+      const valSummary = _smartStart_formatFieldValidation(f);
+      if (valSummary) parts.push('    validation: ' + valSummary);
     });
     parts.push('Source on-ramp: ' + ((ctx.seed.source && ctx.seed.source.onramp) || 'unknown'));
+    // Decision log from the spec-sheet on-ramp's accept/reject phase. When
+    // Sarah has already accepted (or explicitly rejected) a suggestion, the
+    // assist LLM should not re-propose the same kind for the same field —
+    // doing so wastes tokens and asks her to re-litigate decisions.
+    const decisions = (ctx.seed.acceptedLlmSuggestions || []);
+    if (decisions.length) {
+      parts.push('Already-decided suggestions (' + decisions.length + ' accepted upstream — do NOT re-propose):');
+      decisions.forEach(d => {
+        parts.push('  - ' + (d.field || '?') + ' :: ' + (d.kind || '?') +
+          ' (confidence: ' + (d.confidence || 'medium') + ')' +
+          (d.rationale ? ' — ' + d.rationale : ''));
+      });
+    }
   } else {
     parts.push('(no seed)');
   }

@@ -115,7 +115,11 @@ function goto(name) {
 
   // Initial render for the composer: apply the current scenario (defaults to 'push-high-stakes' on first open)
   if (name === 'compose' && typeof setComposerScenario === 'function') {
-    setComposerScenario(composerState.scenario || 'push-high-stakes');
+    if (composerState.scenario === 'schema-driven' && typeof setComposerSchemaDrivenForm === 'function') {
+      setComposerSchemaDrivenForm();
+    } else {
+      setComposerScenario(composerState.scenario || 'push-high-stakes');
+    }
   }
 
   /* Phase 6 — scene-driven rendering is retired. Every screen has a
@@ -1034,7 +1038,55 @@ function renderMessageDetailFromWorkspace() {
   if (typeof SCREEN_RENDERERS !== 'undefined' && typeof SCREEN_RENDERERS['message-detail'] === 'function') {
     SCREEN_RENDERERS['message-detail'](workspaceMessageToDetailSeed(message));
   }
+  // ADR 0043 sub-decision 8 — if this Message was submitted via the schema-
+  // driven Composer, swap the JSON payload viewer for a skeleton render of the
+  // saved values using the same schema walker that authored the form.
+  if (typeof renderSchemaDrivenPayloadSection === 'function') {
+    renderSchemaDrivenPayloadSection(message);
+  }
   return true;
+}
+
+/* renderSchemaDrivenPayloadSection (ADR 0043) — replace the #msg-payload-viewer
+   JSON pre with a read-only schema-walker render of message.payload.values.
+   No-op for Messages without payload.schemaRef (the seed/scenario path). */
+function renderSchemaDrivenPayloadSection(message) {
+  const viewer = document.getElementById('msg-payload-viewer');
+  const summary = document.getElementById('msg-payload-summary');
+  if (!viewer) return;
+  const payload = message && message.payload;
+  if (!payload || !payload.schemaRef) return;
+  const ws = (typeof getWorkspace === 'function') ? getWorkspace() : null;
+  const rec = ws && ws.dataElements ? ws.dataElements[payload.schemaRef] : null;
+  if (!rec || !rec.elementSchema || typeof schemaWalker_renderForm !== 'function') {
+    // No schema (orphan reference, per ADR 0043 sub-decision 10's cleanup we
+    // shouldn't hit this — but defend with a JSON fallback for now).
+    viewer.textContent = JSON.stringify(payload.values, null, 2);
+    return;
+  }
+  // Swap the <pre> for a <div> we can render into.
+  const container = document.createElement('div');
+  container.id = 'msg-payload-viewer';
+  container.className = 'sw-payload-viewer';
+  viewer.parentNode.replaceChild(container, viewer);
+  schemaWalker_renderForm(container, rec.elementSchema, {
+    values: payload.values,
+    uiSchema: rec.uiSchema,
+    uiRules: rec.uiRules,
+    disabled: true
+  });
+  if (summary) {
+    summary.textContent = 'Rendered from elementSchema · ' + payload.schemaRef +
+      ' · submitted ' + new Date(payload.submittedAt).toLocaleString();
+  }
+  // Surface rule eval if any rules ran at submit time.
+  if (Array.isArray(payload.rulesEval) && payload.rulesEval.length) {
+    const note = document.createElement('p');
+    note.style.cssText = 'font-size:11px;color:var(--g-50);margin-top:6px';
+    const pass = payload.rulesEval.filter(r => r.result === 'pass').length;
+    note.textContent = pass + ' of ' + payload.rulesEval.length + ' rules passed at submit time';
+    container.parentNode.insertBefore(note, container.nextSibling);
+  }
 }
 
 /* ---------- Inbox (workspace-driven) ----------
@@ -3537,6 +3589,46 @@ function openDataElementDetail(name) {
   goto('data-element-detail');
 }
 
+/* ---------- hydrateDataElementsFromWorkspace (ADR 0043) ----------
+   Overlays operator-published Element versions from workspace.dataElements
+   back onto the script-level DATA_ELEMENTS_BY_DEX fixture so subsequent
+   renders (data-picker tree, catalogue list) include them. Idempotent —
+   the "Authored" group is replaced each call. */
+function hydrateDataElementsFromWorkspace() {
+  if (typeof DATA_ELEMENTS_BY_DEX === 'undefined') return;
+  const ws = (typeof getWorkspace === 'function') ? getWorkspace() : null;
+  if (!ws || !ws.dataElements) return;
+
+  // Bucket published versions by dexId.
+  const byDex = {};
+  Object.keys(ws.dataElements).forEach(ref => {
+    const rec = ws.dataElements[ref];
+    if (!rec || !rec.dexId) return;
+    (byDex[rec.dexId] = byDex[rec.dexId] || []).push({
+      kind: 'leaf',
+      id: ref,                            // versionRef — `${baseId}@${version}`
+      elementBaseId: rec.id,
+      name: rec.name || rec.id,
+      version: rec.version || 'v1.0',
+      icon: 'file-text',
+      publishedThisSession: false,
+      publishedAt: rec.publishedAt
+    });
+  });
+
+  Object.keys(byDex).forEach(dexCode => {
+    const reg = DATA_ELEMENTS_BY_DEX[dexCode];
+    if (!reg) return;
+    reg.groups = reg.groups || [];
+    // Remove any prior "Authored" group so this rebuild is idempotent.
+    reg.groups = reg.groups.filter(g => g.name !== 'Authored' && g.name !== 'Authored this session');
+    const elements = byDex[dexCode]
+      .sort((a, b) => String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')));
+    reg.groups.unshift({ name: 'Authored', count: elements.length, open: true, elements: elements });
+    reg.totalCount = (reg.totalCount || 0);   // count drift on totalCount is OK — picker renders from groups
+  });
+}
+
 /* ---------- renderDataPickerFromDex ----------
    The New-Agreement wizard's data-picker step is static HTML hard-coded with
    SGTradex elements (Bill of Lading, Vessel arrival pack, …). When the
@@ -4269,6 +4361,27 @@ function switchSettingsPane(tab, paneName) {
 let detailAgreementShape = 'default';
 
 function openComposerFromDetail() {
+  // ADR 0043 sub-decision 6 — fork on elementSnapshot.source. When the
+  // selected Agreement was created against a workspace-persisted Element
+  // version, render the Composer from elementSchema via the schema walker.
+  // Otherwise fall through to the existing scenario-driven path so seeded
+  // fixture demos keep working unchanged.
+  try {
+    if (typeof selectedAgreementId !== 'undefined' && selectedAgreementId) {
+      const ws = (typeof getWorkspace === 'function') ? getWorkspace() : null;
+      const agr = ws && ws.agreements ? ws.agreements[selectedAgreementId] : null;
+      const snap = agr && agr.elementSnapshot;
+      if (snap && snap.source === 'published' && snap.id && snap.version) {
+        const ref = snap.id + '@' + snap.version;
+        if (ws.dataElements && ws.dataElements[ref]) {
+          openComposerSchemaDriven(selectedAgreementId, ref);
+          return;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Composer fork check failed; falling back to scenario path:', e);
+  }
   if (detailAgreementShape === 'cross-dex') {
     openComposer('cross-dex');
   } else if (detailAgreementShape === 'pack') {
@@ -5758,8 +5871,104 @@ function openComposer(scenario) {
   // For entries that don't carry context (e.g. Messages list "+ New Message"), use openComposerPicker() instead.
   composerState.scenario = scenario || 'push-high-stakes';
   composerState.step = 1;
+  // Clear schema-driven context so a re-entry into a scenario doesn't inherit
+  // the previous published-element references.
+  composerState.elementVersionRef = null;
+  composerState.agreementId = null;
   goto('compose');
   // setComposerScenario will be invoked by the goto hook below
+}
+
+/* setComposerSchemaDrivenForm (ADR 0043 sub-decision 6) — render the Composer's
+   #compose-form from the published Element version's elementSchema via the
+   schema walker. Called from the goto-compose hook when
+   composerState.scenario === 'schema-driven'. Sets the screen header to the
+   element name + version, hides scenario-specific banners (cross-DEX, multi-
+   schema), and stamps a fresh idempotency key. Submit handler reads back via
+   schemaWalker_readValues — see saveSchemaDrivenMessage below. */
+function setComposerSchemaDrivenForm() {
+  const ws = (typeof getWorkspace === 'function') ? getWorkspace() : null;
+  if (!ws) return;
+  const ref = composerState.elementVersionRef;
+  const rec = ref && ws.dataElements ? ws.dataElements[ref] : null;
+  if (!rec || !rec.elementSchema) {
+    console.warn('Schema-driven Composer entered without resolvable Element version:', ref);
+    return;
+  }
+  const agreementId = composerState.agreementId;
+  const agr = agreementId ? ws.agreements[agreementId] : null;
+
+  // Header
+  const titleEl = document.getElementById('compose-title');
+  if (titleEl) titleEl.textContent = 'New Message · ' + rec.name + ' ' + rec.version;
+  const agrIdEl = document.getElementById('compose-agr-id');
+  if (agrIdEl) agrIdEl.textContent = agreementId || '—';
+  const rand = Math.random().toString(36).slice(2, 10);
+  const idemKey = 'idem_sd_' + rand;
+  const idemEl = document.getElementById('compose-idem-key');
+  if (idemEl) idemEl.textContent = 'key: ' + idemKey;
+  const reviewKeyEl = document.getElementById('compose-review-key');
+  if (reviewKeyEl) reviewKeyEl.textContent = idemKey;
+  composerState.idempotencyKey = idemKey;
+
+  const pill = document.getElementById('compose-complexity-pill');
+  if (pill) {
+    const cx = rec.composeComplexity || 'simple';
+    pill.className = 'complexity-pill ' + cx;
+    pill.textContent = cx;
+  }
+
+  const sub = document.getElementById('compose-hdr-sub');
+  if (sub) {
+    sub.innerHTML = 'Snapshot <strong>' + rec.version + '</strong> · published ' +
+      new Date(rec.publishedAt || Date.now()).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) +
+      ' · rendering from elementSchema';
+  }
+
+  // Hide scenario-only banners for the tracer — banner-state resolver is a
+  // follow-up (Q7a). Stepper is hidden in schema-driven mode (simple form).
+  const banners = ['compose-pitstop-banner', 'compose-acting-banner',
+                   'compose-pitstop-alternatives', 'compose-cross-dex-banner',
+                   'compose-multi-schema-banner', 'compose-pull-params',
+                   'compose-store-ttl'];
+  banners.forEach(id => { const el = document.getElementById(id); if (el) el.hidden = true; });
+  const stepper = document.getElementById('compose-stepper');
+  if (stepper) stepper.style.display = 'none';
+
+  // Render form via the schema walker. Pass the co-versioned UI artefacts
+  // explicitly — after the RJSF cutover `elementSchema` is interop-clean
+  // (no `x-*` keys), so presentation and visibility come from `uiSchema` /
+  // `uiRules` on the version record, not from schema extensions.
+  const formEl = document.getElementById('compose-form');
+  if (formEl && typeof schemaWalker_renderForm === 'function') {
+    formEl.hidden = false;
+    schemaWalker_renderForm(formEl, rec.elementSchema, {
+      uiSchema: rec.uiSchema,
+      uiRules: rec.uiRules,
+      disabled: false
+    });
+  }
+
+  // Review-tab summary line.
+  const reviewLine = document.getElementById('compose-review-line-element');
+  if (reviewLine) {
+    const fieldCount = Object.keys((rec.elementSchema && rec.elementSchema.properties) || {}).length;
+    reviewLine.innerHTML = '<strong>' + rec.name + '</strong> ' + rec.version +
+      ' (' + fieldCount + ' fields in schema)';
+  }
+}
+
+/* openComposerSchemaDriven (ADR 0043 sub-decision 6) — schema-driven entry
+   point for Agreements that reference a workspace-persisted Element version.
+   Stashes the versionRef + agreementId on composerState so the goto-compose
+   hook can render the form from elementSchema via schemaWalker_renderForm and
+   Submit can read values back keyed by schema field path. */
+function openComposerSchemaDriven(agreementId, elementVersionRef) {
+  composerState.scenario = 'schema-driven';
+  composerState.step = 1;
+  composerState.elementVersionRef = elementVersionRef;
+  composerState.agreementId = agreementId;
+  goto('compose');
 }
 
 /* ----- Agreement picker preceding the Composer ---------------------------
@@ -6065,6 +6274,11 @@ function composerStep(delta) {
 }
 
 function composerSubmit() {
+  // ADR 0043 sub-decision 8 — schema-driven path: extract values via the
+  // schema walker, evaluate rules, persist a real Message record with payload.
+  if (composerState.scenario === 'schema-driven') {
+    return composerSubmit_schemaDriven();
+  }
   const cfg = COMPOSE_SCENARIOS[composerState.scenario];
   if (cfg.submitDisabled) {
     toast('Submit failed · pitstop unreachable · draft saved with idempotency key preserved');
@@ -6091,6 +6305,93 @@ function composerSubmit() {
     btn.disabled = false;
     btn.textContent = cfg.submitLabel;
   }, 900);
+}
+
+/* composerSubmit_schemaDriven (ADR 0043 sub-decision 8) — Submit path for
+   the schema-driven Composer. Walks the form DOM via schemaWalker_readValues,
+   evaluates the published Element version's rules (govaluate stub via
+   regEvalExpression), and either blocks Submit on failure or persists a
+   workspace.messages record carrying the payload. */
+function composerSubmit_schemaDriven() {
+  const ws = (typeof getWorkspace === 'function') ? getWorkspace() : null;
+  if (!ws) return;
+  const ref = composerState.elementVersionRef;
+  const rec = ref && ws.dataElements ? ws.dataElements[ref] : null;
+  if (!rec || !rec.elementSchema) {
+    toast('Submit blocked · element schema not found in workspace');
+    return;
+  }
+  const formEl = document.getElementById('compose-form');
+  if (!formEl || typeof schemaWalker_readValues !== 'function') {
+    toast('Submit blocked · schema-walker unavailable');
+    return;
+  }
+  const values = schemaWalker_readValues(formEl, rec.elementSchema);
+
+  // Evaluate rules against the values. regEvalExpression is exposed by
+  // register-element.js for the Test-as-operator surface; we reuse it so
+  // rule semantics match the registration flow's Test surface.
+  const rulesEval = [];
+  let failedCount = 0;
+  if (Array.isArray(rec.rules) && typeof regEvalExpression === 'function') {
+    rec.rules.forEach(rule => {
+      let result = 'pass';
+      let message = '';
+      try {
+        const evalResult = regEvalExpression(rule.expression, values);
+        if (!evalResult || evalResult.passed === false) {
+          result = 'fail';
+          message = (rule.on_failure || rule.message || 'Rule failed');
+          failedCount++;
+        }
+      } catch (e) {
+        result = 'fail';
+        message = 'Rule eval threw: ' + (e && e.message);
+        failedCount++;
+      }
+      rulesEval.push({ name: rule.name || '(unnamed)', result, message });
+    });
+  }
+
+  if (failedCount > 0) {
+    const summary = rulesEval.filter(r => r.result === 'fail').map(r => '  · ' + r.name + ' — ' + r.message).join('\n');
+    if (typeof window.alert === 'function') {
+      window.alert(failedCount + ' rule' + (failedCount === 1 ? '' : 's') + ' failed:\n\n' + summary +
+        '\n\nFix the values and resubmit. ADR 0043 sub-decision 8 — Submit blocks on rule failure.');
+    } else {
+      toast(failedCount + ' rule failure' + (failedCount === 1 ? '' : 's') + ' · see console');
+    }
+    console.warn('Schema-driven Submit blocked by rule failures:', rulesEval);
+    return;
+  }
+
+  const btn = document.getElementById('compose-submit');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader-2" style="animation: spin 1s linear infinite"></i> Submitting…';
+  }
+  toast('Submission in progress · saving payload to workspace…');
+  setTimeout(() => {
+    try {
+      if (typeof recordSchemaDrivenMessage === 'function') {
+        const record = recordSchemaDrivenMessage(
+          composerState.agreementId,
+          ref,
+          values,
+          composerState.idempotencyKey,
+          rulesEval
+        );
+        if (record) {
+          console.log('Schema-driven Message persisted:', record.messageId);
+        }
+      }
+    } catch (e) {
+      console.warn('Schema-driven Message persist failed:', e);
+    }
+    if (typeof refreshInboxSurfaces === 'function') refreshInboxSurfaces();
+    goto('compose-success');
+    if (btn) { btn.disabled = false; btn.innerHTML = 'Submit'; }
+  }, 600);
 }
 
 function composerCancel() {
@@ -6367,6 +6668,14 @@ function initializeWorkspaceApp() {
   // instead of the pristine state.js fixtures.
   if (typeof hydratePitstopElementScopeFromWorkspace === 'function') {
     hydratePitstopElementScopeFromWorkspace();
+  }
+
+  // ADR 0043 — overlay operator-published Element versions back onto the
+  // script-level DATA_ELEMENTS_BY_DEX fixture so the data-picker tree and
+  // catalogue surfaces include them after a page reload. Parallel pattern to
+  // hydratePitstopElementScopeFromWorkspace above.
+  if (typeof hydrateDataElementsFromWorkspace === 'function') {
+    hydrateDataElementsFromWorkspace();
   }
 
   applyDarkModePreference(workspace.meta.darkMode);

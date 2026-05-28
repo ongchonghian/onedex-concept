@@ -1,5 +1,12 @@
 const WORKSPACE_STORAGE_KEY = 'dex-portal-workspace';
-/* Schema 5 (2026-05-21): adds Diane (Beatrix) as SGBuildex platform admin +
+/* Schema 6 (2026-05-24): element persistence per ADR 0043. Adds
+   `workspace.dataElements` — keyed by `${id}@${version}` — so newly published
+   Element versions survive page reloads, become selectable in the Agreement
+   wizard's data-element picker, and resolve at Composer time. Closes the
+   Phase-2 footnote at register-element.js:9518. Existing v5 snapshots
+   archive-and-rebuild on first read.
+
+   Schema 5 (2026-05-21): adds Diane (Beatrix) as SGBuildex platform admin +
    PLATFORM_ADMIN_BY_DEX-driven DEX-aware platform-admin resolution. Existing
    v4 snapshots froze users + affiliations without Diane; archive-and-rebuild
    so the profile menu, role-row copy, and rail resolution all pick her up.
@@ -23,7 +30,7 @@ const WORKSPACE_STORAGE_KEY = 'dex-portal-workspace';
    userPitstopRoles, pitstopActivityLogs) and stamps `counterpartyOrgId` on
    every Agreement and Message so the organisation → agreement → message
    chain resolves through real org records instead of display strings. */
-const WORKSPACE_STORAGE_SCHEMA_VERSION = 5;
+const WORKSPACE_STORAGE_SCHEMA_VERSION = 6;
 
 function archiveCorruptWorkspace(raw, storage = window.localStorage, now = new Date()) {
   const archiveKey = `dex-portal-workspace-corrupt-${now.toISOString()}`;

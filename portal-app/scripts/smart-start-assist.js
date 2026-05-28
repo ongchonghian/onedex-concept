@@ -61,6 +61,7 @@ function runSmartStartAssist(input) {
   const keyFor = (p) => {
     if (p === 'moonshot') return typeof ssa.getMoonshotKey === 'function' ? ssa.getMoonshotKey() : null;
     if (p === 'xai')      return typeof ssa.getXaiKey      === 'function' ? ssa.getXaiKey()      : null;
+    if (p === 'qwen')     return typeof ssa.getQwenKey     === 'function' ? ssa.getQwenKey()     : null;
     return typeof ssa.getApiKey === 'function' ? ssa.getApiKey() : null;   // 'anthropic' default
   };
   const liveKey = keyFor(provider);
@@ -78,7 +79,20 @@ function runSmartStartAssist(input) {
         seed: seed,
         dexId: dexId,
         confluencePageId: input.confluencePageId,
-        samplePayload: input.samplePayload
+        samplePayload: input.samplePayload,
+        // UX-43c — banner progress callbacks. Wire to the canvas-side banner
+        // updater so Sarah sees per-tab progress instead of a silent 1-minute
+        // wait.
+        onRunStart: (info) => {
+          if (typeof window.regAssistBanner_onRunStart === 'function') {
+            window.regAssistBanner_onRunStart(info);
+          }
+        },
+        onTabArrival: (tabResult) => {
+          if (typeof window.regAssistBanner_onTabArrival === 'function') {
+            window.regAssistBanner_onTabArrival(tabResult);
+          }
+        }
       }).then(live => {
         // If the live call produced nothing usable, fall back to the canned
         // path. This is the same Q10 degradation contract: failed live ≈

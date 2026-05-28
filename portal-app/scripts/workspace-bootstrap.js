@@ -36,6 +36,13 @@ function createEmptyWorkspace(meta = {}) {
     agreementPacks: {},
     inboxItems: {},
     messages: {},
+    /* Published Element versions — schema v6 (ADR 0043).
+       Keyed by `${elementId}@${version}`. Survives page reloads so a freshly-
+       published element from the registration flow can be selected by the
+       Agreement wizard and rendered by the Composer. Seeded from
+       DATA_ELEMENTS_BY_DEX is NOT performed — the seed fixture provides the
+       catalogue stubs; only operator-published versions land here. */
+    dataElements: {},
     /* Participants directory entries, keyed by `<dexId>:<orgId>` (or a synthetic
        slug for participants that aren't in workspace.orgs yet). Each value
        carries the full directory-card shape so the renderer can rebuild a

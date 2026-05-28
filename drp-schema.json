@@ -1,0 +1,152 @@
+{
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "clinican_id": {
+      "type": "string",
+      "description": "Clinician Medical Council Registration Number",
+      "title": "Clinician Medical Council Registration Number",
+      "minLength": 1
+    },
+    "lab_nm": {
+      "type": "string",
+      "description": "Laboratory Name",
+      "title": "Laboratory Name",
+      "minLength": 1
+    },
+    "lab_uen": {
+      "type": "string",
+      "description": "Laboratory Unique Entity Number",
+      "title": "Laboratory Unique Entity Number",
+      "minLength": 1
+    },
+    "patient_dob": {
+      "type": "string",
+      "description": "Patient Date of Birth",
+      "title": "Patient Date of Birth",
+      "minLength": 1
+    },
+    "patient_allergy": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Patient Drug Allergy",
+      "title": "Patient Drug Allergy"
+    },
+    "patient_gender": {
+      "type": "string",
+      "description": "Patient Gender",
+      "title": "Patient Gender",
+      "minLength": 1
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient Identification NRIC/Passport",
+      "title": "Patient Identification NRIC/Passport",
+      "minLength": 1
+    },
+    "patient_med_hist": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Patient Medical History",
+      "title": "Patient Medical History"
+    },
+    "patient_nm": {
+      "type": "string",
+      "description": "Patient Name",
+      "title": "Patient Name",
+      "minLength": 1
+    },
+    "referral_dt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Referral Date Time\n\nFormat: *YYYY-MM-DD*T*HH:MM:SS.mSmSmS*Z\n\nTimezone: Coordinated Universal Time (UTC)\n\nExample: 6 September 2022, 2:05 pm --> 2022-09-06T14:05:00.000Z\n",
+      "title": "Referral Date Time",
+      "minLength": 1
+    },
+    "clinic_nm": {
+      "type": "string",
+      "description": "Referring Clinic Name",
+      "title": "Referring Clinic Name",
+      "minLength": 1
+    },
+    "clinic_uen": {
+      "type": "string",
+      "description": "Referring Clinic Unique Entity Number",
+      "title": "Referring Clinic Unique Entity Number",
+      "minLength": 1
+    },
+    "screening_dt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Screening Date Time\n\nFormat: *YYYY-MM-DD*T*HH:MM:SS.mSmSmS*Z\n\nTimezone: Coordinated Universal Time (UTC)\n\nExample: 6 September 2022, 2:05 pm --> 2022-09-06T14:05:00.000Z\n",
+      "title": "Screening Date Time",
+      "minLength": 1
+    },
+    "screening_report_dt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Screening Report Date Time\n\nFormat: *YYYY-MM-DD*T*HH:MM:SS.mSmSmS*Z\n\nTimezone: Coordinated Universal Time (UTC)\n\nExample: 6 September 2022, 2:05 pm --> 2022-09-06T14:05:00.000Z\n",
+      "title": "Screening Report Date Time",
+      "minLength": 1
+    },
+    "screening_report_file": {
+      "type": "string",
+      "description": "Screening Report File Name",
+      "title": "Screening Report File Name",
+      "minLength": 1
+    },
+    "screening_summary": {
+      "type": "string",
+      "description": "Screening Result and Recommendations Summary",
+      "title": "Screening Result and Recommendations Summary",
+      "minLength": 1
+    },
+    "attachments": {
+      "title": "Attachments",
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "required": [
+          "file_content",
+          "filename"
+        ],
+        "type": "object",
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string",
+            "description": "file name with extension. ex:invoice_123.pdf",
+            "minLength": 1
+          },
+          "file_content": {
+            "title": "File Content",
+            "type": "string",
+            "description": "/push or /provide : Base64 Encoded Content\n\n/receive : file_content is S3 bucket key value (use \"GET\" /files/{file_id} to get Base64 Encoded Content)\n",
+            "minLength": 1
+          }
+        },
+        "description": "attachment file type for CDI"
+      }
+    }
+  },
+  "required": [
+    "clinican_id",
+    "lab_nm",
+    "lab_uen",
+    "patient_dob",
+    "patient_gender",
+    "patient_id",
+    "patient_nm",
+    "referral_dt",
+    "clinic_nm",
+    "clinic_uen",
+    "screening_dt",
+    "screening_report_dt",
+    "screening_report_file",
+    "screening_summary"
+  ]
+}
