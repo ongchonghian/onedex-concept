@@ -19,7 +19,7 @@
 const REG_INITIAL_STATE = Object.freeze({
   mode: 'new',                         // 'new' (greenfield) | 'version' (bump)
   dex: 'tx',                            // captured at flow start; URL-anchored per ADR 0001
-  meta: { name: '', description: '', category: '', version: 'v1.0' },
+  meta: { name: '', description: '', category: '', version: 'v1.0', type: 'DOCUMENT', changeType: 'INITIAL', changeDescription: '' },
   fields: [],
   governance: { residencyStrict: false },
   composeComplexity: null,             // 'simple' | 'high-stakes' (ADR 0025); null = not yet chosen
@@ -156,9 +156,14 @@ function regDeepCloneField(source) {
   // --- Validation (deep) ---
   const sv = source.validation || {};
   f.validation = {};
-  // Copy scalar validation keys.
+  // Copy scalar validation keys. The set must cover everything any writer
+  // (regBuildSeedFromVlmExtraction, llmOverlay_applySuggestion, manual
+  // authoring) can produce — anything omitted here is silently dropped
+  // when an on-ramp seed lands on the canvas via registerOnramp_completeWithSeed.
   ['pattern', 'minimum', 'maximum', 'minLength', 'maxLength',
-   'minItems', 'maxItems', 'itemType', 'subType'].forEach(k => {
+   'minItems', 'maxItems', 'itemType', 'subType',
+   'decimalPlaces', 'formatHint',
+   'perItemMaxSizeBytes', 'perItemMaxSizeHuman'].forEach(k => {
     if (sv[k] !== undefined) f.validation[k] = sv[k];
   });
   // Enum values/labels (shallow-safe — arrays of primitives / objects of strings).
@@ -166,6 +171,18 @@ function regDeepCloneField(source) {
   if (sv.enumLabels)                  f.validation.enumLabels  = Object.assign({}, sv.enumLabels);
   if (Array.isArray(sv.itemEnumValues)) f.validation.itemEnumValues = sv.itemEnumValues.slice();
   if (sv.itemEnumLabels)              f.validation.itemEnumLabels = Object.assign({}, sv.itemEnumLabels);
+  // Array-shaped extension keys produced by LLM-overlay applies.
+  if (Array.isArray(sv.allowedFileExtensions)) f.validation.allowedFileExtensions = sv.allowedFileExtensions.slice();
+  if (Array.isArray(sv.decimalRangeSet))       f.validation.decimalRangeSet       = sv.decimalRangeSet.map(r => Array.isArray(r) ? r.slice() : r);
+  // Object-shaped extension key — conditional-required predicate emitted by
+  // llmOverlay_applySuggestion when the field can't be promoted to companion.
+  if (sv.conditionalRequired && typeof sv.conditionalRequired === 'object') {
+    f.validation.conditionalRequired = {
+      condition: sv.conditionalRequired.condition || '',
+      referencedFields: Array.isArray(sv.conditionalRequired.referencedFields) ? sv.conditionalRequired.referencedFields.slice() : [],
+      triggerValues: Array.isArray(sv.conditionalRequired.triggerValues) ? sv.conditionalRequired.triggerValues.slice() : []
+    };
+  }
   // Likert rows/options (array of small objects).
   if (Array.isArray(sv.likertRows))    f.validation.likertRows    = sv.likertRows.map(r => Object.assign({}, r));
   if (Array.isArray(sv.likertOptions)) f.validation.likertOptions = sv.likertOptions.map(o => Object.assign({}, o));
@@ -10416,15 +10433,16 @@ function regPublish() {
   // and resolves at Composer time. The catalogue stub above (DATA_ELEMENTS_BY_DEX
   // mutation) remains for the picker tree's render path; the full record is
   // what carries the elementSchema, rules, complexity, and audit trail.
+  let publishArtifacts, elementSchema, uiSchema, uiRules, authoringMetadata, publishedAt, publishedBy;
   try {
-    const publishArtifacts = regBuildPublishArtifacts(regDraft);
-    const elementSchema    = regStripSchemaExtensions(publishArtifacts.elementSchema);
-    const uiSchema         = JSON.parse(JSON.stringify(publishArtifacts.uiSchema || {}));
-    const uiRules          = JSON.parse(JSON.stringify(publishArtifacts.uiRules || {}));
-    const authoringMetadata = JSON.parse(JSON.stringify(publishArtifacts.authoringMetadata || {}));
-    const publishedAt = new Date().toISOString();
+    publishArtifacts = regBuildPublishArtifacts(regDraft);
+    elementSchema    = regStripSchemaExtensions(publishArtifacts.elementSchema);
+    uiSchema         = JSON.parse(JSON.stringify(publishArtifacts.uiSchema || {}));
+    uiRules          = JSON.parse(JSON.stringify(publishArtifacts.uiRules || {}));
+    authoringMetadata = JSON.parse(JSON.stringify(publishArtifacts.authoringMetadata || {}));
+    publishedAt = new Date().toISOString();
     const ws = (typeof getWorkspace === 'function') ? getWorkspace() : null;
-    const publishedBy = (ws && ws.meta && ws.meta.activeUserId) || 'marcus';
+    publishedBy = (ws && ws.meta && ws.meta.activeUserId) || 'marcus';
     const versionRecord = {
       id:                baseElementId,
       version:           elementVersion,
@@ -10439,6 +10457,11 @@ function regPublish() {
       composeComplexity: regDraft.composeComplexity || 'simple',
       rules:             Array.isArray(regDraft.rules) ? JSON.parse(JSON.stringify(regDraft.rules)) : [],
       pack:              regDraft.pack ? { id: regDraft.pack.id, name: regDraft.pack.name } : null,
+      meta: {
+        type:                regDraft.meta.type || 'DOCUMENT',
+        changeType:          regDraft.meta.changeType || 'INITIAL',
+        changeDescription:   regDraft.meta.changeDescription || ''
+      },
       auditTrail:        [{ kind: 'element-version-published', at: publishedAt, by: publishedBy }]
     };
     if (ws) {
@@ -10453,6 +10476,36 @@ function regPublish() {
   // Toast — single line per Q9 / ADR 0015 (no celebration modal).
   if (typeof toast === 'function') {
     toast(newEntry.name + ' ' + newEntry.version + ' published. Visible to new Agreements.');
+  }
+
+  // ADR 0046 — auto-download the element bundle (4-file ZIP: elementSchema,
+  // uiSchema, uiRules, metadata.json). Triggered at Publish time; also offers
+  // re-download affordance via catalogue right-click or Re-download button.
+  try {
+    if (typeof regCreateElementBundle === 'function') {
+      const bundleMetadata = {
+        id: baseElementId,
+        version: elementVersion,
+        name: regDraft.meta.name || 'Untitled element',
+        type: regDraft.meta.type || 'DOCUMENT',
+        changeType: regDraft.meta.changeType || 'INITIAL',
+        changeDescription: regDraft.meta.changeDescription || '',
+        publishedAt: publishedAt,
+        publishedBy: publishedBy
+      };
+      const publishArtifacts = {
+        elementSchema: elementSchema,
+        uiSchema: uiSchema,
+        uiRules: uiRules || [],
+        authoringMetadata: authoringMetadata
+      };
+      const bundle = regCreateElementBundle(publishArtifacts, bundleMetadata);
+      if (typeof regDownloadElementBundle === 'function') {
+        regDownloadElementBundle(bundle);
+      }
+    }
+  } catch (e) {
+    console.warn('Could not auto-download element bundle:', e);
   }
 
   // Clear the WIP autosave — registration is committed.

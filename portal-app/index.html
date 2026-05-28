@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="styles/base.css?v=p102">
 <link rel="stylesheet" href="styles/components.css?v=p102">
 <link rel="stylesheet" href="styles/layout.css?v=p102">
-<link rel="stylesheet" href="styles/screens.css?v=p126">
+<link rel="stylesheet" href="styles/screens.css?v=p128">
 <link rel="stylesheet" href="styles/demos.css?v=p102">
 </head>
 <body>
@@ -4732,9 +4732,10 @@
      defined elsewhere. Per ADR 0028 the multi-Pitstop layer is a parallel concern
      hooking into existing surfaces — keeping it as the final layer makes the dependency
      direction explicit. ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="scripts/state.js?v=p102"></script>
 <script src="scripts/access.js?v=p102"></script>
-<script src="scripts/workspace-storage.js?v=p121"></script>
+<script src="scripts/workspace-storage.js?v=p122"></script>
 <!-- workspace-fixtures.js — scene/inbox/MP fixture data extracted from state.js
      in Phase 7. Must load before workspace-bootstrap.js (which dereferences
      SCENE_SEEDS / INBOX_BY_DEX) but order vs. state.js doesn't matter — all
@@ -4747,10 +4748,11 @@
 <script src="scripts/wizard.js?v=p102"></script>
 <script src="scripts/app.js?v=p121"></script>
 <script src="scripts/schema-walker.js?v=p121"></script>
-<script src="scripts/register-element.js?v=p147"></script>
+<script src="scripts/register-element.js?v=p150"></script>
+<script src="scripts/element-bundle-export.js"></script>
 <script src="scripts/register-onramps.js?v=p145"></script>
 <script src="scripts/register-llm-overlay-core.js?v=p121"></script>
-<script src="scripts/register-onramps-spec-sheet.js?v=p116"></script>
+<script src="scripts/register-onramps-spec-sheet.js?v=p117"></script>
 <script src="scripts/register-onramps-spec-sheet-llm.js?v=p121"></script>
 <script src="scripts/register-onramps-form-llm.js?v=p121"></script>
 <!-- Smart Start assist (ADR 0040) — engine + UI primitives + fixtures.

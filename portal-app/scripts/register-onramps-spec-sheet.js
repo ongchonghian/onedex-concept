@@ -1015,20 +1015,12 @@ function _specSelectSheet(sheetName) {
     return;
   }
   _specRenderPreview(parsed);
-  const useBtn = document.getElementById('reg-spec-sheet-use-btn');
-  if (useBtn) useBtn.disabled = !parsed.fields.length;
-  // Multi-sheet workbooks: require explicit "Run extraction" click on each
-  // sheet. The operator may pick through several tabs before deciding which
-  // one to import — auto-running on every pick wastes plugin work and
-  // (especially) LLM tokens. Single-sheet workbooks have no choice to make
-  // so we still auto-run.
-  const multiSheet = (_specCurrent.sheets || []).length > 1;
-  if (multiSheet) {
-    _specCurrent.llmExtractionState = 'pending-confirm';
-    _specApplyExtractionGate('pending-confirm');
-    return;
-  }
-  _specRunLlmExtractionAsync(parsed, sheetName);
+  // Force the admin to make an explicit decision before committing: run
+  // extraction (find enums, constraints, references in the prose) or skip
+  // (commit parsed fields only). "Use these fields" stays disabled until
+  // one of the two CTAs is clicked — no silent default in either direction.
+  _specCurrent.llmExtractionState = 'pending-confirm';
+  _specApplyExtractionGate('pending-confirm');
 }
 
 /* User-facing trigger from the "Run extraction on this sheet" CTA. Bound
@@ -1036,6 +1028,18 @@ function _specSelectSheet(sheetName) {
 function regOnSpecSheetRunExtraction() {
   if (!_specCurrent || !_specCurrent.parsed) return;
   _specRunLlmExtractionAsync(_specCurrent.parsed, _specCurrent.selectedSheetName);
+}
+
+/* Companion to regOnSpecSheetRunExtraction — the admin chose to commit
+ * parsed fields without running extraction. Records the choice and
+ * releases the "Use these fields" CTA. No suggestions are produced. */
+function regOnSpecSheetSkipExtraction() {
+  if (!_specCurrent || !_specCurrent.parsed) return;
+  _specCurrent.llmExtractionState = 'skipped';
+  _specCurrent.suggestionsByField = null;
+  _specCurrent.suggestionsTotal = 0;
+  _specCurrent.suggestionsSource = null;
+  _specApplyExtractionGate('skipped');
 }
 
 /* Convert L0 field list (from FORK_SOURCE_SCHEMAS) to the wire-schema shape
@@ -1162,25 +1166,51 @@ function _specApplyExtractionGate(state) {
                              : '<i class="ti ti-arrow-right"></i> Use these fields';
 
   if (state === 'pending-confirm') {
-    // Multi-sheet workbook — Sarah needs to pick a tab and explicitly opt
-    // into extraction. The commit CTA stays enabled (she can commit
-    // without LLM suggestions if she just wants the parsed fields), but
-    // the banner makes the choice prominent.
-    useBtn.disabled = !_specCurrent || !_specCurrent.parsed || !_specCurrent.parsed.fields.length;
-    delete useBtn.dataset.gated;
+    // Force an explicit choice before commit. "Use these fields" stays
+    // disabled until the admin clicks either Run extraction or Skip —
+    // there's no silent default in either direction. This matters most on
+    // multi-sheet workbooks (token waste on the wrong tab), but applies
+    // to single-sheet too so the decision is consistent.
+    useBtn.disabled = true;
+    useBtn.dataset.gated = 'choice';
     useBtn.innerHTML = defaultLabel;
     const fieldCount = (_specCurrent && _specCurrent.parsed && _specCurrent.parsed.fields.length) || 0;
     const sheetName = (_specCurrent && _specCurrent.selectedSheetName) || 'this sheet';
+    const multiSheet = (_specCurrent && (_specCurrent.sheets || []).length > 1);
+    const subMsg = multiSheet
+      ? 'This workbook has multiple sheets — confirm this is the right one, then decide whether to run extraction (finds enum patterns, length constraints, conditional rules, and standard references in the prose) or skip and commit the parsed fields as-is.'
+      : 'Run extraction to find enum patterns, length constraints, conditional rules, and standard references in the prose, or skip and commit the parsed fields as-is.';
     banner.className = 'reg-spec-sheet-extract-banner is-pending-confirm';
     banner.innerHTML =
       '<i class="ti ti-player-play-filled"></i>' +
       '<div class="reg-spec-sheet-extract-body">' +
-        '<strong>' + fieldCount + ' fields parsed from <code>' + escapeHtmlOnramp(sheetName) + '</code></strong>' +
-        '<span>This workbook has multiple sheets — pick the right one, then run extraction to find ' +
-        'enum patterns, length constraints, conditional rules, and standard references in the prose.</span>' +
+        '<strong>' + fieldCount + ' fields parsed from <code>' + escapeHtmlOnramp(sheetName) + '</code> — choose one to continue</strong>' +
+        '<span>' + subMsg + '</span>' +
+      '</div>' +
+      '<div class="reg-spec-sheet-extract-actions">' +
+        '<button type="button" class="reg-spec-sheet-extract-bulk" onclick="regOnSpecSheetRunExtraction()">' +
+          '<i class="ti ti-sparkles"></i> Run extraction' +
+        '</button>' +
+        '<button type="button" class="reg-spec-sheet-extract-skip" onclick="regOnSpecSheetSkipExtraction()">' +
+          '<i class="ti ti-player-skip-forward"></i> Skip extraction' +
+        '</button>' +
+      '</div>';
+    return;
+  }
+
+  if (state === 'skipped') {
+    useBtn.disabled = !_specCurrent || !_specCurrent.parsed || !_specCurrent.parsed.fields.length;
+    delete useBtn.dataset.gated;
+    useBtn.innerHTML = defaultLabel;
+    banner.className = 'reg-spec-sheet-extract-banner is-skipped';
+    banner.innerHTML =
+      '<i class="ti ti-player-skip-forward"></i>' +
+      '<div class="reg-spec-sheet-extract-body">' +
+        '<strong>Extraction skipped · committing parsed fields only</strong>' +
+        '<span>No enum/constraint/reference suggestions will be attached. You can still run extraction now if you change your mind.</span>' +
       '</div>' +
       '<button type="button" class="reg-spec-sheet-extract-bulk" onclick="regOnSpecSheetRunExtraction()">' +
-        '<i class="ti ti-sparkles"></i> Run extraction on this sheet' +
+        '<i class="ti ti-sparkles"></i> Run extraction instead' +
       '</button>';
     return;
   }

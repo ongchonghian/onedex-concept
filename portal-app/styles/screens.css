@@ -8414,6 +8414,41 @@ textarea.reg-skeleton-input {
   align-self: center;
 }
 .reg-spec-sheet-extract-bulk:hover { background: var(--theme-90); }
+.reg-spec-sheet-extract-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: center;
+}
+.reg-spec-sheet-extract-skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-family: inherit;
+  font-weight: var(--fw-medium);
+  background: var(--surface);
+  color: var(--g-30);
+  border: 0.5px solid var(--g-80);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.reg-spec-sheet-extract-skip:hover { background: var(--g-95); color: var(--g-10); }
+.reg-spec-sheet-extract-banner.is-skipped {
+  background: var(--g-98);
+  border-color: var(--g-90);
+}
+.reg-spec-sheet-extract-banner.is-skipped > i { color: var(--g-40); }
+/* Visual gate state for "Use these fields" while the choice is pending.
+   Native `disabled` already blocks the click — these styles make the
+   gating legible. */
+#reg-spec-sheet-use-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+}
 
 /* Slice 16 — diagnostics panel */
 .reg-spec-sheet-diag-toggle {

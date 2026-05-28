@@ -30,7 +30,7 @@ const WORKSPACE_STORAGE_KEY = 'dex-portal-workspace';
    userPitstopRoles, pitstopActivityLogs) and stamps `counterpartyOrgId` on
    every Agreement and Message so the organisation → agreement → message
    chain resolves through real org records instead of display strings. */
-const WORKSPACE_STORAGE_SCHEMA_VERSION = 6;
+const WORKSPACE_STORAGE_SCHEMA_VERSION = 7;
 
 function archiveCorruptWorkspace(raw, storage = window.localStorage, now = new Date()) {
   const archiveKey = `dex-portal-workspace-corrupt-${now.toISOString()}`;
