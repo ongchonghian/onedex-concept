@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="styles/base.css?v=p102">
 <link rel="stylesheet" href="styles/components.css?v=p102">
 <link rel="stylesheet" href="styles/layout.css?v=p102">
-<link rel="stylesheet" href="styles/screens.css?v=p128">
+<link rel="stylesheet" href="styles/screens.css?v=p136">
 <link rel="stylesheet" href="styles/demos.css?v=p102">
 </head>
 <body>
@@ -4733,6 +4733,16 @@
      hooking into existing surfaces — keeping it as the final layer makes the dependency
      direction explicit. ===== -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- ADR 0047 — AJV (production engine for L1 schema validation in Test-as-
+     operator). cdnjs ships AJV 8 as a draft-2020-12 UMD bundle exposing the
+     `ajv2020` global, matching the $schema URI emitted by
+     regBuildElementSchemaArtifact and the Ajv2020 class @rjsf/validator-ajv8
+     uses under the hood. ajv-formats@2+ ships only CJS/ESM (no UMD), so the
+     formats production cares about (date, email, uri, uuid, hostname) are
+     registered manually via ajv.addFormat() in register-element.js — same
+     constraint surface, no bundler required. Must load before
+     register-element.js. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ajv/8.12.0/ajv2020.min.js"></script>
 <script src="scripts/state.js?v=p102"></script>
 <script src="scripts/access.js?v=p102"></script>
 <script src="scripts/workspace-storage.js?v=p122"></script>
@@ -4748,7 +4758,7 @@
 <script src="scripts/wizard.js?v=p102"></script>
 <script src="scripts/app.js?v=p121"></script>
 <script src="scripts/schema-walker.js?v=p121"></script>
-<script src="scripts/register-element.js?v=p150"></script>
+<script src="scripts/register-element.js?v=p161"></script>
 <script src="scripts/element-bundle-export.js"></script>
 <script src="scripts/register-onramps.js?v=p145"></script>
 <script src="scripts/register-llm-overlay-core.js?v=p121"></script>

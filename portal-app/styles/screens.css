@@ -10846,3 +10846,1465 @@ textarea.reg-skeleton-input {
 }
 .reg-spin { animation: reg-spin 1s linear infinite; }
 @keyframes reg-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* ========== EForm aesthetic polish ============================================
+ * Visual + interaction refinement of the two surfaces that an authored element
+ * renders into:
+ *   1. .reg-skeleton-*  — right-rail Composer Preview during authoring
+ *   2. .reg-test-*      — Test-as-operator modal (full operator simulation)
+ * Bundle artefacts (elementSchema + uiSchema + uiRules per the Versioned
+ * element bundle doctrine in CONTEXT.md) and the renderer shape are unchanged;
+ * class names + DOM structure are preserved. These rules cascade after the
+ * originals so they layer on without overriding semantics. Aligned to
+ * userinterface-wiki: visual-concentric-radius, visual-layered-shadows,
+ * ux-fitts-target-size, ux-proximity-grouping, ux-similarity-consistency,
+ * physics-active-state, type-tabular-nums-for-data, type-text-wrap-pretty,
+ * easing-natural-decay. */
+
+/* -- Composer Preview skeleton (right rail) -------------------------------- */
+
+.reg-skeleton-composer {
+  gap: var(--sp-3);
+}
+.reg-skeleton-empty {
+  background: var(--g-99);
+  border: 0.5px dashed var(--g-90);
+  border-radius: var(--r-md);
+  padding: 22px 16px;
+}
+.reg-skeleton-empty::before {
+  content: '\eb5e';                            /* ti ti-forms — purely decorative */
+  font-family: 'tabler-icons';
+  display: block;
+  font-size: 20px;
+  color: var(--g-70);
+  font-style: normal;
+  margin-bottom: 6px;
+}
+
+.reg-skeleton-field { gap: 5px; }
+.reg-skeleton-label {
+  font-size: var(--fs-meta);
+  letter-spacing: 0.005em;
+}
+/* Required asterisk: visually distinct without re-parsing the label string */
+.reg-skeleton-label,
+.reg-skeleton-group-table th {
+  font-variant-numeric: tabular-nums;
+}
+.reg-skeleton-hint {
+  text-wrap: pretty;
+  line-height: 1.45;
+}
+
+.reg-skeleton-input {
+  background: var(--surface);
+  border-color: var(--g-90);
+  transition: border-color var(--motion-fast) var(--easing),
+              box-shadow var(--motion-fast) var(--easing),
+              background var(--motion-fast) var(--easing);
+}
+.reg-skeleton-input:hover:not(:disabled) {
+  border-color: var(--g-70);
+}
+.reg-skeleton-input:focus:not(:disabled) {
+  outline: none;
+  border-color: var(--theme-50);
+  box-shadow: 0 0 0 3px rgba(var(--theme-tint-rgb), 0.15);
+  background: var(--surface);
+}
+
+/* Group count pill uses tabular numerals so single/double-digit counts align */
+.reg-skeleton-group-count,
+.reg-test-group-count,
+.reg-test-rules-count { font-variant-numeric: tabular-nums; }
+
+/* Card group — concentric radius + hairline shadow per visual-layered-shadows */
+.reg-skeleton-group--card {
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card-rest);
+  padding: 14px 14px 12px;
+}
+.reg-skeleton-group--card > .reg-skeleton-group-heading {
+  margin-bottom: 2px;
+}
+
+/* Accordion: smoother chevron motion, larger hit area on the summary */
+.reg-skeleton-group-details > summary.reg-skeleton-group-heading {
+  padding: 9px 12px;
+  position: relative;
+}
+.reg-skeleton-group-details > summary.reg-skeleton-group-heading::before {
+  transition: transform var(--motion-base) var(--easing);
+}
+.reg-skeleton-group-details > summary.reg-skeleton-group-heading:hover { background: var(--g-99); }
+.reg-skeleton-group-details[open] > summary.reg-skeleton-group-heading { border-bottom: 0.5px solid var(--g-95); }
+
+/* Stepper: pill with connector hairlines + completed-step accent */
+.reg-skeleton-stepper {
+  gap: 0;
+  margin-bottom: 6px;
+  align-items: center;
+}
+.reg-skeleton-step {
+  position: relative;
+  padding: 3px 8px;
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+}
+.reg-skeleton-step + .reg-skeleton-step::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 0.5px;
+  background: var(--g-90);
+  margin: 0 6px;
+  vertical-align: middle;
+}
+.reg-skeleton-step.is-active {
+  background: var(--theme-50);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(var(--theme-tint-rgb), 0.18);
+}
+
+/* Disclaimer row — amber-leaning info note so it reads as guidance, not a field */
+.reg-skeleton-disclaimer {
+  position: relative;
+  padding: 7px 10px 7px 28px;
+  background: var(--amber-95, #fff8e1);
+  color: var(--g-30);
+  border-left: 2px solid #e9b53f;
+  font-style: normal;
+}
+.reg-skeleton-disclaimer::before {
+  content: '\ea1c';                            /* ti ti-info-circle */
+  font-family: 'tabler-icons';
+  position: absolute;
+  left: 8px;
+  top: 7px;
+  color: #b07d00;
+  font-size: 14px;
+}
+
+/* Footer CTA — proper button anatomy (rest/active) without changing the DOM */
+.reg-skeleton-footer { padding-top: 10px; }
+.reg-skeleton-cta {
+  padding: 5px 12px;
+  border-radius: var(--r-md);
+  font-weight: var(--fw-medium);
+  box-shadow: var(--shadow-pill-emphasis);
+  transition: transform var(--motion-fast) var(--easing),
+              box-shadow var(--motion-fast) var(--easing);
+}
+.reg-skeleton-cta:active { transform: scale(0.97); }
+
+/* Switch knob and skeleton-switch get a smoother easing curve */
+.reg-skeleton-switch,
+.reg-skeleton-switch-knob {
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--easing);
+}
+
+/* -- Test-as-operator modal ------------------------------------------------ */
+
+.reg-test-banner {
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card-emphasis-rest);
+}
+.reg-test-meta {
+  font-size: var(--fs-sm);
+  letter-spacing: 0.005em;
+}
+.reg-test-meta strong { font-weight: var(--fw-medium); }
+
+/* Stepper — connector hairlines + active/completed contrast */
+.reg-test-stepper {
+  align-items: center;
+  padding: 10px 12px;
+  border: 0.5px solid var(--g-95);
+  background: var(--surface);
+  box-shadow: var(--shadow-card-rest);
+}
+.reg-test-step {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--fw-medium);
+  transition: background var(--motion-fast) var(--easing),
+              color var(--motion-fast) var(--easing);
+}
+.reg-test-step + .reg-test-step::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 0.5px;
+  background: var(--g-90);
+  margin: 0 8px 0 -2px;
+  vertical-align: middle;
+}
+.reg-test-step.is-active {
+  background: var(--theme-50);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(var(--theme-tint-rgb), 0.22);
+}
+
+/* Form inputs — Fitts-friendlier targets, focus ring, hover state */
+.reg-test-form { gap: var(--sp-4); }
+.reg-test-field { gap: 5px; }
+.reg-test-label { letter-spacing: 0.005em; }
+.reg-test-hint { text-wrap: pretty; line-height: 1.45; }
+/* Scope to text-like inputs only — checkbox/radio render as small native
+ * boxes; applying field-input sizing to them stretches the box. */
+.reg-test-field input:not([type="checkbox"]):not([type="radio"]),
+.reg-test-field select {
+  padding: 9px 11px;
+  min-height: 36px;
+  transition: border-color var(--motion-fast) var(--easing),
+              box-shadow var(--motion-fast) var(--easing);
+}
+.reg-test-field input:not([type="checkbox"]):not([type="radio"]):hover,
+.reg-test-field select:hover {
+  border-color: var(--g-70);
+}
+.reg-test-field input:not([type="checkbox"]):not([type="radio"]):focus,
+.reg-test-field select:focus {
+  outline: none;
+  border-color: var(--theme-50);
+  box-shadow: 0 0 0 3px rgba(var(--theme-tint-rgb), 0.18);
+}
+/* Checkbox + radio sizing — match the prototype's natural form-input scale */
+.reg-test-field input[type="checkbox"],
+.reg-test-field input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin: 4px 0;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  cursor: pointer;
+}
+
+/* Group surfaces — concentric radius + hairline shadow for depth */
+.reg-test-group {
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card-rest);
+}
+.reg-test-group--section { box-shadow: none; }
+.reg-test-group--accordion {
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card-rest);
+  transition: box-shadow var(--motion-base) var(--easing);
+}
+.reg-test-group--accordion[open] { box-shadow: var(--shadow-card-hover); }
+.reg-test-group--accordion > summary.reg-test-group-title {
+  padding: 11px 14px;
+  border-radius: var(--r-lg);
+}
+.reg-test-group--accordion > summary.reg-test-group-title:hover { background: var(--g-99); }
+.reg-test-group--accordion > summary.reg-test-group-title::before {
+  transition: transform var(--motion-base) var(--easing);
+}
+
+/* Validation rules panel — calmer surface, ux-similarity-consistency with cards */
+.reg-test-rules {
+  background: var(--surface);
+  box-shadow: var(--shadow-card-rest);
+  border-color: var(--g-95);
+}
+.reg-test-rule { box-shadow: var(--shadow-1); }
+.reg-test-rule-expr { font-variant-numeric: tabular-nums; }
+
+/* Footer submit — clear primary anatomy with active feedback */
+.reg-test-footer { padding-top: var(--sp-4); }
+.reg-test-footer .btn-primary {
+  padding: 9px 18px;
+  font-size: var(--fs-body);
+  box-shadow: var(--shadow-pill-emphasis);
+  transition: transform var(--motion-fast) var(--easing),
+              box-shadow var(--motion-fast) var(--easing),
+              filter var(--motion-fast) var(--easing);
+}
+.reg-test-footer .btn-primary:not(:disabled):active { transform: scale(0.98); }
+.reg-test-footer .btn-primary:disabled {
+  box-shadow: none;
+  filter: grayscale(0.4);
+}
+
+/* Reduced-motion: honour the user's setting on chevrons + buttons */
+@media (prefers-reduced-motion: reduce) {
+  .reg-skeleton-cta,
+  .reg-skeleton-input,
+  .reg-test-field input,
+  .reg-test-field select,
+  .reg-test-group--accordion,
+  .reg-test-group--accordion > summary.reg-test-group-title::before,
+  .reg-skeleton-group-details > summary.reg-skeleton-group-heading::before,
+  .reg-test-footer .btn-primary {
+    transition: none;
+  }
+}
+
+/* ========== EForm aesthetic polish — Pass 2 (RJSF-aligned) ===================
+ * Builds on Pass 1 (above). Pass 1 was a structural visual upgrade; Pass 2
+ * goes after the patterns that make an RJSF/uiSchema form feel intuitive:
+ *   - native fieldset/legend anatomy (the Test modal already emits real
+ *     <fieldset>+<legend> per UX-33; we let the legend cut the border)
+ *   - HTML5 inline validation visualisation (uses the pattern/type/required
+ *     already attached by renderTestInputOnly — no JS change)
+ *   - stepper as a progress indicator (numbered circles + connector hairline)
+ *   - per-type input affordances (date/number/email get glyph hints)
+ *   - :focus-visible discipline (no ring on mouse clicks)
+ *   - sticky legends, staggered entrance, help-icon next to labels
+ * Schema-data and renderer shape stay unchanged. */
+
+/* -- RJSF-style fieldset/legend anatomy (Test modal) ----------------------- */
+.reg-test-group {
+  position: relative;
+  padding: 18px 16px 14px;
+}
+.reg-test-group > .reg-test-group-title {
+  position: absolute;
+  top: 0;
+  left: 14px;
+  transform: translateY(-50%);
+  background: var(--surface);
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  margin: 0;
+  z-index: 1;
+  letter-spacing: 0.4px;
+}
+/* Sticky variant for long fieldsets — legend stays visible as user scrolls. */
+.reg-test-group--card > .reg-test-group-title {
+  position: sticky;
+  top: -1px;
+  align-self: flex-start;
+  transform: none;
+  margin: -8px -8px 8px -8px;
+  background: linear-gradient(var(--surface) 75%, transparent);
+  padding: 6px 8px 4px;
+}
+/* Section (no border) doesn't need legend on the border — push it back inline. */
+.reg-test-group--section { padding: 0; }
+.reg-test-group--section > .reg-test-group-title {
+  position: static;
+  transform: none;
+  background: transparent;
+  padding: 0 0 6px;
+  border-bottom: 0.5px solid var(--g-90);
+  margin: 0 0 10px;
+  align-self: stretch;
+  border-radius: 0;
+}
+/* Accordion's <summary> can't be positioned as a legend — keep it inline. */
+.reg-test-group--accordion > .reg-test-group-title {
+  position: static;
+  transform: none;
+  background: transparent;
+  border-radius: var(--r-md);
+}
+
+/* -- Required asterisk — styleable + aria-hidden via wrapping span -------- */
+.reg-required {
+  color: var(--red-50);
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+  margin-left: 1px;
+}
+/* When a field is marked required, the wrapping label carries data-required.
+ * This lets us highlight the entire label (not just the asterisk) on hover —
+ * a small affordance that operators learn to scan for. */
+.reg-test-field[data-required="true"]:hover > .reg-test-label,
+.reg-skeleton-field[data-required="true"]:hover > .reg-skeleton-label {
+  color: var(--g-10);
+}
+
+/* -- HTML5 inline validation visualisation -- */
+/* Red ring once the operator has typed AND the value violates pattern/type.
+ * `:placeholder-shown` is true when the input is empty, so empty fields never
+ * get the red ring — we only complain after the operator has actually entered
+ * something the rule rejects. This relies on the native pattern/type/min/max
+ * already set by renderTestInputOnly (no JS change). */
+/* Scope to text-like inputs only — checkboxes/radios don't have
+ * :placeholder-shown, so an unscoped selector would mark required-but-unchecked
+ * boxes invalid on first paint, which would read as a false error. */
+.reg-test-field input:not([type="checkbox"]):not([type="radio"]):not(:placeholder-shown):invalid:not(:focus) {
+  border-color: var(--red-50);
+  box-shadow: 0 0 0 3px rgba(180, 55, 27, 0.12);
+}
+.reg-test-field input:not([type="checkbox"]):not([type="radio"]):not(:placeholder-shown):invalid:focus-visible {
+  border-color: var(--red-50);
+  box-shadow: 0 0 0 3px rgba(180, 55, 27, 0.22);
+}
+/* Quiet "field has typed valid content" confirmation. Subtle, not celebratory. */
+.reg-test-field input:not([type="checkbox"]):not([type="radio"]):not(:placeholder-shown):valid:not(:focus) {
+  border-color: var(--g-80);
+}
+
+/* -- Focus-visible discipline (Pass 1 used :focus; tighten to :focus-visible) */
+.reg-test-field input:focus,
+.reg-test-field select:focus { outline: none; }
+.reg-test-field input:focus-visible,
+.reg-test-field select:focus-visible {
+  outline: none;
+  border-color: var(--theme-50);
+  box-shadow: 0 0 0 3px rgba(var(--theme-tint-rgb), 0.20);
+}
+.reg-skeleton-input:focus { outline: none; }
+.reg-skeleton-input:focus-visible {
+  border-color: var(--theme-50);
+  box-shadow: 0 0 0 3px rgba(var(--theme-tint-rgb), 0.15);
+}
+
+/* -- Per-type input affordances (calendar / hash / @ glyph) ----------------
+ * Subtle in-input icons so operators can identify the field's expected shape
+ * at a glance. Pure CSS via data-URI SVG backgrounds. */
+.reg-test-field input[type="date"],
+.reg-test-field input[type="datetime-local"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 34px;
+}
+.reg-test-field input[type="number"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9h16M4 15h16M10 3 8 21M16 3l-2 18'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+  font-variant-numeric: tabular-nums;
+}
+.reg-test-field input[type="email"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+}
+
+/* -- Stepper as a true progress indicator --------------------------------- */
+/* Replace the pill-with-connector look with numbered circles + a hairline
+ * progress line that visualises completion (active step half-fills the line,
+ * pre-active steps fully fill it). Works for both surfaces. */
+.reg-test-stepper,
+.reg-skeleton-stepper {
+  counter-reset: reg-step;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.reg-test-step,
+.reg-skeleton-step {
+  counter-increment: reg-step;
+  background: transparent;
+  color: var(--g-50);
+  padding: 0 12px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: var(--fw-medium);
+}
+.reg-test-step::before,
+.reg-skeleton-step::before {
+  content: counter(reg-step);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--g-80);
+  color: var(--g-40);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  transition: background var(--motion-base) var(--easing),
+              border-color var(--motion-base) var(--easing),
+              color var(--motion-base) var(--easing),
+              box-shadow var(--motion-base) var(--easing);
+}
+.reg-test-step + .reg-test-step,
+.reg-skeleton-step + .reg-skeleton-step { padding-left: 0; }
+.reg-test-step + .reg-test-step::before,
+.reg-skeleton-step + .reg-skeleton-step::before { margin-left: 12px; }
+/* Connector line between adjacent steps */
+.reg-test-step + .reg-test-step,
+.reg-skeleton-step + .reg-skeleton-step { position: relative; }
+.reg-test-step + .reg-test-step,
+.reg-skeleton-step + .reg-skeleton-step { box-shadow: none; }
+/* Override the Pass 1 connector pseudo (which we no longer want) */
+.reg-test-step + .reg-test-step::before { margin-left: 32px; }
+.reg-skeleton-step + .reg-skeleton-step::before { margin-left: 20px; }
+.reg-skeleton-step + .reg-skeleton-step { display: inline-flex; }
+.reg-skeleton-step + .reg-skeleton-step::after { content: none; }
+/* Reuse Pass 1's connector by re-declaring as a real CSS line (cleaner) */
+.reg-test-stepper { position: relative; }
+.reg-test-step:not(:first-child)::after,
+.reg-skeleton-step:not(:first-child)::after { display: none; }
+/* New, semantic connector: thin line between the two circles */
+.reg-test-step:not(:first-child) {
+  position: relative;
+}
+.reg-test-step:not(:first-child)::after {
+  content: '';
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 18px;
+  height: 1px;
+  background: var(--g-90);
+  transform: translate(2px, -50%);
+}
+/* Active / completed states */
+.reg-test-step.is-active,
+.reg-skeleton-step.is-active {
+  background: transparent;
+  color: var(--g-10);
+  box-shadow: none;
+}
+.reg-test-step.is-active::before,
+.reg-skeleton-step.is-active::before {
+  background: var(--theme-50);
+  border-color: var(--theme-50);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(var(--theme-tint-rgb), 0.16);
+}
+/* Completed step style (when more than one is-active, or a future marker) */
+.reg-test-step.is-completed::before,
+.reg-skeleton-step.is-completed::before {
+  background: var(--theme-95);
+  border-color: var(--theme-50);
+  color: var(--theme-50);
+}
+
+/* -- Acting-as banner — avatar circle with initials, severity tint -------- */
+.reg-test-actingas {
+  position: relative;
+  padding-left: 32px;
+}
+.reg-test-actingas::before {
+  content: attr(data-initial);                   /* JS derives initial from the acting-as label */
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--theme-50);
+  color: #fff;
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-1);
+}
+.reg-test-actingas i { display: none; }          /* avatar replaces the icon glyph */
+/* High-stakes complexity amplifies banner colour-cue so operators feel weight */
+.reg-test-banner:has(.complexity-pill.high-stakes) {
+  background: linear-gradient(to right, var(--theme-95), #fef0eb);
+  box-shadow:
+    0 0 0 0.5px rgba(180, 55, 27, 0.18),
+    0 1px 2px rgba(180, 55, 27, 0.06);
+}
+
+/* -- Help-icon glyph next to labels that have a description --------------- */
+.reg-test-field:has(> .reg-test-hint) > .reg-test-label::after {
+  content: '?';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  margin-left: 6px;
+  background: var(--g-95);
+  color: var(--g-40);
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: var(--fw-medium);
+  font-style: normal;
+  vertical-align: 0;
+}
+
+/* -- Submit button — arrow micro-animation, disabled cursor cue ----------- */
+.reg-test-footer .btn-primary:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-pill-emphasis-strong);
+}
+.reg-test-footer .btn-primary:disabled { cursor: not-allowed; }
+
+/* -- Validation rule cards — animate status-badge transitions ------------ */
+.reg-rule-status,
+.reg-test-rule-name { transition: background var(--motion-base) var(--easing),
+                                   color var(--motion-base) var(--easing); }
+.reg-test-rule { transition: border-color var(--motion-base) var(--easing); }
+.reg-test-rule:has(.reg-rule-status.is-failed) { border-left: 2px solid var(--red-50); }
+.reg-test-rule:has(.reg-rule-status.is-passed) { border-left: 2px solid var(--green-30, #15784e); }
+.reg-test-rule:has(.reg-rule-status.is-errored) { border-left: 2px solid #b07d00; }
+
+/* -- Staggered field entrance on modal open ------------------------------- */
+@keyframes regFieldEntrance {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reg-test-form > .reg-test-field,
+.reg-test-form > .reg-test-group {
+  animation: regFieldEntrance var(--motion-slow) var(--easing) both;
+}
+.reg-test-form > :nth-child(1) { animation-delay: 20ms; }
+.reg-test-form > :nth-child(2) { animation-delay: 60ms; }
+.reg-test-form > :nth-child(3) { animation-delay: 100ms; }
+.reg-test-form > :nth-child(4) { animation-delay: 140ms; }
+.reg-test-form > :nth-child(5) { animation-delay: 180ms; }
+.reg-test-form > :nth-child(6) { animation-delay: 220ms; }
+.reg-test-form > :nth-child(7) { animation-delay: 260ms; }
+.reg-test-form > :nth-child(n+8) { animation-delay: 300ms; }
+
+/* -- Touch targets: 44px on Test text-like inputs per ux-fitts-target-size --
+ * Scoped to exclude checkbox/radio, whose native sizing should not be forced
+ * to 40px/44px (would stretch the box). */
+.reg-test-field input:not([type="checkbox"]):not([type="radio"]),
+.reg-test-field select {
+  min-height: 40px;
+}
+@media (pointer: coarse) {
+  .reg-test-field input:not([type="checkbox"]):not([type="radio"]),
+  .reg-test-field select {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+}
+
+/* -- Composer Preview skeleton — pick up RJSF-style improvements too ----- */
+.reg-skeleton-input:not(:placeholder-shown):invalid:not(:focus) {
+  border-color: var(--red-50);
+  box-shadow: 0 0 0 2px rgba(180, 55, 27, 0.10);
+}
+
+/* -- Reduced-motion: respect for the new animations ----------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .reg-test-form > .reg-test-field,
+  .reg-test-form > .reg-test-group,
+  .reg-test-step::before,
+  .reg-skeleton-step::before,
+  .reg-test-footer .btn-primary,
+  .reg-rule-status,
+  .reg-test-rule { animation: none; transition: none; }
+}
+
+/* -- Rule-to-field linking ------------------------------------------------- */
+/* When regUpdateTestRuleEvals finds a failing rule, it paints .is-rule-fail
+ * on every .reg-test-field the rule references. The accent reads as
+ * "this is the input the failing rule cares about" — amber, not red, because
+ * the input itself is not technically invalid (HTML5 :invalid handles that);
+ * a cross-field rule is unhappy with the combination of values. */
+.reg-test-field.is-rule-fail > .reg-test-label {
+  color: var(--red-50);
+}
+.reg-test-field.is-rule-fail > .reg-test-label::before {
+  content: '\ea06';                              /* ti ti-alert-triangle */
+  font-family: 'tabler-icons';
+  display: inline-block;
+  margin-right: 5px;
+  color: #b07d00;
+  font-style: normal;
+  font-size: 13px;
+  vertical-align: -1px;
+}
+.reg-test-field.is-rule-fail > input,
+.reg-test-field.is-rule-fail > select {
+  border-color: #e9b53f;
+  box-shadow: 0 0 0 3px rgba(233, 181, 63, 0.18);
+}
+.reg-test-field.is-rule-fail > input:focus-visible,
+.reg-test-field.is-rule-fail > select:focus-visible {
+  border-color: #b07d00;
+  box-shadow: 0 0 0 3px rgba(176, 125, 0, 0.25);
+}
+/* Array-of-objects field also gets the accent on its table border */
+.reg-test-field--array.is-rule-fail > .reg-test-array-table {
+  outline: 1px solid #e9b53f;
+  outline-offset: 1px;
+  border-radius: var(--r-sm);
+}
+
+/* Rule cards that link to fields become clickable, with affordance + focus ring */
+.reg-test-rule[data-rule-fields] {
+  cursor: pointer;
+  position: relative;
+  transition: background var(--motion-fast) var(--easing),
+              border-color var(--motion-fast) var(--easing),
+              transform var(--motion-fast) var(--easing);
+}
+.reg-test-rule[data-rule-fields]::after {
+  content: '\ea61';                              /* ti ti-arrow-right */
+  font-family: 'tabler-icons';
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  color: var(--g-70);
+  font-size: 13px;
+  opacity: 0;
+  transform: translateX(-3px);
+  transition: opacity var(--motion-fast) var(--easing),
+              transform var(--motion-fast) var(--easing);
+}
+.reg-test-rule[data-rule-fields]:hover {
+  background: var(--g-99);
+  border-color: var(--g-80);
+}
+.reg-test-rule[data-rule-fields]:hover::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+.reg-test-rule[data-rule-fields]:active { transform: translateY(0.5px); }
+.reg-test-rule[data-rule-fields]:focus-visible {
+  outline: 2px solid var(--theme-50);
+  outline-offset: 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reg-test-rule[data-rule-fields],
+  .reg-test-rule[data-rule-fields]::after { transition: none; }
+}
+
+/* ========== ADR 0047 — L1 (AJV) inline error anatomy =======================
+ * One <span.reg-test-l1-errors> slot lives inside every .reg-test-field;
+ * regRenderTestL1 paints zero-or-more .reg-test-l1-error nodes into it on
+ * every keystroke. Anatomy per ADR 0047 sub-decision 8:
+ *   ⚠ <operator-friendly message>     [Schema · keyword]
+ *                                       └─ hover popover with raw AJV + jump-link
+ * Schema-level errors (no field anchor) land in a separate above-form
+ * surface per sub-decision 13. */
+
+.reg-test-l1-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+.reg-test-l1-error {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--red-50);
+  animation: regL1ErrorIn var(--motion-base) var(--easing);
+}
+@keyframes regL1ErrorIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reg-test-l1-icon { font-size: 13px; color: var(--red-50); flex: 0 0 auto; }
+.reg-test-l1-msg {
+  text-wrap: pretty;
+  color: var(--g-10);
+}
+/* When the field is in L1-fail state, the input itself gets a red ring */
+.reg-test-field.is-l1-fail > input,
+.reg-test-field.is-l1-fail > select,
+.reg-test-field.is-l1-fail > textarea {
+  border-color: var(--red-50);
+  box-shadow: 0 0 0 3px rgba(180, 55, 27, 0.10);
+}
+.reg-test-field.is-l1-fail > input:focus-visible,
+.reg-test-field.is-l1-fail > select:focus-visible {
+  border-color: var(--red-50);
+  box-shadow: 0 0 0 3px rgba(180, 55, 27, 0.20);
+}
+
+/* Attribution chip — small, low-contrast at rest. The chip is the Sarah-
+ * teaching marker; operators see the message + glyph but the chip carries
+ * "this is from the Schema layer, keyword X" attribution that production
+ * operator UIs never expose. */
+.reg-test-l1-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.01em;
+  color: var(--g-40);
+  background: var(--g-97);
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-sm);
+  padding: 1px 6px;
+  cursor: help;
+  transition: background var(--motion-fast) var(--easing),
+              border-color var(--motion-fast) var(--easing),
+              color var(--motion-fast) var(--easing);
+}
+.reg-test-l1-chip:hover,
+.reg-test-l1-chip:focus-visible {
+  background: var(--surface);
+  border-color: var(--g-70);
+  color: var(--g-20);
+  outline: none;
+}
+
+/* Popover — slides into view on chip hover/focus. Carries the raw AJV
+ * record for Sarah's debug verification + a jump-link to the Schema tab.
+ * Production operators never reach this surface. */
+.reg-test-l1-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  min-width: 280px;
+  max-width: 380px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 0.5px solid var(--g-80);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-popover);
+  font-family: var(--font-sans, inherit);
+  font-size: 11.5px;
+  letter-spacing: 0;
+  color: var(--g-20);
+  opacity: 0;
+  transform: translateY(2px);
+  pointer-events: none;
+  transition: opacity var(--motion-fast) var(--easing),
+              transform var(--motion-fast) var(--easing);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: default;
+  text-align: left;
+}
+.reg-test-l1-chip:hover .reg-test-l1-popover,
+.reg-test-l1-chip:focus-visible .reg-test-l1-popover,
+.reg-test-l1-popover:hover {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.reg-test-l1-popover-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 6px;
+  align-items: baseline;
+  font-family: var(--font-sans, inherit);
+}
+.reg-test-l1-popover-row b {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--g-50);
+  font-weight: var(--fw-medium);
+}
+.reg-test-l1-popover-row code {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  background: var(--g-97);
+  border-radius: 3px;
+  padding: 1px 4px;
+  word-break: break-all;
+}
+.reg-test-l1-popover-link {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 0.5px solid var(--g-95);
+  font-size: 11px;
+  color: var(--theme-50);
+  text-decoration: none;
+  font-weight: var(--fw-medium);
+}
+.reg-test-l1-popover-link[aria-disabled="true"] { color: var(--g-60); cursor: default; }
+.reg-test-l1-popover-link:hover:not([aria-disabled]) { text-decoration: underline; }
+
+/* Schema-level error surface — above the form, only when non-field errors
+ * exist (oneOf, root-level additionalProperties, schema-compile bugs). */
+.reg-test-schema-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: var(--red-98, #fff4f0);
+  border: 0.5px solid #f4c8b8;
+  border-left: 2px solid var(--red-50);
+  border-radius: var(--r-md);
+}
+.reg-test-schema-errors[hidden] { display: none; }
+.reg-test-schema-errors-title {
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--red-50);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.reg-test-schema-errors-title i { font-size: 13px; }
+
+/* Jump-target flash — when regJumpToSchemaTabField lands the user on a
+ * Schema-tab field row, briefly pulse it to confirm the destination. */
+.reg-field-row.is-l1-jump-target {
+  animation: regJumpTargetFlash 1500ms var(--easing);
+}
+@keyframes regJumpTargetFlash {
+  0%   { background-color: var(--theme-95); }
+  40%  { background-color: var(--theme-95); }
+  100% { background-color: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reg-test-l1-error,
+  .reg-test-l1-chip,
+  .reg-test-l1-popover,
+  .reg-field-row.is-l1-jump-target { animation: none; transition: none; }
+}
+
+/* ========== ADR 0047 — L4 aggregations ====================================
+ * Form-level Schema chip in the modal header (next to the complexity pill).
+ * Section-level Schema chip on each fieldset's <legend>. Both click-to-scroll
+ * to the first L1-failing field in scope. β: section chips render only when
+ * the section has ≥1 L1 error. */
+
+.reg-test-banner-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.reg-test-l4-schema-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  color: var(--red-50);
+  background: var(--red-98, #fff4f0);
+  border: 0.5px solid #f4c8b8;
+  border-radius: var(--r-sm);
+  padding: 2px 8px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background var(--motion-fast) var(--easing),
+              border-color var(--motion-fast) var(--easing),
+              transform var(--motion-fast) var(--easing);
+}
+.reg-test-l4-schema-chip[hidden] { display: none; }
+.reg-test-l4-schema-chip:hover {
+  background: #ffe7df;
+  border-color: var(--red-50);
+}
+.reg-test-l4-schema-chip:active { transform: scale(0.97); }
+.reg-test-l4-schema-chip:focus-visible {
+  outline: 2px solid var(--red-50);
+  outline-offset: 1px;
+}
+.reg-test-l4-schema-chip i { font-size: 12px; }
+
+.reg-test-l4-section-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  color: var(--red-50);
+  background: var(--red-98, #fff4f0);
+  border: 0.5px solid #f4c8b8;
+  border-radius: var(--r-sm);
+  padding: 0 5px;
+  margin-left: 4px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: background var(--motion-fast) var(--easing),
+              border-color var(--motion-fast) var(--easing);
+}
+.reg-test-l4-section-chip[hidden] { display: none; }
+.reg-test-l4-section-chip:hover {
+  background: #ffe7df;
+  border-color: var(--red-50);
+}
+.reg-test-l4-section-chip:focus-visible {
+  outline: 2px solid var(--red-50);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reg-test-l4-schema-chip,
+  .reg-test-l4-section-chip { transition: none; }
+}
+
+/* ========== ADR 0047 — FloatingPanel (L2 Submit-triggered operator view) ==
+ * Mirrors the dex-monorepo FloatingPanel primitive's two-state model
+ * (expanded card / collapsed-to-icon) with three extensions per
+ * sub-decision 17:
+ *   (a) count badge on collapsed icon
+ *   (b) live update during typing
+ *   (c) empty-state celebration before auto-collapse
+ * Sticky-positioned at the bottom of the modal body — pinned to the
+ * scrollable area's bottom edge, never escapes the modal boundary. */
+
+.reg-test-floating-panel {
+  position: sticky;
+  bottom: 16px;
+  margin-top: 24px;
+  margin-left: auto;
+  width: fit-content;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  z-index: 5;
+  pointer-events: none;            /* children re-enable */
+}
+.reg-test-floating-panel[hidden] { display: none; }
+.reg-test-floating-panel > * { pointer-events: auto; }
+
+/* Collapsed-to-icon state — destructive (red) variant per ADR sub-17.
+ * Badge over the icon carries the failing-count. */
+.reg-test-floating-panel-icon {
+  display: none;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--red-50);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-popover);
+  transition: transform var(--motion-fast) var(--easing),
+              box-shadow var(--motion-fast) var(--easing);
+}
+.reg-test-floating-panel-icon:hover { transform: translateY(-1px); box-shadow: var(--shadow-modal); }
+.reg-test-floating-panel-icon:active { transform: scale(0.97); }
+.reg-test-floating-panel-icon:focus-visible { outline: 2px solid var(--theme-50); outline-offset: 2px; }
+.reg-test-floating-panel-icon i { font-size: 22px; }
+.reg-test-floating-panel-icon-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--red-50);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0.5px solid var(--red-50);
+  font-variant-numeric: tabular-nums;
+}
+.reg-test-floating-panel-icon-badge:empty { display: none; }
+
+/* Expanded card */
+.reg-test-floating-panel-card {
+  display: none;
+  min-width: 320px;
+  max-width: 480px;
+  background: var(--surface);
+  border: 0.5px solid var(--g-80);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-popover);
+  overflow: hidden;
+  animation: regFloatingPanelSlideUp var(--motion-slow) var(--easing);
+}
+@keyframes regFloatingPanelSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* State toggles: .is-open shows card; .is-collapsed shows icon. */
+.reg-test-floating-panel.is-open .reg-test-floating-panel-card { display: block; }
+.reg-test-floating-panel.is-open .reg-test-floating-panel-icon { display: none; }
+.reg-test-floating-panel.is-collapsed .reg-test-floating-panel-icon { display: inline-flex; }
+.reg-test-floating-panel.is-collapsed .reg-test-floating-panel-card { display: none; }
+
+/* Header — destructive red strip with icon + title + collapse + close. */
+.reg-test-floating-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--red-50);
+  color: #fff;
+}
+.reg-test-floating-panel-header-icon { font-size: 16px; flex: 0 0 auto; }
+.reg-test-floating-panel-title {
+  flex: 1;
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.01em;
+}
+.reg-test-floating-panel-collapse,
+.reg-test-floating-panel-close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background var(--motion-fast) var(--easing);
+}
+.reg-test-floating-panel-collapse:hover,
+.reg-test-floating-panel-close:hover { background: rgba(255, 255, 255, 0.15); }
+.reg-test-floating-panel-collapse i,
+.reg-test-floating-panel-close i { font-size: 14px; }
+
+/* Body — list of failure entries (case 2) or summary (case 1). */
+.reg-test-floating-panel-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+/* Case 1 summary anatomy */
+.reg-test-floating-panel-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--fs-meta);
+  color: var(--g-20);
+}
+
+/* Case 1 section eyebrow + Schema-error variant of the entry row. The
+ * eyebrow names the section ("Schema errors — fix these first"); the
+ * is-schema variant gets a red left-border so the visual sequence reads:
+ * red rows = actionable now, dashed-circle rows below = waiting. */
+.reg-test-floating-panel-section-eyebrow {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--g-50);
+  font-weight: var(--fw-medium);
+  margin-bottom: 4px;
+}
+.reg-test-floating-panel-msg.is-schema {
+  border-left: 2px solid var(--red-50);
+  background: var(--red-98, #fff4f0);
+}
+.reg-test-floating-panel-msg.is-schema:hover {
+  background: #ffe7df;
+  border-color: var(--red-50);
+}
+.reg-test-floating-panel-msg-chip {
+  display: inline-block;
+  margin-left: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.01em;
+  color: var(--red-50);
+  background: var(--surface);
+  border: 0.5px solid #f4c8b8;
+  border-radius: var(--r-sm);
+  padding: 0 5px;
+  vertical-align: baseline;
+}
+
+/* Case 1 pending list — cross-field rules awaiting AJV pass. Muted so the
+ * non-actionable status reads visually: dashed-circle icon, gray text. */
+.reg-test-floating-panel-pending {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 0.5px solid var(--g-95);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.reg-test-floating-panel-pending-title {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--g-50);
+  font-weight: var(--fw-medium);
+  margin-bottom: 2px;
+}
+.reg-test-floating-panel-pending-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--g-50);
+  padding: 3px 0;
+  font-style: italic;
+}
+.reg-test-floating-panel-pending-item i { font-size: 12px; color: var(--g-60); }
+.reg-test-floating-panel-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--red-50);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-sm);
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: filter var(--motion-fast) var(--easing), transform var(--motion-fast) var(--easing);
+}
+.reg-test-floating-panel-jump:hover { filter: brightness(1.08); }
+.reg-test-floating-panel-jump:active { transform: scale(0.97); }
+.reg-test-floating-panel-jump i { font-size: 13px; }
+
+/* Case 2 message entries — production anatomy: <b>Field name:</b> message */
+.reg-test-floating-panel-msg {
+  display: block;
+  font-size: 12px;
+  color: var(--g-10);
+  background: var(--g-99);
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-sm);
+  padding: 7px 10px;
+  text-align: left;
+  line-height: 1.45;
+}
+.reg-test-floating-panel-msg b {
+  color: var(--g-10);
+  font-weight: var(--fw-medium);
+}
+.reg-test-floating-panel-msg.is-clickable {
+  cursor: pointer;
+  width: 100%;
+  font-family: inherit;
+  transition: background var(--motion-fast) var(--easing),
+              border-color var(--motion-fast) var(--easing),
+              transform var(--motion-fast) var(--easing);
+}
+.reg-test-floating-panel-msg.is-clickable:hover {
+  background: var(--surface);
+  border-color: var(--g-70);
+}
+.reg-test-floating-panel-msg.is-clickable:active { transform: scale(0.99); }
+.reg-test-floating-panel-msg.is-clickable:focus-visible {
+  outline: 2px solid var(--theme-50);
+  outline-offset: 1px;
+}
+.reg-test-floating-panel-msg.is-error {
+  background: var(--amber-95, #fff8e6);
+  border-color: #e9b53f;
+}
+.reg-test-floating-panel-error-tag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b07d00;
+  background: rgba(176, 125, 0, 0.10);
+  border-radius: var(--r-sm);
+  padding: 0 5px;
+}
+
+/* Empty-state celebration when both engines clear */
+.reg-test-floating-panel.is-celebrating .reg-test-floating-panel-header {
+  background: var(--green-30, #15784e);
+}
+.reg-test-floating-panel-celebrate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  color: var(--green-30, #15784e);
+  font-weight: var(--fw-medium);
+}
+.reg-test-floating-panel-celebrate i { font-size: 18px; }
+
+/* Field jump-target — 400ms amber pulse after click-to-field */
+.reg-test-field.is-floating-panel-jump-target {
+  animation: regFloatingJumpPulse 600ms var(--easing);
+}
+@keyframes regFloatingJumpPulse {
+  0%   { background-color: transparent; }
+  35%  { background-color: rgba(233, 181, 63, 0.20); }
+  100% { background-color: transparent; }
+}
+
+/* Submit-button success transition (case 3) */
+.btn-primary.is-success {
+  background: var(--green-30, #15784e);
+  color: #fff;
+  pointer-events: none;
+  animation: regSubmitSuccessPop var(--motion-slow) var(--easing);
+}
+.btn-primary.is-success i { font-size: 14px; margin-right: 4px; }
+@keyframes regSubmitSuccessPop {
+  0%   { transform: scale(0.92); opacity: 0.6; }
+  60%  { transform: scale(1.04); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reg-test-floating-panel-card,
+  .reg-test-floating-panel-jump,
+  .reg-test-floating-panel-msg.is-clickable,
+  .reg-test-field.is-floating-panel-jump-target,
+  .btn-primary.is-success { animation: none; transition: none; }
+}
+
+/* ========== ADR 0047 — L3 visibility mask =================================
+ * Fields hidden by uiRules.visibility expressions get .is-hidden-by-visibility.
+ * Production RJSF would simply skip rendering the field; the Test modal
+ * collapses it in-place to keep the DOM stable (regBuildL1Records reads
+ * data-field-name attributes from existing nodes, and re-rendering on every
+ * keystroke would lose input focus). */
+.reg-test-field.is-hidden-by-visibility {
+  display: none;
+}
+
+/* ========== Attachment widget ==============================================
+ * Both surfaces (Composer Preview skeleton + Test-as-operator) render the
+ * attachment wire shape — array<{ filename, file_content (base64) }> — as a
+ * dashed dropzone with paperclip glyph. Test-as-operator also lists the
+ * picked files with their encoding status; the encoded array lives on the
+ * input's _regAttachmentValues property so regCollectTestPayload can read it. */
+
+/* Composer Preview (right-rail skeleton) */
+.reg-skeleton-attachment {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px;
+  background: var(--g-99);
+  border: 1px dashed var(--g-80);
+  border-radius: var(--r-sm);
+  text-align: center;
+  font-size: 11px;
+  color: var(--g-50);
+}
+.reg-skeleton-attachment-icon { font-size: 18px; color: var(--g-70); }
+.reg-skeleton-attachment-prompt { color: var(--g-30); font-weight: var(--fw-medium); font-size: 11.5px; }
+.reg-skeleton-attachment-meta { font-family: var(--font-mono); font-size: 9.5px; color: var(--g-60); }
+
+/* Test-as-operator */
+.reg-test-attachment {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reg-test-attachment > input[type="file"] {
+  /* Hide the raw input; the dropzone <label> is the click target. Keep the
+   * input in the tree for the file picker to work + for boolean
+   * required/aria-required to register. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  margin: 0;
+}
+.reg-test-attachment-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px;
+  background: var(--g-99);
+  border: 1px dashed var(--g-80);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--easing),
+              border-color var(--motion-fast) var(--easing);
+}
+.reg-test-attachment-dropzone:hover {
+  background: var(--surface);
+  border-color: var(--g-60);
+}
+.reg-test-attachment-dropzone i { font-size: 22px; color: var(--g-50); }
+.reg-test-attachment-prompt { font-size: 12.5px; font-weight: var(--fw-medium); color: var(--g-30); }
+.reg-test-attachment-meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--g-60); }
+.reg-test-attachment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.reg-test-attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--g-20);
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 0.5px solid var(--g-90);
+  border-radius: var(--r-sm);
+}
+.reg-test-attachment-item i { color: var(--g-50); font-size: 14px; }
+.reg-test-attachment-name { flex: 1; word-break: break-all; }
+.reg-test-attachment-size { font-family: var(--font-mono); font-size: 10.5px; color: var(--g-60); }
+.reg-test-attachment-status { font-size: 10.5px; color: var(--g-50); display: inline-flex; align-items: center; gap: 3px; }
+.reg-test-attachment-item[data-status="ready"] .reg-test-attachment-status { color: var(--green-30, #15784e); }
+.reg-test-attachment-item[data-status="ready"] .reg-test-attachment-status i { font-size: 12px; }
+
+/* ========== ADR 0047 — Case 2 entry redesign (one row per rule) ==========
+ * Original Q14(b) emitted N rows per multi-field rule (one per referenced
+ * field) but in practice that produced row counts that didn't match the
+ * failing-rule count and repeated the same on_failure text. Revised: one
+ * row per rule, with field jump-chips inside the row. Row count now equals
+ * failing-rule count; each implicated field is still one click away. */
+.reg-test-floating-panel-msg-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.reg-test-floating-panel-msg-head b {
+  font-weight: var(--fw-medium);
+  color: var(--g-10);
+  font-size: 12px;
+}
+.reg-test-floating-panel-msg-body {
+  font-size: 12px;
+  color: var(--g-20);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+.reg-test-floating-panel-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.reg-test-floating-panel-field-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  color: var(--theme-50);
+  background: var(--theme-98);
+  border: 0.5px solid var(--theme-95);
+  border-radius: var(--r-sm);
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--motion-fast) var(--easing),
+              border-color var(--motion-fast) var(--easing),
+              transform var(--motion-fast) var(--easing);
+}
+.reg-test-floating-panel-field-chip:hover {
+  background: var(--theme-95);
+  border-color: var(--theme-50);
+}
+.reg-test-floating-panel-field-chip:active { transform: scale(0.97); }
+.reg-test-floating-panel-field-chip:focus-visible {
+  outline: 2px solid var(--theme-50);
+  outline-offset: 1px;
+}
+.reg-test-floating-panel-field-chip i { font-size: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .reg-test-floating-panel-field-chip { transition: none; }
+}

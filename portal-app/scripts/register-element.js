@@ -538,6 +538,133 @@ function regDeriveHint(field) {
   }
 }
 
+/* ---------- ADR 0047 — AJV (L1 schema validation) singleton + memoised
+ *            validator. Engine is loaded from CDN as the `ajv7` global per
+ *            index.html. Lives near publish-artifact builders because L1
+ *            consumes the same interop-clean elementSchema the publish
+ *            flow produces. ---------- */
+
+/* The shared AJV instance. Lazy-initialised so we don't crash module load
+ * if the CDN is offline (Test-as-operator is the only consumer; regOpenTestModal
+ * gates on availability and degrades gracefully). */
+let _regAjvInstance = null;
+function regGetAjvInstance() {
+  if (_regAjvInstance) return _regAjvInstance;
+  if (typeof ajv2020 !== 'function') return null;               // CDN failed → caller degrades
+  _regAjvInstance = new ajv2020({ strict: false, allErrors: true });
+  // ajv-formats@2+ has no UMD bundle, so the formats production cares about
+  // are registered here. Same constraint surface as ajv-formats, without the
+  // bundler dependency. Patterns are intentionally permissive — production
+  // ajv-formats also uses regex-based 'fast' format checks by default; matching
+  // that semantic, not RFC-strict 'full' validation.
+  const formats = {
+    'email':       /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    'date':        /^\d{4}-\d{2}-\d{2}$/,
+    'date-time':   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+\-]\d{2}:?\d{2})?$/,
+    'time':        /^\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+\-]\d{2}:?\d{2})?$/,
+    'uri':         /^[a-z][a-z0-9+\-.]*:/i,
+    'uuid':        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    'hostname':    /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i,
+    'ipv4':        /^((25[0-5]|2[0-4]\d|[01]?\d\d?)(\.|$)){4}/
+  };
+  Object.keys(formats).forEach(name => {
+    _regAjvInstance.addFormat(name, { type: 'string', validate: (s) => formats[name].test(String(s == null ? '' : s)) });
+  });
+  return _regAjvInstance;
+}
+
+/* Compile-and-validate against the CURRENT interop-clean elementSchema.
+ * Memoised on the schema's stringified hash: schema rarely changes per
+ * Sarah-session (one compile), payload changes every keystroke (many
+ * validate calls). Returns { errors: AjvErrorObject[] | null, valid: boolean }
+ * — same shape AJV's `validate.errors` produces, with `valid` for convenience.
+ * Returns `{ errors: null, valid: true, unavailable: true }` when the AJV
+ * CDN failed to load — callers should treat the L1 surface as silently
+ * absent rather than block the Test modal. */
+let _regAjvCompiledHash = null;
+let _regAjvCompiledValidator = null;
+function regAjvValidate(payload, state) {
+  const ajv = regGetAjvInstance();
+  if (!ajv) return { errors: null, valid: true, unavailable: true };
+  state = state || regDraft;
+  // The schema fed to AJV is the strip-extensions output — the same shape
+  // regRenderJsonPreview shows Sarah and the same shape publish writes to
+  // the version record. Boundary contract per ADR 0047 sub-decision 7 and
+  // 20: no `x-*` keys at any depth.
+  const schema = regStripSchemaExtensions(regBuildElementSchemaArtifact(state));
+  const hash = JSON.stringify(schema);
+  if (hash !== _regAjvCompiledHash) {
+    try {
+      _regAjvCompiledValidator = ajv.compile(schema);
+      _regAjvCompiledHash = hash;
+    } catch (e) {
+      // Authoring-time schema bug (Sarah typed something AJV can't compile).
+      // Surface as a single synthetic error so L1 still has something to render.
+      return {
+        errors: [{ instancePath: '', keyword: 'schema-compile', message: String(e && e.message ? e.message : e), params: {}, schemaPath: '#/' }],
+        valid: false
+      };
+    }
+  }
+  const valid = _regAjvCompiledValidator(payload || {});
+  return { errors: valid ? null : (_regAjvCompiledValidator.errors || []), valid: !!valid };
+}
+
+/* Translate an AJV error keyword + params into an operator-friendly message.
+ * Per ADR 0047 sub-decision 8 (layered text): the primary inline message
+ * is operator-readable; the raw AJV message is reserved for the Sarah-only
+ * hover popover. Translations cover the keywords the field-builder produces
+ * (required / type / pattern / format / minimum / maximum / minLength /
+ * maxLength / enum); unrecognised keywords fall through to AJV's own message
+ * so we never lose information. */
+function regAjvTranslate(err, state) {
+  const k = err && err.keyword;
+  const p = (err && err.params) || {};
+  const fieldName = regAjvErrorFieldName(err);
+  state = state || regDraft;
+  const field = (state.fields || []).find(f => f && f.name === fieldName);
+  const niceName = field ? regDisplayLabel(field) : (fieldName || 'This field');
+  switch (k) {
+    case 'required':         return niceName + ' is required.';
+    case 'type':             return niceName + ' must be a ' + (p.type || 'valid value') + '.';
+    case 'pattern':          return niceName + ' is not in the expected format.';
+    case 'format':           return niceName + ' must look like a valid ' + (p.format || 'value') + '.';
+    case 'minimum':          return niceName + ' must be at least ' + p.limit + '.';
+    case 'maximum':          return niceName + ' must be at most ' + p.limit + '.';
+    case 'exclusiveMinimum': return niceName + ' must be greater than ' + p.limit + '.';
+    case 'exclusiveMaximum': return niceName + ' must be less than ' + p.limit + '.';
+    case 'minLength':        return niceName + ' must be at least ' + p.limit + ' character' + (p.limit === 1 ? '' : 's') + '.';
+    case 'maxLength':        return niceName + ' must be at most ' + p.limit + ' character' + (p.limit === 1 ? '' : 's') + '.';
+    case 'enum':             return niceName + ' must be one of the listed options.';
+    case 'const':            return niceName + ' must equal ' + JSON.stringify(p.allowedValue) + '.';
+    case 'multipleOf':       return niceName + ' must be a multiple of ' + p.multipleOf + '.';
+    case 'additionalProperties': return 'This element does not allow extra fields (' + p.additionalProperty + ').';
+    case 'oneOf':            return niceName + ' must match exactly one of the allowed shapes.';
+    case 'schema-compile':   return 'The schema has an authoring bug — see the Schema tab.';
+    default:                 return (err && err.message) || (niceName + ' is invalid.');
+  }
+}
+
+/* Resolve an AJV error's `instancePath` to a top-level field name in
+ * regDraft.fields[]. Nested paths (e.g., `/address/street`) collapse to the
+ * top-level field for inline-error attachment; nested-deeper errors fall to
+ * the L1 schema-level surface per ADR 0047 sub-decision 13. */
+function regAjvErrorFieldName(err) {
+  if (!err) return null;
+  // `required` errors carry the missing property in params.missingProperty;
+  // the instancePath itself is the parent object's path, not the field.
+  if (err.keyword === 'required' && err.params && err.params.missingProperty) {
+    const path = err.instancePath || '';
+    if (path === '') return err.params.missingProperty;       // root-required → field name
+    // Nested required → top-level field is the first path segment.
+    const seg = path.replace(/^\//, '').split('/')[0];
+    return seg || null;
+  }
+  const path = err.instancePath || '';
+  if (!path) return null;
+  return path.replace(/^\//, '').split('/')[0] || null;
+}
+
 /* Publish-artifact builders. Split publication into explicit surfaces — an
  * interop-clean elementSchema (no `x-*` keys) plus co-versioned uiSchema,
  * uiRules, and authoringMetadata artefacts that travel together on the
@@ -8274,7 +8401,7 @@ function regRenderSkeleton() {
   if (isHighStakes) {
     const stepper = document.createElement('div');
     stepper.className = 'reg-skeleton-stepper';
-    stepper.innerHTML = '<span class="reg-skeleton-step is-active">1 Fill</span><span class="reg-skeleton-step">2 Review</span><span class="reg-skeleton-step">3 Submit</span>';
+    stepper.innerHTML = '<span class="reg-skeleton-step is-active">Fill</span><span class="reg-skeleton-step">Review</span><span class="reg-skeleton-step">Submit</span>';
     compositeWrap.appendChild(stepper);
   }
 
@@ -8306,9 +8433,19 @@ function regRenderSkeleton() {
     if (!f.name) return;
     const wrap = document.createElement('label');
     wrap.className = 'reg-skeleton-field';
+    if (f.required) wrap.setAttribute('data-required', 'true');
     const lbl = document.createElement('span');
     lbl.className = 'reg-skeleton-label';
-    lbl.textContent = regDisplayLabel(f) + (f.required ? ' *' : '');
+    lbl.textContent = regDisplayLabel(f);
+    if (f.required) {
+      // Span so the asterisk is styleable + aria-hidden from screen readers;
+      // the input's aria-required attribute carries the same fact to AT.
+      const star = document.createElement('span');
+      star.className = 'reg-required';
+      star.setAttribute('aria-hidden', 'true');
+      star.textContent = ' *';
+      lbl.appendChild(star);
+    }
     wrap.appendChild(lbl);
     wrap.appendChild(regBuildSkeletonInput(f, 1));
     if (f.description) {
@@ -8430,8 +8567,16 @@ function regBuildSkeletonGroup(group, fields, renderField) {
     const trh = document.createElement('tr');
     fields.forEach(f => {
       const th = document.createElement('th');
-      th.textContent = (f.type === 'disclaimer') ? '' :
-        (regDisplayLabel(f) + (f.required ? ' *' : ''));
+      if (f.type !== 'disclaimer') {
+        th.textContent = regDisplayLabel(f);
+        if (f.required) {
+          const star = document.createElement('span');
+          star.className = 'reg-required';
+          star.setAttribute('aria-hidden', 'true');
+          star.textContent = ' *';
+          th.appendChild(star);
+        }
+      }
       trh.appendChild(th);
     });
     thead.appendChild(trh);
@@ -8517,6 +8662,8 @@ function regBuildSkeletonInput(f, depth) {
     el = regBuildSkeletonLikert(f);
   } else if (f.type === 'enum') {
     el = regBuildSkeletonForEnum(f, hint);
+  } else if (f.type === 'attachment') {
+    el = regBuildSkeletonAttachment(f);
   } else if (f.type === 'composite-input') {
     el = document.createElement('input');
     el.type = 'text';
@@ -8540,6 +8687,21 @@ function regBuildSkeletonInput(f, depth) {
 /* Render the skeleton input for a primitive field by HINT. Each hint maps
  * to a recognisable widget so the Composer Preview viscerally shows what
  * Sarah's override will look like. */
+/* Render the Composer Preview skeleton for an `attachment` field. The wire
+ * shape per fieldToSchemaProperty's 'attachment' branch is array<{ filename,
+ * file_content }>. Skeleton shows a dashed dropzone with paperclip icon and
+ * helper copy — matches what the operator's RJSF widget would render in
+ * production, scaled down for the right-rail preview. */
+function regBuildSkeletonAttachment(f) {
+  const wrap = document.createElement('div');
+  wrap.className = 'reg-skeleton-attachment';
+  wrap.innerHTML = ''
+    + '<i class="ti ti-paperclip reg-skeleton-attachment-icon" aria-hidden="true"></i>'
+    + '<span class="reg-skeleton-attachment-prompt">Drop files or click to upload</span>'
+    + '<span class="reg-skeleton-attachment-meta">Stored as base64 · array&lt;{ filename, file_content }&gt;</span>';
+  return wrap;
+}
+
 function regBuildSkeletonByHint(f, hint) {
   const v = f.validation || {};
   let el;
@@ -8684,7 +8846,14 @@ function regBuildSkeletonArray(f, depth) {
     const trh = document.createElement('tr');
     children.forEach(c => {
       const th = document.createElement('th');
-      th.textContent = regDisplayLabel(c) + (c.required ? ' *' : '');
+      th.textContent = regDisplayLabel(c);
+      if (c.required) {
+        const star = document.createElement('span');
+        star.className = 'reg-required';
+        star.setAttribute('aria-hidden', 'true');
+        star.textContent = ' *';
+        th.appendChild(star);
+      }
       trh.appendChild(th);
     });
     // Trailing "Actions" column for the add/remove-row affordance.
@@ -8925,9 +9094,17 @@ function regBuildSkeletonObject(f, depth) {
     if (!c.name || c.type === 'disclaimer') return;
     const childWrap = document.createElement('label');
     childWrap.className = 'reg-skeleton-field';
+    if (c.required) childWrap.setAttribute('data-required', 'true');
     const lbl = document.createElement('span');
     lbl.className = 'reg-skeleton-label';
-    lbl.textContent = regDisplayLabel(c) + (c.required ? ' *' : '');
+    lbl.textContent = regDisplayLabel(c);
+    if (c.required) {
+      const star = document.createElement('span');
+      star.className = 'reg-required';
+      star.setAttribute('aria-hidden', 'true');
+      star.textContent = ' *';
+      lbl.appendChild(star);
+    }
     childWrap.appendChild(lbl);
     childWrap.appendChild(regBuildSkeletonInput(c, depth + 1));
     wrap.appendChild(childWrap);
@@ -10611,6 +10788,23 @@ function regCollectTestPayload() {
       case 'datetime':
         payload[f.name] = el.value || new Date().toISOString().slice(0, 10);
         break;
+      case 'attachment': {
+        // Canonical wire shape — array<{ filename, file_content }>. The
+        // file_content is base64 (set by regOnTestAttachmentChange via
+        // FileReader.readAsDataURL → strip the data: URI prefix). When the
+        // picker is empty AND the field is optional, omit from payload
+        // entirely so AJV's minItems: 1 doesn't fire against an empty
+        // array. Empty + required → emit [] so the `required` check fires
+        // with the canonical missing-array shape.
+        const vals = (el._regAttachmentValues && el._regAttachmentValues.slice()) || [];
+        if (vals.length === 0 && !f.required) {
+          // Omit — production RJSF wouldn't send the key for an unfilled
+          // optional field, and AJV's minItems wouldn't run.
+        } else {
+          payload[f.name] = vals;
+        }
+        break;
+      }
       default:
         payload[f.name] = el.value || '';
     }
@@ -10618,22 +10812,644 @@ function regCollectTestPayload() {
   return payload;
 }
 
+/* Attachment file-picker change handler. Reads each picked File via
+ * FileReader.readAsDataURL, strips the `data:<mime>;base64,` prefix to leave
+ * the base64 payload (matches the wire shape fieldToSchemaProperty emits),
+ * and stashes the resulting array on the input element. Triggers a
+ * re-evaluation so L1/L2/L4 update against the new payload. */
+function regOnTestAttachmentChange(input, fieldName) {
+  if (!input || !input.files) return;
+  const list = document.querySelector('[data-reg-test-attachment-list="' + (window.CSS && CSS.escape ? CSS.escape(fieldName) : fieldName) + '"]');
+  const files = Array.from(input.files);
+  if (!files.length) {
+    input._regAttachmentValues = [];
+    if (list) list.innerHTML = '';
+    regUpdateTestRuleEvals();
+    return;
+  }
+  // Read all files in parallel; render placeholders immediately so Sarah sees
+  // them while base64 encoding completes.
+  if (list) {
+    list.innerHTML = files.map(f =>
+      '<li class="reg-test-attachment-item" data-status="encoding">'
+      +   '<i class="ti ti-file" aria-hidden="true"></i> '
+      +   '<span class="reg-test-attachment-name">' + escapeHtml(f.name) + '</span>'
+      +   '<span class="reg-test-attachment-size">' + (f.size > 1024 ? Math.round(f.size / 1024) + ' KB' : f.size + ' B') + '</span>'
+      +   '<span class="reg-test-attachment-status">encoding…</span>'
+      + '</li>'
+    ).join('');
+  }
+  let pending = files.length;
+  const results = new Array(files.length);
+  files.forEach((file, idx) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      const comma = dataUrl.indexOf(',');
+      const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : '';
+      results[idx] = { filename: file.name, file_content: base64 };
+      pending--;
+      if (pending === 0) {
+        input._regAttachmentValues = results;
+        if (list) {
+          Array.from(list.children).forEach(li => {
+            li.setAttribute('data-status', 'ready');
+            const status = li.querySelector('.reg-test-attachment-status');
+            if (status) status.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> base64';
+          });
+        }
+        regUpdateTestRuleEvals();
+      }
+    };
+    reader.onerror = () => {
+      results[idx] = { filename: file.name, file_content: '' };
+      pending--;
+      if (pending === 0) {
+        input._regAttachmentValues = results;
+        regUpdateTestRuleEvals();
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+if (typeof window !== 'undefined') window.regOnTestAttachmentChange = regOnTestAttachmentChange;
+
+/* Extract the field names a rule expression references. Cheap regex pass —
+ * we strip string literals first so identifiers inside quoted patterns don't
+ * accidentally match. The set of "known fields" comes from the live draft,
+ * so helper names (`sum`, `today`, etc.) and JS keywords are filtered out by
+ * the membership check. Used to thread the rule → field link in the Test
+ * modal (highlight the offending input when a rule fails); never serialised. */
+function regExtractRuleFields(expression) {
+  if (!expression) return [];
+  const known = new Set((regDraft.fields || []).map(f => f && f.name).filter(Boolean));
+  if (!known.size) return [];
+  const stripped = String(expression)
+    .replace(/"[^"]*"/g, '""')
+    .replace(/'[^']*'/g, "''");
+  const ids = stripped.match(/\b[A-Za-z_][A-Za-z0-9_]*\b/g) || [];
+  const seen = new Set();
+  const out = [];
+  ids.forEach(id => {
+    if (known.has(id) && !seen.has(id)) { seen.add(id); out.push(id); }
+  });
+  return out;
+}
+
+/* Click handler for a rule card in the Test modal validation panel. Scrolls
+ * the first referenced field into view and focuses its input — moves the
+ * operator from "rule X is failing" to "this is the input to fix" in one
+ * click. No-op when the rule references no draft fields (cross-field
+ * expressions that only use helpers). */
+function regScrollToRuleField(li) {
+  if (!li) return;
+  const names = (li.getAttribute('data-rule-fields') || '').split(',').map(s => s.trim()).filter(Boolean);
+  for (let i = 0; i < names.length; i++) {
+    const wrap = document.querySelector('.reg-test-field[data-field-name="' + CSS.escape(names[i]) + '"]');
+    if (wrap) {
+      wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const input = wrap.querySelector('input, select, textarea');
+      if (input) {
+        try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); }
+      }
+      return;
+    }
+  }
+}
+if (typeof window !== 'undefined') window.regScrollToRuleField = regScrollToRuleField;
+
+/* ---------- ADR 0047 L3 — compute the visibility mask (hidden fields) -----
+ * Walks regDraft.fields, evaluates each field's `visibleWhen` expression
+ * against the current payload, and returns the Set of top-level field
+ * names that are hidden (visibility expression returned falsy). A field
+ * with no `visibleWhen` is always visible. Sub-decision 2 (L3 row): hidden
+ * fields don't fire L1, govaluate sees undefined for their values.
+ *
+ * The Composer Preview skeleton and Test-as-operator render the same
+ * shape per the three-surfaces rule (memory: feedback_three_surfaces_check). */
+function regBuildL3VisibilityMask(payload) {
+  const hidden = new Set();
+  const fields = (regDraft.fields || []);
+  fields.forEach(f => {
+    if (!f || !f.name || !f.visibleWhen) return;
+    const ev = regEvalExpression(f.visibleWhen, payload || {});
+    if (!ev.ok) hidden.add(f.name);                 // falsy or errored expression → hide
+  });
+  return hidden;
+}
+
+/* Apply the visibility mask to the Test-modal DOM. Hidden fields' .reg-test-
+ * field wrappers get an is-hidden-by-visibility class so CSS can collapse
+ * them; clearing fields that became visible again. Idempotent. */
+function regApplyTestVisibility(hiddenSet) {
+  document.querySelectorAll('.reg-test-field[data-field-name]').forEach(el => {
+    const name = el.getAttribute('data-field-name');
+    if (hiddenSet.has(name)) {
+      el.classList.add('is-hidden-by-visibility');
+    } else {
+      el.classList.remove('is-hidden-by-visibility');
+    }
+  });
+}
+
+/* ---------- ADR 0047 L1 — build inline AJV-error records per field ----------
+ * Consumes the current Test-modal payload (typed values), runs AJV against
+ * the interop-clean elementSchema, and partitions the resulting errors into
+ * (a) field-attributable errors keyed by top-level field name and (b)
+ * schema-level errors with no field anchor (JSON-editor-authored constructs
+ * like oneOf or root-level additionalProperties). Returns:
+ *   { byField: { [fieldName]: L1Record[] }, schemaLevel: L1Record[],
+ *     totalErrors: number, fieldsWithErrors: Set<fieldName> }
+ * Each L1Record carries the ADR 0047 sub-decision 4 contract:
+ *   { fieldName, primaryMessage, attribution: { engine, keyword, schemaPath, rawAjvMessage } }
+ *
+ * L3 interaction: errors for fields hidden by uiRules.visibility are filtered
+ * out — operators can't fix what they can't see, and showing inline errors
+ * on hidden inputs would be incoherent UX. */
+function regBuildL1Records(payload, hiddenFields) {
+  const state = regDraft;
+  const result = { byField: Object.create(null), schemaLevel: [], totalErrors: 0, fieldsWithErrors: new Set() };
+  const validation = regAjvValidate(payload, state);
+  if (validation.unavailable) return result;                   // CDN offline — L1 silently absent
+  const errors = validation.errors || [];
+  const hidden = hiddenFields || new Set();
+  errors.forEach(err => {
+    const fieldName = regAjvErrorFieldName(err);
+    if (fieldName && hidden.has(fieldName)) return;            // L3 — drop errors for hidden fields
+    const record = {
+      fieldName: fieldName,
+      primaryMessage: regAjvTranslate(err, state),
+      attribution: {
+        engine: 'Schema',
+        keyword: err.keyword,
+        schemaPath: err.schemaPath || '',
+        rawAjvMessage: err.message || ''
+      }
+    };
+    result.totalErrors++;
+    if (fieldName && (state.fields || []).some(f => f && f.name === fieldName)) {
+      result.byField[fieldName] = result.byField[fieldName] || [];
+      result.byField[fieldName].push(record);
+      result.fieldsWithErrors.add(fieldName);
+    } else {
+      result.schemaLevel.push(record);
+    }
+  });
+  return result;
+}
+
+/* Paint L1 records into the Test-modal DOM. Each .reg-test-field carries an
+ * empty <span data-reg-test-l1-for="${name}"> slot (emitted by renderField);
+ * this function fills slots with the field's inline error anatomy and clears
+ * slots for fields that have no errors. Schema-level errors land in the
+ * [data-reg-test-schema-errors] surface above the form. */
+function regRenderTestL1(records) {
+  // Clear all inline slots first — any previously-failing field that's now
+  // clean drops back to baseline. The L4 .reg-test-field accent class also
+  // gets cleared here for L1; .is-rule-fail (L2) is managed independently.
+  document.querySelectorAll('[data-reg-test-l1-for]').forEach(slot => { slot.innerHTML = ''; });
+  document.querySelectorAll('.reg-test-field.is-l1-fail').forEach(el => el.classList.remove('is-l1-fail'));
+  // Paint per-field errors.
+  Object.keys(records.byField).forEach(fieldName => {
+    const slot = document.querySelector('[data-reg-test-l1-for="' + (window.CSS && CSS.escape ? CSS.escape(fieldName) : fieldName) + '"]');
+    if (!slot) return;                                         // field hidden / not rendered
+    const wrap = slot.closest('.reg-test-field');
+    if (wrap) wrap.classList.add('is-l1-fail');
+    slot.innerHTML = records.byField[fieldName].map(regBuildL1ErrorHtml).join('');
+  });
+  // Paint schema-level error surface (above the form).
+  const schemaLevelSurface = document.querySelector('[data-reg-test-schema-errors]');
+  if (schemaLevelSurface) {
+    if (records.schemaLevel.length) {
+      schemaLevelSurface.innerHTML = ''
+        + '<div class="reg-test-schema-errors-title"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Schema-level errors</div>'
+        + records.schemaLevel.map(regBuildL1ErrorHtml).join('');
+      schemaLevelSurface.hidden = false;
+    } else {
+      schemaLevelSurface.innerHTML = '';
+      schemaLevelSurface.hidden = true;
+    }
+  }
+}
+
+function regBuildL1ErrorHtml(record) {
+  const a = record.attribution || {};
+  return '<span class="reg-test-l1-error" role="alert">'
+    +   '<i class="ti ti-alert-circle reg-test-l1-icon" aria-hidden="true"></i> '
+    +   '<span class="reg-test-l1-msg">' + escapeHtml(record.primaryMessage || '') + '</span>'
+    +   '<span class="reg-test-l1-chip" tabindex="0" role="button" aria-label="Engine: ' + escapeHtml(a.engine || 'Schema') + ', keyword ' + escapeHtml(a.keyword || '') + '">'
+    +     escapeHtml(a.engine || 'Schema') + ' · ' + escapeHtml(a.keyword || '?')
+    +     '<span class="reg-test-l1-popover" role="tooltip">'
+    +       '<span class="reg-test-l1-popover-row"><b>Keyword</b> ' + escapeHtml(a.keyword || '') + '</span>'
+    +       '<span class="reg-test-l1-popover-row"><b>Schema path</b> <code>' + escapeHtml(a.schemaPath || '') + '</code></span>'
+    +       '<span class="reg-test-l1-popover-row"><b>Engine output</b> <code>' + escapeHtml(a.rawAjvMessage || '') + '</code></span>'
+    +       (record.fieldName
+              ? '<a class="reg-test-l1-popover-link" href="#" onclick="regJumpToSchemaTabField(\'' + escapeHtml(record.fieldName) + '\'); return false;">→ Edit in Schema tab</a>'
+              : '<span class="reg-test-l1-popover-link" aria-disabled="true">→ Edit in Schema tab (JSON view)</span>')
+    +     '</span>'
+    +   '</span>'
+    + '</span>';
+}
+
+/* ADR 0047 L4 — modal-header Schema chip + conditional section <legend>
+ * chips. Both consume the same regBuildL1Records output as L1; this function
+ * only PAINTS counts and visibility. Click-to-scroll lands on the first
+ * AJV-failing field in scope. */
+function regUpdateTestL4Aggregations(records) {
+  if (!records) return;
+  const headerChip = document.querySelector('[data-reg-test-l4-schema-chip]');
+  if (headerChip) {
+    const fieldCount = records.fieldsWithErrors ? records.fieldsWithErrors.size : 0;
+    const totalCount = (records.totalErrors || 0) + (records.schemaLevel ? records.schemaLevel.length : 0);
+    if (totalCount > 0) {
+      const noun = totalCount === 1 ? 'error' : 'errors';
+      headerChip.innerHTML = '<i class="ti ti-alert-circle" aria-hidden="true"></i> Schema · '
+        + totalCount + ' ' + noun;
+      headerChip.hidden = false;
+    } else {
+      headerChip.innerHTML = '';
+      headerChip.hidden = true;
+    }
+  }
+  // Per-section chips — count L1 errors whose field falls within the chip's
+  // scope (data-reg-test-l4-section-chip="name1,name2,..."). β: render only
+  // when count >= 1.
+  document.querySelectorAll('[data-reg-test-l4-section-chip]').forEach(chip => {
+    const scope = (chip.getAttribute('data-reg-test-l4-section-chip') || '').split(',').filter(Boolean);
+    const count = scope.reduce((acc, name) => acc + ((records.byField && records.byField[name]) ? records.byField[name].length : 0), 0);
+    if (count > 0) {
+      chip.innerHTML = 'Schema · ' + count;
+      chip.hidden = false;
+    } else {
+      chip.innerHTML = '';
+      chip.hidden = true;
+    }
+  });
+}
+
+/* Scroll-and-focus the first L1-failing field. When called from a section
+ * chip (which carries its own field-name scope), restricts the search to
+ * that section's fields; when called bare (header-chip click), searches
+ * across the form. */
+function regL4ScrollToFirstL1Error(chipEl) {
+  const scope = chipEl
+    ? (chipEl.getAttribute('data-reg-test-l4-section-chip') || '').split(',').filter(Boolean)
+    : null;
+  // Find first .reg-test-field.is-l1-fail in scope; fallback: any is-l1-fail.
+  const allFailing = Array.from(document.querySelectorAll('.reg-test-field.is-l1-fail'));
+  const target = scope
+    ? allFailing.find(el => scope.indexOf(el.getAttribute('data-field-name')) !== -1)
+    : (allFailing[0] || document.querySelector('[data-reg-test-schema-errors]:not([hidden])'));
+  if (!target) return;
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const input = target.querySelector('input, select, textarea');
+  if (input) {
+    try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); }
+  }
+}
+if (typeof window !== 'undefined') {
+  window.regUpdateTestL4Aggregations = regUpdateTestL4Aggregations;
+  window.regL4ScrollToFirstL1Error = regL4ScrollToFirstL1Error;
+}
+
+/* ADR 0047 sub-decision 10 + 17 — Submit click cascade and FloatingPanel
+ * state machine. Three cases:
+ *   (1) L1 (AJV) dirty   → panel pops with one-line summary + jump-arrow
+ *   (2) L1 clean, L2 fails → panel pops with one entry per (rule, field)
+ *   (3) both clean        → button transitions to "Submitted ✓" for 1.5s
+ * Panel updates live during typing once open; empty-state celebration when
+ * the failing-rules list shrinks to zero from a non-zero count. */
+function regOnTestSubmitClick() {
+  const payload = regCollectTestPayload();
+  const l1 = regBuildL1Records(payload);
+  const l2 = regBuildL2RuleSnapshot(payload);
+  // Case 3 — both engines clean: button transition, no panel.
+  if (l1.totalErrors === 0 && l2.failingCount === 0) {
+    regOnTestSubmitSuccess();
+    return;
+  }
+  // Cases 1 + 2 — open the panel and paint the right content.
+  regFloatingPanelOpen();
+  regFloatingPanelRender(l1, l2);
+}
+
+function regOnTestSubmitSuccess() {
+  const submit = document.querySelector('[data-reg-test-submit]');
+  if (!submit || submit._regSuccessTimer) return;
+  const originalLabel = submit.textContent;
+  submit.classList.add('is-success');
+  submit.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> Submitted';
+  submit._regSuccessTimer = setTimeout(() => {
+    submit.classList.remove('is-success');
+    submit.textContent = originalLabel;
+    submit._regSuccessTimer = null;
+  }, 1500);
+}
+
+/* Build a govaluate-rule snapshot. Mirrors what regUpdateTestRuleEvals
+ * computes for the right-panel cards but in a shape regFloatingPanelRender
+ * can consume cleanly. Returns:
+ *   { items: [{ rule, fieldRefs, ev: {ok,error,value} }], failingCount, errorCount } */
+function regBuildL2RuleSnapshot(payload) {
+  const rules = regDraft.rules || [];
+  const items = rules.map(r => {
+    const ev = regEvalExpression(r.expression, payload);
+    return { rule: r, fieldRefs: regExtractRuleFields(r.expression), ev: ev };
+  });
+  const failingCount = items.filter(i => !i.ev.ok && !i.ev.error).length;
+  const errorCount = items.filter(i => i.ev.error).length;
+  return { items: items, failingCount: failingCount, errorCount: errorCount };
+}
+
+/* FloatingPanel state — open / collapsed / closed. */
+function regFloatingPanelOpen() {
+  const panel = document.querySelector('[data-reg-test-floating-panel]');
+  if (!panel) return;
+  panel.hidden = false;
+  panel.classList.remove('is-collapsed', 'is-closed');
+  panel.classList.add('is-open');
+}
+function regFloatingPanelCollapse() {
+  const panel = document.querySelector('[data-reg-test-floating-panel]');
+  if (!panel) return;
+  panel.classList.remove('is-open', 'is-closed');
+  panel.classList.add('is-collapsed');
+}
+function regFloatingPanelClose() {
+  const panel = document.querySelector('[data-reg-test-floating-panel]');
+  if (!panel) return;
+  panel.classList.remove('is-open', 'is-collapsed');
+  panel.classList.add('is-closed');
+  panel.hidden = true;
+}
+function regFloatingPanelIsOpen() {
+  const panel = document.querySelector('[data-reg-test-floating-panel]');
+  return !!(panel && !panel.hidden && panel.classList.contains('is-open'));
+}
+function regFloatingPanelIsCollapsed() {
+  const panel = document.querySelector('[data-reg-test-floating-panel]');
+  return !!(panel && !panel.hidden && panel.classList.contains('is-collapsed'));
+}
+
+/* Paint the panel content based on current L1 + L2 state. */
+function regFloatingPanelRender(l1, l2) {
+  const panel = document.querySelector('[data-reg-test-floating-panel]');
+  if (!panel) return;
+  const titleEl = panel.querySelector('[data-reg-test-floating-panel-title]');
+  const bodyEl = panel.querySelector('[data-reg-test-floating-panel-body]');
+  const badgeEl = panel.querySelector('[data-reg-test-floating-panel-badge]');
+  if (!titleEl || !bodyEl) return;
+
+  // Case 1 — L1 dirty. Production cascade preserved (AJV must clear before
+  // govaluate runs at submit), but the FloatingPanel enumerates the Schema
+  // errors directly (each clickable → jump-and-pulse the target field) so
+  // Sarah has a complete picture and a working action affordance. The
+  // previous "Shape errors must be fixed before cross-field validation
+  // runs" + Jump-to-first CTA design read as cryptic cascade-speak +
+  // hard-to-see-visual-feedback; replaced here with explicit per-error
+  // rows. The pending cross-field list still sits below, muted.
+  if (l1.totalErrors > 0) {
+    const l1Noun = l1.totalErrors === 1 ? 'Schema error' : 'Schema errors';
+    const pending = l2.items.filter(i => !i.ev.ok || i.ev.error);
+    const titleSuffix = pending.length > 0
+      ? ' · ' + pending.length + ' cross-field pending'
+      : '';
+    titleEl.textContent = l1.totalErrors + ' ' + l1Noun + ' to fix first' + titleSuffix;
+
+    // Order L1 records by field-builder field order so the visual sequence
+    // in the panel mirrors the form's top-to-bottom layout.
+    const orderedFieldNames = (regDraft.fields || []).map(f => f && f.name).filter(Boolean);
+    const orderedRecords = [];
+    orderedFieldNames.forEach(name => {
+      if (l1.byField[name]) orderedRecords.push.apply(orderedRecords, l1.byField[name]);
+    });
+    // Schema-level errors (no field anchor) trail the field-attributed ones.
+    orderedRecords.push.apply(orderedRecords, l1.schemaLevel);
+
+    let bodyHtml = '<div class="reg-test-floating-panel-section-eyebrow">'
+      + l1Noun + ' — fix these first'
+      + '</div>';
+    bodyHtml += orderedRecords.map(record => {
+      const fieldName = record.fieldName;
+      const fieldLabel = fieldName ? regFieldLabelByName(fieldName) : 'Schema';
+      const keyword = (record.attribution && record.attribution.keyword) || '';
+      const keywordChip = keyword
+        ? ' <span class="reg-test-floating-panel-msg-chip">' + escapeHtml(keyword) + '</span>'
+        : '';
+      if (fieldName) {
+        return '<button type="button" class="reg-test-floating-panel-msg is-clickable is-schema" '
+          + 'onclick="regFloatingPanelJumpToField(\'' + escapeHtml(fieldName) + '\')">'
+          + '<b>' + escapeHtml(fieldLabel) + ':</b> ' + escapeHtml(record.primaryMessage || '')
+          + keywordChip
+          + '</button>';
+      }
+      // Schema-level entry — no jump target (production primitive renders these as <div>).
+      return '<div class="reg-test-floating-panel-msg is-schema">'
+        + '<b>' + escapeHtml(fieldLabel) + ':</b> ' + escapeHtml(record.primaryMessage || '')
+        + keywordChip
+        + '</div>';
+    }).join('');
+
+    // Pending cross-field rules (non-actionable, informational).
+    if (pending.length) {
+      const noun = pending.length === 1 ? 'cross-field rule' : 'cross-field rules';
+      bodyHtml += '<div class="reg-test-floating-panel-pending">'
+        +   '<div class="reg-test-floating-panel-pending-title">'
+        +     pending.length + ' ' + noun + ' awaiting shape fix:'
+        +   '</div>'
+        +   pending.map(item => {
+              const isError = !!item.ev.error;
+              const tag = isError ? ' <span class="reg-test-floating-panel-error-tag">authoring bug</span>' : '';
+              return '<div class="reg-test-floating-panel-pending-item">'
+                + '<i class="ti ti-circle-dashed" aria-hidden="true"></i> '
+                + escapeHtml(item.rule.name || 'Unnamed rule') + tag
+                + '</div>';
+            }).join('')
+        + '</div>';
+    }
+    bodyEl.innerHTML = bodyHtml;
+    panel.classList.remove('is-celebrating');
+    const totalCount = l1.totalErrors + pending.length;
+    if (badgeEl) badgeEl.textContent = String(totalCount);
+    panel.dataset.failingCount = String(totalCount);
+    return;
+  }
+
+  // Case 2 — L1 clean, L2 has failing or errored rules. Emit N entries —
+  // one per (rule, referenced-field) pair per ADR 0047 sub-decision 14
+  // (Q14(b)=(i)). Rules with zero field-refs emit a single non-navigable
+  // entry per sub-decision 15.
+  const failingItems = l2.items.filter(i => !i.ev.ok || i.ev.error);
+  if (failingItems.length > 0) {
+    // Title counts pairs, not rules — matches the row count below.
+    const totalPairs = failingItems.reduce((acc, item) => acc + Math.max(1, (item.fieldRefs || []).length), 0);
+    const noun = totalPairs === 1 ? 'row needs' : 'rows need';
+    titleEl.textContent = totalPairs + ' validation ' + noun + ' attention';
+    const entries = [];
+    failingItems.forEach(item => {
+      const r = item.rule;
+      const isError = !!item.ev.error;
+      const refs = item.fieldRefs || [];
+      const errorClass = isError ? ' is-error' : '';
+      const opLabel = isError ? 'Rule has an authoring bug — see Rules tab' : (r.on_failure || 'Rule failed');
+      if (refs.length === 0) {
+        entries.push('<div class="reg-test-floating-panel-msg' + errorClass + '">'
+          + '<b>' + escapeHtml(r.name || 'Rule') + ':</b> ' + escapeHtml(opLabel)
+          + (isError ? ' <span class="reg-test-floating-panel-error-tag">authoring bug</span>' : '')
+          + '</div>');
+      } else {
+        refs.forEach(fieldName => {
+          const fieldLabel = regFieldLabelByName(fieldName);
+          entries.push('<button type="button" class="reg-test-floating-panel-msg' + errorClass + ' is-clickable" '
+            + 'onclick="regFloatingPanelJumpToField(\'' + escapeHtml(fieldName) + '\')">'
+            + '<b>' + escapeHtml(fieldLabel) + ':</b> ' + escapeHtml(opLabel)
+            + (isError ? ' <span class="reg-test-floating-panel-error-tag">authoring bug</span>' : '')
+            + '</button>');
+        });
+      }
+    });
+    bodyEl.innerHTML = entries.join('');
+    panel.classList.remove('is-celebrating');
+    if (badgeEl) badgeEl.textContent = String(entries.length);
+    panel.dataset.failingCount = String(entries.length);
+    return;
+  }
+
+  // Both engines clean and the panel was previously showing failures →
+  // empty-state celebration, then auto-collapse.
+  titleEl.textContent = 'All clear';
+  bodyEl.innerHTML = '<div class="reg-test-floating-panel-celebrate">'
+    +   '<i class="ti ti-circle-check" aria-hidden="true"></i> '
+    +   'All cross-field rules now pass. Click Submit to confirm.'
+    + '</div>';
+  panel.classList.add('is-celebrating');
+  if (badgeEl) badgeEl.textContent = '';
+  panel.dataset.failingCount = '0';
+  // Auto-collapse to icon after the celebration window.
+  if (panel._regCelebrateTimer) clearTimeout(panel._regCelebrateTimer);
+  panel._regCelebrateTimer = setTimeout(() => {
+    if (panel.dataset.failingCount === '0' && panel.classList.contains('is-celebrating')) {
+      regFloatingPanelClose();
+      panel.classList.remove('is-celebrating');
+    }
+  }, 2000);
+}
+
+/* Smooth-scroll the form to a referenced field + brief amber pulse to confirm
+ * the destination after the scroll lands. ADR 0047 sub-decision 17. */
+function regFloatingPanelJumpToField(fieldName) {
+  const wrap = document.querySelector('.reg-test-field[data-field-name="' + (window.CSS && CSS.escape ? CSS.escape(fieldName) : fieldName) + '"]');
+  if (!wrap) return;
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const input = wrap.querySelector('input, select, textarea');
+  if (input) {
+    try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); }
+  }
+  wrap.classList.add('is-floating-panel-jump-target');
+  setTimeout(() => wrap.classList.remove('is-floating-panel-jump-target'), 600);
+}
+
+/* Resolve a field name to its display label for FloatingPanel anatomy
+ * (production format: <b>Field name:</b> message). Falls back to the raw
+ * name when no field exists (shouldn't happen for L2 entries with refs). */
+function regFieldLabelByName(name) {
+  const f = (regDraft.fields || []).find(x => x && x.name === name);
+  return f ? regDisplayLabel(f) : name;
+}
+
+/* Wire panel chrome (collapse / close / expand) — idempotent, called by
+ * regRenderTestModal after innerHTML is set. */
+function regWireFloatingPanelChrome() {
+  const panel = document.querySelector('[data-reg-test-floating-panel]');
+  if (!panel || panel._regChromeWired) return;
+  panel.addEventListener('click', (ev) => {
+    const tgt = ev.target.closest('[data-reg-test-floating-toggle]');
+    if (!tgt) return;
+    const action = tgt.getAttribute('data-reg-test-floating-toggle');
+    if (action === 'expand')  regFloatingPanelOpen();
+    if (action === 'collapse') regFloatingPanelCollapse();
+    if (action === 'close')    regFloatingPanelClose();
+  });
+  panel._regChromeWired = true;
+}
+
+if (typeof window !== 'undefined') {
+  window.regOnTestSubmitClick = regOnTestSubmitClick;
+  window.regFloatingPanelJumpToField = regFloatingPanelJumpToField;
+}
+
+/* Hop from a Test-modal L1 popover back to the Schema tab focused on the
+ * referenced field. Closes the modal, switches the active tab to Schema,
+ * and scrolls + flashes the field row. Sarah-debug navigation per ADR 0047
+ * sub-decision 8 (c-iv). */
+function regJumpToSchemaTabField(fieldName) {
+  if (typeof regCloseTestModal === 'function') regCloseTestModal();
+  if (typeof regSelectTab === 'function') {
+    regSelectTab('schema');
+  } else {
+    // Fallback — click the Schema tab DOM directly.
+    const tab = document.querySelector('[data-reg-tab="schema"]');
+    if (tab) tab.click();
+  }
+  // Defer the scroll until the Schema tab paints.
+  setTimeout(() => {
+    const row = document.querySelector('.reg-field-row[data-reg-field-name="' + (window.CSS && CSS.escape ? CSS.escape(fieldName) : fieldName) + '"]');
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.classList.add('is-l1-jump-target');
+      setTimeout(() => row.classList.remove('is-l1-jump-target'), 1600);
+    }
+  }, 60);
+}
+if (typeof window !== 'undefined') window.regJumpToSchemaTabField = regJumpToSchemaTabField;
+
 /* Re-evaluate all rules against the current form values + repaint the
  * rule-status badges and submit button. Called on every input change in
- * the Test modal so the operator gets immediate PASS/FAIL feedback. */
+ * the Test modal so the operator gets immediate PASS/FAIL feedback. Also
+ * applies the .is-rule-fail accent to every .reg-test-field referenced by
+ * a failing rule, so the operator sees WHICH input the rule cares about
+ * without re-reading the expression.
+ *
+ * ADR 0047 — additionally runs the L1 AJV pass and repaints inline errors.
+ * One keystroke fires one full validation sweep: AJV (L1) + govaluate (L2)
+ * + visibility (L3, future) + aggregations (L4). */
 function regUpdateTestRuleEvals() {
   const rules = regDraft.rules || [];
   const payload = regCollectTestPayload();
   const list = document.querySelector('[data-reg-test-rules-list]');
   const submit = document.querySelector('[data-reg-test-submit]');
   if (!list) return;
+  // ADR 0047 L3 — compute visibility mask first so L1 can drop errors for
+  // hidden fields and the DOM hides their inputs.
+  const hiddenFields = regBuildL3VisibilityMask(payload);
+  regApplyTestVisibility(hiddenFields);
+  // ADR 0047 L1 — paint AJV errors inline first so the operator-visible
+  // surfaces are consistent with the same payload the L2 pass below sees.
+  const l1Records = regBuildL1Records(payload, hiddenFields);
+  regRenderTestL1(l1Records);
+  // ADR 0047 L4 — modal-header chip + conditional <legend> chips reflect the
+  // L1 count (and clear when L1 is clean).
+  if (typeof regUpdateTestL4Aggregations === 'function') {
+    regUpdateTestL4Aggregations(l1Records);
+  }
+  // Clear last paint's L2 field accents — recomputed below from this eval pass.
+  document.querySelectorAll('.reg-test-field.is-rule-fail').forEach(el => el.classList.remove('is-rule-fail'));
   let anyFailing = false;
+  const failingFieldNames = new Set();
   const items = rules.map(r => {
     const ev = regEvalExpression(r.expression, payload);
     const statusClass = ev.error ? 'is-errored' : (ev.ok ? 'is-passed' : 'is-failed');
     const statusLabel = ev.error ? 'ERROR'    : (ev.ok ? 'PASSES'    : 'FAILS');
-    if (!ev.ok || ev.error) anyFailing = true;
-    return '<li class="reg-test-rule">'
+    const fieldRefs = regExtractRuleFields(r.expression);
+    if (!ev.ok || ev.error) {
+      anyFailing = true;
+      fieldRefs.forEach(n => failingFieldNames.add(n));
+    }
+    const fieldsAttr = fieldRefs.length ? ' data-rule-fields="' + escapeHtml(fieldRefs.join(',')) + '"' : '';
+    const linkAttrs = fieldRefs.length
+      ? ' tabindex="0" role="button" onclick="regScrollToRuleField(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();regScrollToRuleField(this);}"'
+      : '';
+    return '<li class="reg-test-rule"' + fieldsAttr + linkAttrs + '>'
       + '<div class="reg-test-rule-head">'
       +   '<span class="reg-test-rule-name">' + escapeHtml(r.name || '(unnamed rule)') + '</span>'
       +   '<span class="reg-rule-status ' + statusClass + '">' + statusLabel + '</span>'
@@ -10650,9 +11466,30 @@ function regUpdateTestRuleEvals() {
   list.innerHTML = rules.length
     ? items.join('')
     : '<li class="reg-test-rule-empty">No validation rules defined for this element.</li>';
+  // Paint accents on every field a failing rule references.
+  failingFieldNames.forEach(n => {
+    document.querySelectorAll('.reg-test-field[data-field-name="' + (window.CSS && CSS.escape ? CSS.escape(n) : n) + '"]')
+      .forEach(el => el.classList.add('is-rule-fail'));
+  });
+  // ADR 0047 sub-decision 10 — Submit is always clickable; click runs the
+  // cascade simulation rather than blocking. Title hints what would happen.
   if (submit) {
-    submit.disabled = anyFailing;
-    submit.title = anyFailing ? 'Fix the failing rule(s) before submitting.' : '';
+    submit.disabled = false;
+    const totalL1 = (l1Records && l1Records.totalErrors) || 0;
+    if (totalL1 > 0) {
+      submit.title = 'Submit — ' + totalL1 + ' shape error(s) would block the operator.';
+    } else if (anyFailing) {
+      submit.title = 'Submit — cross-field rules would fail at submit.';
+    } else {
+      submit.title = 'Submit — operator would submit successfully.';
+    }
+  }
+  // ADR 0047 sub-decision 17 — live re-eval while panel is open. As Sarah
+  // types fixes, the panel's content shrinks; when both engines clear,
+  // regFloatingPanelRender transitions to the empty-state celebration.
+  if (typeof regFloatingPanelIsOpen === 'function' && regFloatingPanelIsOpen()) {
+    const snapshot = regBuildL2RuleSnapshot(payload);
+    regFloatingPanelRender(l1Records, snapshot);
   }
 }
 
@@ -10665,19 +11502,32 @@ function regRenderTestModal() {
   const isHs = complexity === 'high-stakes';
 
   // Header bar mimicking the real Composer (acting-as banner per ADR 0030
-  // persona resolution + complexity pill per ADR 0025).
+  // persona resolution + complexity pill per ADR 0025). The acting-as label
+  // is demo-static; data-initial drives the avatar chip rendered by CSS so
+  // the initial isn't hard-coded in the stylesheet.
+  const actingAsLabel = 'Cosco · SGTradex';
+  const actingAsInitial = actingAsLabel.trim().charAt(0).toUpperCase() || '?';
   let html = ''
     + '<div class="reg-test-banner">'
-    +   '<span class="reg-test-actingas"><i class="ti ti-user-shield"></i> Acting as Cosco · SGTradex</span>'
-    +   '<span class="complexity-pill ' + complexity + '">' + complexity + '</span>'
+    +   '<span class="reg-test-actingas" data-initial="' + escapeHtml(actingAsInitial) + '"><i class="ti ti-user-shield"></i> Acting as ' + escapeHtml(actingAsLabel) + '</span>'
+    +   '<span class="reg-test-banner-right">'
+    +     '<span class="reg-test-l4-schema-chip" data-reg-test-l4-schema-chip hidden role="button" tabindex="0" '
+    +       'onclick="regL4ScrollToFirstL1Error()" '
+    +       'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();regL4ScrollToFirstL1Error();}" '
+    +       'title="Jump to the first Schema error"></span>'
+    +     '<span class="complexity-pill ' + complexity + '" title="' + (complexity === 'high-stakes' ? 'High-stakes elements render as a 3-step wizard with a Review step (ADR 0025).' : 'Simple elements render as a single-page form (ADR 0025).') + '">' + complexity + '</span>'
+    +   '</span>'
     + '</div>'
     + '<div class="reg-test-meta"><strong>' + escapeHtml(name) + '</strong> · ' + escapeHtml(version) + '</div>';
 
   if (isHs) {
-    html += '<div class="reg-test-stepper">'
-      + '<span class="reg-test-step is-active">1. Fill</span>'
-      + '<span class="reg-test-step">2. Review</span>'
-      + '<span class="reg-test-step">3. Submit</span>'
+    // Step labels are clean text now (no leading number). The CSS counter on
+    // .reg-test-step::before renders the numbered circle visually, so JS-side
+    // numbers would double up.
+    html += '<div class="reg-test-stepper" aria-label="Composer steps">'
+      + '<span class="reg-test-step is-active">Fill</span>'
+      + '<span class="reg-test-step">Review</span>'
+      + '<span class="reg-test-step">Submit</span>'
       + '</div>';
   }
 
@@ -10692,22 +11542,67 @@ function regRenderTestModal() {
     const evtAttr = (f.type === 'boolean' || f.type === 'enum')
       ? ' onchange="regUpdateTestRuleEvals()"'
       : ' oninput="regUpdateTestRuleEvals()"';
+    // ARIA + native HTML5 validation hints. None of these alter the JSON
+    // payload regCollectTestPayload produces — they only enrich the input
+    // for screen readers, mobile keyboards, and the :invalid CSS visualisation.
+    const reqAttr = f.required ? ' required aria-required="true"' : '';
+    // Derive a sensible placeholder when no example is provided so blank
+    // fields hint at expected shape (date → "yyyy-mm-dd", etc.). The browser's
+    // native placeholder for date/datetime inputs is already informative, so
+    // we don't override them.
+    const ex = (f.examples && f.examples[0] != null) ? String(f.examples[0]) : '';
+    const fallbackPlaceholder = (type) => {
+      switch (type) {
+        case 'number':
+        case 'integer': return (f.validation && f.validation.minimum != null) ? String(f.validation.minimum) : 'e.g. 0';
+        case 'email':   return 'name@example.com';
+        default:        return '';
+      }
+    };
     switch (f.type) {
       case 'number':
-      case 'integer':
-        return '<input id="' + inputId + '"' + demoAttr + ' type="number"' + evtAttr + ' placeholder="' + (f.examples && f.examples[0] ? escapeHtml(String(f.examples[0])) : '') + '">';
-      case 'date':     return '<input id="' + inputId + '"' + demoAttr + ' type="date"' + evtAttr + '>';
-      case 'datetime': return '<input id="' + inputId + '"' + demoAttr + ' type="datetime-local"' + evtAttr + '>';
-      case 'boolean':  return '<input id="' + inputId + '"' + demoAttr + ' type="checkbox"' + evtAttr + '>';
+      case 'integer': {
+        const ph = ex || fallbackPlaceholder(f.type);
+        const inputmode = (f.type === 'integer') ? ' inputmode="numeric"' : ' inputmode="decimal"';
+        const minAttr = (f.validation && f.validation.minimum != null) ? ' min="' + escapeHtml(String(f.validation.minimum)) + '"' : '';
+        const maxAttr = (f.validation && f.validation.maximum != null) ? ' max="' + escapeHtml(String(f.validation.maximum)) + '"' : '';
+        const stepAttr = (f.type === 'integer') ? ' step="1"' : '';
+        return '<input id="' + inputId + '"' + demoAttr + ' type="number"' + inputmode + minAttr + maxAttr + stepAttr + reqAttr + evtAttr + ' placeholder="' + escapeHtml(ph) + '">';
+      }
+      case 'date':     return '<input id="' + inputId + '"' + demoAttr + ' type="date"' + reqAttr + evtAttr + '>';
+      case 'datetime': return '<input id="' + inputId + '"' + demoAttr + ' type="datetime-local"' + reqAttr + evtAttr + '>';
+      case 'boolean':  return '<input id="' + inputId + '"' + demoAttr + ' type="checkbox"' + reqAttr + evtAttr + '>';
       case 'enum': {
-        let s = '<select id="' + inputId + '"' + demoAttr + evtAttr + '>';
+        let s = '<select id="' + inputId + '"' + demoAttr + reqAttr + evtAttr + '>';
         ((f.validation && f.validation.enumValues) || []).forEach(v => { s += '<option>' + escapeHtml(v) + '</option>'; });
         return s + '</select>';
       }
-      default:
-        return '<input id="' + inputId + '"' + demoAttr + ' type="text"' + evtAttr + ' placeholder="' + (f.examples && f.examples[0] ? escapeHtml(String(f.examples[0])) : '') + '"'
+      case 'attachment': {
+        // Canonical attachment widget — file picker that base64-encodes on
+        // change so the typed payload matches the wire shape (array of
+        // { filename, file_content } per fieldToSchemaProperty's attachment
+        // branch). The `id` carries the test-modal prefix so the standard
+        // payload collector finds it; the dropzone label sits above for
+        // operator-visible affordance.
+        return ''
+          + '<div class="reg-test-attachment" data-reg-test-attachment-for="' + escapeHtml(f.name) + '">'
+          +   '<input id="' + inputId + '" type="file" multiple' + reqAttr
+          +     ' onchange="regOnTestAttachmentChange(this, \'' + escapeHtml(f.name) + '\')"'
+          +     ' data-demo="test.input.' + escapeHtml(f.name) + '">'
+          +   '<label for="' + inputId + '" class="reg-test-attachment-dropzone">'
+          +     '<i class="ti ti-paperclip" aria-hidden="true"></i> '
+          +     '<span class="reg-test-attachment-prompt">Drop files or click to upload</span>'
+          +     '<span class="reg-test-attachment-meta">base64-encoded · array&lt;{ filename, file_content }&gt;</span>'
+          +   '</label>'
+          +   '<ul class="reg-test-attachment-list" data-reg-test-attachment-list="' + escapeHtml(f.name) + '"></ul>'
+          + '</div>';
+      }
+      default: {
+        const ph = ex || fallbackPlaceholder(f.type);
+        return '<input id="' + inputId + '"' + demoAttr + ' type="text"' + reqAttr + evtAttr + ' placeholder="' + escapeHtml(ph) + '"'
           + (f.validation && f.validation.pattern ? ' pattern="' + escapeHtml(f.validation.pattern) + '"' : '')
           + '>';
+      }
     }
   };
 
@@ -10753,12 +11648,12 @@ function regRenderTestModal() {
     const v = f.validation || {};
     const children = (v.itemChildren || []).filter(c => c && c.name);
     if (!children.length) {
-      return '<div class="reg-test-field"><span class="reg-test-label">'
-        + escapeHtml(regDisplayLabel(f)) + (f.required ? ' *' : '') + '</span>'
+      return '<div class="reg-test-field" data-field-name="' + escapeHtml(f.name) + '"><span class="reg-test-label">'
+        + escapeHtml(regDisplayLabel(f)) + (f.required ? ' <span class="reg-required" aria-hidden="true">*</span>' : '') + '</span>'
         + '<span class="reg-test-hint">(this table has no columns defined yet)</span></div>';
     }
     const cols = children.map(c =>
-      '<th>' + escapeHtml(regDisplayLabel(c)) + (c.required ? ' *' : '') + '</th>'
+      '<th>' + escapeHtml(regDisplayLabel(c)) + (c.required ? ' <span class="reg-required" aria-hidden="true">*</span>' : '') + '</th>'
     ).join('') + '<th class="reg-test-array-table-actions"></th>';
     // UX-39 / Q13 — when default rows exist, render all N as editable
     // operator-style rows (pre-filled with the default values). Test-as-
@@ -10784,10 +11679,12 @@ function regRenderTestModal() {
         +   'aria-label="Add row" data-reg-test-add-row>+ Add row</button>';
     // data-reg-test-field-id + data-reg-test-next-row-idx let the delegated
     // click handler append a fresh row with a unique row index for input IDs.
+    // data-field-name is the rule-to-field link anchor (ADR 0047 L2 surface).
     return '<div class="reg-test-field reg-test-field--array" '
       +   'data-reg-test-field-id="' + escapeHtml(f.id) + '" '
-      +   'data-reg-test-next-row-idx="' + renderRows.length + '">'
-      + '<span class="reg-test-label">' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' *' : '') + '</span>'
+      +   'data-reg-test-next-row-idx="' + renderRows.length + '" '
+      +   'data-field-name="' + escapeHtml(f.name) + '">'
+      + '<span class="reg-test-label">' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' <span class="reg-required" aria-hidden="true">*</span>' : '') + '</span>'
       + '<table class="reg-test-array-table">'
       +   '<thead><tr>' + cols + '</tr></thead>'
       +   '<tbody>' + rowsHtml + '</tbody>'
@@ -10885,10 +11782,16 @@ function regRenderTestModal() {
     if (f.type === 'array' && (f.validation || {}).itemType === 'enum') {
       return renderTestArrayEnum(f);
     }
-    return '<label class="reg-test-field">'
-      + '<span class="reg-test-label">' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' *' : '') + '</span>'
+    // ADR 0047 L1 — data-required + data-field-name anchor the per-field
+    // L1 (AJV) error and L2 (rule-to-field) navigation surfaces.
+    // [data-reg-test-l1-for] is the empty slot regRenderTestL1 paints into.
+    const reqAttr = f.required ? ' data-required="true"' : '';
+    const nameAttr = ' data-field-name="' + escapeHtml(f.name) + '"';
+    return '<label class="reg-test-field"' + reqAttr + nameAttr + '>'
+      + '<span class="reg-test-label">' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' <span class="reg-required" aria-hidden="true">*</span>' : '') + '</span>'
       + renderTestInputOnly(f)
       + (f.description ? '<span class="reg-test-hint">' + escapeHtml(f.description) + '</span>' : '')
+      + '<span class="reg-test-l1-errors" data-reg-test-l1-for="' + escapeHtml(f.name) + '"></span>'
       + '</label>';
   };
 
@@ -10900,8 +11803,17 @@ function regRenderTestModal() {
     const hint = (typeof regResolveGroupHint === 'function' && g.presentation !== undefined)
       ? regResolveGroupHint(g)
       : (g.presentation || 'section');
+    // ADR 0047 L4 — per-section Schema-error chip. Hidden by default;
+    // regUpdateTestL4Aggregations fills + reveals when the section has ≥1
+    // L1 error. data-reg-test-l4-section-chip carries the field-name list
+    // that belongs to this section so the chip's click can scroll to the
+    // first failing field within scope.
+    const fieldNamesAttr = list.map(f => f && f.name).filter(Boolean).join(',');
     const titleHtml = escapeHtml(g.name)
-      + ' <span class="reg-test-group-count">' + list.length + '</span>';
+      + ' <span class="reg-test-group-count">' + list.length + '</span>'
+      + ' <span class="reg-test-l4-section-chip" data-reg-test-l4-section-chip="' + escapeHtml(fieldNamesAttr) + '" hidden role="button" tabindex="0" '
+      +   'onclick="regL4ScrollToFirstL1Error(this); event.stopPropagation();" '
+      +   'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); event.stopPropagation(); regL4ScrollToFirstL1Error(this);}"></span>';
     const rationaleHtml = g.rationale ? '<p class="reg-test-group-rationale">' + escapeHtml(g.rationale) + '</p>' : '';
 
     if (hint === 'accordion') {
@@ -10913,7 +11825,7 @@ function regRenderTestModal() {
     }
     if (hint === 'table') {
       const cols = list.map(f => f.name
-        ? '<th>' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' *' : '') + '</th>'
+        ? '<th>' + escapeHtml(regDisplayLabel(f)) + (f.required ? ' <span class="reg-required" aria-hidden="true">*</span>' : '') + '</th>'
         : '<th></th>').join('');
       const cells = list.map(f => '<td>'
         + (f.name ? renderTestInputOnly(f) : '')
@@ -10940,6 +11852,10 @@ function regRenderTestModal() {
   // Composer would tell them on submission.
   html += '<div class="reg-test-body-grid">';
   html += '<form class="reg-test-form" onsubmit="event.preventDefault(); return false">';
+  // ADR 0047 sub-decision 13 — schema-level error surface above the form for
+  // AJV errors that don't map to a top-level field (oneOf, root-level
+  // additionalProperties, etc.). Hidden by default; regRenderTestL1 toggles.
+  html += '<div class="reg-test-schema-errors" data-reg-test-schema-errors hidden></div>';
   const testGroups = Array.isArray(regDraft._groups) ? regDraft._groups : [];
   if (testGroups.length) {
     const byGroup = new Map();
@@ -10973,10 +11889,39 @@ function regRenderTestModal() {
 
   html += '<div class="reg-test-footer">'
     + '<span class="reg-test-mode-hint">Preview only — typed values are discarded on close.</span>'
-    + '<button type="button" class="btn-primary" data-reg-test-submit data-demo="test.submit" disabled>' + (isHs ? 'Continue to Review →' : 'Submit') + '</button>'
+    + '<button type="button" class="btn-primary" data-reg-test-submit data-demo="test.submit" onclick="regOnTestSubmitClick()">' + (isHs ? 'Continue to Review →' : 'Submit') + '</button>'
+    + '</div>';
+
+  // ADR 0047 sub-decision 17 — FloatingPanel mirroring dex-monorepo's
+  // [[FloatingPanel]] primitive, bottom-fixed inside the modal body. Hidden
+  // until Submit click. Two render modes (case-1 summary / case-2 list) +
+  // collapsed-icon state. Lives at the end of the body so its sticky
+  // positioning pins to the bottom of the scroll region without escaping
+  // the modal boundary.
+  html += '<div class="reg-test-floating-panel" data-reg-test-floating-panel hidden>'
+    +   '<button type="button" class="reg-test-floating-panel-icon" data-reg-test-floating-toggle="expand" aria-label="Expand validation panel">'
+    +     '<i class="ti ti-alert-triangle" aria-hidden="true"></i>'
+    +     '<span class="reg-test-floating-panel-icon-badge" data-reg-test-floating-panel-badge></span>'
+    +   '</button>'
+    +   '<div class="reg-test-floating-panel-card" data-reg-test-floating-panel-card>'
+    +     '<div class="reg-test-floating-panel-header">'
+    +       '<i class="ti ti-alert-triangle reg-test-floating-panel-header-icon" aria-hidden="true"></i>'
+    +       '<div class="reg-test-floating-panel-title" data-reg-test-floating-panel-title>Validation</div>'
+    +       '<button type="button" class="reg-test-floating-panel-collapse" data-reg-test-floating-toggle="collapse" aria-label="Collapse to icon">'
+    +         '<i class="ti ti-chevron-down" aria-hidden="true"></i>'
+    +       '</button>'
+    +       '<button type="button" class="reg-test-floating-panel-close" data-reg-test-floating-toggle="close" aria-label="Close panel">'
+    +         '<i class="ti ti-x" aria-hidden="true"></i>'
+    +       '</button>'
+    +     '</div>'
+    +     '<div class="reg-test-floating-panel-body" data-reg-test-floating-panel-body></div>'
+    +   '</div>'
     + '</div>';
 
   body.innerHTML = html;
+  // ADR 0047 — wire the FloatingPanel chrome (expand / collapse / close).
+  // Idempotent; reattaches after re-render.
+  if (typeof regWireFloatingPanelChrome === 'function') regWireFloatingPanelChrome();
   // Wire add/remove-row affordances on array<object> fields via event
   // delegation. buildTestRowHtml is a closure-scoped helper, so we pass it
   // through. Idempotent — replaces any prior handler on this body so we
