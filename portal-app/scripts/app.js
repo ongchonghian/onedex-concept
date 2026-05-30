@@ -129,6 +129,15 @@ function goto(name) {
   if (name === 'drafts' && typeof renderDraftsFromWorkspace === 'function') {
     renderDraftsFromWorkspace();
   }
+  if (name === 'declined' && typeof renderDeclinedFromWorkspace === 'function') {
+    renderDeclinedFromWorkspace();
+  }
+  if (name === 'onboarding-workbook' && typeof renderOnboardingWorkbookScreen === 'function') {
+    renderOnboardingWorkbookScreen();
+  }
+  if (name === 'rejected-onboardings' && typeof renderRejectedOnboardingsScreen === 'function') {
+    renderRejectedOnboardingsScreen();
+  }
   if (name === 'agreements' && typeof renderAgreementsFromWorkspace === 'function') {
     renderAgreementsFromWorkspace();
   }
@@ -593,6 +602,16 @@ function escAttr(s) {
   return String(s == null ? '' : s).replace(/'/g, "\\'");
 }
 
+/* Shared helper — HTML-escape a string for use inside textContent contexts
+   that are being injected via innerHTML. Mirrors escAttr's null-safety. */
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function workspaceDraftToSeedRow(draft) {
   return {
     id: draft.draftId,
@@ -610,11 +629,36 @@ function workspaceDraftToSeedRow(draft) {
 }
 
 function renderDraftsFromWorkspace() {
-  const rows = listAgreementDraftsForUser(activeUserId()).map(workspaceDraftToSeedRow);
-  SCREEN_RENDERERS['drafts'](rows);
+  const uid = activeUserId();
+  // ADR 0048 — when the user is on a populated first-login post-onboarding
+  // state, the Drafts view wears the onboarding shell (welcome panel,
+  // goal-gradient bar, group-by-counterparty, end-state card on completion).
+  // The shell is purely additive: any operator-authored Drafts render in
+  // their standard section below.
+  if (typeof renderDraftsOnboardingShell === 'function' && shouldRenderOnboardingShell(uid)) {
+    renderDraftsOnboardingShell(uid);
+  } else {
+    const rows = listAgreementDraftsForUser(uid).map(workspaceDraftToSeedRow);
+    SCREEN_RENDERERS['drafts'](rows);
+  }
   // Drafts count is workspace-derived; keep the sidebar Drafts badge in sync
   // across every shell after each draft create / delete / submit.
   if (typeof updateSidebarBadges === 'function') updateSidebarBadges();
+}
+
+/* shouldRenderOnboardingShell — predicate that decides whether the Drafts
+   view shows the ADR 0048 onboarding shell. True when (a) any from-onboarding
+   Draft remains live (resolution pending or undeclined/unpublished), or
+   (b) all are resolved but the end-state card has not yet been dismissed. */
+function shouldRenderOnboardingShell(userId) {
+  const drafts = typeof listOnboardingDraftsForUser === 'function'
+    ? listOnboardingDraftsForUser(userId)
+    : [];
+  if (!drafts.length) return false;
+  const liveCount = drafts.filter((d) => !d.onboardingOutcome).length;
+  if (liveCount > 0) return true;
+  // All resolved — end-state card stays visible until explicitly dismissed.
+  return typeof hasEndStateBeenDismissed === 'function' && !hasEndStateBeenDismissed(userId);
 }
 
 function resumeDraftById(draftId) {
@@ -630,6 +674,590 @@ function resumeDraftById(draftId) {
     direction: draft.direction
   });
 }
+
+/* ===========================================================================
+   ADR 0048 — Drafts-view onboarding shell.
+   Three enrichments per §8 + §9 (welcome panel, goal-gradient bar, group-by-
+   counterparty), the per-row Publish/Decline UX per §10 + §11, the §16
+   publish-click feedback sequence, and the §17 end-state card. Renders into
+   the existing [data-screen="drafts"] markup — replaces the contents of
+   .list-frame for the shell experience, then drops back to the standard
+   renderer when no from-onboarding Drafts remain and the end-state card has
+   been dismissed.
+   =========================================================================== */
+
+const ONB_SHELL_BULK_THRESHOLD = 3;  // Default per ADR 0048 Open Questions §1
+
+function renderDraftsOnboardingShell(userId) {
+  const screen = document.querySelector('.screen[data-screen="drafts"]');
+  if (!screen) return;
+  const listFrame = screen.querySelector('.list-frame');
+  if (!listFrame) return;
+
+  const progress = onboardingProgressForUser(userId);
+  const allResolved = progress.remaining === 0;
+  const grouped = groupOnboardingDraftsByCounterparty(userId);
+  const operatorAuthored = listOperatorAuthoredDraftsForUser(userId);
+
+  // Pull the staged-by attribution from the first onboarding Draft we find.
+  const sampleDraft = listOnboardingDraftsForUser(userId)[0];
+  const stagedByName = sampleDraft && sampleDraft.stagedBy && typeof USERS !== 'undefined'
+    && USERS[sampleDraft.stagedBy]
+    ? USERS[sampleDraft.stagedBy].name
+    : 'the SGTradex team';
+  const stagedAtLabel = sampleDraft && sampleDraft.stagedAt
+    ? formatDateShort(sampleDraft.stagedAt)
+    : '';
+
+  const welcomeDismissed = hasWelcomePanelBeenDismissed(userId);
+  const endStateDismissed = hasEndStateBeenDismissed(userId);
+
+  // ADR 0048 §12 — Lifecycle-reminder cadence. The stall stage determines
+  // which channels surface; the banner channel appears at D14+ so it sits at
+  // the top of the Drafts surface, above the welcome panel.
+  const stallStage = typeof getOnboardingStallStage === 'function'
+    ? getOnboardingStallStage(userId)
+    : null;
+  const stallCopy = stallStage && typeof getOnboardingStallCadenceCopy === 'function'
+    ? getOnboardingStallCadenceCopy(userId, stallStage)
+    : null;
+  const showStallBanner = stallStage === 'D14' || stallStage === 'D28';
+
+  let html = '';
+
+  // (z) Stall banner — D14 / D28 escalation per ADR 0010 multi-channel ramp.
+  // Sits at the very top of the surface, before the welcome panel, because
+  // the operator who's stalled has already seen the welcome panel and dismissed
+  // it — the banner is the next escalation tier.
+  if (showStallBanner && stallCopy && !allResolved) {
+    const isNamedConsequence = stallStage === 'D28';
+    html += `
+      <div class="onb-stall-banner ${isNamedConsequence ? 'onb-stall-banner-d28' : 'onb-stall-banner-d14'}" data-demo="onb.stall-banner" data-stall-stage="${stallStage}">
+        <div class="onb-stall-banner-icon"><i class="ti ti-${isNamedConsequence ? 'alert-octagon' : 'clock-exclamation'}"></i></div>
+        <div class="onb-stall-banner-body">
+          <div class="onb-stall-banner-title">${escHtml(stallCopy.title)}</div>
+          <div class="onb-stall-banner-prose">${escHtml(stallCopy.body)}</div>
+        </div>
+        <button class="btn-primary" onclick="document.querySelector('.onb-group')?.scrollIntoView({behavior:'smooth', block:'start'})">Review now</button>
+      </div>`;
+  }
+
+  // (a) Welcome panel — one-time, per ADR 0017 pattern. Hidden after explicit
+  // Got it click (not on timer). Suppressed when the end-state card is showing
+  // so the closing peak is undiluted. Also suppressed when a stall banner is
+  // up: ADR 0010's ramp says by D14+ the operator has already seen everything;
+  // surfacing the welcome panel alongside the banner would feel out-of-time.
+  if (!welcomeDismissed && !allResolved && !showStallBanner) {
+    html += `
+      <div class="onb-welcome-panel" data-demo="onb.welcome-panel">
+        <div class="onb-welcome-icon" aria-hidden="true"><i class="ti ti-sparkles"></i></div>
+        <div class="onb-welcome-body">
+          <h2 class="onb-welcome-heading">Your data exchange is ready to review.</h2>
+          <p class="onb-welcome-prose">
+            Your SGTradex team set up <strong>${progress.total} Agreement${progress.total === 1 ? '' : 's'}</strong> for your organisation.
+            Review each, edit if anything needs adjusting, then publish to start exchanging data with your counterparties.
+          </p>
+          <p class="onb-welcome-attribution">
+            Prepared by <strong>${escAttr(stagedByName)}</strong>${stagedAtLabel ? ` · ${stagedAtLabel}` : ''}
+          </p>
+        </div>
+        <div class="onb-welcome-actions">
+          <button class="btn-primary" data-demo="onb.welcome-got-it" onclick="dismissOnboardingWelcomePanel()">Got it, let's go →</button>
+        </div>
+      </div>`;
+  }
+
+  // (b) Goal-gradient bar — shows while any from-onboarding Drafts remain.
+  if (!allResolved) {
+    html += `
+      <div class="onb-progress" data-demo="onb.progress">
+        <div class="onb-progress-track">
+          <div class="onb-progress-fill" style="width:${progress.percent}%"></div>
+        </div>
+        <div class="onb-progress-label">
+          <strong data-demo="onb.progress-count">${progress.done}</strong> of <strong>${progress.total}</strong> ready to send
+          ${progress.waitingCount > 0 ? ` · <span class="onb-progress-waiting">${progress.waitingCount} waiting on counterpart</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // (c) Per-counterparty groups — the populated queue.
+  if (!allResolved) {
+    html += '<div class="onb-groups">';
+    grouped.groups.forEach((group) => {
+      // §10 graduated bulk affordance: surfaces after threshold publishes
+      // anywhere in the journey. Computed on every render.
+      const showBulkInThisGroup = false; // group-level bulk not used in v1; bulk lives at journey level
+      html += renderOnboardingGroup(group, false);
+    });
+    if (grouped.waiting.length) {
+      html += renderOnboardingWaitingGroup(grouped.waiting);
+    }
+    html += '</div>';
+
+    // Journey-level bulk affordance — surfaces after the operator has
+    // published the threshold number of Drafts. Per ADR 0048 §10's
+    // graduated-trust pattern: per-row review for first N, then bulk.
+    const publishableRemaining = grouped.groups.reduce((sum, g) => sum + g.drafts.length, 0);
+    if (progress.publishedCount >= ONB_SHELL_BULK_THRESHOLD && publishableRemaining > 0) {
+      html += `
+        <div class="onb-bulk-affordance" data-demo="onb.bulk-affordance">
+          <div class="onb-bulk-prompt">
+            Send the remaining <strong>${publishableRemaining}</strong> like the ones above?
+          </div>
+          <button class="btn-primary" data-demo="onb.bulk-publish" onclick="publishRemainingOnboardingDrafts()">
+            Send all ${publishableRemaining} →
+          </button>
+        </div>`;
+    }
+  }
+
+  // (d) End-state card — renders when all resolved + not yet dismissed (§17).
+  if (allResolved && !endStateDismissed) {
+    html += renderOnboardingEndStateCard(userId, progress);
+  }
+
+  // (e) Operator-authored Drafts — fall through to the standard rendering
+  // pattern, below the shell. These are non-onboarding Drafts the operator
+  // created themselves; they should always be visible.
+  if (operatorAuthored.length) {
+    html += `
+      <div class="onb-operator-authored">
+        <h3 class="onb-section-heading">Your own drafts</h3>
+        <div class="drafts-list">
+          ${operatorAuthored.map(workspaceDraftToSeedRow).map(renderStandardDraftRow).join('')}
+        </div>
+      </div>`;
+  }
+
+  // (f) Declined drafts — ADR 0048 §11 (2026-05-30 amendment). Hidden by
+  // default; toggle reveals. Status filter on Drafts, not a sidebar entry.
+  const declinedList = typeof listDeclinedOnboardingDraftsForUser === 'function'
+    ? listDeclinedOnboardingDraftsForUser(userId)
+    : [];
+  if (declinedList.length) {
+    const declinedShown = hasDeclinedFilterEnabled(userId);
+    html += `
+      <div class="onb-declined-filter" data-demo="onb.declined-filter">
+        <button class="btn-link onb-declined-toggle" onclick="toggleDeclinedFilter()" data-demo="onb.declined-toggle">
+          <i class="ti ti-${declinedShown ? 'eye-off' : 'eye'}"></i>
+          ${declinedShown ? 'Hide' : 'Show'} ${declinedList.length} declined draft${declinedList.length === 1 ? '' : 's'}
+        </button>
+      </div>`;
+    if (declinedShown) {
+      html += `
+        <div class="onb-declined-section" data-demo="onb.declined-section">
+          <h3 class="onb-section-heading onb-section-heading-muted">Declined drafts</h3>
+          <div class="onb-declined-list">
+            ${declinedList.map((d) => `
+              <div class="onb-declined-row" data-draft-id="${escAttr(d.draftId)}">
+                <div class="onb-declined-icon"><i class="ti ti-circle-x"></i></div>
+                <div class="onb-declined-body">
+                  <div class="onb-declined-title">${escHtml(d.dataElement.name)}</div>
+                  <div class="onb-declined-meta">
+                    ${escHtml(d.counterparty.name)} · declined ${formatDateShort(d.declinedAt)}${d.declinedReason ? ` · <em>${escHtml(d.declinedReason)}</em>` : ''}
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+    }
+  }
+
+  listFrame.innerHTML = html;
+  listFrame.style.padding = 'var(--sp-3)';
+}
+
+/* Show-declined filter state — per-user, stored on workspace.meta so it
+   survives reloads. */
+function hasDeclinedFilterEnabled(userId) {
+  const meta = (typeof getWorkspace === 'function' && getWorkspace().meta) || {};
+  const flags = meta.declinedFilterEnabled || {};
+  return flags[userId] === true;
+}
+
+function toggleDeclinedFilter() {
+  const userId = activeUserId();
+  if (typeof getWorkspace !== 'function') return;
+  const workspace = getWorkspace();
+  workspace.meta = workspace.meta || {};
+  workspace.meta.declinedFilterEnabled = workspace.meta.declinedFilterEnabled || {};
+  workspace.meta.declinedFilterEnabled[userId] = !workspace.meta.declinedFilterEnabled[userId];
+  if (typeof persistWorkspace === 'function') persistWorkspace();
+  renderDraftsFromWorkspace();
+}
+
+/* renderOnboardingGroup — one counterparty group. Each Draft row is clickable
+   (per ADR 0048 §10): clicking the row body or the Review CTA expands an
+   inline detail panel showing element, counterparty, direction, terms, and
+   the staged-by attribution; Publish + Decline + Edit CTAs live in the
+   expanded panel per ADR 0048 §11 (Decline in the secondary-actions cluster,
+   never adjacent to Publish on the collapsed row). The expanded state is
+   single-row-at-a-time — opening one collapses any other open expansion. */
+function renderOnboardingGroup(group) {
+  const dirLabel = (d) => d.direction === 'receive' ? 'you receive' : 'you send';
+  const dirIcon = (d) => d.direction === 'receive' ? 'arrow-down-left' : 'arrow-up-right';
+  const enrolmentChip = group.enrolmentSignal === 'enrolled'
+    ? '<span class="onb-cp-chip onb-cp-chip-enrolled">enrolled</span>'
+    : `<span class="onb-cp-chip onb-cp-chip-${group.enrolmentSignal}">${group.enrolmentSignal}</span>`;
+  return `
+    <div class="onb-group" data-cp-id="${escAttr(group.counterpartyOrgId || group.counterpartyName)}">
+      <div class="onb-group-header">
+        <strong class="onb-cp-name">${escHtml(group.counterpartyName)}</strong>
+        ${enrolmentChip}
+        <span class="onb-group-count">${group.drafts.length} Agreement${group.drafts.length === 1 ? '' : 's'}</span>
+      </div>
+      <div class="onb-group-rows">
+        ${group.drafts.map((d) => renderOnboardingDraftRow(d, group, { dirLabel, dirIcon })).join('')}
+      </div>
+    </div>`;
+}
+
+/* renderOnboardingDraftRow — one Draft row plus its (currently-hidden by
+   default) expanded detail panel. The .onb-row-expanded class on the wrapper
+   is toggled by reviewOnboardingDraft() to reveal the panel. */
+function renderOnboardingDraftRow(d, group, helpers) {
+  const dirLabel = helpers.dirLabel;
+  const dirIcon = helpers.dirIcon;
+  const stagedByName = d.stagedBy && typeof USERS !== 'undefined' && USERS[d.stagedBy]
+    ? USERS[d.stagedBy].name
+    : 'the SGTradex team';
+  const directionExplanation = d.direction === 'receive'
+    ? `You'll receive <strong>${escHtml(d.dataElement.name)}</strong> from <strong>${escHtml(group.counterpartyName)}</strong>.`
+    : `You'll send <strong>${escHtml(d.dataElement.name)}</strong> to <strong>${escHtml(group.counterpartyName)}</strong>.`;
+  const months = (d.terms && d.terms.durationMonths) || 12;
+  const residency = (d.terms && d.terms.residency) || 'standard';
+  return `
+    <div class="onb-row-wrapper" data-draft-id="${escAttr(d.draftId)}">
+      <div class="onb-row" data-demo="onb.draft-row" onclick="reviewOnboardingDraft('${escAttr(d.draftId)}')">
+        <div class="onb-row-icon"><i class="ti ti-${dirIcon(d)}"></i></div>
+        <div class="onb-row-body">
+          <div class="onb-row-title">${escHtml(d.dataElement.name)}</div>
+          <div class="onb-row-meta">${dirLabel(d)} · ${escHtml(d.dataElement.detail || 'Standard terms')}</div>
+        </div>
+        <div class="onb-row-actions" onclick="event.stopPropagation()">
+          <button class="btn-secondary neutral" data-demo="onb.review-btn" onclick="reviewOnboardingDraft('${escAttr(d.draftId)}')">
+            <span class="onb-row-review-label">Review →</span>
+            <span class="onb-row-review-label-expanded">Close</span>
+          </button>
+          <button class="btn-primary" data-demo="onb.publish-btn" onclick="publishOnboardingDraftFromRow('${escAttr(d.draftId)}')">Send</button>
+        </div>
+      </div>
+      <div class="onb-row-detail" data-demo="onb.row-detail">
+        <div class="onb-detail-grid">
+          <div class="onb-detail-field">
+            <div class="onb-detail-label">Data element</div>
+            <div class="onb-detail-value">${escHtml(d.dataElement.name)}</div>
+          </div>
+          <div class="onb-detail-field">
+            <div class="onb-detail-label">Counterparty</div>
+            <div class="onb-detail-value onb-detail-value-row">
+              <span>${escHtml(group.counterpartyName)}</span>
+              <span class="onb-cp-chip onb-cp-chip-${group.enrolmentSignal}">${group.enrolmentSignal}</span>
+            </div>
+          </div>
+          <div class="onb-detail-field">
+            <div class="onb-detail-label">Direction</div>
+            <div class="onb-detail-value">${directionExplanation}</div>
+          </div>
+          <div class="onb-detail-field">
+            <div class="onb-detail-label">Duration</div>
+            <div class="onb-detail-value">${months} months from publish date</div>
+          </div>
+          <div class="onb-detail-field">
+            <div class="onb-detail-label">Data residency</div>
+            <div class="onb-detail-value">${escHtml(residency)}</div>
+          </div>
+          <div class="onb-detail-field">
+            <div class="onb-detail-label">Prepared by</div>
+            <div class="onb-detail-value">${escHtml(stagedByName)}${d.stagedAt ? ` · ${formatDateShort(d.stagedAt)}` : ''}</div>
+          </div>
+        </div>
+        <div class="onb-detail-actions">
+          <button class="btn-secondary onb-detail-edit-btn" data-demo="onb.detail-edit-btn" onclick="event.stopPropagation(); resumeDraftById('${escAttr(d.draftId)}')">
+            <i class="ti ti-pencil"></i> Edit details
+          </button>
+          <div class="onb-detail-actions-right">
+            <!-- ADR 0048 §11 — Decline sits in the secondary-actions cluster,
+                 never adjacent to Publish, to avoid the destructive-next-to-
+                 constructive misclick. The expanded panel is the Agreement
+                 detail page in Draft mode for the prototype. -->
+            <button class="btn-secondary onb-detail-decline-btn" data-demo="onb.detail-decline-btn" onclick="event.stopPropagation(); declineOnboardingDraftFromRow('${escAttr(d.draftId)}')">
+              Decline
+            </button>
+            <button class="btn-primary" data-demo="onb.detail-publish-btn" onclick="event.stopPropagation(); publishOnboardingDraftFromRow('${escAttr(d.draftId)}')">
+              <i class="ti ti-send"></i> Send to ${escHtml(group.counterpartyName)}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* renderOnboardingWaitingGroup — the §15 Waiting on counterpart onboarding
+   sub-group. Rows are visible (so the operator sees their full picture) but
+   not actionable — Publish disabled with the counterparty named in tooltip.
+   Counterpart-onboarding-ended rows are visually distinct and offer Decline. */
+function renderOnboardingWaitingGroup(rows) {
+  return `
+    <div class="onb-group onb-group-waiting" data-demo="onb.waiting-group">
+      <div class="onb-group-header">
+        <strong class="onb-cp-name">Waiting on counterpart onboarding</strong>
+        <span class="onb-cp-chip onb-cp-chip-pending">${rows.length} pending</span>
+      </div>
+      <div class="onb-group-rows">
+        ${rows.map((d) => {
+          const ended = d.counterpartyResolutionStatus === 'counterpart-onboarding-ended';
+          return `
+            <div class="onb-row onb-row-waiting" data-draft-id="${escAttr(d.draftId)}">
+              <div class="onb-row-icon"><i class="ti ti-${ended ? 'circle-x' : 'hourglass'}"></i></div>
+              <div class="onb-row-body">
+                <div class="onb-row-title">${escHtml(d.dataElement.name)}</div>
+                <div class="onb-row-meta">
+                  ${escHtml(d.counterparty.name)} · ${ended
+                    ? '<span class="onb-status-ended">Counterpart onboarding ended</span>'
+                    : '<span class="onb-status-waiting">Waiting on counterpart onboarding</span>'}
+                </div>
+              </div>
+              <div class="onb-row-actions">
+                ${ended
+                  ? `<button class="btn-secondary" data-demo="onb.decline-btn" onclick="declineOnboardingDraftFromRow('${escAttr(d.draftId)}')">Decline</button>`
+                  : `<button class="btn-secondary neutral" disabled title="Waiting for ${escAttr(d.counterparty.name)} to complete onboarding">Send</button>`}
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+/* renderStandardDraftRow — re-uses the standard Drafts-list row markup for
+   the operator-authored section below the shell. Mirrors the SCREEN_RENDERERS
+   ['drafts'] row template so the visual rhythm stays consistent. */
+function renderStandardDraftRow(d) {
+  const key = escAttr(d.resumeKey || d.title || '');
+  return `<div class="draft-row" onclick="resumeDraftById('${key}')">` +
+    `<div class="draft-ic"><i class="ti ti-${d.icon || 'file-text'}"></i></div>` +
+    `<div class="body">` +
+      `<div class="title">${escHtml(d.title || '')}</div>` +
+      `<div class="meta">${escHtml(d.type || '')} · ${escHtml(d.meta || '')}</div>` +
+    `</div>` +
+    `<div class="draft-actions">` +
+      `<button class="btn-secondary neutral" onclick="event.stopPropagation(); deleteAgreementDraft('${key}'); renderDraftsFromWorkspace()">Delete</button>` +
+      `<button class="btn-primary" onclick="event.stopPropagation(); resumeDraftById('${key}')">Resume</button>` +
+    `</div>` +
+  `</div>`;
+}
+
+/* renderOnboardingEndStateCard — ADR 0048 §17 (2026-05-30 amendment). The
+   "Your organisation is set up" peak-end moment. Per ADR 0007, Agreements
+   are Pending after Send until the counterparty Accepts; *live* would
+   misrepresent the state. The lede names the Pending → Active lifecycle
+   honestly. */
+function renderOnboardingEndStateCard(userId, progress) {
+  const drafts = listOnboardingDraftsForUser(userId);
+  const sent = drafts.filter((d) => d.onboardingOutcome === 'published');
+  const counterpartyCount = new Set(
+    sent.map((d) => d.counterpartyOrgId || d.counterparty.name)
+  ).size;
+
+  const allDeclined = sent.length === 0 && drafts.every((d) => d.onboardingOutcome);
+  const lede = allDeclined
+    ? `<p class="onb-end-prose">Your organisation is set up. No Agreements were sent from onboarding — start fresh below.</p>
+       <button class="btn-primary" onclick="goto('agreements'); markEndStateAndRefresh()">Create Agreement →</button>`
+    : `<p class="onb-end-prose">
+         <strong>${sent.length} Agreement${sent.length === 1 ? '' : 's'} sent</strong> across
+         <strong>${counterpartyCount} counterpart${counterpartyCount === 1 ? 'y' : 'ies'}</strong>.
+         They'll go live as your counterparties accept them — usually within a day.
+         Data starts flowing as soon as each Agreement is accepted and your Pitstop is connected.
+       </p>`;
+
+  return `
+    <div class="onb-end-state" data-demo="onb.end-state">
+      <div class="onb-end-celebrate" aria-hidden="true">
+        <i class="ti ti-circle-check-filled"></i>
+      </div>
+      <h2 class="onb-end-heading">Your organisation is set up.</h2>
+      ${lede}
+      ${allDeclined ? '' : `
+        <div class="onb-end-whatsnext">
+          <h3 class="onb-end-whatsnext-heading">What's next</h3>
+          <ul class="onb-end-affordances">
+            <li><a href="#" onclick="goto('settings'); markEndStateAndRefresh(); return false;"><i class="ti ti-map-pin"></i> Configure your Pitstop endpoint</a></li>
+            <li><a href="#" onclick="goto('settings'); markEndStateAndRefresh(); return false;"><i class="ti ti-users"></i> Invite teammates</a></li>
+            <li><a href="#" onclick="goto('agreements'); markEndStateAndRefresh(); return false;"><i class="ti ti-bell"></i> Set up Watch alerts on critical Agreements</a></li>
+            <li><a href="#" onclick="goto('data-elements'); markEndStateAndRefresh(); return false;"><i class="ti ti-database"></i> Browse the data element catalogue</a></li>
+          </ul>
+        </div>
+      `}
+      <div class="onb-end-actions">
+        <button class="btn-secondary neutral" data-demo="onb.end-got-it" onclick="dismissEndStateCard()">Got it</button>
+      </div>
+    </div>`;
+}
+
+/* --- Onboarding shell action handlers --- */
+
+function dismissOnboardingWelcomePanel() {
+  markWelcomePanelDismissed(activeUserId());
+  renderDraftsFromWorkspace();
+}
+
+function dismissEndStateCard() {
+  markEndStateDismissed(activeUserId());
+  renderDraftsFromWorkspace();
+}
+
+function markEndStateAndRefresh() {
+  // Used by What's next affordance clicks — mark the end-state as dismissed
+  // (the operator has chosen to move on) before navigating away.
+  markEndStateDismissed(activeUserId());
+}
+
+/* reviewOnboardingDraft — opens the staged Draft for inspection. Per ADR 0048
+   §10, clicking Review surfaces the Agreement detail in Draft mode. The
+   prototype renders this inline as an expansion of the row (rather than
+   navigating to a separate detail screen) because the bulk-onboarding flow's
+   value is staying in the queue context — peak-end depends on the operator
+   seeing their full picture, not page-flipping. Single-row-at-a-time: opening
+   one expansion collapses any other. */
+function reviewOnboardingDraft(draftId) {
+  const screen = document.querySelector('.screen[data-screen="drafts"]');
+  if (!screen) return;
+  const wrapper = screen.querySelector(`.onb-row-wrapper[data-draft-id="${draftId}"]`);
+  if (!wrapper) return;
+  const willOpen = !wrapper.classList.contains('onb-row-expanded');
+  // Collapse all other open expansions first.
+  screen.querySelectorAll('.onb-row-wrapper.onb-row-expanded').forEach((w) => {
+    if (w !== wrapper) w.classList.remove('onb-row-expanded');
+  });
+  wrapper.classList.toggle('onb-row-expanded', willOpen);
+  // Scroll the now-expanded row into view so the detail panel isn't clipped.
+  if (willOpen) {
+    setTimeout(() => {
+      wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
+}
+
+/* publishOnboardingDraftFromRow — the §16 publish-click feedback sequence.
+   Four-part sequence: row exit (~220ms ease-in), toast with counterparty
+   name, progress bar update (~400ms linear, after row exits), focus
+   continuity. Reduced-motion collapses (a) and (c) to instant snaps. */
+function publishOnboardingDraftFromRow(draftId) {
+  const workspace = getWorkspace();
+  const draft = workspace.agreementDrafts[draftId];
+  if (!draft) return;
+  const counterpartyName = draft.counterparty.name || 'counterparty';
+
+  const row = document.querySelector(`[data-draft-id="${draftId}"]`);
+  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // (b) Toast appears at frame 0 of (a) — paired naming per ux-von-restorff-emphasis.
+  toast(`Sent to ${counterpartyName}. They'll review and accept.`, 'success');
+
+  if (row && !prefersReduced) {
+    // (a) Row exit — ease-in collapse over 220ms per §16.
+    row.classList.add('onb-row-exiting');
+    setTimeout(() => {
+      publishOnboardingDraft(draftId);
+      // (c) and (d) — progress bar update + focus continuity happen on next
+      // render. We delay the re-render slightly so the row's collapse
+      // animation completes visibly before the layout reflows.
+      renderDraftsFromWorkspace();
+    }, 240);
+  } else {
+    // Reduced-motion or row missing — instant snap.
+    publishOnboardingDraft(draftId);
+    renderDraftsFromWorkspace();
+  }
+}
+
+/* publishRemainingOnboardingDrafts — bulk-publish affordance per §10. Publishes
+   every resolved-counterparty Draft in sequence; the toast names the bulk
+   action rather than individual counterparties to avoid notification spam. */
+function publishRemainingOnboardingDrafts() {
+  const uid = activeUserId();
+  const grouped = groupOnboardingDraftsByCounterparty(uid);
+  const ids = [];
+  grouped.groups.forEach((g) => g.drafts.forEach((d) => ids.push(d.draftId)));
+  if (!ids.length) return;
+  ids.forEach((id) => publishOnboardingDraft(id));
+  toast(`Sent ${ids.length} Agreements. Counterparties will review and accept.`, 'success');
+  renderDraftsFromWorkspace();
+}
+
+/* declineOnboardingDraftFromRow — terminal-state Decline (§11 + §15(b)).
+   For the prototype we skip the inline confirmation modal and decline
+   directly; a real implementation would open a confirmation with the
+   optional reason field. */
+function declineOnboardingDraftFromRow(draftId) {
+  const workspace = getWorkspace();
+  const draft = workspace.agreementDrafts[draftId];
+  if (!draft) return;
+  declineOnboardingDraft(draftId, draft.counterpartyResolutionStatus === 'counterpart-onboarding-ended'
+    ? 'Counterpart onboarding ended'
+    : '');
+  toast(`Agreement declined. Moved to Declined.`);
+  renderDraftsFromWorkspace();
+}
+
+/* formatDateShort — helper for the welcome panel's stagedAt rendering. */
+function formatDateShort(iso) {
+  if (!iso) return '';
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return iso;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(m[3], 10)} ${months[parseInt(m[2], 10) - 1]} ${m[1]}`;
+}
+
+/* --- Declined view renderer (ADR 0048 §11) --- */
+
+/* renderDeclinedFromWorkspace — the Declined screen body. Lists declined
+   onboarding Drafts with the optional reason captured at decline time. Empty
+   state per ADR 0015 discipline: when there are no declined Drafts, the
+   surface explains itself rather than rendering tour copy. */
+function renderDeclinedFromWorkspace() {
+  const screen = document.querySelector('.screen[data-screen="declined"]');
+  if (!screen) return;
+  const listFrame = screen.querySelector('.list-frame');
+  if (!listFrame) return;
+
+  const declined = typeof listDeclinedOnboardingDraftsForUser === 'function'
+    ? listDeclinedOnboardingDraftsForUser(activeUserId())
+    : [];
+
+  if (!declined.length) {
+    listFrame.innerHTML = `
+      <div class="onb-declined-empty">
+        <div class="onb-declined-empty-icon" aria-hidden="true"><i class="ti ti-archive-off"></i></div>
+        <h3>No declined Drafts</h3>
+        <p>When you Decline a staged Agreement from onboarding, it appears here. SGTradex sees a per-org summary of declines so they can calibrate how they brief future onboardings.</p>
+      </div>`;
+    return;
+  }
+
+  listFrame.innerHTML = `
+    <p class="onb-declined-intro">
+      ${declined.length} declined Agreement${declined.length === 1 ? '' : 's'} from your onboarding.
+      SGTradex sees the count and reasons in their per-org summary; nothing is sent to your counterparties.
+    </p>
+    <div class="onb-declined-list">
+      ${declined.map((d) => `
+        <div class="onb-declined-row" data-draft-id="${escAttr(d.draftId)}">
+          <div class="onb-declined-icon"><i class="ti ti-circle-x"></i></div>
+          <div class="onb-declined-body">
+            <div class="onb-declined-title">${escHtml(d.dataElement.name)}</div>
+            <div class="onb-declined-meta">
+              ${escHtml(d.counterparty.name)} · declined ${formatDateShort(d.declinedAt)}
+              ${d.declinedReason ? ` · <em>${escHtml(d.declinedReason)}</em>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
 
 function resumeDraft(draftId) {
   resumeDraftById(draftId);
@@ -1194,6 +1822,9 @@ function renderInboxCardHTML(item, opts) {
   else if (cta === 'retry-message') actionHandler = `openMessageFromInbox('${safeMessageId}', true)`;
   else if (cta === 'view-message') actionHandler = `openMessageFromInbox('${safeMessageId}', false)`;
   else if (cta === 'open-agreement') actionHandler = `toast('Opening ${escAttr(item.title || 'Agreement')}'); goto('detail')`;
+  // ADR 0048 §12 — Inbox stall-nudge card routes to Drafts where the operator
+  // resumes review. One-click action per ADR 0010 rule 4.
+  else if (cta === 'review-onboarding-drafts') actionHandler = `goto('drafts')`;
   // Bucket-driven default: 'team' rows without a CTA get a Claim button.
   const isClaim = !item.btn && item.bucket === 'team';
   const buttonClass = item.bucket === 'team' || item.btn === 'Claim'
@@ -1282,6 +1913,86 @@ function renderParticipantsFromWorkspace() {
   const rows = listParticipantsForDex(dex);
   if (rows.length === 0) return;
   SCREEN_RENDERERS['participants'](rows);
+  // ADR 0048 §13 — apply the status filter immediately after render so the
+  // default view honours the operator's prior selection (or the defaults).
+  applyParticipantsStatusFilter();
+}
+
+/* ADR 0048 §13 (2026-05-30) — Participants status filter. Default view shows
+   Active + Pending KYC; the Show inactive toggle (gated by canManageNetworks)
+   reveals kyc-rejected (Onboarding deferred), on-hold, and lapsed cards.
+   Filter state lives on workspace.meta so it persists across reloads. */
+
+function getParticipantsFilterState() {
+  const meta = (typeof getWorkspace === 'function' && getWorkspace().meta) || {};
+  return {
+    status: meta.participantsStatusFilter || 'all',
+    showInactive: meta.participantsShowInactive === true
+  };
+}
+
+function setParticipantsStatusFilter(token) {
+  if (typeof getWorkspace !== 'function') return;
+  const workspace = getWorkspace();
+  workspace.meta = workspace.meta || {};
+  workspace.meta.participantsStatusFilter = token;
+  if (typeof persistWorkspace === 'function') persistWorkspace();
+  applyParticipantsStatusFilter();
+}
+
+function setParticipantsShowInactive(checked) {
+  if (typeof getWorkspace !== 'function') return;
+  const workspace = getWorkspace();
+  workspace.meta = workspace.meta || {};
+  workspace.meta.participantsShowInactive = !!checked;
+  if (typeof persistWorkspace === 'function') persistWorkspace();
+  applyParticipantsStatusFilter();
+}
+
+function applyParticipantsStatusFilter() {
+  const screen = document.querySelector('.screen[data-screen="participants"]');
+  if (!screen) return;
+  const state = getParticipantsFilterState();
+  const inactiveTokens = new Set(['onboarding-deferred', 'on-hold', 'lapsed']);
+
+  // Card visibility
+  const cards = screen.querySelectorAll('.participant-card[data-participant-status]');
+  const counts = { all: 0, active: 0, pending: 0, inactive: 0 };
+  cards.forEach((card) => {
+    const token = card.getAttribute('data-participant-status') || 'active';
+    const isInactive = inactiveTokens.has(token);
+    let visible;
+    if (isInactive) {
+      visible = state.showInactive && (state.status === 'all' || state.status === token);
+      if (state.showInactive) counts.inactive++;
+    } else {
+      // Active + Pending always visible at the default. Status chip filters further.
+      visible = (state.status === 'all') || (state.status === token);
+      if (token === 'active') counts.active++;
+      if (token === 'pending') counts.pending++;
+    }
+    card.style.display = visible ? '' : 'none';
+    if (visible) counts.all++;
+  });
+
+  // Filter chip counts
+  ['all', 'active', 'pending'].forEach((t) => {
+    const el = screen.querySelector(`[data-status-count="${t}"]`);
+    if (el) el.textContent = counts[t];
+  });
+  const inactiveEl = screen.querySelector('[data-inactive-count]');
+  if (inactiveEl) inactiveEl.textContent = counts.inactive;
+
+  // Active-chip styling
+  screen.querySelectorAll('[data-status-filter]').forEach((chip) => {
+    const t = chip.getAttribute('data-status-filter');
+    chip.classList.toggle('solid', t === state.status);
+    chip.classList.toggle('muted', t !== state.status);
+  });
+
+  // Show-inactive checkbox state
+  const checkbox = screen.querySelector('#participants-show-inactive');
+  if (checkbox) checkbox.checked = state.showInactive;
 }
 
 /* renderPackDetailFromWorkspace — pack-detail used to alias to the agreements
@@ -2652,10 +3363,22 @@ SCREEN_RENDERERS['participants'] = function renderParticipantsFromSeed(seed) {
       const dex = primaryDexCode || 'bx';
       const chipLabel = (p.status.label) || primaryDexLabel || '';
       statusBlock = `<span class="dex-chip ${dex}"><span class="dex-dot"></span>${chipLabel}</span>`;
+    } else if (p.status && p.status.kind === 'onboarding-deferred') {
+      // ADR 0048 §13 — diplomatic chip label for kyc-rejected ORG_DEX_MEMBERSHIP.
+      // Internal state is `kyc-rejected`; user-facing label is `Onboarding deferred`.
+      statusBlock = `<span class="status-cell onboarding-deferred"><span class="dot"></span>Onboarding deferred</span>`;
+    } else if (p.status && p.status.kind === 'pending') {
+      // Existing Pending KYC chip pattern from the prototype's seed data.
+      statusBlock = `<span class="status-cell pending"><span class="dot"></span>${(p.status && p.status.label) || 'Pending KYC'}</span>`;
     } else {
       const cls = (p.status && p.status.kind) || 'active';
       statusBlock = `<span class="status-cell ${cls}"><span class="dot"></span>${(p.status && p.status.label) || 'Active'}</span>`;
     }
+    // ADR 0048 §13 — data-status attribute on the card so the Participants
+    // filter row can show/hide cards without re-rendering. Maps the status.kind
+    // to a stable filterable token.
+    const filterToken = (p.status && p.status.kind === 'cross-dex') ? 'active'
+                       : (p.status && p.status.kind) || 'active';
     // Issue 0005 / ADR 0031 surface (vii) — participants card is DIRECTORY identity
     // (org-led). Adds a thin "Primary contact: …" supplementary line when the seed
     // declares p.primaryUserId. Org name remains primary; contact line is
@@ -2665,7 +3388,7 @@ SCREEN_RENDERERS['participants'] = function renderParticipantsFromSeed(seed) {
       primaryContactLine = `<div class="pc-primary-contact" style="font-size:11px;color:var(--g-50);margin-top:4px">Primary contact: ${USERS[p.primaryUserId].name}</div>`;
     }
 
-    return `<div class="participant-card" onclick="goto('detail')">` +
+    return `<div class="participant-card" data-participant-status="${filterToken}" onclick="goto('detail')">` +
       `<div class="cp-avatar" style="${avatarStyle}">${initials}</div>` +
       `<div class="pc-body">` +
         `<div class="pc-name">${p.name || ''}</div>` +
@@ -8205,6 +8928,14 @@ const SHELL_CONFIG = {
   'agreements':     { sidebarActive: 'Agreements' },
   'pack-detail':    { sidebarActive: 'Agreements' }, /* Agreement pack detail page per ADR 0027 — sits under Agreements in the in-app sidebar */
   'drafts':         { sidebarActive: 'Drafts' }, /* Drafts promoted to primary nav item per new IA */
+  /* ADR 0048 (2026-05-30 amendment) — three sub-state screens retired from the
+   * sidebar but kept as routable sub-pages of Participants / Drafts. Their
+   * sidebarActive fields point at the parent surface so the breadcrumb /
+   * highlight reads honestly (you're "in" Participants when reviewing a
+   * workbook upload, not on a separate destination). */
+  'declined':       { sidebarActive: 'Drafts' }, /* Status filter on Drafts (Phase 4e) */
+  'onboarding-workbook':   { sidebarActive: 'Participants' }, /* Reached via + Onboard new org CTA */
+  'rejected-onboardings':  { sidebarActive: 'Participants' }, /* Reached via Show inactive filter (Phase 4e) */
   'data-elements':  { sidebarActive: 'Data elements' },
   'participants':   { sidebarActive: 'Participants' },
   'settings':       { sidebarActive: 'Settings' }, /* renamed from 'Configuration' */
@@ -8256,6 +8987,12 @@ const SIDEBAR_ITEMS = [
   { label: 'Data elements', icon: 'database',                 group: 'Directory' }, // Read-only reference for everyone
   { label: 'Participants',  icon: 'users',                    group: 'Directory', hideForRoles: ['Operation User', 'Tech User'] }
 ];
+// ADR 0048 (2026-05-30 amendment) — three entries retired from the sidebar:
+// 'Declined' (now a status filter on Drafts — Phase 4e), 'Org onboarding' (now a
+// + Onboard new org CTA on the Participants header), 'Rejected onboardings'
+// (now the kyc-rejected status filter on Participants — Phase 4e). The pattern:
+// lifecycle states attach to existing surfaces as filters, verbs become CTAs
+// on their catalogue surface — never new sidebar entries.
 
 const SIDEBAR_FOOTER_ITEM = { label: 'Settings', icon: 'settings' };
 
@@ -8609,6 +9346,9 @@ function rebuildAllShells() {
         'Participants':  'participants',
         'Settings':      'settings'
       };
+      // ADR 0048 (2026-05-30 amendment) — 'Declined', 'Org onboarding', and
+      // 'Rejected onboardings' sidebar entries retired; their screens are
+      // reached via filters / Participants header CTAs instead.
       if (SIDEBAR_ROUTES[label]) {
         if (typeof exitFlow === 'function') exitFlow();
         // Issue 0011 Phase 2 — platform-admin's Inbox is fundamentally

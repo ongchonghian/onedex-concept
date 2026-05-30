@@ -3546,7 +3546,36 @@
       <span class="chip muted">Regulators · 5</span>
     </div>
     <div class="grow"></div>
-    <button class="btn-primary" onclick="openInviteParticipant()"><i class="ti ti-mail"></i>Invite</button>
+    <!-- ADR 0048 (2026-05-30 amendment) — role-gated header CTAs. The two are
+         mutually exclusive at the persona level (canInviteParticipant is granted
+         to org-tier admins only; canManageNetworks to platform-tier admins only),
+         so exactly one CTA renders per role. canInviteParticipant fix closes the
+         existing leak — the Invite button used to render for Etr/Operation/Tech. -->
+    <button class="btn-primary"
+            data-cap="canInviteParticipant"
+            data-demo="participants.invite-cta"
+            onclick="openInviteParticipant()"><i class="ti ti-mail"></i>+ Invite participant</button>
+    <button class="btn-primary"
+            data-cap="canManageNetworks"
+            data-demo="participants.onboard-cta"
+            onclick="goto('onboarding-workbook')"><i class="ti ti-building-bank"></i>+ Onboard new org</button>
+  </div>
+
+  <!-- ADR 0048 §13 (2026-05-30) — status filter row, sibling to the type chips
+       above. Default view shows Active + Pending KYC; the Show inactive toggle
+       (gated to canManageNetworks) reveals kyc-rejected ("Onboarding deferred")
+       and on-hold/lapsed rows. Platform-admin only — Marcus never sees the
+       Show inactive toggle, so he never sees Sarah's KYC rejections. -->
+  <div class="participants-status-filter" data-demo="participants.status-filter">
+    <span class="participants-status-label">Status:</span>
+    <span class="chip solid" data-status-filter="all" onclick="setParticipantsStatusFilter('all')">All visible · <span data-status-count="all">0</span></span>
+    <span class="chip muted" data-status-filter="active" onclick="setParticipantsStatusFilter('active')">Active · <span data-status-count="active">0</span></span>
+    <span class="chip muted" data-status-filter="pending" onclick="setParticipantsStatusFilter('pending')">Pending KYC · <span data-status-count="pending">0</span></span>
+    <span class="grow"></span>
+    <label class="participants-show-inactive" data-cap="canManageNetworks" data-demo="participants.show-inactive-toggle">
+      <input type="checkbox" id="participants-show-inactive" onchange="setParticipantsShowInactive(this.checked)" />
+      <span>Show inactive (<span data-inactive-count>0</span>)</span>
+    </label>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-3)">
@@ -3867,6 +3896,34 @@
 </section>
 
 <!-- ============ Drafts view ============ -->
+<!-- ADR 0048 — Declined view (sibling to Drafts). Surfaces only when the user has
+     declined any onboarding Drafts; otherwise renders an empty-state explanation
+     per ADR 0015's no-tours / design-discipline pattern. -->
+<section class="screen" data-screen="declined">
+  <div class="canvas-meta"><span class="meta-label">Declined</span><h1>Declined Drafts</h1><span class="adr-tag">ADR 0048</span></div>
+  <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Declines move here. SGTradex sees a per-org summary so they can refine future onboarding briefings — counterparties are not notified.</div></div>
+  <div class="list-frame" style="padding: var(--sp-3)"></div>
+</section>
+
+<!-- ADR 0048 §13 — Soft-purge archive for KYC-rejected onboarding batches.
+     Platform-Admin only (canManageNetworks). 90-day retention from rejection. -->
+<section class="screen" data-screen="rejected-onboardings">
+  <div class="canvas-meta"><span class="meta-label">Rejected onboardings</span><h1>Rejected onboarding batches</h1><span class="adr-tag">ADR 0048</span></div>
+  <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Batches that failed KYC at the workbook stage. Retained for 90 days, then hard-purged. The audit-log entries persist beyond purge.</div></div>
+  <div class="list-frame" style="padding: var(--sp-3)"></div>
+</section>
+
+<!-- ADR 0048 — Platform-Admin Org-onboarding workbook upload surface.
+     Capability-gated by canManageNetworks (platform tier only). The body
+     toggles between: (a) Upload state — file picker; (b) Preview state —
+     parsed staged-records with Materialise CTA; (c) Materialised state —
+     post-transaction confirmation with handoff link. -->
+<section class="screen" data-screen="onboarding-workbook">
+  <div class="canvas-meta"><span class="meta-label">Org onboarding</span><h1>Bulk-onboarding workbook</h1><span class="adr-tag">ADR 0048</span></div>
+  <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Stage a new prospect Org during offline KYC. Five sheets — Org · Pitstops · Users · Agreements (Direct) · Agreements (SP). On materialise, the new Org admin sees their populated Drafts queue at first login.</div></div>
+  <div class="list-frame" style="padding: var(--sp-3)" data-demo="workbook.frame"></div>
+</section>
+
 <section class="screen" data-screen="drafts">
   <div class="canvas-meta"><span class="meta-label">Drafts</span><h1>Your Agreement drafts</h1><span class="adr-tag">ADR 0007</span></div>
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>Drafts are private to you — counterparties don't see them. They live in <code>agreement_draft</code>, not <code>consent_agreement</code>.</div></div>
@@ -4757,6 +4814,11 @@
 <script src="scripts/theme.js?v=p102"></script>
 <script src="scripts/wizard.js?v=p102"></script>
 <script src="scripts/app.js?v=p121"></script>
+<!-- ADR 0048 — Org-onboarding workbook (Platform Admin side). Loads after
+     app.js so window.getWorkspace + window.toast + window.goto are available,
+     and before the sample fixture which the module reads on demand. -->
+<script src="scripts/admin-onboarding-workbook.js?v=p102"></script>
+<script src="scripts/fixtures/sample-cosco-onboarding-workbook.js?v=p102"></script>
 <script src="scripts/schema-walker.js?v=p121"></script>
 <script src="scripts/register-element.js?v=p161"></script>
 <script src="scripts/element-bundle-export.js"></script>
@@ -4794,6 +4856,8 @@
 <script src="scripts/demos/register-element-with-assist.js?v=p102"></script>
 <script src="scripts/demos/register-element-with-assist-live.js?v=p102"></script>
 <script src="scripts/demos/version-element.js?v=p102"></script>
+<script src="scripts/demos/bulk-onboarding-first-login.js?v=p102"></script>
+<script src="scripts/demos/bulk-onboarding-platform-admin.js?v=p102"></script>
 <script src="scripts/demos/index.js?v=p102"></script>
 <script src="scripts/search-and-filters.js"></script>
 <script src="scripts/pagination.js"></script>

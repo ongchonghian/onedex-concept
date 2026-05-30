@@ -1,6 +1,14 @@
 let workspaceCache = null;
 let selectedAgreementId = null;
 let selectedMessageId = null;
+// ADR 0048 (2026-05-30) — recursion guard. ensureWorkspaceLoaded may be called
+// re-entrantly during buildWorkspaceFromFixtures if any code path inside the
+// build tries to read workspace state (e.g., a renderer helper accidentally
+// invoked mid-bootstrap). The guard returns a partial-but-safe empty workspace
+// to the re-entrant caller instead of triggering an infinite buildFromFixtures
+// loop. Helpers reading inside the bootstrap window should expect possibly-
+// empty collections and degrade gracefully.
+let workspaceBuildInProgress = false;
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -8,18 +16,34 @@ function clone(value) {
 
 function ensureWorkspaceLoaded() {
   if (workspaceCache) return workspaceCache;
+  if (workspaceBuildInProgress) {
+    // Re-entrant call during build — return a stub so the caller can read
+    // empty collections without infinite-looping. The outer build will
+    // complete and populate workspaceCache; this stub is throwaway.
+    return { meta: {}, orgs: {}, users: {}, userOrgAffiliations: {}, orgDexMemberships: {}, orgKycEvents: {}, pitstops: {}, pitstopsByOrg: {}, agreements: {}, agreementDrafts: {}, agreementPacks: {}, messages: {}, inboxItems: {}, dataElements: {} };
+  }
 
   try {
     workspaceCache = readWorkspaceSnapshot();
   } catch (error) {
     clearWorkspaceSnapshot();
-    workspaceCache = buildWorkspaceFromFixtures();
+    workspaceBuildInProgress = true;
+    try {
+      workspaceCache = buildWorkspaceFromFixtures();
+    } finally {
+      workspaceBuildInProgress = false;
+    }
     writeWorkspaceSnapshot(workspaceCache);
     return workspaceCache;
   }
 
   if (!workspaceCache) {
-    workspaceCache = buildWorkspaceFromFixtures();
+    workspaceBuildInProgress = true;
+    try {
+      workspaceCache = buildWorkspaceFromFixtures();
+    } finally {
+      workspaceBuildInProgress = false;
+    }
     writeWorkspaceSnapshot(workspaceCache);
   }
 
@@ -230,6 +254,281 @@ function listAgreementDraftsForUser(userId) {
   return Object.values(ensureWorkspaceLoaded().agreementDrafts).filter((draft) => draft.operatorId === userId);
 }
 
+/* ===========================================================================
+   ADR 0048 — Bulk org onboarding via Platform-Admin workbook, Drafts-view
+   materialisation. The from-onboarding fields on agreementDrafts (fromOnboarding,
+   onboardingBatchId, counterpartyResolutionStatus, counterpartyOrgId, stagedBy,
+   stagedAt) are additive — non-onboarding Drafts continue to render the standard
+   way. Helpers below are the workspace seam the Drafts-view onboarding shell
+   reads from.
+   =========================================================================== */
+
+/* listOnboardingDraftsForUser — every from-onboarding Draft for this user, in
+   the workspace's natural order. Non-onboarding Drafts are excluded. */
+function listOnboardingDraftsForUser(userId) {
+  return listAgreementDraftsForUser(userId).filter((d) => d && d.fromOnboarding === true);
+}
+
+/* listOperatorAuthoredDraftsForUser — the complement: Drafts the operator
+   authored themselves (not from onboarding). These render in the standard
+   Drafts list section below any onboarding shell. */
+function listOperatorAuthoredDraftsForUser(userId) {
+  return listAgreementDraftsForUser(userId).filter((d) => d && d.fromOnboarding !== true);
+}
+
+/* onboardingProgressForUser — the goal-gradient bar's data source. The
+   denominator (total) is stable across the session: it counts every actionable
+   Draft — those whose counterparty is resolved (publishable) plus those whose
+   counterpart's onboarding ended (declinable). Pending-counterparty Drafts
+   are off the bar until their counterpart materialises, per ADR 0048 §15
+   forward-references — they're not yet actionable, so they're not yet in
+   scope of progress.
+
+   numerator (done) = published + declined. Once a Draft has an
+   onboardingOutcome it stays in the denominator (the operator's work on it
+   is complete), so the bar fills monotonically. */
+function onboardingProgressForUser(userId) {
+  const drafts = listOnboardingDraftsForUser(userId);
+  const actionable = drafts.filter((d) => {
+    const s = d.counterpartyResolutionStatus || 'resolved';
+    return s === 'resolved' || s === 'counterpart-onboarding-ended';
+  });
+  const published = actionable.filter((d) => d.onboardingOutcome === 'published');
+  const declined = actionable.filter((d) => d.onboardingOutcome === 'declined');
+  const waiting = drafts.filter((d) => d.counterpartyResolutionStatus === 'pending-counterparty');
+  const total = actionable.length;
+  const done = published.length + declined.length;
+  return {
+    total,
+    done,
+    publishedCount: published.length,
+    declinedCount: declined.length,
+    waitingCount: waiting.length,
+    remaining: Math.max(0, total - done),
+    percent: total === 0 ? 0 : Math.round((done / total) * 100)
+  };
+}
+
+/* groupOnboardingDraftsByCounterparty — returns
+   { groups: [{ counterpartyOrgId, counterpartyName, enrolmentSignal, drafts[] }],
+     waiting: [{...same shape}] }
+   Groups in counterparty-name order; the waiting bucket carries
+   pending-counterparty + counterpart-onboarding-ended rows. Published /
+   declined rows are filtered out (they've left the queue). */
+function groupOnboardingDraftsByCounterparty(userId) {
+  const live = listOnboardingDraftsForUser(userId).filter((d) => !d.onboardingOutcome);
+  const groupsMap = new Map();
+  const waiting = [];
+  live.forEach((d) => {
+    const status = d.counterpartyResolutionStatus || 'resolved';
+    if (status === 'pending-counterparty' || status === 'counterpart-onboarding-ended') {
+      waiting.push(d);
+      return;
+    }
+    const key = d.counterpartyOrgId || d.counterparty.name || 'unknown';
+    if (!groupsMap.has(key)) {
+      groupsMap.set(key, {
+        counterpartyOrgId: d.counterpartyOrgId || null,
+        counterpartyName: d.counterparty.name || 'Unknown counterparty',
+        enrolmentSignal: d.counterpartyEnrolmentSignal || 'enrolled',
+        drafts: []
+      });
+    }
+    groupsMap.get(key).drafts.push(d);
+  });
+  const groups = Array.from(groupsMap.values()).sort((a, b) =>
+    a.counterpartyName.localeCompare(b.counterpartyName)
+  );
+  return { groups, waiting };
+}
+
+/* publishOnboardingDraft — terminal-state transition for the happy-path Publish
+   click on a from-onboarding Draft. Keeps the record (with onboardingOutcome =
+   'published' + publishedAt timestamp) so the audit / activity log can reach
+   back to it, but the row drops out of the visible Drafts queue. Mirrors how
+   submitAgreementDraft creates a real consent_agreement row.
+
+   Note: in the prototype we don't materialise a full consent_agreement for
+   from-onboarding publishes because the demo arc lives entirely on the operator
+   side. Production would call into submitAgreementDraft's pipeline; here the
+   visible outcome (row leaves the queue, progress bar updates) is what the
+   demo proves. */
+function publishOnboardingDraft(draftId) {
+  const workspace = ensureWorkspaceLoaded();
+  const draft = workspace.agreementDrafts[draftId];
+  if (!draft) throw new Error(`AGREEMENT_DRAFT_NOT_FOUND:${draftId}`);
+  if (draft.fromOnboarding !== true) {
+    throw new Error('publishOnboardingDraft called on non-onboarding draft');
+  }
+  draft.onboardingOutcome = 'published';
+  draft.publishedAt = new Date().toISOString();
+  draft.updatedAt = draft.publishedAt;
+  persistWorkspace();
+  return clone(draft);
+}
+
+/* declineOnboardingDraft — terminal-state transition for the Decline path
+   (ADR 0048 §11). Reason is optional but captured when supplied. Counterpart-
+   onboarding-ended state at decline time is preserved so the rollup can
+   distinguish operator-decision declines from system-forced ones. */
+function declineOnboardingDraft(draftId, reason) {
+  const workspace = ensureWorkspaceLoaded();
+  const draft = workspace.agreementDrafts[draftId];
+  if (!draft) throw new Error(`AGREEMENT_DRAFT_NOT_FOUND:${draftId}`);
+  if (draft.fromOnboarding !== true) {
+    throw new Error('declineOnboardingDraft called on non-onboarding draft');
+  }
+  draft.onboardingOutcome = 'declined';
+  draft.declinedReason = reason || '';
+  draft.declinedAt = new Date().toISOString();
+  draft.updatedAt = draft.declinedAt;
+  persistWorkspace();
+  return clone(draft);
+}
+
+/* listDeclinedOnboardingDraftsForUser — feeds the Declined sidebar surface. */
+function listDeclinedOnboardingDraftsForUser(userId) {
+  return listOnboardingDraftsForUser(userId).filter((d) => d.onboardingOutcome === 'declined');
+}
+
+/* ===========================================================================
+   ADR 0048 §12 — Lifecycle-reminder cadence for stalled onboarding.
+   Five rules per ADR 0010: ≥4 escalation intervals, multi-channel ramp-up,
+   broadcast to eligible actors, one-click action from every channel,
+   per-event grace.
+
+   This cadence: D3 Inbox-only · D7 + email · D14 + portal banner · D28 +
+   named-consequence message. Stages are computed from the elapsed time
+   since stagedAt, OR from a workspace.meta.onboardingStallSimulatedDays
+   override that the demo uses to step through the cadence without
+   waiting actual days.
+   =========================================================================== */
+
+/* getOnboardingStallStage — returns one of:
+     null     — no stall (no live onboarding Drafts, or staged <3 days ago)
+     'D3'     — D3-D6: Inbox-only nudge
+     'D7'     — D7-D13: + email indicator
+     'D14'    — D14-D27: + portal banner
+     'D28'    — D28+: + named-consequence message
+*/
+function getOnboardingStallStage(userId) {
+  const drafts = listOnboardingDraftsForUser(userId);
+  const live = drafts.filter((d) => !d.onboardingOutcome && (d.counterpartyResolutionStatus || 'resolved') === 'resolved');
+  if (!live.length) return null;
+
+  const meta = ensureWorkspaceLoaded().meta || {};
+  // Demo override — when set, the cadence stage maps deterministically to
+  // the simulated day count rather than wall-clock elapsed.
+  if (meta.onboardingStallSimulatedDays != null) {
+    const d = Number(meta.onboardingStallSimulatedDays);
+    if (d >= 28) return 'D28';
+    if (d >= 14) return 'D14';
+    if (d >= 7) return 'D7';
+    if (d >= 3) return 'D3';
+    return null;
+  }
+
+  // Real-time: read the oldest stagedAt from the live drafts.
+  const oldestStagedAt = live
+    .map((d) => d.stagedAt && new Date(d.stagedAt).getTime())
+    .filter((t) => typeof t === 'number' && !Number.isNaN(t))
+    .sort((a, b) => a - b)[0];
+  if (!oldestStagedAt) return null;
+
+  const daysSince = (Date.now() - oldestStagedAt) / (1000 * 60 * 60 * 24);
+  if (daysSince >= 28) return 'D28';
+  if (daysSince >= 14) return 'D14';
+  if (daysSince >= 7) return 'D7';
+  if (daysSince >= 3) return 'D3';
+  return null;
+}
+
+/* simulateOnboardingStall — demo-side knob. Sets the simulated day count and
+   re-renders the Drafts view. Pass null to clear the override and fall back
+   to real-time computation. */
+function simulateOnboardingStall(days) {
+  const workspace = ensureWorkspaceLoaded();
+  workspace.meta = workspace.meta || {};
+  if (days == null) delete workspace.meta.onboardingStallSimulatedDays;
+  else workspace.meta.onboardingStallSimulatedDays = days;
+  persistWorkspace();
+}
+
+/* getOnboardingStallCadenceCopy — single source of truth for stage→copy mapping.
+   Returns { title, body, namedCounterparties } where namedCounterparties is
+   present only at D28 (the named-consequence stage). */
+function getOnboardingStallCadenceCopy(userId, stage) {
+  const grouped = typeof groupOnboardingDraftsByCounterparty === 'function'
+    ? groupOnboardingDraftsByCounterparty(userId)
+    : { groups: [], waiting: [] };
+  const counterpartyNames = grouped.groups.map((g) => g.counterpartyName);
+  const remaining = (typeof onboardingProgressForUser === 'function')
+    ? onboardingProgressForUser(userId).remaining
+    : 0;
+
+  const map = {
+    'D3': {
+      title: `${remaining} Agreement${remaining === 1 ? '' : 's'} still waiting for your review`,
+      body: 'Your data exchange is partly live. Pick up where you left off when you have a moment.',
+      channel: 'inbox'
+    },
+    'D7': {
+      title: `Your onboarding is half-done`,
+      body: `${remaining} Agreement${remaining === 1 ? '' : 's'} ${remaining === 1 ? 'is' : 'are'} waiting for your sign-off. Counterparties are expecting these.`,
+      channel: 'inbox+email'
+    },
+    'D14': {
+      title: `Half of your data exchange isn't live yet`,
+      body: `${remaining} Agreement${remaining === 1 ? '' : 's'} ${remaining === 1 ? 'is' : 'are'} still in your Drafts queue. Counterparties may have started without you.`,
+      channel: 'inbox+email+banner'
+    },
+    'D28': {
+      title: `Your counterparties have been waiting ${remaining === 1 ? '' : 'about '}4 weeks`,
+      body: `${counterpartyNames.slice(0, 3).join(', ')}${counterpartyNames.length > 3 ? `, and ${counterpartyNames.length - 3} other${counterpartyNames.length - 3 === 1 ? '' : 's'}` : ''} ${counterpartyNames.length === 1 ? 'has' : 'have'} been waiting on your Agreements for about 4 weeks. Want us to follow up with you?`,
+      namedCounterparties: counterpartyNames.slice(0, 3),
+      channel: 'inbox+email+banner+named-consequence'
+    }
+  };
+  return map[stage] || null;
+}
+
+/* welcomePanelDismissedKey / hasWelcomePanelBeenDismissed / markWelcomePanelDismissed —
+   the onboarding shell's one-time welcome panel acknowledgement. Per ADR 0048
+   §8, dismiss is on engage (explicit Got it click), not on timer. State lives
+   on workspace.meta so it survives reloads but resets when the workspace is
+   rebuilt for a fresh demo run. */
+function hasWelcomePanelBeenDismissed(userId) {
+  const meta = ensureWorkspaceLoaded().meta || {};
+  const flags = meta.onboardingWelcomeDismissed || {};
+  return flags[userId] === true;
+}
+
+function markWelcomePanelDismissed(userId) {
+  const workspace = ensureWorkspaceLoaded();
+  workspace.meta = workspace.meta || {};
+  workspace.meta.onboardingWelcomeDismissed = workspace.meta.onboardingWelcomeDismissed || {};
+  workspace.meta.onboardingWelcomeDismissed[userId] = true;
+  persistWorkspace();
+}
+
+/* hasEndStateBeenDismissed / markEndStateDismissed — the end-state card (§17)
+   persists across a single visit then auto-dismisses on visit-2, plus an
+   explicit Got it dismiss. Same workspace.meta storage pattern as the welcome
+   panel. */
+function hasEndStateBeenDismissed(userId) {
+  const meta = ensureWorkspaceLoaded().meta || {};
+  const flags = meta.onboardingEndStateDismissed || {};
+  return flags[userId] === true;
+}
+
+function markEndStateDismissed(userId) {
+  const workspace = ensureWorkspaceLoaded();
+  workspace.meta = workspace.meta || {};
+  workspace.meta.onboardingEndStateDismissed = workspace.meta.onboardingEndStateDismissed || {};
+  workspace.meta.onboardingEndStateDismissed[userId] = true;
+  persistWorkspace();
+}
+
 function listAgreementsForDex(dexId) {
   return Object.values(ensureWorkspaceLoaded().agreements).filter((agreement) => agreement.dexId === dexId);
 }
@@ -249,14 +548,47 @@ function listInboxItemsForUserAndDex(userId, dexId) {
     Object.keys(workspace.inboxItems).forEach((id) => {
       const item = workspace.inboxItems[id];
       // A "derived" item is one materialiseInboxFromRecords would produce — keyed by
-      // messageId on the item, or the inbox-agr-derived- prefix. Hand-authored seeds
-      // (no messageId, no derived-prefix) are preserved across passes.
-      const isDerived = !!item.messageId || (typeof id === 'string' && id.startsWith('inbox-agr-derived-'));
+      // messageId on the item, or the inbox-agr-derived- prefix, or the stall-nudge
+      // (inbox-onboarding-stall-) prefix. Hand-authored seeds (no messageId, no
+      // derived-prefix) are preserved across passes.
+      const isDerived = !!item.messageId
+        || (typeof id === 'string' && (id.startsWith('inbox-agr-derived-') || id.startsWith('inbox-onboarding-stall-')));
       if (item.ownerUserId === userId && item.dexId === dexId && isDerived && !fresh[id]) {
         delete workspace.inboxItems[id];
       }
     });
     Object.assign(workspace.inboxItems, fresh);
+
+    // ADR 0048 §12 — stall-nudge inbox card. Produced here (render-time) rather
+    // than in materialiseInboxFromRecords (bootstrap-time) to avoid recursing
+    // through ensureWorkspaceLoaded during initial workspace build.
+    if (typeof getOnboardingStallStage === 'function') {
+      const stage = getOnboardingStallStage(userId);
+      if (stage && typeof getOnboardingStallCadenceCopy === 'function') {
+        const copy = getOnboardingStallCadenceCopy(userId, stage);
+        if (copy) {
+          const inboxItemId = `inbox-onboarding-stall-${userId}`;
+          workspace.inboxItems[inboxItemId] = {
+            inboxItemId,
+            ownerUserId: userId,
+            dexId,
+            bucket: 'mine',
+            title: copy.title,
+            meta: copy.body,
+            btn: 'Review',
+            cta: 'review-onboarding-drafts',
+            dir: 'in',
+            completion: false,
+            intent: 'respond',
+            sourceType: 'onboarding',
+            urgency: (stage === 'D14' || stage === 'D28') ? 'now' : 'soon',
+            stallStage: stage,
+            surfacedAt: new Date().toISOString(),
+            status: 'open'
+          };
+        }
+      }
+    }
   }
   // Issue 0011 Phase 2 — filter by `requires` so platform-tier items gated
   // by an elevated role (e.g. PLATFORM_INBOX's `requires: 'Super SGTradex
@@ -1624,9 +1956,49 @@ function getOrgByName(rawName) {
 
 /* Participants directory + Agreement packs (ADR 0027) lookups. */
 function listParticipantsForDex(dexId) {
-  return Object.values(ensureWorkspaceLoaded().participants)
+  const ws = ensureWorkspaceLoaded();
+  const seeded = Object.values(ws.participants)
     .filter((p) => p.dexId === dexId)
     .map(clone);
+
+  // ADR 0048 §13 (2026-05-30) — orgs created via the workbook flow live in
+  // workspace.orgs + workspace.orgDexMemberships. Surface those whose
+  // membership is on this DEX as participant rows so the Participants
+  // directory honestly shows ALL orgs onboarded to SGTradex (per the
+  // existing tip copy). The filter UI controls visibility downstream.
+  const memberships = (ws.orgDexMemberships) || {};
+  const orgsRegistry = ws.orgs || {};
+  const seededOrgIds = new Set(seeded.map((p) => p.orgId).filter(Boolean));
+  const fromWorkbook = Object.values(memberships)
+    .filter((m) => m.dexId === dexId)
+    .filter((m) => !seededOrgIds.has(m.orgId))
+    .map((m) => {
+      const org = orgsRegistry[m.orgId] || {};
+      return {
+        participantId: `participant-${m.orgId}-${dexId}`,
+        dexId,
+        orgId: m.orgId,
+        initials: org.initials || String(org.short || org.name || '?').slice(0, 2).toUpperCase(),
+        name: org.name || org.short || m.orgId,
+        meta: (org.legalName ? `Org · UEN ${org.uen || '—'}` : '') + ' · ' + (org.jurisdiction || '—'),
+        useCases: [],
+        status: {
+          // Map ORG_DEX_MEMBERSHIP status → participant card status.kind
+          // 'active' renders as Active chip (existing pattern); 'pending'
+          // renders as Pending KYC (existing pattern); 'kyc-rejected'
+          // renders as the new Onboarding deferred chip per CONTEXT.md.
+          kind: m.status === 'kyc-rejected' ? 'onboarding-deferred'
+              : m.status === 'pending' ? 'pending'
+              : m.status === 'on-hold' ? 'on-hold'
+              : m.status === 'lapsed' ? 'lapsed'
+              : 'active',
+          membershipStatus: m.status
+        },
+        joined: m.joinedDate ? `Joined ${m.joinedDate}` : (m.status === 'kyc-rejected' ? 'Onboarding deferred' : ''),
+        fromWorkbook: true
+      };
+    });
+  return seeded.concat(fromWorkbook);
 }
 
 function getParticipant(participantId) {
