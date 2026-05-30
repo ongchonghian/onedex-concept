@@ -424,13 +424,18 @@ const PERSONAS = (function buildPersonas() {
    but does NOT gate catalogue viewing (sidebar "Data elements" item stays open
    to everyone per app.js:7995 "Read-only reference for everyone"). */
 const ROLE_CAPABILITIES = {
-  'Super SGTradex Admin': { tier: 'platform', canCreateAgreement: true,  canManageUsers: true,  canManageDataElements: true,  canManageNetworks: true,  opsOnly: false, label: 'Super SGTradex Admin' },
-  'SGTradex Admin':       { tier: 'platform', canCreateAgreement: false, canManageUsers: true,  canManageDataElements: true,  canManageNetworks: true,  opsOnly: false, label: 'SGTradex Admin' },
-  'Super Admin':          { tier: 'org',      canCreateAgreement: true,  canManageUsers: true,  canManageDataElements: false, canManageNetworks: false, opsOnly: false, label: 'Super Admin' },
-  'Admin User':           { tier: 'org',      canCreateAgreement: true,  canManageUsers: false, canManageDataElements: false, canManageNetworks: false, opsOnly: false, label: 'Admin User' },
-  'Operation User':       { tier: 'org',      canCreateAgreement: false, canManageUsers: false, canManageDataElements: false, canManageNetworks: false, opsOnly: true,  label: 'Operation User' },
-  'Tech User':            { tier: 'org',      canCreateAgreement: false, canManageUsers: false, canManageDataElements: false, canManageNetworks: false, opsOnly: false, label: 'Tech User' },
-  'Etr User':             { tier: 'org',      canCreateAgreement: true,  canManageUsers: false, canManageDataElements: false, canManageNetworks: false, opsOnly: false, label: 'Etr User' }
+  // ADR 0048 (2026-05-30 amendment) — canInviteParticipant gates the org-tier
+  // "+ Invite participant" CTA on Participants header (the peer-invite affordance,
+  // previously ungated — Etr/Operation/Tech Users could see it). canManageNetworks
+  // gates the platform-tier "+ Onboard new org" CTA (the workbook upload flow).
+  // The two are mutually exclusive at the persona level — no role carries both.
+  'Super SGTradex Admin': { tier: 'platform', canCreateAgreement: true,  canManageUsers: true,  canManageDataElements: true,  canManageNetworks: true,  canInviteParticipant: false, opsOnly: false, label: 'Super SGTradex Admin' },
+  'SGTradex Admin':       { tier: 'platform', canCreateAgreement: false, canManageUsers: true,  canManageDataElements: true,  canManageNetworks: true,  canInviteParticipant: false, opsOnly: false, label: 'SGTradex Admin' },
+  'Super Admin':          { tier: 'org',      canCreateAgreement: true,  canManageUsers: true,  canManageDataElements: false, canManageNetworks: false, canInviteParticipant: true,  opsOnly: false, label: 'Super Admin' },
+  'Admin User':           { tier: 'org',      canCreateAgreement: true,  canManageUsers: false, canManageDataElements: false, canManageNetworks: false, canInviteParticipant: true,  opsOnly: false, label: 'Admin User' },
+  'Operation User':       { tier: 'org',      canCreateAgreement: false, canManageUsers: false, canManageDataElements: false, canManageNetworks: false, canInviteParticipant: false, opsOnly: true,  label: 'Operation User' },
+  'Tech User':            { tier: 'org',      canCreateAgreement: false, canManageUsers: false, canManageDataElements: false, canManageNetworks: false, canInviteParticipant: false, opsOnly: false, label: 'Tech User' },
+  'Etr User':             { tier: 'org',      canCreateAgreement: true,  canManageUsers: false, canManageDataElements: false, canManageNetworks: false, canInviteParticipant: false, opsOnly: false, label: 'Etr User' }
 };
 
 /* ---------- Per-DEX data-element registry ----------

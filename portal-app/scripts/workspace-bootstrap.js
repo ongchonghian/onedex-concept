@@ -654,6 +654,15 @@ function materialiseInboxFromRecords(workspace, sceneMeta) {
       };
     });
 
+  // ADR 0048 §12 — Lifecycle-reminder cadence. The stall-nudge inbox card is
+  // produced at *render-time* (in workspace.js's listInboxItemsForUserAndDex)
+  // rather than here at bootstrap-time. This avoids a recursion:
+  // materialiseInboxFromRecords runs inside buildWorkspaceFromFixtures, but
+  // getOnboardingStallStage calls back into ensureWorkspaceLoaded — which
+  // would re-trigger buildWorkspaceFromFixtures during initial bootstrap
+  // (when workspaceCache is null). The render-time path runs only after the
+  // workspace has fully bootstrapped, so the same helpers resolve cleanly.
+
   return items;
 }
 

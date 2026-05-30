@@ -1823,3 +1823,1125 @@ body.demo-tools-open .demo-tools-drawer {
   }
   .prototype-rail .pr-caption { display: none; }
 }
+
+/* ============================================================================
+   ADR 0048 — Bulk-onboarding Drafts-view shell.
+   Welcome panel, goal-gradient progress bar, group-by-counterparty rows,
+   per-row Publish/Decline, §16 publish-click animation, §17 end-state card,
+   and the Declined-view layout. All visuals tuned to share rhythm with the
+   existing .list-frame surfaces.
+   ============================================================================ */
+
+/* (a) Welcome panel — mirrors ADR 0017's "What's changed" inline panel rhythm.
+   Sits above the goal-gradient bar; dismisses on explicit Got it click. */
+.onb-welcome-panel {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 16px;
+  align-items: start;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(99, 102, 241, 0.02));
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+.onb-welcome-icon {
+  width: 48px; height: 48px;
+  display: grid; place-items: center;
+  background: rgba(99, 102, 241, 0.12);
+  color: rgb(79, 70, 229);
+  border-radius: 12px;
+  font-size: 22px;
+}
+.onb-welcome-heading {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--g-10);
+  margin: 0 0 6px;
+  line-height: 1.3;
+}
+.onb-welcome-prose {
+  font-size: 13.5px;
+  color: var(--g-30);
+  line-height: 1.55;
+  margin: 0 0 8px;
+}
+.onb-welcome-attribution {
+  font-size: 11.5px;
+  color: var(--g-50);
+  margin: 0;
+}
+.onb-welcome-actions { align-self: center; }
+
+/* (z) Stall banner — ADR 0048 §12 + ADR 0010 multi-channel ramp. Sits at the
+   top of the Drafts surface at D14+. Two visual tiers: D14 = amber (caution),
+   D28 = red (named-consequence). One-click Review-now CTA per ADR 0010 rule 4. */
+.onb-stall-banner {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+.onb-stall-banner-d14 {
+  background: linear-gradient(135deg, rgba(249, 168, 37, 0.10), rgba(249, 168, 37, 0.03));
+  border: 1px solid rgba(249, 168, 37, 0.40);
+  color: rgb(120, 53, 15);
+}
+.onb-stall-banner-d28 {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.10), rgba(220, 38, 38, 0.03));
+  border: 1px solid rgba(220, 38, 38, 0.40);
+  color: rgb(127, 29, 29);
+}
+.onb-stall-banner-icon {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  font-size: 22px;
+}
+.onb-stall-banner-d14 .onb-stall-banner-icon { color: rgb(146, 64, 14); }
+.onb-stall-banner-d28 .onb-stall-banner-icon { color: rgb(153, 27, 27); }
+.onb-stall-banner-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.onb-stall-banner-prose {
+  font-size: 12.5px;
+  line-height: 1.5;
+  opacity: 0.92;
+}
+
+/* (b) Goal-gradient progress bar — proportional progress per §16 (linear easing
+   on width transition). The track + fill follow the prototype's neutral colour
+   ramp; the fill picks up a green tint to signal "good progress." */
+.onb-progress {
+  margin: 6px 0 14px;
+}
+.onb-progress-track {
+  height: 8px;
+  background: var(--g-90);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.onb-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgb(34, 197, 94), rgb(22, 163, 74));
+  border-radius: 4px;
+  /* §16(c) — linear easing per easing-linear-only-progress; the bar represents
+     proportional progress, never a state change. ~400ms feels honest at the
+     typical 1/10–1/12 increment. */
+  transition: width 400ms linear;
+}
+.onb-progress-label {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--g-30);
+}
+.onb-progress-label strong { color: var(--g-10); font-weight: 600; }
+.onb-progress-waiting { color: var(--g-50); }
+
+/* (c) Per-counterparty groups — Gestalt proximity for §9. Each group has a
+   header (name + enrolment chip + count) and a stack of Draft rows underneath. */
+.onb-groups { display: flex; flex-direction: column; gap: 14px; }
+
+.onb-group {
+  background: var(--surface, #fff);
+  border: 1px solid var(--g-90);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.onb-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--g-95);
+  border-bottom: 1px solid var(--g-90);
+  font-size: 13px;
+}
+.onb-cp-name { color: var(--g-10); font-weight: 600; }
+.onb-cp-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: lowercase;
+}
+.onb-cp-chip-enrolled {
+  background: rgba(34, 197, 94, 0.12);
+  color: rgb(21, 128, 61);
+}
+.onb-cp-chip-pending {
+  background: rgba(249, 168, 37, 0.14);
+  color: rgb(161, 98, 7);
+}
+.onb-cp-chip-unknown {
+  background: var(--g-90);
+  color: var(--g-30);
+}
+.onb-group-count {
+  margin-left: auto;
+  color: var(--g-50);
+  font-size: 11.5px;
+}
+
+.onb-group-rows { display: flex; flex-direction: column; }
+
+.onb-row-wrapper {
+  border-top: 1px solid var(--g-95);
+}
+.onb-row-wrapper:first-child { border-top: none; }
+.onb-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  cursor: pointer;
+  /* §16(a) — base transition for the row; the exit animation overrides this
+     via .onb-row-exiting below. */
+  transition: opacity 220ms ease-in, max-height 220ms ease-in, padding 220ms ease-in, background-color 120ms ease-out;
+  max-height: 80px;
+  overflow: hidden;
+}
+.onb-row:hover { background: var(--g-95); }
+.onb-row:first-child { border-top: none; }
+
+/* ADR 0048 §10 — expanded detail panel, revealed when the wrapper carries
+   the .onb-row-expanded class. Inline Agreement detail in Draft mode. */
+.onb-row-detail {
+  max-height: 0;
+  overflow: hidden;
+  background: var(--g-95);
+  border-top: 1px solid transparent;
+  transition: max-height 260ms ease-out, padding 220ms ease-out;
+  padding: 0 14px;
+}
+.onb-row-wrapper.onb-row-expanded {
+  background: var(--g-98, #fafafa);
+}
+.onb-row-wrapper.onb-row-expanded .onb-row {
+  background: rgba(99, 102, 241, 0.04);
+  border-bottom: 1px solid var(--g-90);
+}
+.onb-row-wrapper.onb-row-expanded .onb-row-detail {
+  max-height: 600px;
+  padding: 18px 14px 20px;
+  border-top-color: var(--g-90);
+}
+.onb-row-review-label-expanded { display: none; }
+.onb-row-wrapper.onb-row-expanded .onb-row-review-label { display: none; }
+.onb-row-wrapper.onb-row-expanded .onb-row-review-label-expanded { display: inline; }
+
+.onb-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 28px;
+  margin-bottom: 18px;
+}
+.onb-detail-field {
+  min-width: 0;
+}
+.onb-detail-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--g-50);
+  margin-bottom: 4px;
+}
+.onb-detail-value {
+  font-size: 13px;
+  color: var(--g-10);
+  line-height: 1.5;
+}
+.onb-detail-value strong { font-weight: 600; }
+/* Counterparty value needs chip + name alignment; only that field gets the
+   flex treatment to avoid breaking prose values across flex items. */
+.onb-detail-value-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.onb-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--g-90);
+}
+.onb-detail-actions-right {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.onb-detail-edit-btn i { margin-right: 4px; }
+.onb-detail-decline-btn {
+  color: rgb(153, 27, 27);
+  border-color: rgba(220, 38, 38, 0.30);
+}
+.onb-detail-decline-btn:hover {
+  background: rgba(220, 38, 38, 0.06);
+}
+.onb-row-icon {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  background: var(--g-95);
+  color: var(--g-30);
+  border-radius: 8px;
+  font-size: 16px;
+}
+.onb-row-title { font-size: 13.5px; font-weight: 500; color: var(--g-10); }
+.onb-row-meta { font-size: 12px; color: var(--g-50); margin-top: 2px; }
+.onb-row-actions { display: flex; gap: 6px; }
+
+/* §16(a) — row exit animation. ease-in (entries leaving a surface) per the
+   easing-exit-ease-in doctrine, under the 300ms ceiling. Applied to the
+   wrapper so the whole row (collapsed or expanded) collapses out together. */
+.onb-row-wrapper {
+  max-height: 700px;
+  transition: opacity 220ms ease-in, max-height 220ms ease-in;
+}
+.onb-row-exiting,
+.onb-row-wrapper.onb-row-exiting {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* §9 — Waiting on counterpart onboarding sub-group. Visually distinct (per
+   ux-von-restorff-emphasis) without being demoralising. */
+.onb-group-waiting .onb-group-header {
+  background: rgba(249, 168, 37, 0.06);
+}
+.onb-row-waiting .onb-row-icon {
+  background: rgba(249, 168, 37, 0.12);
+  color: rgb(161, 98, 7);
+}
+.onb-status-waiting { color: rgb(161, 98, 7); }
+.onb-status-ended { color: rgb(185, 28, 28); }
+
+/* §10 — Graduated bulk affordance. Surfaces after the publish threshold. */
+.onb-bulk-affordance {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 14px 18px;
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px dashed rgba(34, 197, 94, 0.35);
+  border-radius: 10px;
+}
+.onb-bulk-prompt { color: var(--g-20); font-size: 13.5px; flex: 1; }
+
+/* Reduced-motion fallback per §16. Honours prefers-reduced-motion: reduce. */
+@media (prefers-reduced-motion: reduce) {
+  .onb-row,
+  .onb-progress-fill { transition: none; }
+  .onb-row-exiting { opacity: 0; max-height: 0; }
+}
+
+/* §17 — End-state card. The peak-end moment after the last Publish. */
+.onb-end-state {
+  text-align: center;
+  padding: 32px 24px;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.06), rgba(34, 197, 94, 0.02));
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 14px;
+}
+.onb-end-celebrate {
+  width: 56px; height: 56px;
+  margin: 0 auto 14px;
+  display: grid; place-items: center;
+  background: rgba(34, 197, 94, 0.14);
+  color: rgb(21, 128, 61);
+  border-radius: 50%;
+  font-size: 32px;
+}
+.onb-end-heading {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--g-10);
+  margin: 0 0 8px;
+}
+.onb-end-prose {
+  font-size: 14px;
+  color: var(--g-20);
+  line-height: 1.55;
+  max-width: 540px;
+  margin: 0 auto 22px;
+}
+.onb-end-whatsnext {
+  max-width: 480px;
+  margin: 0 auto;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--g-90);
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+.onb-end-whatsnext-heading {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  color: var(--g-50);
+  margin: 0 0 10px;
+}
+.onb-end-affordances {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.onb-end-affordances li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  color: var(--g-10);
+  font-size: 13.5px;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background 120ms ease-out;
+}
+.onb-end-affordances li a:hover { background: var(--g-95); }
+.onb-end-affordances li a i {
+  color: var(--g-50);
+  font-size: 16px;
+}
+.onb-end-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Operator-authored Drafts section header (renders below the shell). */
+.onb-operator-authored { margin-top: 28px; }
+.onb-section-heading {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  color: var(--g-50);
+  margin: 0 0 10px;
+}
+
+/* Declined view (sibling to Drafts) — empty state + list shape. */
+.onb-declined-empty {
+  text-align: center;
+  padding: 40px 24px;
+  color: var(--g-30);
+}
+.onb-declined-empty-icon {
+  width: 56px; height: 56px;
+  margin: 0 auto 14px;
+  display: grid; place-items: center;
+  background: var(--g-95);
+  color: var(--g-50);
+  border-radius: 50%;
+  font-size: 28px;
+}
+.onb-declined-empty h3 { font-size: 16px; font-weight: 600; color: var(--g-10); margin: 0 0 6px; }
+.onb-declined-empty p { font-size: 13px; line-height: 1.55; max-width: 460px; margin: 0 auto; }
+
+.onb-declined-intro {
+  font-size: 13px;
+  color: var(--g-30);
+  margin: 0 0 14px;
+  line-height: 1.55;
+}
+.onb-declined-list { display: flex; flex-direction: column; gap: 8px; }
+.onb-declined-row {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--g-90);
+  border-radius: 8px;
+}
+.onb-declined-icon {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  background: rgba(248, 113, 113, 0.10);
+  color: rgb(185, 28, 28);
+  border-radius: 8px;
+}
+.onb-declined-title { font-size: 13.5px; font-weight: 500; color: var(--g-10); }
+.onb-declined-meta { font-size: 12px; color: var(--g-50); margin-top: 2px; }
+
+/* ============================================================================
+   ADR 0048 — Org-onboarding workbook surface (Platform Admin side).
+   Three states: idle (file picker), preview (parsed records + Materialise),
+   materialised (success + handoff). Visual rhythm matches the Drafts shell
+   above so the two surfaces feel like siblings.
+   ============================================================================ */
+
+/* Idle state — file picker card */
+.workbook-idle {
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+}
+.workbook-upload-card {
+  max-width: 560px;
+  text-align: center;
+  padding: 32px 28px;
+  background: var(--surface, #fff);
+  border: 1px dashed var(--g-90);
+  border-radius: 14px;
+}
+.workbook-upload-icon {
+  width: 64px; height: 64px;
+  margin: 0 auto 16px;
+  display: grid; place-items: center;
+  background: var(--g-95);
+  color: var(--g-30);
+  border-radius: 50%;
+  font-size: 28px;
+}
+.workbook-upload-heading {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--g-10);
+  margin: 0 0 8px;
+}
+.workbook-upload-prose {
+  font-size: 13px;
+  color: var(--g-30);
+  line-height: 1.55;
+  margin: 0 0 22px;
+}
+.workbook-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--purple-30, #4e0058);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 120ms ease-out;
+}
+.workbook-upload-btn:hover { opacity: 0.9; }
+.workbook-upload-sample {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--g-50);
+}
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--purple-30, #4e0058);
+  text-decoration: underline;
+  font: inherit;
+  cursor: pointer;
+}
+.link-btn:hover { opacity: 0.8; }
+
+/* Preview state */
+.workbook-preview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.workbook-file-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--g-10);
+}
+.workbook-file-name i { color: var(--g-50); }
+.workbook-file-meta {
+  font-size: 12px;
+  color: var(--g-50);
+  margin-top: 4px;
+}
+
+.workbook-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.workbook-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.workbook-warn i { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+.workbook-warn-error {
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  color: rgb(153, 27, 27);
+}
+.workbook-warn-warn {
+  background: rgba(249, 168, 37, 0.08);
+  border: 1px solid rgba(249, 168, 37, 0.25);
+  color: rgb(146, 64, 14);
+}
+
+.workbook-section {
+  margin-bottom: 22px;
+}
+.workbook-section-heading {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--g-50);
+  margin: 0 0 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.workbook-section-sub {
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--g-60);
+  font-weight: 400;
+}
+
+.workbook-org-card {
+  padding: 14px 16px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--g-90);
+  border-radius: 10px;
+}
+.workbook-org-name { font-size: 15px; font-weight: 600; color: var(--g-10); }
+.workbook-org-meta { font-size: 12px; color: var(--g-50); margin-top: 4px; }
+
+.workbook-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface, #fff);
+  border: 1px solid var(--g-90);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.workbook-list-row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border-top: 1px solid var(--g-95);
+}
+.workbook-list-row:first-child { border-top: none; }
+.workbook-list-row > i {
+  color: var(--g-50);
+  font-size: 16px;
+  text-align: center;
+}
+.workbook-list-title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--g-10);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.workbook-list-meta { font-size: 12px; color: var(--g-50); margin-top: 2px; }
+.workbook-admin-pill {
+  font-size: 10.5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.10);
+  color: rgb(79, 70, 229);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.workbook-empty {
+  padding: 12px 14px;
+  font-size: 12.5px;
+  color: var(--g-50);
+}
+
+/* Materialise bar — the gate */
+.workbook-materialise-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.06), rgba(34, 197, 94, 0.02));
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 10px;
+}
+.workbook-materialise-prose {
+  flex: 1;
+  font-size: 13px;
+  color: var(--g-20);
+  line-height: 1.55;
+}
+.workbook-materialise-bar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.workbook-materialise-actions-cluster {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.workbook-reject-btn {
+  color: rgb(153, 27, 27);
+  border-color: rgba(220, 38, 38, 0.30);
+}
+.workbook-reject-btn:hover {
+  background: rgba(220, 38, 38, 0.06);
+}
+
+/* ADR 0048 §13 (2026-05-30) — Participants status filter row. Sits below the
+   type-chip row in the toolbar; default state hides inactive orgs behind the
+   Show inactive toggle (gated to canManageNetworks). */
+.participants-status-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px var(--sp-3);
+  border-top: 1px solid var(--g-95);
+  font-size: 12.5px;
+}
+.participants-status-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--g-50);
+  margin-right: 4px;
+}
+.participants-status-filter .chip {
+  cursor: pointer;
+  user-select: none;
+  transition: background 120ms ease-out;
+}
+.participants-status-filter .chip:hover {
+  filter: brightness(0.97);
+}
+.participants-show-inactive {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--g-30);
+  cursor: pointer;
+}
+.participants-show-inactive input[type="checkbox"] {
+  cursor: pointer;
+}
+
+/* ADR 0048 §13 — Onboarding deferred chip on Participants cards. Internal
+   state is kyc-rejected; user-facing label is diplomatic. */
+.status-cell.onboarding-deferred {
+  background: rgba(220, 38, 38, 0.08);
+  color: rgb(153, 27, 27);
+}
+.status-cell.onboarding-deferred .dot {
+  background: rgb(153, 27, 27);
+}
+.status-cell.on-hold {
+  background: rgba(146, 64, 14, 0.08);
+  color: rgb(146, 64, 14);
+}
+.status-cell.on-hold .dot { background: rgb(146, 64, 14); }
+.status-cell.lapsed {
+  background: var(--g-95);
+  color: var(--g-50);
+}
+.status-cell.lapsed .dot { background: var(--g-50); }
+
+/* ADR 0048 §11 (2026-05-30) — Declined drafts filter affordance on the Drafts
+   onboarding shell. Hidden-by-default pattern; toggle reveals the section. */
+.onb-declined-filter {
+  margin-top: 22px;
+  padding: 12px 14px;
+  text-align: center;
+  border-top: 1px solid var(--g-95);
+}
+.onb-declined-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--g-30);
+}
+.onb-declined-toggle:hover { color: var(--g-10); }
+.onb-declined-section {
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--g-90);
+}
+.onb-section-heading-muted { color: var(--g-50); }
+
+/* ADR 0048 §7 + §18 (2026-05-30 amendment) — KYC decision panel on workbook
+   preview surface. Replaces the legacy single-CTA materialise bar. Three-way
+   verdict picker + evidence upload + dual reason fields + notification toggle. */
+.workbook-kyc-decision {
+  margin-top: 24px;
+  padding: 22px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--g-90);
+  border-radius: 12px;
+}
+.workbook-kyc-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--g-95);
+}
+.workbook-kyc-heading > i {
+  font-size: 24px;
+  color: rgb(79, 70, 229);
+  margin-top: 2px;
+}
+.workbook-kyc-heading h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--g-10);
+  margin: 0 0 4px;
+}
+.workbook-kyc-heading p {
+  font-size: 12.5px;
+  color: var(--g-30);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 640px;
+}
+
+.workbook-verdict-radios {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.workbook-verdict-option {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--g-98, #fafafa);
+  border: 1px solid var(--g-90);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+.workbook-verdict-option:hover {
+  background: var(--g-95);
+}
+.workbook-verdict-option input[type="radio"] {
+  margin-top: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.workbook-verdict-option:has(input:checked) {
+  background: rgba(99, 102, 241, 0.06);
+  border-color: rgba(99, 102, 241, 0.40);
+}
+.workbook-verdict-approved:has(input:checked) {
+  background: rgba(34, 197, 94, 0.06);
+  border-color: rgba(34, 197, 94, 0.40);
+}
+.workbook-verdict-pending:has(input:checked) {
+  background: rgba(249, 168, 37, 0.06);
+  border-color: rgba(249, 168, 37, 0.40);
+}
+.workbook-verdict-rejected:has(input:checked) {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(220, 38, 38, 0.40);
+}
+.workbook-verdict-body { flex: 1; min-width: 0; }
+.workbook-verdict-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--g-10);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.workbook-verdict-approved .workbook-verdict-title i { color: rgb(21, 128, 61); }
+.workbook-verdict-pending .workbook-verdict-title i { color: rgb(146, 64, 14); }
+.workbook-verdict-rejected .workbook-verdict-title i { color: rgb(153, 27, 27); }
+.workbook-verdict-desc {
+  font-size: 12px;
+  color: var(--g-30);
+  line-height: 1.5;
+}
+.workbook-verdict-desc em { color: var(--g-20); font-style: italic; }
+
+.workbook-decision-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.workbook-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.workbook-field-row-emphasised {
+  padding: 12px 14px;
+  background: rgba(220, 38, 38, 0.04);
+  border: 1px dashed rgba(220, 38, 38, 0.30);
+  border-radius: 8px;
+}
+.workbook-field-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--g-20);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.workbook-field-required {
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.10);
+  color: rgb(153, 27, 27);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.workbook-field-optional {
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--g-95);
+  color: var(--g-50);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.workbook-field-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--g-50);
+  font-style: italic;
+}
+.workbook-field-hint em { color: var(--g-30); }
+
+.workbook-evidence-dropzone {
+  display: block;
+  padding: 14px 16px;
+  background: var(--g-98, #fafafa);
+  border: 1px dashed var(--g-80);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 120ms ease-out, background 120ms ease-out;
+}
+.workbook-evidence-dropzone:hover {
+  border-color: rgba(99, 102, 241, 0.40);
+  background: rgba(99, 102, 241, 0.04);
+}
+.workbook-evidence-empty,
+.workbook-evidence-chosen {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--g-30);
+}
+.workbook-evidence-empty i { font-size: 18px; color: var(--g-50); }
+.workbook-evidence-chosen i { font-size: 18px; color: rgb(21, 128, 61); }
+.workbook-evidence-chosen span { color: var(--g-10); font-weight: 500; flex: 1; }
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: rgb(79, 70, 229);
+  text-decoration: underline;
+  font: inherit;
+  cursor: pointer;
+  font-size: 11.5px;
+}
+.btn-link:hover { color: rgb(67, 56, 202); }
+
+.workbook-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--g-10);
+  background: var(--surface, #fff);
+  border: 1px solid var(--g-90);
+  border-radius: 8px;
+  resize: vertical;
+  min-height: 56px;
+  transition: border-color 120ms ease-out;
+}
+.workbook-textarea:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.50);
+}
+
+.workbook-send-notification-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--g-20);
+  cursor: pointer;
+}
+.workbook-send-notification-toggle input[type="checkbox"] { cursor: pointer; }
+
+.workbook-decision-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 16px;
+  border-top: 1px solid var(--g-95);
+}
+.workbook-decision-status {
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--g-30);
+  line-height: 1.5;
+}
+.workbook-commit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ADR 0048 §13 — Rejected onboardings archive (soft-purge surface). */
+.rejected-batches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rejected-batch-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--g-90);
+  border-radius: 10px;
+}
+.rejected-batch-icon {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  background: rgba(248, 113, 113, 0.10);
+  color: rgb(185, 28, 28);
+  border-radius: 8px;
+}
+.rejected-batch-title { font-size: 14px; font-weight: 600; color: var(--g-10); }
+.rejected-batch-meta { font-size: 12px; color: var(--g-50); margin-top: 4px; line-height: 1.5; }
+.rejected-batch-retention {
+  text-align: right;
+  font-size: 11px;
+  color: var(--g-50);
+}
+.rejected-batch-retention-label {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rejected-batch-retention-days {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--g-10);
+  margin-top: 2px;
+}
+
+/* Materialised state */
+.workbook-materialised {
+  text-align: center;
+  padding: 32px 24px;
+}
+.workbook-success-icon {
+  width: 56px; height: 56px;
+  margin: 0 auto 14px;
+  display: grid; place-items: center;
+  background: rgba(34, 197, 94, 0.14);
+  color: rgb(21, 128, 61);
+  border-radius: 50%;
+  font-size: 32px;
+}
+.workbook-success-heading {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--g-10);
+  margin: 0 0 10px;
+}
+.workbook-success-prose {
+  font-size: 13.5px;
+  color: var(--g-20);
+  line-height: 1.55;
+  max-width: 520px;
+  margin: 0 auto 28px;
+}
+.workbook-handoff {
+  max-width: 520px;
+  margin: 0 auto 24px;
+  padding: 20px 22px;
+  background: rgba(99, 102, 241, 0.04);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  border-radius: 12px;
+  text-align: left;
+}
+.workbook-handoff-heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--g-10);
+  margin: 0 0 6px;
+}
+.workbook-handoff-prose {
+  font-size: 12.5px;
+  color: var(--g-30);
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+.workbook-meta-block {
+  max-width: 520px;
+  margin: 0 auto 18px;
+  font-size: 11.5px;
+  color: var(--g-50);
+}
+.workbook-meta-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--g-95);
+}
+.workbook-meta-row code {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 11px;
+  color: var(--g-30);
+}
+.workbook-materialised-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
