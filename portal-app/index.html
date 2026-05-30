@@ -1643,7 +1643,7 @@
     <header class="ov-hero">
       <span class="ov-eyebrow">Platform rewrite <span style="opacity:0.5;padding:0 2px">·</span> ready for leadership review <span style="opacity:0.5;padding:0 2px">·</span> 6 months to first customer launch</span>
       <h1 id="ov-h1">Operators stop translating. Admins stop relaying. New orgs stop landing on empty inboxes.</h1>
-      <p class="ov-lede">Today, operators switch between two portals and translate four legacy vocabularies on every send. Admins wait weeks while engineering relays a content decision into a schema. New orgs land on an empty inbox after Platform Admins did weeks of due diligence that nobody else sees. <strong>The rewrite cancels each of those taxes</strong> — one portal and one vocabulary mean <strong>~40% fewer clicks</strong> for operators every day; minutes-not-weeks for admins via grounded Smart Start authoring; pre-staged Drafts at first login so new orgs inherit the onboarding intent.</p>
+      <p class="ov-lede">Today, operators in the pitstop portal pick a form route per document type (EForm vs ETR — they have to know which), submit legally-significant documents with no review step, and refresh the page to verify delivery. Admins wait weeks while engineering relays a content decision into a schema. New orgs land on an empty inbox after Platform Admins did weeks of due diligence that nobody else sees. <strong>The rewrite cancels each of those taxes</strong> — a contract-anchored Composer means <strong>~29% fewer steps</strong> for an operator send (with a live timeline and an automatic review step on legally-significant elements); minutes-not-weeks for admins via grounded Smart Start authoring; pre-staged Drafts at first login so new orgs inherit the onboarding intent.</p>
 
       <div class="ov-hero-actions" style="display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center;margin:var(--sp-5) 0 0 0">
         <button type="button" class="btn-primary" onclick="goto('inbox-tx')" style="font-size:var(--fs-md)">Step into the prototype <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
@@ -1660,10 +1660,10 @@
 
       <!-- 5-SEC PAIN INFOGRAPHIC — compact 6-cell stakeholder tax grid, each tax anchored to an implemented feature -->
       <div class="tax-infographic" style="display:grid;grid-template-columns:repeat(6,1fr);gap:var(--sp-3);margin-top:var(--sp-5);margin-bottom:var(--sp-6)">
-        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: unified portal, Agreement-anchored Composer, live Message timeline (ADR 0020/0021/0024)">
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: Agreement-anchored Composer + live Message timeline + automatic review step on legally-significant elements (ADR 0020/0021/0024)">
           <i class="ti ti-user" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
           <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">Operator <span style="font-weight:400;text-transform:none;opacity:0.7">· Marcus</span></p>
-          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">9 steps per send</strong>across 2 portals · refresh-to-verify delivery</p>
+          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">7 steps per send</strong>pick-the-right-form route · refresh to verify delivery</p>
         </div>
         <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: Acting-as chip on Composer + audit triple (composed_by, acting_as_org, acting_as_pitstop) per ADR 0024">
           <i class="ti ti-user-share" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
@@ -1696,21 +1696,21 @@
 
       <div class="ov-stats">
         <div class="ov-stat ov-stat--featured">
-          <p class="ov-stat-num">~40%</p>
+          <p class="ov-stat-num">~29%</p>
           <div class="ov-stat--featured-body">
-            <p class="ov-stat-lbl">Fewer clicks on common operator tasks</p>
-            <p class="ov-stat-sub">Cancels the operator's daily click-and-translate tax. Estimated from screen-count comparison across the two systems · user testing in Phase 5 will validate the figure with measured time.</p>
+            <p class="ov-stat-lbl">Fewer steps on a common operator send (Cargo manifest to Maersk)</p>
+            <p class="ov-stat-sub">Counted 7 operator clicks in the legacy pitstop portal vs 5 in the new portal — and the new 5 include a live delivery timeline and an automatic review step the legacy didn't have. User testing in Phase 5 will validate with measured time.</p>
           </div>
         </div>
         <div class="ov-stat">
           <p class="ov-stat-num">2 <span class="arrow">→</span> 1</p>
-          <p class="ov-stat-lbl">Portals operators use</p>
-          <p class="ov-stat-sub">Cancels the two-curricula training tax for customer-success. One sign-in, one home page, one navigation model — and an inbox spanning every DEX with cross-boundary warnings.</p>
+          <p class="ov-stat-lbl">Portals the platform maintains</p>
+          <p class="ov-stat-sub">admin-ui and pitstop-ui consolidate into one codebase. Customer-success runs one training curriculum, engineering maintains one stack, admins log in once instead of switching. Operators were already in one portal; they now share it with everyone.</p>
         </div>
         <div class="ov-stat">
-          <p class="ov-stat-num">4 <span class="arrow">→</span> 2</p>
-          <p class="ov-stat-lbl">Vocabularies to learn</p>
-          <p class="ov-stat-sub">Cancels the operator's translation tax (Subscription, DER, SPR, EForm, ETR). Two words — <strong>Agreement</strong> and <strong>Message</strong> — cover the whole experience.</p>
+          <p class="ov-stat-num">5 <span class="arrow">→</span> 2</p>
+          <p class="ov-stat-lbl">Legacy vocabularies across both portals</p>
+          <p class="ov-stat-sub">Subscription, DER, SPR (admin-side consent record types) and EForm, ETR (operator-side form routes) all collapse into two words: <strong>Agreement</strong> (the contract) and <strong>Message</strong> (the data flowing under it). Admins stop translating between consent types; operators stop translating between form routes.</p>
         </div>
         <div class="ov-stat">
           <p class="ov-stat-num">9 <span class="arrow">→</span> 5</p>
@@ -1729,7 +1729,7 @@
       <div class="ov-ba-callouts">
         <div class="ov-callout">
           <i class="ti ti-user" aria-hidden="true"></i>
-          <p><strong>Operator</strong> · Marcus, Cosco · <em>"I sign into the setup portal first to check the relationship exists, then switch to the ops portal, navigate to Shared data, pick the counterparty, pick the element, the system routes me to a form page — fill it, submit, and then I refresh to see if it actually delivered. Nine steps. If I picked the wrong route for a legally-significant document, it submits without any review step."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> 9 steps across 2 systems per send. No live delivery status. No automatic review step on legally-significant documents — the safety net lives outside the system.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"One portal, one sign-in. The Composer already knows the contract — I just fill the data. The Message detail page has a live timeline I watch instead of refreshing. And when an element is legally-significant, the Composer adds a review step automatically — I can't accidentally skip it."</em></p>
+          <p><strong>Operator</strong> · Marcus, Cosco · <em>"I work in the pitstop portal — the admin portal where consents are managed is for the SGTradex team, not me. I open Shared data, click Share data, pick the counterparty from the dropdown (the consent records the admin portal manages have already synced over), pick the element. The system routes me to a form — but if I'd picked an ETR element I'd be on a different page entirely. I fill, submit, and then refresh to see if it actually delivered. Seven steps. And there's no review step on legally-significant routine documents — they submit with the same path as anything else."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> 7 steps per send in the pitstop portal. No live delivery status — I refresh to check. No automatic review step on legally-significant routine documents. Two form-route vocabularies (EForm vs ETR) the operator has to have learned.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"The Composer already knows the contract — counterparty, data type, terms — and I just fill the data. The Message detail page has a live timeline I watch instead of refreshing. And when an element is legally-significant, the Composer adds a review step automatically — I can't accidentally skip it. Legally-transferable records keep their own workspace, so I don't have to pick which form to use either."</em></p>
         </div>
         <div class="ov-callout">
           <i class="ti ti-user-share" aria-hidden="true"></i>
@@ -1890,7 +1890,7 @@
         <div>
           <p class="ov-anchor-head">Where did the "pick" steps go?</p>
           <p>The three "pick" steps from the legacy model — pick counterparty, pick data element, pick form route — are <strong>not deleted</strong>. They are <strong>moved upstream into Agreement creation</strong>, where they belong as deliberate consent decisions made once, with the counterparty's explicit acceptance.</p>
-          <p>That is why the same operator action ("send a Cargo manifest to Maersk") takes 5 steps instead of 9 — the dimensions are decided once at Agreement creation and reused for every Message sent under it. <strong>Consent and action are decoupled.</strong></p>
+          <p>That is why the same operator action ("send a Cargo manifest to Maersk") takes 5 steps instead of 7 — the dimensions are decided once at Agreement creation and reused for every Message sent under it. <strong>Consent and action are decoupled.</strong></p>
         </div>
       </div>
     </section>
@@ -1904,24 +1904,22 @@
       <div class="ov-ba-grid">
         <!-- Legacy -->
         <article class="ov-ba-col ov-ba-legacy">
-          <header><span class="ov-badge legacy">Today</span><span class="ov-meta">Two systems · multiple vocabularies</span></header>
+          <header><span class="ov-badge legacy">Today</span><span class="ov-meta">Pitstop portal · multiple form routes</span></header>
           <ol class="ov-steps">
-            <li>Log in to the <strong>setup portal</strong> to confirm a sharing relationship exists for this data element</li>
-            <li>Switch to the <strong>operations portal</strong> (separate sign-in)</li>
-            <li>Navigate to the <em>Shared data</em> page</li>
-            <li>Click "Share data" — the page is only available if your organisation is permitted to send data on this network</li>
-            <li>Pick the counterparty from the dropdown of organisations you can send to</li>
+            <li>Open the <em>Shared data</em> page in the pitstop portal</li>
+            <li>Click "Share data" — only available if your org is permitted to send on this network (the underlying <em>consent record</em> was created in the admin portal and the pitstop periodically syncs it across — the operator can't see or edit it here)</li>
+            <li>Pick the counterparty from the dropdown of organisations you can send to (populated from the synced consent records)</li>
             <li>Pick the data element to send (Cargo manifest v3.0)</li>
-            <li>System routes to the standard form page · single-page form with 29 fields</li>
+            <li>System routes to the standard form page · 29 fields — but if you'd picked an ETR data type, you'd be on a different page entirely, and you have to know which</li>
             <li>Fill the form <em>with no review step</em> · submit (no confirmation)</li>
-            <li>Refresh the page to verify delivery</li>
+            <li>Refresh the page to verify delivery (no live status)</li>
           </ol>
-          <p class="ov-ba-totals"><strong>9 steps</strong> · 2 systems · multiple vocabularies to translate between</p>
+          <p class="ov-ba-totals"><strong>7 steps</strong> · refresh-to-verify · pick-the-right-form vocabulary (EForm vs ETR)</p>
         </article>
 
         <!-- New -->
         <article class="ov-ba-col ov-ba-new">
-          <header><span class="ov-badge new">New portal</span><span class="ov-meta">One system · one vocabulary</span></header>
+          <header><span class="ov-badge new">New portal</span><span class="ov-meta">One vocabulary · one form, contract-anchored</span></header>
           <ol class="ov-steps">
             <li>Open the Agreement detail page for "Cargo manifest with Maersk" (or click <strong>+ New Message</strong> from the Messages list → pick the Agreement)</li>
             <li>Click <strong>+ Send Message</strong> on the Agreement</li>
@@ -1929,27 +1927,27 @@
             <li><strong>Review</strong> step (the system adds this automatically because Cargo manifest is tagged as legally significant) → <strong>Submit</strong></li>
             <li>Land on the Message detail page with a live timeline showing the document move through Queued → Sent → Delivered → Acknowledged</li>
           </ol>
-          <p class="ov-ba-totals"><strong>5 steps</strong> · 1 system · 1 vocabulary (Agreement → Message)</p>
+          <p class="ov-ba-totals"><strong>5 steps</strong> · live timeline (no refresh) · 1 vocabulary (Agreement → Message)</p>
         </article>
       </div>
 
-      <!-- Step-count infographic — turns the "9 → 5" claim into a picture
+      <!-- Step-count infographic — turns the "7 → 5" claim into a picture
            before the supporting callouts unpack the why. -->
       <div class="ov-ba-viz" aria-hidden="true">
         <div class="ov-ba-viz-rows">
           <div class="ov-ba-viz-row is-legacy">
             <span class="ov-ba-viz-label">Today</span>
             <div class="ov-ba-viz-bar"><span class="ov-ba-viz-bar-fill" style="width:100%"></span></div>
-            <span class="ov-ba-viz-count">9</span>
+            <span class="ov-ba-viz-count">7</span>
           </div>
           <div class="ov-ba-viz-row is-new">
             <span class="ov-ba-viz-label">New portal</span>
-            <div class="ov-ba-viz-bar"><span class="ov-ba-viz-bar-fill" style="width:55.6%"></span></div>
+            <div class="ov-ba-viz-bar"><span class="ov-ba-viz-bar-fill" style="width:71.4%"></span></div>
             <span class="ov-ba-viz-count">5</span>
           </div>
         </div>
         <div class="ov-ba-viz-delta">
-          <p class="ov-ba-viz-delta-num">−44%</p>
+          <p class="ov-ba-viz-delta-num">−29%</p>
           <p class="ov-ba-viz-delta-lbl">Steps</p>
         </div>
       </div>
@@ -1957,7 +1955,7 @@
       <div class="ov-ba-callouts">
         <div class="ov-callout">
           <i class="ti ti-trending-down" aria-hidden="true"></i>
-          <p><strong>~44% fewer steps</strong> on this task. Estimated from counting screens and clicks; user testing during Phase 5 will validate with measured time.</p>
+          <p><strong>~29% fewer steps</strong> on this task. Counted from operator clicks in the pitstop portal (operators don't access the admin portal — the consent records sync to pitstop in the background); user testing during Phase 5 will validate with measured time.</p>
         </div>
         <div class="ov-callout">
           <i class="ti ti-language" aria-hidden="true"></i>
