@@ -1641,40 +1641,120 @@
 
     <!-- HERO -->
     <header class="ov-hero">
-      <span class="ov-eyebrow">Concept brief <span style="opacity:0.5;padding:0 2px">·</span> May 2026</span>
-      <h1 id="ov-h1">From two systems to one portal</h1>
-      <p class="ov-lede">Today, operators move between two separate portals — one to set up data-sharing relationships, another to actually exchange data — translating between several different vocabularies along the way. The platform rewrite consolidates this into one portal with one mental model: <strong>set up an Agreement with a counterparty once, then exchange Messages under it</strong>. The expected outcomes: about 40% fewer clicks on common operator tasks, a single training curriculum instead of two, and a new safety affordance for legally-significant documents that the current system lacks.</p>
+      <span class="ov-eyebrow">Platform rewrite <span style="opacity:0.5;padding:0 2px">·</span> ready for leadership review <span style="opacity:0.5;padding:0 2px">·</span> 6 months to first customer launch</span>
+      <h1 id="ov-h1">Operators stop translating. Admins stop relaying. New orgs stop landing on empty inboxes.</h1>
+      <p class="ov-lede">Today, operators switch between two portals and translate four legacy vocabularies on every send. Admins wait weeks while engineering relays a content decision into a schema. New orgs land on an empty inbox after Platform Admins did weeks of due diligence that nobody else sees. <strong>The rewrite cancels each of those taxes</strong> — one portal and one vocabulary mean <strong>~40% fewer clicks</strong> for operators every day; minutes-not-weeks for admins via grounded Smart Start authoring; pre-staged Drafts at first login so new orgs inherit the onboarding intent.</p>
+
+      <div class="ov-hero-actions" style="display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center;margin:var(--sp-5) 0 0 0">
+        <button type="button" class="btn-primary" onclick="goto('inbox-tx')" style="font-size:var(--fs-md)">Step into the prototype <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+        <button type="button" class="btn-secondary" onclick="if (typeof openDemosPanel === 'function') openDemosPanel();" style="font-size:var(--fs-md)"><i class="ti ti-player-play" aria-hidden="true"></i> Run a 90-second demo</button>
+        <span style="font-size:var(--fs-meta);color:var(--g-50);margin-left:var(--sp-2)">48 ADRs · 19 design risks with defined tests · ready for a 1-week user-test round</span>
+      </div>
+    </header>
+
+    <!-- STAKES — 5-sec infographic + quantifiable relief, then deep stakeholder voices below -->
+    <section class="ov-section ov-stakes ov-section--accent-red ov-section--banded">
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>00</b> Why this needs to happen now</p>
+      <h2>Six stakeholders. One tax each. Nobody chose to pay.</h2>
+      <p class="ov-section-lede">The platform works — orders flow, documents move, compliance reports get filed. But the cost of <em>working</em> is paid silently by six stakeholders. Here's that tax, at a glance.</p>
+
+      <!-- 5-SEC PAIN INFOGRAPHIC — compact 6-cell stakeholder tax grid, each tax anchored to an implemented feature -->
+      <div class="tax-infographic" style="display:grid;grid-template-columns:repeat(6,1fr);gap:var(--sp-3);margin-top:var(--sp-5);margin-bottom:var(--sp-6)">
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: unified portal, Agreement-anchored Composer, live Message timeline (ADR 0020/0021/0024)">
+          <i class="ti ti-user" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
+          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">Operator <span style="font-weight:400;text-transform:none;opacity:0.7">· Marcus</span></p>
+          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">9 steps</strong>across 2 portals · refresh-to-verify delivery</p>
+        </div>
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: Acting-as chip on Composer + audit triple (composed_by, acting_as_org, acting_as_pitstop) per ADR 0024">
+          <i class="ti ti-user-share" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
+          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">Service Provider <span style="font-weight:400;text-transform:none;opacity:0.7">· Chou</span></p>
+          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">Whose hat?</strong>composes for N owners · audit silent on "acting as"</p>
+        </div>
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: single-page registration + Smart Start grounded assist + spec-sheet on-ramp + refit + Test-as-operator (ADRs 0039/0040/0041/0042/0047)">
+          <i class="ti ti-shield-lock" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
+          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">DEX admin <span style="font-weight:400;text-transform:none;opacity:0.7">· Kagura</span></p>
+          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">Weeks</strong>per element · 4-actor relay · spec drifts quarterly</p>
+        </div>
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: Platform Admin onboarding workbook + first-login Drafts materialisation (ADR 0048)">
+          <i class="ti ti-id-badge-2" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
+          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">Platform admin <span style="font-weight:400;text-transform:none;opacity:0.7">· KYC</span></p>
+          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">Lost</strong>KYC intent (N agreements × M counterparties) into email threads</p>
+        </div>
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: Agreement pack one-wizard-pass + Send-pack Composer mode (ADR 0027)">
+          <i class="ti ti-stack-2" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
+          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">Pack dispatcher</p>
+          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">An afternoon</strong>per multi-counterparty distribution (e.g. Vessel arrival pack to 4 partners)</p>
+        </div>
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: admin-authored registration + bundle export to admin-corev2 production registry (ADRs 0039/0046)">
+          <i class="ti ti-code" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
+          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">Engineering</p>
+          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">PR per element</strong>+ 4 manual API calls + infra restart, every quarter</p>
+        </div>
+      </div>
+
+      <p style="margin-top:var(--sp-4);margin-bottom:var(--sp-4);font-weight:500;color:var(--g-10);font-size:var(--fs-md)"><i class="ti ti-arrow-down" aria-hidden="true" style="margin-right:6px"></i>And in numbers — here is the tax each stakeholder stops paying once the rewrite ships:</p>
 
       <div class="ov-stats">
         <div class="ov-stat ov-stat--featured">
           <p class="ov-stat-num">~40%</p>
           <div class="ov-stat--featured-body">
             <p class="ov-stat-lbl">Fewer clicks on common operator tasks</p>
-            <p class="ov-stat-sub">Estimated from screen-count comparison across the two systems · user testing in Phase 5 will validate the figure with measured time.</p>
+            <p class="ov-stat-sub">Cancels the operator's daily click-and-translate tax. Estimated from screen-count comparison across the two systems · user testing in Phase 5 will validate the figure with measured time.</p>
           </div>
         </div>
         <div class="ov-stat">
           <p class="ov-stat-num">2 <span class="arrow">→</span> 1</p>
           <p class="ov-stat-lbl">Portals operators use</p>
-          <p class="ov-stat-sub">One sign-in, one home page, one navigation model</p>
+          <p class="ov-stat-sub">Cancels the two-curricula training tax for customer-success. One sign-in, one home page, one navigation model — and an inbox spanning every DEX with cross-boundary warnings.</p>
         </div>
         <div class="ov-stat">
-          <p class="ov-stat-num">4 <span class="arrow">→</span> 1</p>
+          <p class="ov-stat-num">4 <span class="arrow">→</span> 2</p>
           <p class="ov-stat-lbl">Vocabularies to learn</p>
-          <p class="ov-stat-sub">Operators speak <strong>Agreement</strong> and <strong>Message</strong> everywhere — no more translating between legacy terms</p>
+          <p class="ov-stat-sub">Cancels the operator's translation tax (Subscription, DER, SPR, EForm, ETR). Two words — <strong>Agreement</strong> and <strong>Message</strong> — cover the whole experience.</p>
         </div>
         <div class="ov-stat">
-          <p class="ov-stat-num">All <span class="arrow">→</span> 1</p>
-          <p class="ov-stat-lbl">Inbox spans every DEX</p>
-          <p class="ov-stat-sub">SGTradex, SGBuildex, SGHealthdex — one queue across all networks, with explicit warnings on any action that crosses a regulated boundary.</p>
+          <p class="ov-stat-num">9 <span class="arrow">→</span> 5</p>
+          <p class="ov-stat-lbl">Steps to publish a new document type</p>
+          <p class="ov-stat-sub">Cancels the DEX admin's four-actor relay tax + engineering's catalogue-bottleneck tax. Single admin, single screen, minutes — Smart Start drafts, Test-as-operator verifies, production registry receives the version the same minute.</p>
         </div>
         <div class="ov-stat">
-          <p class="ov-stat-num">6 mo</p>
-          <p class="ov-stat-lbl">To first customer launch</p>
-          <p class="ov-stat-sub">Plus a separate post-launch roadmap that depends on supporting platform work</p>
+          <p class="ov-stat-num">0 <span class="arrow">→</span> N</p>
+          <p class="ov-stat-lbl">Drafts waiting at a new org's first login</p>
+          <p class="ov-stat-sub">Cancels the Platform Admin's evaporating-due-diligence tax + the new operator's empty-inbox tax. KYC context materialises as pre-staged Drafts — the org's first impression flips from <em>nothing</em> to <em>consequential</em>.</p>
         </div>
       </div>
-    </header>
+
+      <p style="margin-top:var(--sp-7);margin-bottom:var(--sp-4);font-weight:500;color:var(--g-10);font-size:var(--fs-md)"><i class="ti ti-chevron-down" aria-hidden="true" style="margin-right:6px"></i>Hear each stakeholder describe the tax in their own words — for the leadership who want the deeper read:</p>
+
+      <div class="ov-ba-callouts">
+        <div class="ov-callout">
+          <i class="ti ti-user" aria-hidden="true"></i>
+          <p><strong>Operator</strong> · Marcus, Cosco · "I sign into the setup portal first to check the relationship exists, then switch to the ops portal, navigate to <em>Shared data</em>, pick the counterparty, pick the element, the system routes me to a form page — fill it, submit, and then I refresh to see if it actually delivered. Nine steps. If I picked the wrong route for a legally-significant document, it submits without any review step."<br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax:</span> 9 steps across 2 systems per send. No live delivery status. No automatic review step on legally-significant documents — the safety net lives outside the system. <em>Cancelled by: Section 03 — one portal, Agreement-anchored Composer, live Message timeline, automatic review step for high-stakes elements.</em></p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-user-share" aria-hidden="true"></i>
+          <p><strong>Service Provider</strong> · Chou, CrimsonLogic · "I compose Messages on behalf of several data owners. The Composer doesn't show me whose data I'm sending — the audit trail records me as the sender, but not the org I was acting for. If I pick the wrong owner, no banner catches it; if I send to the wrong counterparty's Pitstop, the routing breaks silently."<br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax:</span> No visible "whose data am I sending?" surface. Audit trail records the user but not the acting-as org. SPs absorb compliance risk for each owner's send. <em>Cancelled by: Decision 04 — Acting-as chip on Composer + audit triple <code>(composed_by, acting_as_org, acting_as_pitstop)</code> per ADR 0024.</em></p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-shield-lock" aria-hidden="true"></i>
+          <p><strong>DEX admin</strong> · Kagura, SGTradex · "A new document type takes weeks. I author an Excel signoff sheet, raise a service request, a developer codes it into a schema PR, tech leads copy the schema across environments, ops restarts infrastructure. When BD revises the spec quarterly, the schema drifts because re-authoring 49 rows by hand is brutal — so we just don't update."<br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax:</span> 4-actor relay across days-to-weeks per element. Quarterly spec drift because re-authoring is too painful. Authoring starts from a blank page — Confluence requirements + BD spec sheet + IMDA standard get hand-translated each time. <em>Cancelled by: Section 04 + Decision 09 — single-page registration, Smart Start grounded assist with verbatim citations, spec-sheet on-ramp, refit-preserving-edits, Test-as-operator preview before publish.</em></p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-id-badge-2" aria-hidden="true"></i>
+          <p><strong>Platform admin</strong> · Kagura, Super SGTradex Admin · "I complete KYC, gather every counterparty the prospect wants to transact with, learn the terms — N Agreements × M counterparties of intent. None of that survives into the operator's first session. They land on an empty inbox and message us asking where to start. We've done the work; nothing arrives."<br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax:</span> Due-diligence labour evaporates into email threads. The prospect org's peak-end first impression is <em>empty</em>. Onboarding intent gets recreated from scratch by the operator — sometimes incorrectly. <em>Cancelled by: Section 09 + Decision 10 — onboarding workbook captured during KYC, pre-staged Drafts materialise at first login, forward-references for cross-onboarding counterparties (ADR 0048).</em></p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-stack-2" aria-hidden="true"></i>
+          <p><strong>Pack dispatcher</strong> · Cosco shipping ops · "When the same data needs to go to four logistics partners — a Vessel arrival pack with ETA, vessel particulars, crew list and cargo manifest — I create four separate Agreements with four separate counterparties, send four separate Messages, and reconcile four separate inboxes. It's an afternoon of identical work."<br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax:</span> Multi-counterparty distributions take an afternoon of repetitive Agreement creation and per-message dispatch. Each member is independent so the per-counterparty audit trail is correct, but the operator-facing gesture is N times the work. <em>Cancelled by: Decision 07 — Agreement pack one-wizard-pass + Send-pack Composer mode dispatching N Messages from a single gesture (ADR 0027).</em></p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-code" aria-hidden="true"></i>
+          <p><strong>Engineering</strong> · "Every new document type needs a PR. We translate the CSM's Excel into a schema, review and merge, manually copy the schema into the registry per environment, make four manual API calls via a developer tool to register the schema + use case + persona relationships + verification flow, then ops restarts the relevant infrastructure. Days pass. We're the bottleneck on what is fundamentally a content decision."<br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax:</span> Engineering capacity bleeds into content work. PR + 4 manual API calls + multi-env schema copy + infra restart, every time. The catalogue relay is the steady-state cost of <em>not</em> investing in admin-authoring. <em>Cancelled by: ADR 0046 — admin-authored Element bundle exported directly to admin-corev2's DataElement registry. No PR, no manual copy, no infra restart.</em></p>
+        </div>
+      </div>
+
+      <p style="margin-top:var(--sp-5);font-weight:500;color:var(--g-10)"><i class="ti ti-arrow-down" aria-hidden="true" style="margin-right:6px"></i>The ten sections below are the bill we stop paying — sorted by stakeholder, with the trade-offs leadership needs to confirm at the end.</p>
+    </section>
 
     <!-- AGREEMENT SETUP — upstream of compose -->
     <section class="ov-section ov-mental ov-section--accent-tx">
@@ -1923,10 +2003,10 @@
           <header><span class="ov-badge new">New portal</span><span class="ov-meta">One admin · one screen · minutes</span></header>
           <ol class="ov-steps">
             <li>The DEX admin opens the Data elements catalogue and clicks <strong>+ New element</strong></li>
-            <li>Picks how to start — describe in plain English, drop a sample CSV, upload the legacy PDF or Word form, or fork an existing element</li>
-            <li>Refines the auto-drafted schema; the form preview shows what partners will fill in, updating as she edits</li>
-            <li>Marks the document routine or legally significant; optionally adds cross-field business rules</li>
-            <li>Reviews everything in one place and publishes — the new version is available to new agreements immediately</li>
+            <li>Picks an on-ramp — drop the BD spec sheet (the same <em>Signoff_MasterData_DE</em> Excel already used at sign-off), upload the legacy PDF or Word form, paste a sample record, describe it in plain English, or fork an existing element</li>
+            <li><strong>Smart Start proposes field <em>meaning</em>, not just structure</strong> — it reads the requirements page and authoritative standards (BCA, IMDA, MOH publications) and drafts names, types, descriptions, and cross-field rules, each suggestion citing the verbatim source text it came from</li>
+            <li>Sarah refines the draft; <strong>Test-as-operator</strong> opens a full operator-side Composer with every production validation engine wired live — shape errors at first keystroke, conditional visibility re-rendering, cross-field rules blocking submit — so the partner-side experience is verified before publish</li>
+            <li>Marks routine or legally significant, reviews everything in one place, and publishes — the version ships as a real DataElement in the production registry, picker-ready the same minute for every new Agreement</li>
           </ol>
           <p class="ov-ba-totals"><strong>5 steps</strong> · 1 admin · 1 screen · minutes</p>
         </article>
@@ -1962,12 +2042,20 @@
           <p><strong>Days to minutes.</strong> Engineering teams come off the catalogue relay. Their time goes to the things that actually need code.</p>
         </div>
         <div class="ov-callout">
-          <i class="ti ti-shield-check" aria-hidden="true"></i>
-          <p><strong>Partners on existing agreements aren't disturbed.</strong> Publishing a new version of a document creates a new record — every agreement already running keeps the version it originally consented to. New agreements pick the latest from the moment of publish. No silent rewrite under participants' feet.</p>
+          <i class="ti ti-sparkles" aria-hidden="true"></i>
+          <p><strong>Today, Sarah hand-translates a Confluence page + a BD spec sheet + the IMDA standard into field names, types, and rules — every quarter, from a blank page.</strong> Smart Start reads all three and proposes the schema with verbatim citations per suggestion, so the work shifts from <em>authoring</em> to <em>adjudicating evidence</em>. The blank-page tax goes to zero.</p>
         </div>
         <div class="ov-callout">
-          <i class="ti ti-eye" aria-hidden="true"></i>
-          <p><strong>What partners will see is visible while authoring.</strong> The admin watches the partner-facing form preview update as she edits the schema. No surprise at the other end; no round-trip through staging to verify.</p>
+          <i class="ti ti-target-arrow" aria-hidden="true"></i>
+          <p><strong>Today, the audit shows what an operator submitted, not what was reviewed — and authoring mistakes surface when a partner fails to submit at 11pm.</strong> Test-as-operator opens a full Composer with the three production validation engines wired live (AJV shape errors as Sarah types, RJSF conditional visibility, govaluate cross-field rules), so the first person to find an authoring mistake is the admin, before publish. Compliance gets a reviewed-before-published trail; partners stop being the QA team.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-table" aria-hidden="true"></i>
+          <p><strong>Today, when BD revises the signoff Excel, the schema falls behind quarters ago because re-authoring 49 rows by hand is brutal — so we just don't.</strong> Sarah re-uploads the revised sheet and the refit engine preserves her hand edits; she adjudicates only the diff. The silent-drift failure mode that ships incorrect schemas to production simply closes.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-shield-check" aria-hidden="true"></i>
+          <p><strong>Partners on existing agreements aren't disturbed.</strong> Publishing a new version of a document creates a new record — every agreement already running keeps the version it originally consented to. New agreements pick the latest from the moment of publish. No silent rewrite under participants' feet.</p>
         </div>
       </div>
     </section>
@@ -2026,9 +2114,9 @@
 
     <!-- KEY DECISIONS — stakeholder framing -->
     <section class="ov-section ov-decisions ov-section--accent-tx">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>06</b> Nine decisions that shape the experience</p>
-      <h2>Why operators (and admins) will find this simpler</h2>
-      <p class="ov-section-lede">The decisions below were made deliberately during design. Each has a clear business consequence for operators and the organisations using the network.</p>
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>06</b> Ten decisions that shape the experience</p>
+      <h2>Each decision cancels a specific tax from Section 00</h2>
+      <p class="ov-section-lede">The decisions below are not feature inventory — each one is the deliberate answer to a stakeholder tax we identified above. Read them as <em>"because operators pay X today, we made decision Y"</em>. The "Customer outcome" line at the bottom of every card names which side of the tax it cancels.</p>
 
       <div class="ov-decisions-grid">
         <div class="ov-decision">
@@ -2085,10 +2173,17 @@
         </div>
         <div class="ov-decision ov-decision--wide">
           <p class="ov-deci-num">09</p>
-          <h4>Admins author elements themselves, no engineering relay</h4>
+          <h4>Admins author elements themselves, no engineering relay — and Smart Start does the translation</h4>
           <p>Today, adding a new document type — or revising an existing one — requires a customer-success manager to draft an Excel, a developer to translate it into code, tech leads to manually copy schemas across environments, and the operations team to restart infrastructure. Four actor types coordinate; days pass; engineering is the bottleneck on what is fundamentally a content decision.</p>
-          <p>In the new portal, a DEX admin opens the Data elements catalogue and authors the new document directly. She picks how to start — describe in plain English, drop a sample CSV, upload the legacy PDF or Word form, or fork an existing element — refines the auto-drafted schema with the partner-facing form preview visible beside her, marks the document routine or legally significant, optionally adds cross-field business rules, reviews everything in one place, and publishes. Single screen; single admin; minutes. Snapshot semantics protect every existing agreement automatically: bumping a version creates a new record rather than rewriting the old one, so partners already in flight aren't disturbed.</p>
-          <p class="ov-deci-src">Customer outcome — new document types live the same day they're decided; engineering teams come off the catalogue relay; partners on existing agreements are never disturbed by version bumps</p>
+          <p>In the new portal, a DEX admin opens the Data elements catalogue and authors directly. She drops the BD spec sheet (the same <em>Signoff_MasterData_DE</em> Excel already used at sign-off), or uploads a PDF/form, or pastes a sample, or describes the document in plain English, or forks an existing element. <strong>Smart Start fills in field meaning, not just structure</strong> — it reads the requirements page and authoritative standards (BCA, IMDA, MOH publications) and proposes names, types, descriptions, and cross-field rules, with the verbatim source visible per suggestion so the admin adjudicates real evidence rather than guessing. <strong>Test-as-operator</strong> opens a full Composer with the three production validation engines wired live (AJV shape errors, RJSF conditional visibility, govaluate cross-field rules) so the partner-side experience is verified before publish. The published version ships as a real DataElement in the production registry — picker-ready the same minute — and snapshot semantics protect every Agreement already running. Quarterly spec updates no longer drift either: re-uploading a revised spec sheet preserves the admin's hand edits, and she only adjudicates the diff.</p>
+          <p class="ov-deci-src">Customer outcome — new document types live the same day they're decided; engineering teams come off the catalogue relay; admins adjudicate evidence instead of authoring from scratch; partners on existing agreements are never disturbed by version bumps</p>
+        </div>
+        <div class="ov-decision ov-decision--wide">
+          <p class="ov-deci-num">10</p>
+          <h4>Brand-new orgs land on pre-staged work, not an empty inbox</h4>
+          <p>Today, after the Platform Admin completes KYC, provisions the org, and invites the org admin, the new operator lands on an empty Inbox — and the due-diligence context the Platform Admin gathered (which counterparties, which elements, what terms) lives in email threads and spreadsheets that never reach the operator.</p>
+          <p>In the new portal, the Platform Admin captures that context once in an onboarding workbook — N Agreements with M counterparties, with terms — during the same due-diligence pass they were going to do anyway. At first login the org admin opens Drafts and the wizard has already been filled out for them, each draft tagged with who staged it and why. They review, adjust if needed, and send — no parallel email thread, no recreate-from-scratch. Forward-references work too: if Platform Admin stages an Agreement with a counterparty whose own onboarding hasn't completed yet, the draft holds until the counterparty appears, then activates.</p>
+          <p class="ov-deci-src">Customer outcome — peak-end first impression for prospect orgs; the Platform Admin's due-diligence labour converts from invisible to consequential; the activation gap closes</p>
         </div>
       </div>
     </section>
@@ -2143,7 +2238,7 @@
 
     <!-- MIGRATION REASSURANCE -->
     <section class="ov-section ov-migration ov-section--accent-ylw">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>08</b> What happens on rollout day</p>
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>08</b> Rollout day, for users already on the network</p>
       <h2>Existing operators get a soft landing</h2>
       <p class="ov-section-lede">Migration is treated as a design problem, not an afterthought. Three things happen automatically so legacy users land productive — no parallel run, no manual cutover, no lost work.</p>
 
@@ -2163,9 +2258,35 @@
       </div>
     </section>
 
+    <!-- BRAND-NEW ORG ONBOARDING -->
+    <section class="ov-section ov-migration ov-section--accent-blu ov-section--banded">
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>09</b> Day one, for orgs joining the network</p>
+      <h2>Prospect orgs land on pre-staged work, not an empty inbox</h2>
+      <p class="ov-section-lede">Today, the Platform Admin gathers counterparties, elements and terms during KYC — and none of it survives into the operator's first session. The new operator lands on an empty inbox, asks <em>"where do I start?"</em>, and the org's peak-end first impression of the platform is <em>nothing</em>. The cure is not to do less due diligence; it is to make the due diligence consequential.</p>
+
+      <div class="ov-ba-callouts">
+        <div class="ov-callout">
+          <i class="ti ti-table" aria-hidden="true"></i>
+          <p><strong>Today, the onboarding intent lives in email threads and a private spreadsheet.</strong> The Platform Admin already does this work — the question is whether it's captured anywhere reusable. The workbook structures it during the same KYC pass, alongside the org and pitstop records the admin was going to create anyway. Same labour, audit-traceable artefact.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-folders" aria-hidden="true"></i>
+          <p><strong>Today, the operator's first session is empty, and they recreate the onboarding intent from scratch by reading the email chain.</strong> At first login Drafts is already populated — the wizard pre-filled for every staged Agreement, tagged with who staged it and why. Review, adjust, send. The peak-end first impression flips from <em>nothing</em> to <em>consequential</em>.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-link" aria-hidden="true"></i>
+          <p><strong>Today, onboarding two orgs that need to transact with each other is a coordination dance — neither Platform Admin can stage the Agreement until the other side exists.</strong> Forward-references close this: the draft holds until the counterparty appears, then activates on its own. No orphaned drafts, no email ping-pong between Platform Admins.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-shield-check" aria-hidden="true"></i>
+          <p><strong>The cure preserves operator consent.</strong> Pre-staged drafts arrive as <em>drafts</em>, not as fait-accompli Agreements. Nothing is signed on the operator's behalf. The workbook is a head-start; it does not bypass the operator's own review and send. Compliance does not pay an autonomy tax for the activation win.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- WHAT WE'D ASK FOR -->
     <section class="ov-section ov-asks ov-section--accent-red ov-section--banded">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>09</b> What we need from leadership</p>
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>10</b> What we need from leadership</p>
       <h2>Three calls before the build begins</h2>
       <div class="ov-asks-grid">
         <div class="ov-ask">
@@ -2214,7 +2335,7 @@
       <p class="ov-footer-head">Design &amp; decisions reference</p>
       <p class="ov-footer-intro">This brief is the strategic story for leadership. Every claim in it is backed by a longer design record — linked below for anyone (product reviewers, compliance officers, delivery leads) who wants to verify the trade-offs, see what was rejected, or onboard new team members. Stakeholders typically don't need to open these; they're available for due diligence.</p>
       <div class="ov-footer-links">
-        <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('adrs')"><i class="ti ti-stack"></i><span><strong>Decision records</strong><span class="meta">39 structural decisions · each with options considered + trade-offs</span></span></a>
+        <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('adrs')"><i class="ti ti-stack"></i><span><strong>Decision records</strong><span class="meta">48 structural decisions · each with options considered + trade-offs</span></span></a>
         <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('risks')"><i class="ti ti-shield-exclamation"></i><span><strong>Risk register</strong><span class="meta">19 design risks · with defined tests + planned mitigations</span></span></a>
         <a class="ov-footer-link" href="#" onclick="event.preventDefault(); toast('Opens portal_grilling_summary.md')"><i class="ti ti-file-text"></i><span><strong>Design grilling summary</strong><span class="meta">A walkthrough of every key design question that was raised, debated, and resolved</span></span></a>
         <a class="ov-footer-link" href="#" onclick="event.preventDefault(); toast('Opens platform_rewrite_breakdown.md')"><i class="ti ti-list-numbers"></i><span><strong>Phase-by-phase delivery plan</strong><span class="meta">Delivery breakdown of what launches when and in what order</span></span></a>
@@ -2231,17 +2352,17 @@
     <header class="ov-hero" style="padding-bottom:18px">
       <span class="ov-eyebrow">Reference</span>
       <h1 id="adrs-h1">Architecture Decision Records</h1>
-      <p class="ov-lede">39 structural decisions banked across the design grilling rounds. Each captures the considered options, the chosen path, the consequences, and any risk it introduces. Click a row to read the full ADR in <code>design-concepts/docs/adr/</code>.</p>
+      <p class="ov-lede">48 structural decisions banked across the design grilling rounds. Each captures the considered options, the chosen path, the consequences, and any risk it introduces. Click a row to read the full ADR in <code>design-concepts/docs/adr/</code>.</p>
     </header>
 
     <div class="ref-toolbar">
       <div class="ref-filter-chips" role="toolbar" aria-label="Filter ADRs">
-        <span class="chip solid">All · 39</span>
+        <span class="chip solid">All · 48</span>
         <span class="chip muted">Foundations · 7</span>
         <span class="chip muted">Agreement model · 10</span>
-        <span class="chip muted">UX · 13</span>
+        <span class="chip muted">UX · 14</span>
         <span class="chip muted">Messages · 4</span>
-        <span class="chip muted">Composer + Catalogue · 5</span>
+        <span class="chip muted">Composer + Catalogue · 13</span>
       </div>
     </div>
 
@@ -2296,6 +2417,15 @@
           <tr onclick="openAdrPanel('0037', 'Auto-demo runner decoupled from markup via demo anchors', 'ux')"><td class="ref-num">0037</td><td><strong>Auto-demo runner decoupled from markup via demo anchors</strong><p class="ref-meta">Supplements 0034 — <code>data-demo</code> for unique anchors · <code>data-{entity}-id</code> for repeated rows · JSDOM smoke iterates every registered flow · <code>nth-child</code> banned · headless mode skips cursor/callout/visibility checks</p></td><td>Demo runner · All demo flows · Markup contract</td><td><span class="ref-tag ux">UX</span></td><td><span class="ref-status active">Active</span></td></tr>
           <tr onclick="openAdrPanel('0038', 'Data Element governance — three independent layers', 'cmp')"><td class="ref-num">0038</td><td><strong>Data Element governance — three independent layers</strong><p class="ref-meta">Schema (JSON Schema · AJV+RJSF · per-version) · Validation rules (govaluate expressions · submission time) · Routing rules (orchestrator JSONB · cross-version). Names what the dex-monorepo backend already implements; surfaces it as portal IA.</p></td><td>Data elements registration · Composer submission · Orchestrator</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
           <tr onclick="openAdrPanel('0039', 'Data Element registration — admin-authored single-page flow', 'cmp')"><td class="ref-num">0039</td><td><strong>Data Element registration — admin-authored single-page flow</strong><p class="ref-meta">14 sub-decisions consolidating the registration UX · 2 CTAs (new element / new version) · Smart Start with 4 on-ramps (sample / form / NL / fork) · 4-tab canvas · DEX-admin-owned, no engineering relay · supersedes the 9-step legacy process documented in <em>update-process-190526-231734.pdf</em></p></td><td>Data elements catalogue · Registration canvas · 5 new modals</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0040', 'Smart Start assist — grounded cross-tab suggestion engine', 'cmp')"><td class="ref-num">0040</td><td><strong>Smart Start assist — grounded cross-tab suggestion engine</strong><p class="ref-meta">Reads Confluence requirements page + BD spec sheet + authoritative standards (BCA, IMDA, MOH) · proposes field meaning grounded in verbatim citations · 13-kind closed suggestion vocabulary · structural-aware extraction with refit-suggestion self-audit</p></td><td>Registration canvas · Smart Start drawer</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0041', 'Smart Start refit — mid-edit structural restatement engine', 'cmp')"><td class="ref-num">0041</td><td><strong>Smart Start refit — mid-edit structural restatement engine</strong><p class="ref-meta">Preserves Sarah's hand edits when re-running structure on spec updates · adjudicate-the-diff workflow · radio-cluster / table-region / repeated-pattern repair without rebuild</p></td><td>Registration canvas · Refit drawer</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0042', 'Element spec-sheet on-ramp — deterministic parser + audit-log provenance', 'cmp')"><td class="ref-num">0042</td><td><strong>Element spec-sheet on-ramp — deterministic parser + audit-log provenance</strong><p class="ref-meta">Closes the <em>Signoff_MasterData_DE_*.xlsx</em> staleness loop · deterministic xlsx parser · audit-log-only provenance (no x-* residue on published schema) · refit three-way merge preserves edits</p></td><td>Registration canvas · Smart Start on-ramps</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0043', 'Element persistence + schema-driven Composer — workspace v6', 'cmp')"><td class="ref-num">0043</td><td><strong>Element persistence + schema-driven Composer — workspace v6</strong><p class="ref-meta">Closes the registration → Agreement → Message chain end-to-end · workspace.dataElements collection · Agreement snapshots (element_id, version) · Composer renders from elementSchema, not hardcoded HTML variants</p></td><td>Workspace storage · Composer · Agreement wizard</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0044', 'LLM-overlay shared core — multi-source verbatim defense', 'cmp')"><td class="ref-num">0044</td><td><strong>LLM-overlay shared core — multi-source verbatim defense + VLM-vs-LLM conflict semantics</strong><p class="ref-meta">Shared overlay logic across spec-sheet and form/PDF on-ramps · 13-kind closed vocabulary · verbatim normaliser · provenance stamper · prevents on-ramp drift on hallucination defense and suggestion-envelope shape</p></td><td>Smart Start on-ramps · Structural Review drawer</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0045', 'Nested-structure handoff + array row-mode depth cap lift', 'cmp')"><td class="ref-num">0045</td><td><strong>Nested-structure handoff + array row-mode depth cap lift</strong><p class="ref-meta">On-ramp handoff carries <code>children</code> through to canvas · fresh IDs on fork · array row-mode (Fixed labels / Chosen by operator) available at any depth</p></td><td>On-ramp handoff · Fork flow · Array expander</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0046', 'Data Element bundle export to admin-corev2 DataElement registry', 'cmp')"><td class="ref-num">0046</td><td><strong>Data Element bundle export to admin-corev2 registry</strong><p class="ref-meta">Published element ships as a real DataElement in the production registry (admin-corev2 Postgres) · RJSF cutover — elementSchema + uiSchema + uiRules + rules + authoringMetadata · DRAFT → ACTIVE lifecycle</p></td><td>Catalogue · Production registry · Bundle export modal</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0047', 'Layered validation surfaces in Test-as-operator (AJV + RJSF visibility + govaluate)', 'cmp')"><td class="ref-num">0047</td><td><strong>Layered validation surfaces in Test-as-operator</strong><p class="ref-meta">All three production validation engines visible in the Composer preview · AJV shape errors at first keystroke · RJSF conditional visibility re-rendering · govaluate cross-field rules blocking submit · layered-help discipline (named layers, strict boundaries) per angle-gauge-ui precedent</p></td><td>Registration Review tab · Test-as-operator modal</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0048', 'Bulk org onboarding via Platform-Admin workbook with Drafts-view materialisation', 'ux')"><td class="ref-num">0048</td><td><strong>Bulk org onboarding via Platform-Admin workbook + Drafts-view materialisation</strong><p class="ref-meta">Platform Admin captures KYC + due-diligence intent in one workbook (N Agreements × M counterparties + terms) · materialises as pre-staged drafts in the operator's Drafts view at first login · forward-references for cross-onboarding counterparties · operator stays in control of consent (drafts not fait-accompli)</p></td><td>Platform Admin workbook · Drafts view · First-login panel</td><td><span class="ref-tag ux">UX</span></td><td><span class="ref-status active">Active</span></td></tr>
         </tbody>
       </table>
     </div>
