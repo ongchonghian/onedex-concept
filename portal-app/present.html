@@ -46,36 +46,133 @@
       <div class="notes">[notes injected]</div>
     </div>
 
-    <!-- ═════ Slide 1 · Section 00 · THE PLAZA · center of the city ════ -->
-    <div class="step slide slide--stakes" data-x="0" data-y="0" data-scale="0.85" data-rotate="0"
+    <!-- ═════ Slide 1 · Section 00 · THE MAIL ROOM ═════════════════════
+         The platform IS a mail system. This slide is the postal sorting floor
+         on the busiest day of the year — ten queues piling up, ten kinds of
+         friction that someone has to clear. Real illustrated envelopes,
+         animated conveyor belt below, kraft & postal-red palette. -->
+    <div class="step slide slide--mailroom" data-x="0" data-y="0" data-scale="0.85" data-rotate="0"
          data-step-number="1" data-section-id="ov-stakes" data-notes-key="Section 00">
-      <div class="slide-bg slide-bg--burgundy"></div>
+      <div class="slide-bg slide-bg--mailroom"></div>
+
+      <!-- Conveyor belt running across the bottom, animated -->
+      <div class="conveyor" aria-hidden="true">
+        <div class="conveyor-stripes"></div>
+        <div class="conveyor-envelope conveyor-envelope--1"></div>
+        <div class="conveyor-envelope conveyor-envelope--2"></div>
+        <div class="conveyor-envelope conveyor-envelope--3"></div>
+      </div>
+
+      <!-- Stamp/postmark decorations on the wall -->
+      <div class="postmark postmark--tl" aria-hidden="true">URGENT · Q3 2026</div>
+      <div class="postmark postmark--tr" aria-hidden="true">DEX TECH · DELIVERY</div>
+
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">00 · The Plaza · Why this needs leadership attention</p>
-        <p class="slide-mega slide-mega--white">TEN.</p>
-        <p class="slide-subhead slide-subhead--bright">recurring frictions that shape every Dex Technologies quarter</p>
-        <div class="slide-twocol">
-          <div class="slide-col">
-            <p class="slide-col-eyebrow">Outside</p>
-            <ul class="slide-bigbullets">
-              <li>Operator <span class="b-tax">retention risk</span></li>
-              <li>Service Provider <span class="b-tax">audit exposure</span></li>
-              <li>DEX admin <span class="b-tax">time-to-market</span></li>
-              <li>Platform admin <span class="b-tax">activation drop-off</span></li>
-              <li>Pack dispatcher <span class="b-tax">top-account ceiling</span></li>
-            </ul>
+        <p class="slide-eyebrow slide-eyebrow--postal">00 · The Mail Room · Why this needs leadership attention</p>
+        <h2 class="slide-headline slide-headline--postal">Ten kinds of mail. Ten queues that pile up.</h2>
+        <p class="slide-subhead slide-subhead--postal">Five paid by customers at the front counter · Five paid by the staff in the back room</p>
+
+        <!-- The mail room floor — 10 counters in 2 rows of 5 -->
+        <div class="mailroom">
+
+          <!-- Front counter (customer-side) -->
+          <div class="mailroom-row mailroom-row--front">
+            <p class="mailroom-row-label"><span class="row-tag row-tag--front">Front Counter</span> Customer-side queues</p>
+            <div class="mailroom-counters">
+              <div class="postal-stack postal-stack--operator">
+                <div class="envelope-stack">
+                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
+                  <div class="stamp stamp--red">RTN</div>
+                </div>
+                <p class="stack-persona">Operator</p>
+                <p class="stack-tax">retention risk</p>
+              </div>
+              <div class="postal-stack postal-stack--sp">
+                <div class="envelope-stack">
+                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
+                  <div class="stamp stamp--red">AUD</div>
+                </div>
+                <p class="stack-persona">Service Provider</p>
+                <p class="stack-tax">audit exposure</p>
+              </div>
+              <div class="postal-stack postal-stack--admin">
+                <div class="envelope-stack">
+                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
+                  <div class="stamp stamp--red">TTM</div>
+                </div>
+                <p class="stack-persona">DEX admin</p>
+                <p class="stack-tax">time-to-market</p>
+              </div>
+              <div class="postal-stack postal-stack--platform">
+                <div class="envelope-stack">
+                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
+                  <div class="stamp stamp--red">ACT</div>
+                </div>
+                <p class="stack-persona">Platform admin</p>
+                <p class="stack-tax">activation drop-off</p>
+              </div>
+              <div class="postal-stack postal-stack--pack">
+                <div class="envelope-stack">
+                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
+                  <div class="stamp stamp--red">PCK</div>
+                </div>
+                <p class="stack-persona">Pack dispatcher</p>
+                <p class="stack-tax">top-account ceiling</p>
+              </div>
+            </div>
           </div>
-          <div class="slide-col">
-            <p class="slide-col-eyebrow">Inside</p>
-            <ul class="slide-bigbullets">
-              <li>BD <span class="b-tax">pipeline velocity</span></li>
-              <li>Product <span class="b-tax">roadmap drag</span></li>
-              <li>Engineering <span class="b-tax">catalogue relay</span></li>
-              <li>UIUX <span class="b-tax">surface-area sprawl</span></li>
-              <li>Ops <span class="b-tax">ticket &amp; change load</span></li>
-            </ul>
+
+          <!-- Back room (internal-side) -->
+          <div class="mailroom-row mailroom-row--back">
+            <p class="mailroom-row-label"><span class="row-tag row-tag--back">Back Room</span> Internal-team queues</p>
+            <div class="mailroom-counters">
+              <div class="postal-stack postal-stack--bd">
+                <div class="envelope-stack envelope-stack--kraft">
+                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
+                  <div class="stamp stamp--gold">BD</div>
+                </div>
+                <p class="stack-persona">BD</p>
+                <p class="stack-tax">pipeline velocity</p>
+              </div>
+              <div class="postal-stack postal-stack--product">
+                <div class="envelope-stack envelope-stack--kraft">
+                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
+                  <div class="stamp stamp--gold">PM</div>
+                </div>
+                <p class="stack-persona">Product</p>
+                <p class="stack-tax">roadmap drag</p>
+              </div>
+              <div class="postal-stack postal-stack--eng">
+                <div class="envelope-stack envelope-stack--kraft">
+                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
+                  <div class="stamp stamp--gold">ENG</div>
+                </div>
+                <p class="stack-persona">Engineering</p>
+                <p class="stack-tax">catalogue relay</p>
+              </div>
+              <div class="postal-stack postal-stack--ux">
+                <div class="envelope-stack envelope-stack--kraft">
+                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
+                  <div class="stamp stamp--gold">UX</div>
+                </div>
+                <p class="stack-persona">UIUX</p>
+                <p class="stack-tax">surface sprawl</p>
+              </div>
+              <div class="postal-stack postal-stack--ops">
+                <div class="envelope-stack envelope-stack--kraft">
+                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
+                  <div class="stamp stamp--gold">OPS</div>
+                </div>
+                <p class="stack-persona">Ops</p>
+                <p class="stack-tax">ticket &amp; change load</p>
+              </div>
+            </div>
           </div>
+
         </div>
+
+        <p class="slide-pull slide-pull--postal">Customers pay the postage. We pay the staffing.</p>
+
         <div class="notes">[notes injected]</div>
       </div>
     </div>
