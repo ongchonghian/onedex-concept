@@ -36,7 +36,10 @@
         );
         currentKey = heading.slice(0, stop).trim();
       } else if (currentKey) {
-        // Skip `---` horizontal rules between sections
+        // Skip `---` horizontal rules between sections.
+        // NOTE: This strip is unconditional — it would also drop `---`
+        // lines inside a fenced code block. Acceptable for the current
+        // keynote (no code fences); revisit if the keynote gains them.
         if (line.trim() === '---') continue;
         currentBody.push(line);
       }
