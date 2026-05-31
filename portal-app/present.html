@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <!--
-  DEPRECATED · use ./prezi-import-guide.md to author the real presentation in
-  Prezi.com. This file was an in-repo attempt at building a Prezi-style
-  presenter locally; it works but doesn't reach Prezi-quality visual polish
-  (no photographic imagery, no asset library). Keep around as a fallback for
-  offline rehearsal of the spatial map only. -->
+  Local preview / rehearsal copy. The authoritative presentation is the
+  Prezi you'll build using ./prezi-import-guide.md — this file mirrors
+  the same content + spatial map for offline walkthrough, with metaphor-
+  free editorial typography (no plaza / city / mail / port framing). -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Portal Rewrite — Presenter Mode (DEPRECATED · see prezi-import-guide.md)</title>
+  <title>Portal Rewrite — Local Preview</title>
   <meta name="viewport" content="width=1024">
   <link rel="stylesheet" href="styles/presenter.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,20 +30,9 @@
        data-width="1920"
        data-height="1080">
 
-    <!-- ═════ City ground-plan annotations (visible in scale=8 overview only) ═══
-         These floating labels sit in canvas space and reveal the city analogy
-         when the camera is pulled back. At any closer zoom they fall outside
-         the viewport, so they don't clutter the content slides. -->
-    <div class="ground-label ground-label--plaza" style="left: 740px; top: 1670px;">THE PLAZA</div>
-    <div class="ground-label ground-label--lookout" style="left: 740px; top: -180px;">THE LOOKOUT</div>
-    <div class="ground-label ground-label--observatory" style="left: 4480px; top: -180px;">THE OBSERVATORY</div>
-    <div class="ground-label ground-label--west" style="left: -4750px; top: 1670px;">WEST ARM<br><span>customer journey</span></div>
-    <div class="ground-label ground-label--east" style="left: 5500px; top: 1670px;">EAST ARM<br><span>rollout journey</span></div>
-    <div class="ground-label ground-label--townhall" style="left: 740px; top: 4960px;">THE TOWN HALL</div>
-
-    <!-- ═════ Step 0 · OVERVIEW (camera at scale 8, sees the whole city) ═════
-         Classic Prezi opener: start with the entire spatial canvas + district
-         labels visible, then dive in on Right-arrow. Empty step. -->
+    <!-- ═════ Step 0 · OVERVIEW (camera at scale 8, sees the whole canvas) ═══
+         Classic Prezi opener: start with the entire spatial canvas visible,
+         then dive in on Right-arrow. Empty step — just a camera position. -->
     <div id="presenter-overview" class="step step--invisible"
          data-x="500" data-y="2200" data-scale="8"
          data-step-number="0" data-section-id="" data-notes-key="Opener"
@@ -52,143 +40,50 @@
       <div class="notes">[notes injected]</div>
     </div>
 
-    <!-- ═════ Slide 1 · Section 00 · THE MAIL ROOM ═════════════════════
-         The platform IS a mail system. This slide is the postal sorting floor
-         on the busiest day of the year — ten queues piling up, ten kinds of
-         friction that someone has to clear. Real illustrated envelopes,
-         animated conveyor belt below, kraft & postal-red palette. -->
-    <div class="step slide slide--mailroom" data-x="0" data-y="0" data-scale="0.85" data-rotate="0"
+    <!-- ═════ Slide 1 · Section 00 · Ten frictions ═════════════════════
+         Editorial composition. Massive '10' as the focal point. Two clean
+         columns of personas with their pain phrase. No metaphor, no
+         district label, no decorative chrome. -->
+    <div class="step slide slide--stakes" data-x="0" data-y="0" data-scale="0.85" data-rotate="0"
          data-step-number="1" data-section-id="ov-stakes" data-notes-key="Section 00">
-      <div class="slide-bg slide-bg--mailroom"></div>
-
-      <!-- Conveyor belt running across the bottom, animated -->
-      <div class="conveyor" aria-hidden="true">
-        <div class="conveyor-stripes"></div>
-        <div class="conveyor-envelope conveyor-envelope--1"></div>
-        <div class="conveyor-envelope conveyor-envelope--2"></div>
-        <div class="conveyor-envelope conveyor-envelope--3"></div>
-      </div>
-
-      <!-- Stamp/postmark decorations on the wall -->
-      <div class="postmark postmark--tl" aria-hidden="true">URGENT · Q3 2026</div>
-      <div class="postmark postmark--tr" aria-hidden="true">DEX TECH · DELIVERY</div>
-
+      <div class="slide-bg slide-bg--burgundy"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow slide-eyebrow--postal">00 · The Mail Room · Why this needs leadership attention</p>
-        <h2 class="slide-headline slide-headline--postal">Ten kinds of mail. Ten queues that pile up.</h2>
-        <p class="slide-subhead slide-subhead--postal">Five paid by customers at the front counter · Five paid by the staff in the back room</p>
-
-        <!-- The mail room floor — 10 counters in 2 rows of 5 -->
-        <div class="mailroom">
-
-          <!-- Front counter (customer-side) -->
-          <div class="mailroom-row mailroom-row--front">
-            <p class="mailroom-row-label"><span class="row-tag row-tag--front">Front Counter</span> Customer-side queues</p>
-            <div class="mailroom-counters">
-              <div class="postal-stack postal-stack--operator">
-                <div class="envelope-stack">
-                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
-                  <div class="stamp stamp--red">RTN</div>
-                </div>
-                <p class="stack-persona">Operator</p>
-                <p class="stack-tax">retention risk</p>
-              </div>
-              <div class="postal-stack postal-stack--sp">
-                <div class="envelope-stack">
-                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
-                  <div class="stamp stamp--red">AUD</div>
-                </div>
-                <p class="stack-persona">Service Provider</p>
-                <p class="stack-tax">audit exposure</p>
-              </div>
-              <div class="postal-stack postal-stack--admin">
-                <div class="envelope-stack">
-                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
-                  <div class="stamp stamp--red">TTM</div>
-                </div>
-                <p class="stack-persona">DEX admin</p>
-                <p class="stack-tax">time-to-market</p>
-              </div>
-              <div class="postal-stack postal-stack--platform">
-                <div class="envelope-stack">
-                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
-                  <div class="stamp stamp--red">ACT</div>
-                </div>
-                <p class="stack-persona">Platform admin</p>
-                <p class="stack-tax">activation drop-off</p>
-              </div>
-              <div class="postal-stack postal-stack--pack">
-                <div class="envelope-stack">
-                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
-                  <div class="stamp stamp--red">PCK</div>
-                </div>
-                <p class="stack-persona">Pack dispatcher</p>
-                <p class="stack-tax">top-account ceiling</p>
-              </div>
-            </div>
+        <p class="slide-eyebrow">00 · Why this needs leadership attention</p>
+        <p class="slide-mega slide-mega--white">10.</p>
+        <p class="slide-subhead slide-subhead--bright">recurring frictions that shape every Dex Technologies quarter</p>
+        <div class="slide-twocol">
+          <div class="slide-col">
+            <p class="slide-col-eyebrow">Five paid by customers</p>
+            <ul class="slide-bigbullets">
+              <li>Operator <span class="b-tax">retention risk</span></li>
+              <li>Service Provider <span class="b-tax">audit exposure</span></li>
+              <li>DEX admin <span class="b-tax">time-to-market</span></li>
+              <li>Platform admin <span class="b-tax">activation drop-off</span></li>
+              <li>Pack dispatcher <span class="b-tax">top-account ceiling</span></li>
+            </ul>
           </div>
-
-          <!-- Back room (internal-side) -->
-          <div class="mailroom-row mailroom-row--back">
-            <p class="mailroom-row-label"><span class="row-tag row-tag--back">Back Room</span> Internal-team queues</p>
-            <div class="mailroom-counters">
-              <div class="postal-stack postal-stack--bd">
-                <div class="envelope-stack envelope-stack--kraft">
-                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
-                  <div class="stamp stamp--gold">BD</div>
-                </div>
-                <p class="stack-persona">BD</p>
-                <p class="stack-tax">pipeline velocity</p>
-              </div>
-              <div class="postal-stack postal-stack--product">
-                <div class="envelope-stack envelope-stack--kraft">
-                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
-                  <div class="stamp stamp--gold">PM</div>
-                </div>
-                <p class="stack-persona">Product</p>
-                <p class="stack-tax">roadmap drag</p>
-              </div>
-              <div class="postal-stack postal-stack--eng">
-                <div class="envelope-stack envelope-stack--kraft">
-                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
-                  <div class="stamp stamp--gold">ENG</div>
-                </div>
-                <p class="stack-persona">Engineering</p>
-                <p class="stack-tax">catalogue relay</p>
-              </div>
-              <div class="postal-stack postal-stack--ux">
-                <div class="envelope-stack envelope-stack--kraft">
-                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
-                  <div class="stamp stamp--gold">UX</div>
-                </div>
-                <p class="stack-persona">UIUX</p>
-                <p class="stack-tax">surface sprawl</p>
-              </div>
-              <div class="postal-stack postal-stack--ops">
-                <div class="envelope-stack envelope-stack--kraft">
-                  <div class="env env--3"></div><div class="env env--2"></div><div class="env env--1"></div>
-                  <div class="stamp stamp--gold">OPS</div>
-                </div>
-                <p class="stack-persona">Ops</p>
-                <p class="stack-tax">ticket &amp; change load</p>
-              </div>
-            </div>
+          <div class="slide-col">
+            <p class="slide-col-eyebrow">Five paid by our teams</p>
+            <ul class="slide-bigbullets">
+              <li>BD <span class="b-tax">pipeline velocity</span></li>
+              <li>Product <span class="b-tax">roadmap drag</span></li>
+              <li>Engineering <span class="b-tax">catalogue relay</span></li>
+              <li>UIUX <span class="b-tax">surface-area sprawl</span></li>
+              <li>Ops <span class="b-tax">ticket &amp; change load</span></li>
+            </ul>
           </div>
-
         </div>
-
-        <p class="slide-pull slide-pull--postal">Customers pay the postage. We pay the staffing.</p>
-
+        <p class="slide-pull">Customers move the metric. Our teams move the cost.</p>
         <div class="notes">[notes injected]</div>
       </div>
     </div>
 
-    <!-- ═════ Slide 2 · West Arm · Upstream ═════════════════════════════ -->
+    <!-- ═════ Slide 2 · Section 01 · Five → One ═════════════════════════════ -->
     <div class="step slide slide--mental-01" data-x="-4500" data-y="-1500" data-scale="0.9" data-rotate="-5"
          data-step-number="2" data-section-id="ov-mental-01" data-notes-key="Section 01">
       <div class="slide-bg slide-bg--midnight"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">01 · West Arm · Upstream of compose</p>
+        <p class="slide-eyebrow">01 · Upstream of compose</p>
         <h2 class="slide-headline">Five consent types collapse into one.</h2>
         <div class="slide-funnel">
           <div class="funnel-side">
@@ -212,12 +107,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 3 · West Arm · Shift downstream ═════════════════════ -->
+    <!-- ═════ Slide 3 · Section 02 · Consent ≠ Action ═════════════════════ -->
     <div class="step slide slide--mental-02" data-x="-4500" data-y="1000" data-scale="0.9" data-rotate="5"
          data-step-number="3" data-section-id="ov-mental-02" data-notes-key="Section 02">
       <div class="slide-bg slide-bg--teal"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">02 · West Arm · The shift, downstream</p>
+        <p class="slide-eyebrow">02 · The shift, downstream</p>
         <h2 class="slide-headline">Consent and action are decoupled.</h2>
         <div class="slide-pairblocks">
           <div class="pairblock pairblock--blue">
@@ -239,12 +134,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 4 · West Arm · Operator 7→5 ═════════════════════════ -->
+    <!-- ═════ Slide 4 · Section 03 · 7 → 5 ═════════════════════════ -->
     <div class="step slide slide--ba-03" data-x="-4500" data-y="3500" data-scale="0.9" data-rotate="-5"
          data-step-number="4" data-section-id="ov-ba-03" data-notes-key="Section 03">
       <div class="slide-bg slide-bg--ember"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">03 · West Arm · One task, two journeys</p>
+        <p class="slide-eyebrow">03 · One task, two journeys</p>
         <h2 class="slide-headline">Send a Cargo manifest to Maersk.</h2>
         <div class="slide-stepcount">
           <div class="stepcount-side stepcount-side--today">
@@ -270,12 +165,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 5 · West Arm · Admin 9→5 ════════════════════════════ -->
+    <!-- ═════ Slide 5 · Section 04 · 9 → 5 ════════════════════════════ -->
     <div class="step slide slide--ba-04" data-x="-4500" data-y="6000" data-scale="0.9" data-rotate="5"
          data-step-number="5" data-section-id="ov-ba-04" data-notes-key="Section 04">
       <div class="slide-bg slide-bg--crimson"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">04 · West Arm · Same story, for the admins</p>
+        <p class="slide-eyebrow">04 · Same story, for the admins</p>
         <h2 class="slide-headline">Register a new document type.</h2>
         <div class="slide-versus">
           <div class="versus-side versus-side--bad">
@@ -297,12 +192,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 6 · The Lookout · big pullback UP from West Arm ════ -->
+    <!-- ═════ Slide 6 · Section 05 · Mental model ════ -->
     <div class="step slide slide--concept" data-x="0" data-y="-4500" data-scale="0.85" data-rotate="0"
          data-step-number="6" data-section-id="ov-concept" data-notes-key="Section 05">
       <div class="slide-bg slide-bg--indigo"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">05 · The Lookout · The new mental model</p>
+        <p class="slide-eyebrow">05 · The new mental model</p>
         <h2 class="slide-headline">Three questions. Three sections.</h2>
         <div class="slide-pillars">
           <div class="pillar pillar--blue">
@@ -325,12 +220,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 7 · The Observatory · across the plaza ═════════════ -->
+    <!-- ═════ Slide 7 · Section 06 · Ten decisions ═════════════ -->
     <div class="step slide slide--decisions" data-x="4500" data-y="-3500" data-scale="0.9" data-rotate="12"
          data-step-number="7" data-section-id="ov-decisions" data-notes-key="Section 06">
       <div class="slide-bg slide-bg--amber"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">06 · The Observatory · Ten decisions that shape the experience</p>
+        <p class="slide-eyebrow">06 · Ten decisions that shape the experience</p>
         <h2 class="slide-headline">Each cancels a Section 00 tax.</h2>
         <div class="slide-constellation">
           <div class="cn cn--1" style="--cn-x:8%;  --cn-y:18%;"><span class="cn-num">01</span><span class="cn-title">Inbox is home</span></div>
@@ -348,12 +243,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 8 · East Arm · Roadmap workshop ═════════════════════ -->
+    <!-- ═════ Slide 8 · Section 07 · Roadmap ═════════════════════ -->
     <div class="step slide slide--roadmap" data-x="5500" data-y="1000" data-scale="0.9" data-rotate="-5"
          data-step-number="8" data-section-id="ov-roadmap" data-notes-key="Section 07">
       <div class="slide-bg slide-bg--forest"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">07 · East Arm · What launches first vs what's deferred</p>
+        <p class="slide-eyebrow">07 · What launches first vs what's deferred</p>
         <h2 class="slide-headline">Honest scoping.</h2>
         <div class="slide-scoping">
           <div class="scoping-col scoping-col--v1">
@@ -386,12 +281,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 9 · East Arm · Soft landing bridge ═════════════════ -->
+    <!-- ═════ Slide 9 · Section 08 · Soft landing ═════════════════ -->
     <div class="step slide slide--migration" data-x="5500" data-y="3500" data-scale="0.9" data-rotate="5"
          data-step-number="9" data-section-id="ov-migration" data-notes-key="Section 08">
       <div class="slide-bg slide-bg--mustard"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">08 · East Arm · Rollout day, for users already on the network</p>
+        <p class="slide-eyebrow">08 · Rollout day, for users already on the network</p>
         <h2 class="slide-headline">Migration is a design problem. Not an afterthought.</h2>
         <div class="slide-guarantees">
           <div class="guarantee">
@@ -420,12 +315,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 10 · East Arm · Gateway for new orgs ═══════════════ -->
+    <!-- ═════ Slide 10 · Section 09 · Empty → consequential ═══════════════ -->
     <div class="step slide slide--new-orgs" data-x="5500" data-y="6000" data-scale="0.9" data-rotate="-5"
          data-step-number="10" data-section-id="ov-new-orgs" data-notes-key="Section 09">
       <div class="slide-bg slide-bg--prussian"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">09 · East Arm · Day one, for orgs joining the network</p>
+        <p class="slide-eyebrow">09 · Day one, for orgs joining the network</p>
         <h2 class="slide-headline">Empty inbox → consequential inbox.</h2>
         <div class="slide-before-after">
           <div class="ba-side ba-side--before">
@@ -455,12 +350,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 11 · The Town Hall · landing zone for the asks ════ -->
+    <!-- ═════ Slide 11 · Section 10 · Three asks ════ -->
     <div class="step slide slide--asks" data-x="0" data-y="8000" data-scale="0.75" data-rotate="0"
          data-step-number="11" data-section-id="ov-asks" data-notes-key="Section 10">
       <div class="slide-bg slide-bg--bordeaux"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">10 · The Town Hall · What we need from leadership</p>
+        <p class="slide-eyebrow">10 · What we need from leadership</p>
         <h2 class="slide-headline">Three calls before the build begins.</h2>
         <div class="slide-asks">
           <article class="ask">
