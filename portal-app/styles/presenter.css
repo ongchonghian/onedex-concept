@@ -1,0 +1,140 @@
+/* portal-app/styles/presenter.css
+   Dark stage, full-bleed sections, hide nav chrome, dot-nav + topbar styling. */
+
+html, body { margin: 0; padding: 0; height: 100%; }
+
+body.presenter-mode {
+  background: #0b1020;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+}
+
+/* Stage container — Impress.js writes its own transforms onto #impress. */
+#impress {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+}
+
+/* Each step wrapper renders a cloned section on a white card with a soft shadow
+   to lift it off the dark canvas. */
+#impress .step {
+  width: 1100px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  padding: 32px 40px;
+  color: #1a1a1a;
+}
+
+/* Per-step <div class="notes"> is read by impressConsole + inline overlay — hide on stage. */
+#impress .step .notes { display: none; }
+
+/* Hide the cloned landing-page chrome — nav, search, role chip, etc. — at stage time.
+   These selectors match the existing portal-app shell classes. */
+body.presenter-mode .workspace-pill,
+body.presenter-mode .search-pill,
+body.presenter-mode .role-chip,
+body.presenter-mode .pr-pill,
+body.presenter-mode .pr-pill-sub,
+body.presenter-mode .canvas-meta,
+body.presenter-mode .canvas-tip,
+body.presenter-mode .ov-jump-cta,
+body.presenter-mode .ov-cta-pair { display: none !important; }
+
+/* Top-bar */
+.presenter-topbar {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.85);
+  border-radius: 99px;
+  font-size: 12px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  transition: opacity 240ms;
+  backdrop-filter: blur(6px);
+}
+.presenter-step-counter { font-weight: 500; }
+.presenter-section { opacity: 0.6; }
+.presenter-narrative { color: #fff; }
+
+/* Speaker-notes overlay — bottom third, dismissible. */
+.presenter-notes-overlay {
+  position: fixed;
+  left: 5vw;
+  right: 5vw;
+  bottom: 5vh;
+  max-height: 25vh;
+  overflow-y: auto;
+  z-index: 100;
+  padding: 18px 24px;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.presenter-notes-overlay h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  opacity: 0.7;
+  font-weight: 500;
+}
+.presenter-notes-overlay pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+}
+
+/* navigation-ui plugin lives at .impress-toolbar — dark-stage theme. */
+.impress-toolbar {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 99px;
+  backdrop-filter: blur(6px);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  transition: opacity 240ms;
+}
+.impress-toolbar select,
+.impress-toolbar button {
+  background: transparent;
+  color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.impress-toolbar select option { color: #000; background: #fff; }
+
+/* Auto-hide topbar + toolbar after mouse-timeout plugin marks body.impress-mouse-timeout. */
+body.impress-mouse-timeout .presenter-topbar,
+body.impress-mouse-timeout .impress-toolbar { opacity: 0; pointer-events: none; }
+
+/* Fallback for browsers without 3D transforms. */
+.impress-not-supported .fallback-message {
+  display: block;
+  max-width: 480px;
+  margin: 30vh auto;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.impress-supported .fallback-message { display: none; }
+.fallback-message a { color: #fff; text-decoration: underline; }
