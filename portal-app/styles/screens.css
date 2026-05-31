@@ -4669,6 +4669,65 @@ body.compose-cross-dex-pending #compose-next { opacity: 0.45; pointer-events: no
 }
 .ov-cta-card.primary .ov-cta-desc { color: rgba(255, 255, 255, 0.92); }
 
+/* ─── Floating shortcut hint for the Prezi presenter view ──────────────────
+   Fixed bottom-right of the overview screen. Subtle by default, lifts on
+   hover. Keyboard-shortcut chips show the Shift+P binding. */
+#presenter-shortcut-hint {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 99px;
+  background: rgba(20, 20, 22, 0.78);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 160ms ease-out, box-shadow 160ms ease-out, background 160ms ease-out;
+}
+#presenter-shortcut-hint:hover {
+  background: rgba(20, 20, 22, 0.92);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.22);
+}
+#presenter-shortcut-hint:active { transform: translateY(0); }
+#presenter-shortcut-hint i { font-size: 14px; opacity: 0.85; }
+#presenter-shortcut-hint .psh-label { font-weight: 500; }
+#presenter-shortcut-hint .psh-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+}
+#presenter-shortcut-hint kbd {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.92);
+  min-width: 14px;
+  text-align: center;
+}
+/* Only show the hint when the overview screen is the active one — hide on
+   any other prototype screen (inbox, agreement detail, etc.) so it doesn't
+   intrude on the demo. */
+body:not(:has(.screen.active[data-screen="overview"])) #presenter-shortcut-hint { display: none; }
+
 /* Footer */
 .ov-footer { margin-top: var(--sp-15); padding-top: var(--sp-9); border-top: 0.5px solid var(--g-90); }
 .ov-footer-head { font-size: var(--fs-micro-plus); color: var(--g-50); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px; font-weight: 500; }

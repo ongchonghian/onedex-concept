@@ -8817,6 +8817,16 @@ document.addEventListener('keydown', e => {
     ['extend-modal', 'claim-modal', 'join-modal', 'approve-modal', 'template-modal', 'impersonate-modal', 'glossary-modal'].forEach(id => closeOverlay(id));
     closeCpPanel();
   }
+  // Shift+P opens the Prezi-style presenter view. Guard against form-field
+  // collisions — skip when an input/textarea/contenteditable is focused.
+  if (e.shiftKey && (e.key === 'P' || e.key === 'p')) {
+    const t = e.target;
+    const inField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    if (!inField) {
+      e.preventDefault();
+      window.location.assign('./present.html');
+    }
+  }
 });
 
 /* ---------- Notification + profile popovers ---------- */
