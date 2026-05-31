@@ -27,13 +27,18 @@ function buildFetch(notesMd) {
   };
 }
 
-test('present.html ships 11 hand-authored stage slides', async () => {
+test('present.html ships 12 steps (1 opener overview + 11 content slides)', async () => {
   const window = loadPresenter({ fetch: buildFetch() });
   await new Promise(r => setTimeout(r, 50));
 
   const steps = window.document.querySelectorAll('#impress .step');
-  assert.equal(steps.length, 11, `Expected 11 slides, got ${steps.length}`);
+  assert.equal(steps.length, 12, `Expected 12 steps, got ${steps.length}`);
   assert.equal(window.__impressLog.initCalled, true, 'impress().init() must be called');
+
+  // First step is the invisible overview at scale 8 (Prezi dive-in opener)
+  const overview = steps[0];
+  assert.equal(overview.getAttribute('data-scale'), '8', 'opener must be at scale 8 for dive-in');
+  assert.ok(overview.classList.contains('step--invisible'), 'opener must use invisible class');
 });
 
 test('Each slide carries the required data attributes', async () => {
@@ -61,16 +66,17 @@ test('Each slide has a single .notes child that gets populated from the keynotes
     assert.equal(notes.length, 1, `Step ${step.getAttribute('data-step-number')} should have exactly one .notes child`);
   }
 
+  // Step 0 (overview) — notes key is "Opener"
   // Step 1 (Section 00) — should have section-00 body
-  const step1 = steps[0];
+  const step1 = steps[1];
   assert.match(step1.querySelector('.notes').textContent, /section-00 body/);
 
   // Step 2 (Section 01) — should have section-01 body
-  const step2 = steps[1];
+  const step2 = steps[2];
   assert.match(step2.querySelector('.notes').textContent, /section-01 body/);
 
   // Step 11 (Section 10) — should have section-10 body
-  const step11 = steps[10];
+  const step11 = steps[11];
   assert.match(step11.querySelector('.notes').textContent, /section-10 body/);
 });
 
@@ -79,12 +85,12 @@ test('Top-bar caption updates on impress:stepenter event', async () => {
   await new Promise(r => setTimeout(r, 50));
 
   const steps = window.document.querySelectorAll('#impress .step');
-  const target = steps[2]; // step 3 — Section 02
+  const target = steps[3]; // step 3 in number-space — Section 02
   target.dispatchEvent(new window.CustomEvent('impress:stepenter', { bubbles: true }));
 
   const counter = window.document.querySelector('.presenter-step-counter');
   const sectionLbl = window.document.querySelector('.presenter-section');
-  assert.equal(counter.textContent, 'step 3 / 11');
+  assert.equal(counter.textContent, 'step 3 / 12');
   assert.equal(sectionLbl.textContent, 'ov-mental-02');
 });
 
@@ -92,7 +98,9 @@ test('Pressing N toggles inline notes overlay; content matches current step', as
   const window = loadPresenter({ fetch: buildFetch() });
   await new Promise(r => setTimeout(r, 50));
 
-  const step1 = window.document.querySelectorAll('#impress .step')[0];
+  // Step at index 1 = first content slide (Section 00). Index 0 is the
+  // invisible overview step which has no notes content to render.
+  const step1 = window.document.querySelectorAll('#impress .step')[1];
   step1.dispatchEvent(new window.CustomEvent('impress:stepenter', { bubbles: true }));
 
   const overlay = window.document.querySelector('.presenter-notes-overlay');
@@ -116,8 +124,8 @@ test('Pressing Escape redirects to index.html anchored on current section', asyn
   });
   await new Promise(r => setTimeout(r, 50));
 
-  // Enter step 2 (ov-mental-01)
-  const step2 = window.document.querySelectorAll('#impress .step')[1];
+  // Index 2 = step 2 in number-space = Section 01 (ov-mental-01). Index 0 = opener overview.
+  const step2 = window.document.querySelectorAll('#impress .step')[2];
   step2.dispatchEvent(new window.CustomEvent('impress:stepenter', { bubbles: true }));
 
   window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));

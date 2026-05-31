@@ -32,6 +32,16 @@ body.presenter-mode {
   box-shadow: 0 60px 200px rgba(0, 0, 0, 0.65);
 }
 
+/* Invisible camera-position step (the opener overview at scale 8).
+   Reserved width gives Impress.js a footprint to compute; no visible content. */
+#impress .step--invisible {
+  width: 1920px;
+  height: 1080px;
+  background: transparent;
+  pointer-events: none;
+  opacity: 0;
+}
+
 .slide-bg {
   position: absolute;
   inset: 0;

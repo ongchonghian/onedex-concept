@@ -21,12 +21,22 @@
     cloned from the landing page).
   -->
   <div id="impress"
-       data-transition-duration="900"
+       data-transition-duration="1200"
        data-width="1920"
        data-height="1080">
 
-    <!-- ═════ Slide 1 · Section 00 · TEN FRICTIONS ═════════════════════ -->
-    <div class="step slide slide--stakes" data-x="0" data-y="0" data-scale="1"
+    <!-- ═════ Step 0 · OVERVIEW (camera at scale 8, sees the whole map) ═════
+         Classic Prezi opener: start with the entire spatial canvas visible,
+         then dive in on Right-arrow. Empty step — just a camera position. -->
+    <div id="presenter-overview" class="step step--invisible"
+         data-x="2500" data-y="3500" data-scale="8"
+         data-step-number="0" data-section-id="" data-notes-key="Opener"
+         aria-hidden="true">
+      <div class="notes">[notes injected]</div>
+    </div>
+
+    <!-- ═════ Slide 1 · Section 00 · TEN FRICTIONS · CENTER, TIGHT ═════ -->
+    <div class="step slide slide--stakes" data-x="0" data-y="0" data-scale="0.85" data-rotate="0"
          data-step-number="1" data-section-id="ov-stakes" data-notes-key="Section 00">
       <div class="slide-bg slide-bg--burgundy"></div>
       <div class="slide-inner slide-inner--centered">
@@ -59,8 +69,8 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 2 · Section 01 · FIVE → ONE ════════════════════════ -->
-    <div class="step slide slide--mental-01" data-x="3000" data-y="0" data-scale="0.9"
+    <!-- ═════ Slide 2 · FIVE → ONE · swing down-left, tilted ═══════════ -->
+    <div class="step slide slide--mental-01" data-x="-4500" data-y="2500" data-scale="0.95" data-rotate="-18"
          data-step-number="2" data-section-id="ov-mental-01" data-notes-key="Section 01">
       <div class="slide-bg slide-bg--midnight"></div>
       <div class="slide-inner slide-inner--centered">
@@ -88,8 +98,8 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 3 · Section 02 · CONSENT ≠ ACTION ══════════════════ -->
-    <div class="step slide slide--mental-02" data-x="6000" data-y="0" data-scale="0.9"
+    <!-- ═════ Slide 3 · CONSENT ≠ ACTION · continue down, opposite tilt ═ -->
+    <div class="step slide slide--mental-02" data-x="-3500" data-y="5500" data-scale="0.95" data-rotate="22"
          data-step-number="3" data-section-id="ov-mental-02" data-notes-key="Section 02">
       <div class="slide-bg slide-bg--teal"></div>
       <div class="slide-inner slide-inner--centered">
@@ -115,8 +125,8 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 4 · Section 03 · 7 → 5 (operator) ══════════════════ -->
-    <div class="step slide slide--ba-03" data-x="9000" data-y="0" data-scale="0.9"
+    <!-- ═════ Slide 4 · 7 → 5 (operator) · swing right, level out ══════ -->
+    <div class="step slide slide--ba-03" data-x="-1500" data-y="7500" data-scale="1" data-rotate="-8"
          data-step-number="4" data-section-id="ov-ba-03" data-notes-key="Section 03">
       <div class="slide-bg slide-bg--ember"></div>
       <div class="slide-inner slide-inner--centered">
@@ -146,8 +156,8 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 5 · Section 04 · 9 → 5 (admin) ═════════════════════ -->
-    <div class="step slide slide--ba-04" data-x="12000" data-y="0" data-scale="0.9"
+    <!-- ═════ Slide 5 · 9 → 5 (admin) · mirror to right side ═══════════ -->
+    <div class="step slide slide--ba-04" data-x="1500" data-y="7500" data-scale="1" data-rotate="8"
          data-step-number="5" data-section-id="ov-ba-04" data-notes-key="Section 04">
       <div class="slide-bg slide-bg--crimson"></div>
       <div class="slide-inner slide-inner--centered">
@@ -173,8 +183,8 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 6 · Section 05 · MENTAL MODEL ══════════════════════ -->
-    <div class="step slide slide--concept" data-x="15000" data-y="0" data-scale="0.9"
+    <!-- ═════ Slide 6 · MENTAL MODEL · huge pullback UP — the bridge ═══ -->
+    <div class="step slide slide--concept" data-x="0" data-y="-4500" data-scale="0.85" data-rotate="0"
          data-step-number="6" data-section-id="ov-concept" data-notes-key="Section 05">
       <div class="slide-bg slide-bg--indigo"></div>
       <div class="slide-inner slide-inner--centered">
@@ -201,8 +211,8 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 7 · Section 06 · TEN DECISIONS CONSTELLATION ═══════ -->
-    <div class="step slide slide--decisions" data-x="18000" data-y="0" data-scale="0.9"
+    <!-- ═════ Slide 7 · CONSTELLATION · swing right-up, dramatic tilt ══ -->
+    <div class="step slide slide--decisions" data-x="7500" data-y="-3000" data-scale="0.95" data-rotate="25"
          data-step-number="7" data-section-id="ov-decisions" data-notes-key="Section 06">
       <div class="slide-bg slide-bg--amber"></div>
       <div class="slide-inner slide-inner--centered">
@@ -224,8 +234,8 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 8 · Section 07 · ROADMAP ═══════════════════════════ -->
-    <div class="step slide slide--roadmap" data-x="21000" data-y="0" data-scale="0.9"
+    <!-- ═════ Slide 8 · ROADMAP · drop to ground level ═════════════════ -->
+    <div class="step slide slide--roadmap" data-x="9000" data-y="500" data-scale="1" data-rotate="-12"
          data-step-number="8" data-section-id="ov-roadmap" data-notes-key="Section 07">
       <div class="slide-bg slide-bg--forest"></div>
       <div class="slide-inner slide-inner--centered">
@@ -262,8 +272,8 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 9 · Section 08 · SOFT LANDING ══════════════════════ -->
-    <div class="step slide slide--migration" data-x="24000" data-y="0" data-scale="0.9"
+    <!-- ═════ Slide 9 · SOFT LANDING · continue down, alt tilt ═════════ -->
+    <div class="step slide slide--migration" data-x="9500" data-y="3500" data-scale="0.95" data-rotate="15"
          data-step-number="9" data-section-id="ov-migration" data-notes-key="Section 08">
       <div class="slide-bg slide-bg--mustard"></div>
       <div class="slide-inner slide-inner--centered">
@@ -296,8 +306,8 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 10 · Section 09 · EMPTY → CONSEQUENTIAL ════════════ -->
-    <div class="step slide slide--new-orgs" data-x="27000" data-y="0" data-scale="0.9"
+    <!-- ═════ Slide 10 · EMPTY → CONSEQUENTIAL · swing inward ══════════ -->
+    <div class="step slide slide--new-orgs" data-x="7500" data-y="6000" data-scale="0.95" data-rotate="-10"
          data-step-number="10" data-section-id="ov-new-orgs" data-notes-key="Section 09">
       <div class="slide-bg slide-bg--prussian"></div>
       <div class="slide-inner slide-inner--centered">
@@ -331,8 +341,8 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 11 · Section 10 · THREE ASKS ═══════════════════════ -->
-    <div class="step slide slide--asks" data-x="30000" data-y="0" data-scale="0.85"
+    <!-- ═════ Slide 11 · THREE ASKS · DRAMATIC DIVE-IN to the close ════ -->
+    <div class="step slide slide--asks" data-x="4000" data-y="9000" data-scale="0.75" data-rotate="0"
          data-step-number="11" data-section-id="ov-asks" data-notes-key="Section 10">
       <div class="slide-bg slide-bg--bordeaux"></div>
       <div class="slide-inner slide-inner--centered">
