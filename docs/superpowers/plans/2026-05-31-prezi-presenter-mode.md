@@ -4,9 +4,9 @@
 
 **Goal:** Build a zoom-pan canvas presenter mode at `portal-app/present.html` that flies the camera through the existing landing-page Sections 00–10 via 19 declarative camera stops, with speaker notes loaded live from `portal-rewrite-keynotes.md`.
 
-**Architecture:** Impress.js (~50KB, MIT) as a thin camera layer. `presenter.js` harvests sections from `index.html` via `fetch()` + DOMParser, wraps each in `<div class="step">` with `data-x/y/scale/rotate` attributes, mounts them into Impress's root, then calls `impress().init()`. Speaker notes parsed from `portal-rewrite-keynotes.md` at boot. `presenter.css` provides dark-stage theming.
+**Architecture:** Impress.js v2.0.0 (~183 KB unminified, MIT) as a thin camera layer. `presenter.js` harvests sections from `index.html` via `fetch()` + DOMParser, wraps each in `<div class="step">` with `data-x/y/scale/rotate` attributes, mounts them into Impress's root, then calls `impress().init()`. Speaker notes parsed from `portal-rewrite-keynotes.md` at boot. `presenter.css` provides dark-stage theming. Canvas is pinned to 1024×768 via `data-width`/`data-height` on `#impress` (v2.0.0 default is 1920×1080 — we pin to preserve the readability-budget calibration).
 
-**Tech Stack:** Vanilla JS · Impress.js v1.1.0 · CSS3 transforms · node:test + JSDOM for unit tests · existing `portal-app/tests/helpers/load-portal.js` pattern for test infrastructure.
+**Tech Stack:** Vanilla JS · Impress.js v2.0.0 (vendored from cdn.jsdelivr.net/gh/impress/impress.js@2.0.0) · CSS3 transforms · node:test + JSDOM for unit tests · existing `portal-app/tests/helpers/load-portal.js` pattern for test infrastructure.
 
 **Spec:** `docs/superpowers/specs/2026-05-31-prezi-presenter-mode-design.md`
 
@@ -20,7 +20,7 @@
 | `portal-app/scripts/presenter.js` | Boot orchestrator. Harvests sections, builds step DOM, mounts to Impress, wires keyboard + notes overlay. ~250 lines. |
 | `portal-app/scripts/presenter-steps.js` | Pure data — the `STEPS[]` array of 19 camera positions. Exported via `window.PRESENTER_STEPS`. ~60 lines. |
 | `portal-app/scripts/presenter-notes.js` | Pure functions for markdown parsing — `parseKeynotes(text)` returns `{[notesKey]: noteBlock}`. ~80 lines. |
-| `portal-app/scripts/vendor/impress.min.js` | Vendored Impress.js v1.1.0. Offline-rehearsal fallback when cdnjs is unreachable. |
+| `portal-app/scripts/vendor/impress.js` | Vendored Impress.js v2.0.0 (unminified — v2.0.0 doesn't ship a minified build in the GitHub repo). Source: `https://cdn.jsdelivr.net/gh/impress/impress.js@2.0.0/js/impress.js`. |
 | `portal-app/styles/presenter.css` | Dark stage, full-bleed, hide nav chrome via `body.presenter-mode`, section box-shadow. ~120 lines. |
 | `portal-app/tests/presenter-steps.test.js` | Validates STEPS shape, scale-readability invariants, section-id coverage. |
 | `portal-app/tests/presenter-notes.test.js` | Validates markdown parsing — section headings → note blocks. |
@@ -35,14 +35,14 @@
 - Create: `portal-app/scripts/vendor/impress.min.js` (downloaded)
 - Create: `portal-app/present.html`
 
-- [ ] **Step 1: Download Impress.js v1.1.0 from cdnjs into vendor/**
+- [ ] **Step 1: Download Impress.js v2.0.0 from jsDelivr into vendor/**
 
 ```bash
 cd portal-app/scripts/vendor
-curl -L -o impress.min.js https://cdnjs.cloudflare.com/ajax/libs/impress.js/1.1.0/js/impress.min.js
+curl -L -o impress.js https://cdn.jsdelivr.net/gh/impress/impress.js@2.0.0/js/impress.js
 ```
 
-Verify: `wc -c portal-app/scripts/vendor/impress.min.js` returns ~50000 bytes.
+Verify: `wc -c portal-app/scripts/vendor/impress.js` returns ~183000 bytes. v2.0.0 ships only an unminified build in the GitHub repo, so the filename intentionally does NOT carry `.min`. Confirm the header reads `/*! Licensed under MIT License - http://github.com/impress/impress.js */` and check the file contains both `1920` and `1080` (the new default-resolution markers).
 
 - [ ] **Step 2: Create `portal-app/present.html` shell**
 
@@ -62,7 +62,15 @@ Verify: `wc -c portal-app/scripts/vendor/impress.min.js` returns ~50000 bytes.
     <p>This presentation requires a modern browser. Open <a href="index.html">index.html</a> for the standard view.</p>
   </div>
 
-  <div id="impress" data-transition-duration="900">
+  <!--
+    data-width / data-height pin the impress.js canvas to 1024×768.
+    impress.js v2.0.0 changed the default to 1920×1080; our spatial
+    layout + readability budget were calibrated against 1024×768.
+  -->
+  <div id="impress"
+       data-transition-duration="900"
+       data-width="1024"
+       data-height="768">
     <!-- step <div>s are injected here by presenter.js -->
   </div>
 
@@ -76,7 +84,7 @@ Verify: `wc -c portal-app/scripts/vendor/impress.min.js` returns ~50000 bytes.
 
   <nav class="presenter-dot-nav" hidden></nav>
 
-  <script src="scripts/vendor/impress.min.js"></script>
+  <script src="scripts/vendor/impress.js"></script>
   <script src="scripts/presenter-steps.js"></script>
   <script src="scripts/presenter-notes.js"></script>
   <script src="scripts/presenter.js"></script>
@@ -92,8 +100,8 @@ Expected: No errors printed.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add portal-app/present.html portal-app/scripts/vendor/impress.min.js
-git commit -m "feat(presenter): scaffold present.html shell + vendor Impress.js v1.1.0"
+git add portal-app/present.html portal-app/scripts/vendor/impress.js
+git commit -m "feat(presenter): scaffold present.html shell + vendor Impress.js v2.0.0"
 ```
 
 ---

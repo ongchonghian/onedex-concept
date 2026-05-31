@@ -34,12 +34,17 @@ The landing page stays as the read-anywhere artefact; the presenter mode is a se
 
 ## 4 · Approach
 
-**Impress.js as a thin camera layer over harvested sections.** At boot, `presenter.js` fetches `index.html`, extracts every `<section class="ov-section">` under the overview screen, wraps each in an Impress.js `<div class="step">` with `data-x`/`data-y`/`data-scale`/`data-rotate` attributes, and lets Impress drive the keyboard + 3D-transform animation.
+**Impress.js v2.0.0 as a thin camera layer over harvested sections.** At boot, `presenter.js` fetches `index.html`, extracts every `<section class="ov-section">` under the overview screen, wraps each in an Impress.js `<div class="step">` with `data-x`/`data-y`/`data-scale`/`data-rotate` attributes, and lets Impress drive the keyboard + 3D-transform animation.
+
+**Why v2.0.0** (latest tagged release, GitHub `v2.0.0` tag from July 2024): adds a relative-rotation Rel plugin, custom substep ordering, and bumps `data-scale` headroom to 3× (so our `scale: 2.0` asks-step is well within bounds). Not on npm or cdnjs — vendored from `https://cdn.jsdelivr.net/gh/impress/impress.js@2.0.0/js/impress.js` (unminified, 183 KB).
+
+**Canvas pinned to 1024×768.** v2.0.0 changed the default `data-width`/`data-height` to 1920×1080. Our spatial layout (section 7) and readability budget (section 5) were calibrated against 1024×768. We pin explicitly on the `#impress` root (`data-width="1024" data-height="768"`) so the scale math stays valid. Re-calibration to 1920×1080 is a follow-up if we want sharper text on native-1080p projectors.
 
 Rejected alternatives (documented for traceability):
 
 - **Reveal.js with zoom transition** — gives a zoom feel but the camera flies between full-screen slides, not across a true spatial canvas. Doesn't satisfy the "zoom-pan canvas" intent.
 - **DIY camera engine (GSAP or vanilla CSS transforms)** — full control but adds ~3 days of work re-implementing keyboard nav, history, and step targeting that Impress already ships.
+- **Impress.js v1.1.0** (latest on npm/cdnjs, April 2020) — would work, but v2.0.0 adds the relative-rotation Rel plugin and bumps the default scale ceiling to 3× (covering our `scale: 2.0` asks-step without complaint). Picking v2.0.0 avoids near-term tech debt; the API model is unchanged so a future v1 → v2 swap would be free anyway, but doing it now saves the swap.
 
 ## 5 · Readability budget (cross-cutting constraint)
 
@@ -188,7 +193,7 @@ portal-app/
 
 Boot path: speaker opens `portal-app/present.html`. The page fetches `index.html`, harvests sections by id, wraps each in `<div class="step" data-x="..." data-y="..." data-scale="...">`, mounts them into the Impress root, then calls `impress().init()`. Impress takes over.
 
-**Impress.js dependency:** loaded from cdnjs (`https://cdnjs.cloudflare.com/ajax/libs/impress.js/1.1.0/js/impress.min.js`). ~50KB minified. Vendored fallback `portal-app/scripts/impress.min.js` for offline rehearsal.
+**Impress.js dependency:** vendored at `portal-app/scripts/vendor/impress.js` from `https://cdn.jsdelivr.net/gh/impress/impress.js@2.0.0/js/impress.js`. ~183 KB unminified (v2.0.0 does not ship a minified build in the GitHub repo; npm/cdnjs still publish only v1.1.0). Vendored locally so offline rehearsal works without network.
 
 ## 13 · Theme
 
