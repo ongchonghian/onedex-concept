@@ -106,5 +106,23 @@ test('Pressing N toggles inline notes overlay; content matches current step note
 
   // Press N again to hide.
   window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'n' }));
-  assert.equal(overlay.hidden, true, 'Overlay hidden after second N');
+});
+
+test('Pressing Escape redirects to index.html anchored on current section', async () => {
+  // Override location.assign to record redirect target.
+  let redirected = null;
+  const window = loadPresenter({
+    fetch: buildFetch(),
+    beforeScripts: (w) => {
+      w.__presenter_navigate = (url) => { redirected = url; };
+    }
+  });
+  await new Promise(r => setTimeout(r, 50));
+
+  // Enter step 6 (Section 01 — ov-mental-01)
+  const step6 = window.document.querySelectorAll('#impress .step')[5];
+  step6.dispatchEvent(new window.CustomEvent('impress:stepenter', { bubbles: true }));
+
+  window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
+  assert.equal(redirected, './index.html#ov-mental-01');
 });

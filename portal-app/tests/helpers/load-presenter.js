@@ -34,15 +34,29 @@ function loadPresenter(opts = {}) {
   });
   window.__impressLog = impressLog;
 
+  // Allow tests to set up custom stubs before scripts load.
+  if (typeof opts.beforeScripts === 'function') {
+    opts.beforeScripts(window);
+  }
+
   // Load scripts in dependency order.
-  const scriptPaths = opts.scriptPaths || [
+  let scriptPaths = opts.scriptPaths || [
     'scripts/presenter-steps.js',
     'scripts/presenter-notes.js',
     'scripts/presenter.js'
   ];
 
   scriptPaths.forEach((scriptPath) => {
-    const source = fs.readFileSync(path.join(PORTAL_DIR, scriptPath), 'utf8');
+    let source = fs.readFileSync(path.join(PORTAL_DIR, scriptPath), 'utf8');
+    
+    // Wrapper: inject a hook for location.assign so tests can intercept calls
+    if (scriptPath.endsWith('presenter.js')) {
+      source = source.replace(
+        'window.location.assign(target)',
+        '(window.__presenter_navigate || window.location.assign)(target)'
+      );
+    }
+    
     window.eval(source);
   });
 

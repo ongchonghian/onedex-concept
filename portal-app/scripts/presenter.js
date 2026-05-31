@@ -82,9 +82,35 @@
     } catch {}
   }
 
+  function wireExit() {
+    let currentSectionId = null;
+    document.addEventListener('impress:stepenter', (e) => {
+      const stepNumber = parseInt(e.target.getAttribute('data-step-number'), 10);
+      const meta = STEPS.find(s => s.step === stepNumber);
+      if (meta) currentSectionId = meta.sectionId;
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const target = currentSectionId
+          ? `./index.html#${currentSectionId}`
+          : './index.html';
+        window.location.assign(target);
+      }
+    });
+  }
+
+  function wireFallback() {
+    window.addEventListener('impress:notSupported', () => {
+      setTimeout(() => window.location.assign('./index.html'), 2000);
+    });
+  }
+
   async function bootPresenter() {
     wireTopBar();
     wireInlineNotes();
+    wireExit();
+    wireFallback();
 
     const root = document.getElementById('impress');
     if (!root) {
