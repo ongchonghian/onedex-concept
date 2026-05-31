@@ -21,7 +21,30 @@
   const STEPS = (typeof window !== 'undefined' && window.PRESENTER_STEPS) || [];
   const parseKeynotes = (typeof window !== 'undefined' && window.parseKeynotes) || (() => ({}));
 
+  function wireTopBar() {
+    const topbar = document.querySelector('.presenter-topbar');
+    if (!topbar) return;
+    topbar.hidden = false;
+
+    const counter = topbar.querySelector('.presenter-step-counter');
+    const sectionLbl = topbar.querySelector('.presenter-section');
+    const narrative = topbar.querySelector('.presenter-narrative');
+
+    document.addEventListener('impress:stepenter', (e) => {
+      const stepNumber = parseInt(e.target.getAttribute('data-step-number'), 10);
+      const meta = STEPS.find(s => s.step === stepNumber);
+      if (!meta) return;
+      counter.textContent = `step ${meta.step} / ${STEPS.length}`;
+      sectionLbl.textContent = meta.sectionId;
+      narrative.textContent = meta.narrative;
+    });
+    // Auto-hide is handled by CSS responding to body.impress-mouse-timeout
+    // (mouse-timeout plugin, opted in via Task 9), no custom JS needed.
+  }
+
   async function bootPresenter() {
+    wireTopBar();
+
     const root = document.getElementById('impress');
     if (!root) {
       console.error('[presenter] #impress root not found');

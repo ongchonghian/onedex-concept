@@ -73,3 +73,17 @@ test('Each step contains exactly one .notes child element with the markdown body
   const step1 = steps[0];
   assert.match(step1.querySelector('.notes').textContent, /opener body/);
 });
+
+test('Top-bar caption updates on impress:stepenter event', async () => {
+  const window = loadPresenter({ fetch: buildFetch() });
+  await new Promise(r => setTimeout(r, 50));
+
+  const steps = window.document.querySelectorAll('#impress .step');
+  const target = steps[2]; // step 3
+  target.dispatchEvent(new window.CustomEvent('impress:stepenter', { bubbles: true }));
+
+  const counter = window.document.querySelector('.presenter-step-counter');
+  const narrative = window.document.querySelector('.presenter-narrative');
+  assert.equal(counter.textContent, 'step 3 / 19');
+  assert.match(narrative.textContent, /Customer-side 5 cards/);
+});
