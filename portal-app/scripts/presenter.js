@@ -178,26 +178,21 @@
     }
   }
 
-  // Try multiple paths so the presenter works whether the dev server's docroot
-  // is portal-app/ (file alongside present.html) or design-concepts/ (file one
-  // level above). First path that returns 200 wins.
+  // Speaker notes file lives in portal-app/ alongside present.html so any
+  // dev server with portal-app/ as docroot (Vite, Next, http-server, etc.)
+  // can serve it without needing to follow symlinks or traverse above
+  // the docroot. If a future setup serves design-concepts/ as docroot,
+  // open http://<host>/portal-app/present.html (the './' lookup still
+  // works because URL-resolution is relative to the document URL).
   async function loadNotes() {
-    const candidates = [
-      './portal-rewrite-keynotes.md',  // served from portal-app/ as docroot
-      '../portal-rewrite-keynotes.md', // served from design-concepts/ as docroot
-    ];
-    for (const url of candidates) {
-      try {
-        const res = await fetch(url);
-        if (res.ok) {
-          const md = await res.text();
-          return parseKeynotes(md);
-        }
-      } catch {
-        // try next candidate
+    try {
+      const res = await fetch('./portal-rewrite-keynotes.md');
+      if (res.ok) {
+        const md = await res.text();
+        return parseKeynotes(md);
       }
-    }
-    console.warn('[presenter] portal-rewrite-keynotes.md not reachable from any candidate path; speaker notes will be empty');
+    } catch {}
+    console.warn('[presenter] portal-rewrite-keynotes.md not reachable; speaker notes will be empty');
     return {};
   }
 
