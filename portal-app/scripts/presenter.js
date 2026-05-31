@@ -178,15 +178,27 @@
     }
   }
 
+  // Try multiple paths so the presenter works whether the dev server's docroot
+  // is portal-app/ (file alongside present.html) or design-concepts/ (file one
+  // level above). First path that returns 200 wins.
   async function loadNotes() {
-    try {
-      const res = await fetch('../portal-rewrite-keynotes.md');
-      if (!res.ok) return {};
-      const md = await res.text();
-      return parseKeynotes(md);
-    } catch {
-      return {};
+    const candidates = [
+      './portal-rewrite-keynotes.md',  // served from portal-app/ as docroot
+      '../portal-rewrite-keynotes.md', // served from design-concepts/ as docroot
+    ];
+    for (const url of candidates) {
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          const md = await res.text();
+          return parseKeynotes(md);
+        }
+      } catch {
+        // try next candidate
+      }
     }
+    console.warn('[presenter] portal-rewrite-keynotes.md not reachable from any candidate path; speaker notes will be empty');
+    return {};
   }
 
   if (document.readyState === 'loading') {
