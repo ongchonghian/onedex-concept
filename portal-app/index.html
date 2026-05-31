@@ -80,10 +80,10 @@
           <i class="ti ti-user" aria-hidden="true"></i>Marcus <span class="pr-pill-sub">· Cosco</span>
         </button>
         <button type="button" class="pr-pill" data-pr-persona="sp-operator" onclick="switchPersonaFromRail('sp-operator', this)" aria-pressed="false">
-          <i class="ti ti-user-share" aria-hidden="true"></i>Chou <span class="pr-pill-sub">· CrimsonLogic SP</span>
+          <i class="ti ti-user-share" aria-hidden="true"></i>Pat <span class="pr-pill-sub">· CrimsonLogic SP</span>
         </button>
         <button type="button" class="pr-pill" data-pr-persona="platform-admin" onclick="switchPersonaFromRail('platform-admin', this)" aria-pressed="false">
-          <i class="ti ti-shield-check" aria-hidden="true"></i>Kagura <span class="pr-pill-sub">· SGTradex admin</span>
+          <i class="ti ti-shield-check" aria-hidden="true"></i>Sarah <span class="pr-pill-sub">· SGTradex admin</span>
         </button>
         <button type="button" class="pr-icon-btn pr-glossary" onclick="openGlossary()" title="Open glossary" aria-label="Open glossary"><i class="ti ti-book" aria-hidden="true"></i></button>
       </div>
@@ -1642,44 +1642,306 @@
     <!-- STAKES — 5-sec infographic + quantifiable relief, then deep stakeholder voices below -->
     <section class="ov-section ov-stakes ov-section--accent-red ov-section--banded">
       <p class="ov-eyebrow ov-eyebrow-numbered"><b>00</b> Why this needs leadership attention</p>
-      <h2>Six frictions. Six metrics on the executive scorecard.</h2>
-      <p class="ov-section-lede">The platform works — orders flow, documents move, reports get filed. But each of the six frictions below silently moves a metric leadership owns: <strong>anchor-tenant retention, regulatory exposure, time-to-market for new sectors, activation conversion, top-account scaling ceiling, and engineering velocity</strong>. None of these costs appears as a P&amp;L line item; together they shape every quarter. Here is where each one originates.</p>
+      <h2>Ten frictions. Ten costs that shape every Dex Technologies quarter.</h2>
+      <p class="ov-section-lede">The platform works — orders flow on SGTradex, dashboards land on SGBuildex, e-forms submit on SGHealthdex. But the same friction taxes both sides of the business: <strong>five customer-side frictions</strong> silently move metrics leadership owns — anchor-tenant retention, regulatory exposure, time-to-market for new sectors, activation conversion, top-account scaling ceiling — and <strong>five internal-team frictions</strong> tax BD&rsquo;s pipeline velocity, Product&rsquo;s roadmap throughput, Engineering&rsquo;s automation goal, UIUX&rsquo;s design-system surface area, and Ops&rsquo; L1 ticket load. None of these costs sits on a P&amp;L line; together they decide whether we land Healthdex&rsquo;s next sector, ship Buildex SMP, and free Karthik&rsquo;s Exchanges tribe to build instead of relay.</p>
 
-      <!-- 5-SEC PAIN INFOGRAPHIC — compact 6-cell stakeholder tax grid, each tax anchored to an implemented feature -->
-      <div class="tax-infographic" style="display:grid;grid-template-columns:repeat(6,1fr);gap:var(--sp-3);margin-top:var(--sp-5);margin-bottom:var(--sp-6)">
-        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: Agreement-anchored Composer + live Message timeline + automatic review step on legally-significant elements (ADR 0020/0021/0024)">
-          <i class="ti ti-user" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
-          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">Operator <span style="font-weight:400;text-transform:none;opacity:0.7">· Marcus</span></p>
-          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">Retention risk</strong>per-send friction (7 steps · form-route guesswork · refresh-to-verify) keeps anchor-tenant NPS soft &amp; cost-per-operator high</p>
+      <!-- CUSTOMER-SIDE TAX SUBHEAD -->
+      <p style="margin-top:var(--sp-5);margin-bottom:var(--sp-3);font-weight:600;color:var(--g-10);font-size:var(--fs-md);display:flex;align-items:center;gap:8px"><i class="ti ti-users" aria-hidden="true" style="color:var(--red-50)"></i>Customer-side taxes — the five stakeholders our anchor tenants and new prospects already pay every quarter:</p>
+
+      <!-- 5-CELL CUSTOMER PAIN GRID — each card pairs the pain (red) with the specific prototype mechanism that cancels it (green), inline and visible (not in a tooltip) -->
+      <div class="tax-infographic" style="display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-3);margin-top:var(--sp-3);margin-bottom:var(--sp-6)">
+        <!-- Operator -->
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <i class="ti ti-user" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Operator <span style="font-weight:400;text-transform:none;opacity:0.7">· Marcus, Cosco</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Retention risk</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; <strong>7 steps</strong> per send</li>
+              <li style="padding:1px 0">&times; Form-route guesswork (<strong>EForm vs ETR</strong>)</li>
+              <li style="padding:1px 0">&times; Refresh-to-verify delivery</li>
+              <li style="padding:1px 0">&times; No auto-review on legal docs</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Agreement-anchored Composer</strong> → 5 steps</li>
+              <li style="padding:1px 0">&check; <strong>Live Message timeline</strong> — no refresh</li>
+              <li style="padding:1px 0">&check; <strong>Auto-review</strong> on legally-significant</li>
+              <li style="padding:1px 0">&check; ETR keeps its own workspace</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0020 / 21 / 24 · Decisions 03, 04</p>
+          </div>
         </div>
-        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: Acting-as chip on Composer + audit triple (composed_by, acting_as_org, acting_as_pitstop) per ADR 0024">
-          <i class="ti ti-user-share" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
-          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">Service Provider <span style="font-weight:400;text-transform:none;opacity:0.7">· Chou</span></p>
-          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">Audit exposure</strong>SP-composed sends with ambiguous owner attribution — regulator &amp; insurer scrutiny lands on the platform</p>
+        <!-- Service Provider -->
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <i class="ti ti-user-share" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Service Provider <span style="font-weight:400;text-transform:none;opacity:0.7">· Pat, CrimsonLogic</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Audit exposure</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; Audit logs <strong>user</strong>, not acting-as <strong>org</strong></li>
+              <li style="padding:1px 0">&times; Picking the wrong owner is silent</li>
+              <li style="padding:1px 0">&times; Regulator scrutiny lands on platform</li>
+              <li style="padding:1px 0">&times; SPs absorb per-owner compliance risk</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Acting-as chip</strong> on every send — unmissable</li>
+              <li style="padding:1px 0">&check; Audit triple: <code style="font-size:10px">composed_by · acting_as_org · pitstop</code></li>
+              <li style="padding:1px 0">&check; Per-owner compliance trail, clean</li>
+              <li style="padding:1px 0">&check; SP can&rsquo;t silently mis-attribute</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADR 0024 · Decision 04</p>
+          </div>
         </div>
-        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: single-page registration + Smart Start grounded assist + spec-sheet on-ramp + refit + Test-as-operator (ADRs 0039/0040/0041/0042/0047)">
-          <i class="ti ti-shield-lock" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
-          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">DEX admin <span style="font-weight:400;text-transform:none;opacity:0.7">· Kagura</span></p>
-          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">Time-to-market</strong>weeks per new document type · quarterly spec drift · new business sectors onboard at competitor pace</p>
+        <!-- DEX admin -->
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <i class="ti ti-shield-lock" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">DEX admin <span style="font-weight:400;text-transform:none;opacity:0.7">· Sarah, SGTradex</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Time-to-market</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; <strong>Weeks</strong> per new document type</li>
+              <li style="padding:1px 0">&times; <strong>4-actor relay</strong>: admin → dev → tech lead → ops</li>
+              <li style="padding:1px 0">&times; Quarterly <strong>spec drift</strong></li>
+              <li style="padding:1px 0">&times; New sectors onboard at competitor pace</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Single-page</strong> admin-authored registration</li>
+              <li style="padding:1px 0">&check; <strong>Smart Start</strong> grounds in BD sheet + IMDA / BCA / MOH</li>
+              <li style="padding:1px 0">&check; <strong>Test-as-operator</strong> before publish</li>
+              <li style="padding:1px 0">&check; <strong>Refit</strong> on revised spec — closes drift</li>
+              <li style="padding:1px 0">&check; <strong>9 → 5</strong> steps to publish</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 40 / 41 / 42 / 47 · Decision 09</p>
+          </div>
         </div>
-        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: Platform Admin onboarding workbook + first-login Drafts materialisation (ADR 0048)">
-          <i class="ti ti-id-badge-2" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
-          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">Platform admin <span style="font-weight:400;text-transform:none;opacity:0.7">· KYC</span></p>
-          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">Activation drop-off</strong>prospects land on an empty inbox after KYC — below-benchmark first-week conversion inflates CAC</p>
+        <!-- Platform admin -->
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <i class="ti ti-id-badge-2" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Platform admin <span style="font-weight:400;text-transform:none;opacity:0.7">· KYC &amp; onboarding</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Activation drop-off</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; KYC labour <strong>evaporates</strong> into email threads</li>
+              <li style="padding:1px 0">&times; First impression: <strong>empty inbox</strong></li>
+              <li style="padding:1px 0">&times; Below-benchmark first-week conversion</li>
+              <li style="padding:1px 0">&times; CAC inflates</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Onboarding workbook</strong> during KYC pass</li>
+              <li style="padding:1px 0">&check; First-login <strong>pre-staged Drafts</strong></li>
+              <li style="padding:1px 0">&check; Tagged with who staged + why</li>
+              <li style="padding:1px 0">&check; Forward-refs hold until counterparty active</li>
+              <li style="padding:1px 0">&check; <em>Empty</em> → <em>consequential</em></li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADR 0048 · Decision 10</p>
+          </div>
         </div>
-        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: Agreement pack one-wizard-pass + Send-pack Composer mode (ADR 0027)">
-          <i class="ti ti-stack-2" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
-          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">Pack dispatcher</p>
-          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">Top-account ceiling</strong>large customers (port operators · shipping lines) spend an afternoon per multi-counterparty distribution &amp; consider direct integration</p>
-        </div>
-        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px" title="Cancelled by: admin-authored registration + bundle export to admin-corev2 production registry (ADRs 0039/0046)">
-          <i class="ti ti-code" aria-hidden="true" style="font-size:32px;color:var(--red-50)"></i>
-          <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0">Engineering</p>
-          <p style="font-size:var(--fs-meta-plus);color:var(--red-50);font-weight:500;line-height:1.3;margin:0"><strong style="font-size:22px;display:block;color:var(--red-30);margin-bottom:2px">Roadmap drag</strong>catalogue PRs + manual schema copy + infra restart consume the capacity that should ship revenue features</p>
+        <!-- Pack dispatcher -->
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <i class="ti ti-stack-2" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Pack dispatcher <span style="font-weight:400;text-transform:none;opacity:0.7">· top accounts (PSA, Maersk)</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Top-account ceiling</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; <strong>4 Agreements</strong> for 1 vessel pack</li>
+              <li style="padding:1px 0">&times; <strong>4 sends</strong>, 4 inboxes to reconcile</li>
+              <li style="padding:1px 0">&times; An afternoon of identical work</li>
+              <li style="padding:1px 0">&times; Top accounts eye direct integration</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Agreement pack</strong> — one wizard pass</li>
+              <li style="padding:1px 0">&check; <strong>Send-pack</strong> dispatches to all members</li>
+              <li style="padding:1px 0">&check; Per-counterparty audit preserved</li>
+              <li style="padding:1px 0">&check; <strong>Minutes</strong>, not an afternoon</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADR 0027 · Decision 07</p>
+          </div>
         </div>
       </div>
 
-      <p style="margin-top:var(--sp-4);margin-bottom:var(--sp-4);font-weight:500;color:var(--g-10);font-size:var(--fs-md)"><i class="ti ti-arrow-down" aria-hidden="true" style="margin-right:6px"></i>And in numbers — here is the tax each stakeholder stops paying once the rewrite ships:</p>
+      <!-- INTERNAL TEAM TAX SUBHEAD — what the same prototype does for Dex Technologies' own teams -->
+      <p style="margin-top:var(--sp-6);margin-bottom:var(--sp-3);font-weight:600;color:var(--g-10);font-size:var(--fs-md);display:flex;align-items:center;gap:8px"><i class="ti ti-building-skyscraper" aria-hidden="true" style="color:var(--g-30)"></i>Internal-team taxes — the five Dex Technologies teams whose capacity ships every DEX:</p>
+      <p style="margin-top:0;margin-bottom:var(--sp-4);color:var(--g-30);font-size:var(--fs-meta-plus);line-height:1.55">Per the Buildex Customer Journey Map, every customer phase from Awareness → Advocacy already names <em>BD · Product · Solution Architect · Developer · UXUI Designer · Ops</em> as the internal teams on the hook. Today, each of them pays a recurring tax to keep two portals × three DEXes × five consent vocabularies running.</p>
+
+      <!-- 5-CELL INTERNAL TEAM TAX GRID — accent yellow to distinguish from the red customer grid above; each card now visibly pairs the pain with the prototype mechanism that cancels it -->
+      <div class="tax-infographic" style="display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-3);margin-top:var(--sp-3);margin-bottom:var(--sp-6)">
+        <!-- BD -->
+        <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-target-arrow" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">BD <span style="font-weight:400;text-transform:none;opacity:0.7">· Business Development</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Pipeline velocity</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; <strong>Weeks</strong> waiting on engineering per document type</li>
+              <li style="padding:1px 0">&times; Can&rsquo;t demo a prospect&rsquo;s Excel live</li>
+              <li style="padding:1px 0">&times; Competitors close in PR-review time</li>
+              <li style="padding:1px 0">&times; Healthdex / Buildex sector expansion drags</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; Drop prospect&rsquo;s Excel into <strong>Smart Start</strong></li>
+              <li style="padding:1px 0">&check; Demo a working schema in <strong>minutes</strong></li>
+              <li style="padding:1px 0">&check; Quarters → <strong>days</strong> to POC</li>
+              <li style="padding:1px 0">&check; Live pitches close while competitors wait</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 40 / 41 · Decision 09</p>
+          </div>
+        </div>
+        <!-- Product -->
+        <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-bulb" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Product <span style="font-weight:400;text-transform:none;opacity:0.7">· PRD throughput</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Roadmap drag</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; Every feature ships <strong>twice</strong> (admin + pitstop)</li>
+              <li style="padding:1px 0">&times; <strong>5 vocabularies</strong>: Subscription, DER, SPR, EForm, ETR</li>
+              <li style="padding:1px 0">&times; Catalogue plumbing crowds revenue features</li>
+              <li style="padding:1px 0">&times; PRD-to-ship cycles unpredictable</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>2 portals → 1</strong> (Centralised Log-In)</li>
+              <li style="padding:1px 0">&check; <strong>5 vocabularies → 2</strong>: Agreement + Message</li>
+              <li style="padding:1px 0">&check; Catalogue work leaves product backlog</li>
+              <li style="padding:1px 0">&check; <strong>One PRD</strong> per feature; ships once</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0007 / 13 / 39 · Decisions 01-10</p>
+          </div>
+        </div>
+        <!-- Engineering -->
+        <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-cpu" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Engineering <span style="font-weight:400;text-transform:none;opacity:0.7">· Karthik&rsquo;s Exchanges tribe</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Catalogue relay</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; PR review per document type</li>
+              <li style="padding:1px 0">&times; Manual <strong>schema copy</strong> across envs</li>
+              <li style="padding:1px 0">&times; <strong>4 manual API calls</strong> + infra restart</li>
+              <li style="padding:1px 0">&times; Blocks 2025 <strong>80%-automation</strong> goal</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; Bundle exports to <strong>admin-corev2</strong></li>
+              <li style="padding:1px 0">&check; No PR, no schema copy, no restart</li>
+              <li style="padding:1px 0">&check; Squads off the catalogue relay</li>
+              <li style="padding:1px 0">&check; Capacity → platform infrastructure</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 46 · Decision 09</p>
+          </div>
+        </div>
+        <!-- UIUX -->
+        <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-palette" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">UIUX <span style="font-weight:400;text-transform:none;opacity:0.7">· Veronica&rsquo;s team</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Surface-area sprawl</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; <strong>2 portals × 3 DEXes</strong> of design surface</li>
+              <li style="padding:1px 0">&times; Personas inconsistent across portals</li>
+              <li style="padding:1px 0">&times; <strong>DS v1.0 adoption gaps</strong> (pitstop ↔ admin drift)</li>
+              <li style="padding:1px 0">&times; Every audit runs N times</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>One portal · one design system</strong></li>
+              <li style="padding:1px 0">&check; One role taxonomy w/ capability gates</li>
+              <li style="padding:1px 0">&check; <strong>DS v1.0 → v2.0</strong>, half the surface area</li>
+              <li style="padding:1px 0">&check; Audits run <strong>once</strong>, not N times</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0001 / 30 / 32 · informs DS v2.0</p>
+          </div>
+        </div>
+        <!-- Ops -->
+        <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-headset" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Ops <span style="font-weight:400;text-transform:none;opacity:0.7">· Suraj&rsquo;s tribe · L1 &amp; change risk</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Ticket &amp; change load</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; &quot;Where do I start?&quot; tickets</li>
+              <li style="padding:1px 0">&times; &quot;Where&rsquo;s my data?&quot; tickets</li>
+              <li style="padding:1px 0">&times; Manual use-case / DE-approval / org-delete</li>
+              <li style="padding:1px 0">&times; Every content change = <strong>change-risk review</strong></li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Pre-staged Drafts</strong> close empty-inbox tickets</li>
+              <li style="padding:1px 0">&check; <strong>Live timeline</strong> closes status tickets</li>
+              <li style="padding:1px 0">&check; Admin-authored elements bypass API tooling</li>
+              <li style="padding:1px 0">&check; <strong>Bulk-onboarding workbook</strong> for Ops</li>
+              <li style="padding:1px 0">&check; Change-risk surface shrinks</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 46 / 48 · Decisions 03, 10</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- BRIDGE FOR MANAGEMENT — explicit framing of what approval unlocks -->
+      <p style="margin-top:0;margin-bottom:var(--sp-5);padding:var(--sp-4);background:var(--yellow-98,#fff8f1);border-left:3px solid var(--yellow-50,#7a6007);border-radius:6px;color:var(--g-10);font-size:var(--fs-meta-plus);line-height:1.55"><strong>The decision:</strong> this prototype is not a UI rewrite. It is the <em>cancellation of ten recurring taxes</em> — five paid by anchor tenants &amp; new prospects, five paid by BD, Product, Engineering, UIUX, and Ops, whose throughput already gates Healthdex&rsquo;s next sector, Buildex SMP, and TraDex&rsquo;s top-account ceiling.</p>
+
+      <p style="margin-top:var(--sp-4);margin-bottom:var(--sp-4);font-weight:500;color:var(--g-10);font-size:var(--fs-md)"><i class="ti ti-arrow-down" aria-hidden="true" style="margin-right:6px"></i>And in numbers — here is the tax each stakeholder (customer-side and internal) stops paying once the rewrite ships:</p>
 
       <div class="ov-stats">
         <div class="ov-stat ov-stat--featured">
@@ -1720,15 +1982,15 @@
         </div>
         <div class="ov-callout">
           <i class="ti ti-user-share" aria-hidden="true"></i>
-          <p><strong>Service Provider</strong> · Chou, CrimsonLogic · <em>"I compose Messages on behalf of several data owners. The Composer doesn't show me whose data I'm sending — the audit records me as the sender, but not the org I was acting for. If I pick the wrong owner, no banner catches it."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> No visible "whose data am I sending?" surface. Audit records the user but not the acting-as org. SPs absorb compliance risk for each owner's send.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"An 'Acting as {OwnerOrg}' chip is on the Composer for every send — it's unmissable. The audit records both me and the owner I was acting for, so the compliance trail is clean per owner."</em></p>
+          <p><strong>Service Provider</strong> · Pat, CrimsonLogic · <em>"I compose Messages on behalf of several data owners. The Composer doesn't show me whose data I'm sending — the audit records me as the sender, but not the org I was acting for. If I pick the wrong owner, no banner catches it."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> No visible "whose data am I sending?" surface. Audit records the user but not the acting-as org. SPs absorb compliance risk for each owner's send.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"An 'Acting as {OwnerOrg}' chip is on the Composer for every send — it's unmissable. The audit records both me and the owner I was acting for, so the compliance trail is clean per owner."</em></p>
         </div>
         <div class="ov-callout">
           <i class="ti ti-shield-lock" aria-hidden="true"></i>
-          <p><strong>DEX admin</strong> · Kagura, SGTradex · <em>"A new document type takes weeks. I author an Excel signoff sheet, raise a service request, a developer codes it into a schema PR, tech leads copy the schema across environments, ops restarts infrastructure. When BD revises the spec quarterly, the schema drifts because re-authoring 49 rows by hand is brutal — so we just don't."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> 4-actor relay across days-to-weeks per element. Quarterly spec drift because re-authoring is too painful. Authoring starts from a blank page every time — Confluence requirements + BD spec sheet + IMDA standard get hand-translated each time.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"One screen. Smart Start reads my three sources and proposes the schema with citations — I adjudicate evidence. When BD revises the Excel, I re-upload it and the system preserves my edits — I only adjudicate the diff. Before publish, Test-as-operator lets me experience the partner-side form myself, so I catch my mistakes."</em></p>
+          <p><strong>DEX admin</strong> · Sarah, SGTradex · <em>"A new document type takes weeks. I author an Excel signoff sheet, raise a service request, a developer codes it into a schema PR, tech leads copy the schema across environments, ops restarts infrastructure. When BD revises the spec quarterly, the schema drifts because re-authoring 49 rows by hand is brutal — so we just don't."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> 4-actor relay across days-to-weeks per element. Quarterly spec drift because re-authoring is too painful. Authoring starts from a blank page every time — Confluence requirements + BD spec sheet + IMDA standard get hand-translated each time.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"One screen. Smart Start reads my three sources and proposes the schema with citations — I adjudicate evidence. When BD revises the Excel, I re-upload it and the system preserves my edits — I only adjudicate the diff. Before publish, Test-as-operator lets me experience the partner-side form myself, so I catch my mistakes."</em></p>
         </div>
         <div class="ov-callout">
           <i class="ti ti-id-badge-2" aria-hidden="true"></i>
-          <p><strong>Platform admin</strong> · Kagura, Super SGTradex Admin · <em>"I complete KYC, gather every counterparty the prospect wants to transact with, learn the terms. None of that survives into the operator's first session. They land on an empty inbox and message us asking where to start. We've done the work; nothing arrives."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> Due-diligence labour evaporates into email threads. The prospect org's peak-end first impression is <em>empty</em>. Onboarding intent gets recreated from scratch by the operator — sometimes incorrectly.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"I capture the onboarding intent in a workbook during the same KYC pass I'm already running. At the operator's first login, every Agreement I staged appears in their Drafts, pre-filled and tagged with who staged it and why. They review and send. The work I did is what they see."</em></p>
+          <p><strong>Platform admin</strong> · Sarah, Super SGTradex Admin · <em>"I complete KYC, gather every counterparty the prospect wants to transact with, learn the terms. None of that survives into the operator's first session. They land on an empty inbox and message us asking where to start. We've done the work; nothing arrives."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> Due-diligence labour evaporates into email threads. The prospect org's peak-end first impression is <em>empty</em>. Onboarding intent gets recreated from scratch by the operator — sometimes incorrectly.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"I capture the onboarding intent in a workbook during the same KYC pass I'm already running. At the operator's first login, every Agreement I staged appears in their Drafts, pre-filled and tagged with who staged it and why. They review and send. The work I did is what they see."</em></p>
         </div>
         <div class="ov-callout">
           <i class="ti ti-stack-2" aria-hidden="true"></i>
@@ -2726,7 +2988,7 @@
     <h3>Who's the counterparty?</h3>
     <div class="selected-cp"><div class="cp-avatar" style="background:var(--bx-95);color:var(--bx-20)">AC</div><div class="cp-body"><div class="cp-name">Acme Construction Pte Ltd</div><div style="display:flex;gap:6px;margin-top:2px;align-items:center"><span class="dex-chip bx" style="font-size:10px;padding:2px 6px"><span class="dex-dot"></span>SGBuildex</span><span style="font-size:11px;color:var(--g-50)">Contractor · UEN 201111223J</span></div></div><i class="ti ti-check" style="font-size:16px;color:var(--green-50)"></i></div>
     <!-- Issue 0007 — Acme is the canonical cross-DEX example (primaryDexId='bx'). Warning copy + primary contact line below. -->
-    <div class="warn-panel"><div class="row"><i class="ti ti-alert-triangle"></i><div><p class="ttl">This Agreement crosses a DEX boundary</p><p class="desc">Acme Construction's primary DEX is <strong>SGBuildex</strong>. You're creating this Agreement from <strong>SGTradex</strong>. SGBuildex residency rules apply to outgoing data.</p><p class="desc" style="margin-top:6px"><strong style="font-weight:500">Primary contact at Acme:</strong> Khufra <span style="color:var(--g-50)">(khufra@acme-co.com)</span></p><p class="audit">Your acknowledgement of this warning will be audit-logged.</p></div></div></div>
+    <div class="warn-panel"><div class="row"><i class="ti ti-alert-triangle"></i><div><p class="ttl">This Agreement crosses a DEX boundary</p><p class="desc">Acme Construction's primary DEX is <strong>SGBuildex</strong>. You're creating this Agreement from <strong>SGTradex</strong>. SGBuildex residency rules apply to outgoing data.</p><p class="desc" style="margin-top:6px"><strong style="font-weight:500">Primary contact at Acme:</strong> Boon Keng <span style="color:var(--g-50)">(boonkeng@acme-co.com)</span></p><p class="audit">Your acknowledgement of this warning will be audit-logged.</p></div></div></div>
     <div class="warn-actions"><button class="btn-cancel" onclick="toast('Cancelled · returning to counterparty picker','warn'); goto('cp-picker')">Cancel</button><button class="btn-deliberate" onclick="acknowledgeWarn()">Continue anyway</button></div>
   </div>
 </section>
@@ -4666,7 +4928,7 @@
 <div class="popover" id="notif-popover" hidden>
   <div class="popover-head"><h5>Notifications</h5><a onclick="markAllRead()">Mark all read</a></div>
   <div class="popover-list">
-    <div class="popover-item" onclick="closeNotif(); goto('detail')"><span class="pn-dot unread"></span><div class="pn-body"><p><strong>Granger (Maersk)</strong> accepted your Agreement</p><p class="pn-time">21 Mar · 09:12 SGT</p></div></div>
+    <div class="popover-item" onclick="closeNotif(); goto('detail')"><span class="pn-dot unread"></span><div class="pn-body"><p><strong>Lars (Maersk)</strong> accepted your Agreement</p><p class="pn-time">21 Mar · 09:12 SGT</p></div></div>
     <div class="popover-item" onclick="closeNotif(); openExtend('Cosco Shipping')"><span class="pn-dot unread"></span><div class="pn-body"><p>Agreement with <strong>Cosco</strong> expires in 9 days</p><p class="pn-time">Today · 08:00 SGT</p></div></div>
     <div class="popover-item" onclick="closeNotif(); goto('inbox-tx')"><span class="pn-dot read"></span><div class="pn-body"><p><strong>3 contributor enrolments</strong> awaiting your approval</p><p class="pn-time">Yesterday · 14:23 SGT</p></div></div>
   </div>

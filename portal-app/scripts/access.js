@@ -125,7 +125,7 @@ function resolveSeat(userId, dexId) {
         → return them.
      2. Otherwise, look for a same-org colleague who has a seat on this DEX.
         Same-org = `primaryOrgId === defaultUser.primaryOrgId`. (Marcus's
-        colleagues are Alice + David at Cosco; Sarah's colleague is Wei Lin at
+        colleagues are Bea + David at Cosco; Sarah's colleague is Wei Lin at
         SGTradex; Pat has no same-org colleagues.)
         → return the first match.
      3. Otherwise, return null — the router redirects to the persona's home DEX
@@ -364,7 +364,7 @@ function activeAffiliation() {
 /* Returns the role string the active user holds on the given DEX. Reads via
    resolveSeat — the canonical path. null means the active user has no seat on
    this DEX. Issue 0002 onwards: the user is resolved per (currentPersona, dexId)
-   so Marcus on TX returns 'Admin User' but Alice (active user on BX) returns
+   so Marcus on TX returns 'Admin User' but Bea (active user on BX) returns
    'Operation User'. */
 function activeRole(dexId) {
   const uid = resolveActiveUserId(currentPersona, dexId);
@@ -553,8 +553,8 @@ function _legacySceneKey(scene) {
 
    IMPORTANT: resolves the user via activeUserId() — NOT via PERSONAS[currentPersona].
    Per ADR 0030, the active user is a function of (persona category × URL DEX):
-   participant + /portal/bx resolves to Alice, not Marcus. Reading the persona's
-   default would always return Marcus and SCENE_SEEDS lookups for Alice's BX or
+   participant + /portal/bx resolves to Bea, not Marcus. Reading the persona's
+   default would always return Marcus and SCENE_SEEDS lookups for Bea's BX or
    David's HX scenes would never resolve on plain in-app sidebar navigation. */
 function currentScene() {
   const users = _refUsers();

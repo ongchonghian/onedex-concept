@@ -5579,7 +5579,7 @@ const MESSAGE_FLOWS = {
       'Size':                 '3.1 KB',
       'Encryption (transit)': 'TLS 1.3 · ECDHE-RSA-AES256',
       'Encryption (rest)':    'AES-256-GCM · key #kms_2026_q2',
-      'Composed by':          'Pat Chou (CrimsonLogic)',
+      'Composed by':          'Pat Pat (CrimsonLogic)',
       'Acting as':            'Maersk Logistics (data owner)',
       'Acknowledged':         '10:22:04.088 SGT (T+3s)'
     },
@@ -5588,7 +5588,7 @@ const MESSAGE_FLOWS = {
       { dot: 'green', who: 'Cosco pitstop',    text: 'Payload received · 200 OK · idempotency key stored',                                                      when: '10:22 SGT · automated' },
       { dot: 'green', who: 'CL-Shipping',      text: 'Payload encrypted and transmitted to Cosco via TLS 1.3',                                                  when: '10:22 SGT · automated' },
       // actingAs: true → renderer tags this <li> with data-demo="message.audit.acting-as-row"
-      { dot: 'tx',    who: 'Pat Chou',         text: 'Composed via Composer · acting as <strong>Maersk Logistics</strong> · idempotency key <code>idem_cl_8b2e44</code>', when: '10:22 SGT · request_id req_cl_8b2e44', actingAs: true }
+      { dot: 'tx',    who: 'Pat Pat',         text: 'Composed via Composer · acting as <strong>Maersk Logistics</strong> · idempotency key <code>idem_cl_8b2e44</code>', when: '10:22 SGT · request_id req_cl_8b2e44', actingAs: true }
     ]
   }
 };
@@ -9037,8 +9037,8 @@ function buildPortalTopbarHtml() {
  * Returns the active role name. For platform-admin persona it's a platform-tier role
  * (SGTradex Admin / Super SGTradex Admin); for participant it's the per-DEX role.
  *
- * Per Issue 0002 (./docs/issues/0002-alice-on-buildex.md), the lookup queries the
- * RESOLVED ACTIVE USER (Marcus on TX, Alice on BX, David on HX once Issue 0003 lands)
+ * Per Issue 0002 (./docs/issues/0002-bea-on-buildex.md), the lookup queries the
+ * RESOLVED ACTIVE USER (Marcus on TX, Bea on BX, David on HX once Issue 0003 lands)
  * rather than the persona category's default user. INBOX_BY_DEX stays as a final
  * fallback for the transition window.
  *
@@ -9104,7 +9104,7 @@ function refreshRoleChips() {
     //     as if platform admins were DEX-scoped, which they aren't.
     //     When the active user is the nominated platform admin for this DEX
     //     (via PLATFORM_ADMIN_BY_DEX), surface that: "{role} · platform admin
-    //     for SGBuildex" so Beatrix's role reads as her actual identity.
+    //     for SGBuildex" so Diane's role reads as her actual identity.
     const tier = (ROLE_CAPABILITIES[role] && ROLE_CAPABILITIES[role].tier) || null;
     if (tier === 'platform') {
       const activeUid = (typeof workspaceMeta === 'function' && workspaceMeta()) ? workspaceMeta().activeUserId : null;
@@ -9216,7 +9216,7 @@ function switchPersona(personaId) {
   // active persona so workspace renderers (drafts, inbox, etc.) filter to
   // the correct operator on every persona pivot.
   // Slice 5.8 (2026-05-21) — DEX-aware resolution: route through
-  // resolveActiveUserId so platform-admin picks Beatrix on BX (per
+  // resolveActiveUserId so platform-admin picks Diane on BX (per
   // PLATFORM_ADMIN_BY_DEX in state.js) instead of the static Sarah default.
   if (typeof patchWorkspaceMeta === 'function') {
     const _currentDex = (typeof currentDexCode === 'function') ? currentDexCode() : null;
@@ -9376,7 +9376,7 @@ function rebuildAllShells() {
  * with a colleague chevron when same-affiliation colleagues exist. Avatar
  * transitions via 200ms cross-fade — see .avatar transition rule in components.css. */
 function applyPersonaChrome() {
-  // Active user descriptor — Marcus on TX, Alice on BX, etc. Falls back to the
+  // Active user descriptor — Marcus on TX, Bea on BX, etc. Falls back to the
   // persona category's default user when the resolver finds no seat.
   const active = (typeof activeUserDescriptor === 'function') ? activeUserDescriptor() : PERSONAS[currentPersona];
   if (!active) return;
@@ -9618,7 +9618,7 @@ function switchToAccount(userId) {
     if (dexKeys.length) homeDexCode = dexKeys[0];
   } else if (aff && aff.platformRole && typeof PLATFORM_ADMIN_BY_DEX !== 'undefined') {
     // Platform-tier users have no per-DEX seat — their "home DEX" is the one
-    // PLATFORM_ADMIN_BY_DEX nominates them for. Beatrix on BX, Kagura on TX, etc.
+    // PLATFORM_ADMIN_BY_DEX nominates them for. Diane on BX, Sarah on TX, etc.
     // Falls through to null when no entry exists (user stays on current DEX).
     for (const d of Object.keys(PLATFORM_ADMIN_BY_DEX)) {
       if (PLATFORM_ADMIN_BY_DEX[d] === userId) { homeDexCode = d; break; }

@@ -43,12 +43,12 @@ const PLATFORM_INBOX = {
   mine: [
     { dexId: 'tx', title: 'Pacific Container Lines — onboarding KYC review', meta: 'Org onboarding · KYC submitted 3d ago · awaiting your decision', btn: 'Review', cta: 'review-org', intent: 'decide', sourceType: 'governance' },
     { dexId: 'bx', title: 'Acme Construction → SGBuildex · network admission', meta: 'Cross-DEX admission request · 2 of 3 platform admins approved', btn: 'Approve', cta: 'approve-network', intent: 'decide', sourceType: 'governance' },
-    { dexId: 'tx', title: 'Promote Bill of Lading v2.1 → Active (SGTradex)', meta: 'Data element governance · drafted by Kagura · review window closes today', btn: 'Open', cta: 'open-de-promotion', intent: 'decide', sourceType: 'governance', requires: 'Super SGTradex Admin' },
+    { dexId: 'tx', title: 'Promote Bill of Lading v2.1 → Active (SGTradex)', meta: 'Data element governance · drafted by Sarah · review window closes today', btn: 'Open', cta: 'open-de-promotion', intent: 'decide', sourceType: 'governance', requires: 'Super SGTradex Admin' },
     { dexId: 'hx', title: 'Issue SGHealthdex network certificate renewal', meta: 'Network · current cert expires in 21d · renewal SOP applies', btn: 'Renew', cta: 'renew-network', intent: 'confirm', sourceType: 'governance' }
   ],
   team: [
     { dexId: 'bx', title: 'Onboard 4 SGBuildex contractor orgs — batch KYC', meta: 'Org onboarding · queued by automation · 2 admins eligible', btn: 'Claim', intent: 'decide', sourceType: 'governance' },
-    { dexId: 'tx', title: 'Lesley approved Greater Bay Logistics org admin role', meta: 'Completed 12 min ago · disappears from inbox in 3 min', completion: true },
+    { dexId: 'tx', title: 'Wei Lin approved Greater Bay Logistics org admin role', meta: 'Completed 12 min ago · disappears from inbox in 3 min', completion: true },
     { dexId: 'tx', title: 'Maersk requested SP appointment authority on SGTradex', meta: 'Service-Provider authorisation · pending platform sign-off', btn: 'Claim', intent: 'decide', sourceType: 'governance' }
   ]
 };
@@ -71,7 +71,7 @@ const INBOX_BY_DEX = {
     ],
     team: [
       { title: 'PSA bunker delivery — 3 contributor enrolments pending', meta: 'Approval · oldest 4h ago · 3 admins eligible', btn: 'Claim', intent: 'decide', sourceType: 'agreement' },
-      { title: 'Layla approved CrimsonLogic appointment for ABC Logistics', meta: 'Completed 2 min ago · disappears from inbox in 3 min', completion: true },
+      { title: 'Bea approved CrimsonLogic appointment for ABC Logistics', meta: 'Completed 2 min ago · disappears from inbox in 3 min', completion: true },
       { title: 'Review onboarding KYC for Pacific Container Lines', meta: 'Approval · 1d ago · 3 admins eligible', btn: 'Claim', intent: 'decide', sourceType: 'governance' }
     ]
   },
@@ -87,7 +87,7 @@ const INBOX_BY_DEX = {
     ],
     team: [
       { title: 'Builder safety incident reports — 2 awaiting upload', meta: 'Compliance · oldest 6h ago', btn: 'Claim', intent: 'decide', sourceType: 'agreement' },
-      { title: 'Layla approved subcontractor onboarding', meta: 'Completed 4 min ago', completion: true }   // Issue 0002 — reattributed from Wei Lin (who is canonically platform-tier per Issue 0004)
+      { title: 'Bea approved subcontractor onboarding', meta: 'Completed 4 min ago', completion: true }   // Issue 0002 — reattributed from Wei Lin (who is canonically platform-tier per Issue 0004)
     ]
   },
   hx: {
@@ -321,16 +321,16 @@ const MP_SCENARIOS = {
 const SCENE_SEEDS = {
 
   /* ----------------------------------------------------------
-     alice-cosco-bx-C — Issue 0010 placeholder for Alice's BX scenes
-     Alice is Cosco's BX Operation User. Per-DEX inbox/agreements/messages
+     bea-cosco-bx-C — Issue 0010 placeholder for Bea's BX scenes
+     Bea is Cosco's BX Operation User. Per-DEX inbox/agreements/messages
      for SGBuildex come from INBOX_BY_DEX.bx fallback today; this entry exists
      so the resolver returns a non-null scope when the active scene asks for
-     Alice. Detail screen seed deferred — Alice's scenes get full seeds when
+     Bea. Detail screen seed deferred — Bea's scenes get full seeds when
      BX-specific demo content is authored (separate workstream).
      ---------------------------------------------------------- */
-  'alice-cosco-bx-C': {
+  'bea-cosco-bx-C': {
     /* Full seed — replaces the Issue 0010 placeholder.
-       Alice operates Cosco Construction's SGBuildex Pitstop as an Operation User.
+       Bea operates Cosco Construction's SGBuildex Pitstop as an Operation User.
        The three data elements seeded here exercise SGBuildex's regulatory + contractor
        surface:
          · Subcontractor Onboarding v1.0  — Cosco ↔ Acme (cross-DEX counterparty)
@@ -356,7 +356,7 @@ const SCENE_SEEDS = {
         uen:          'UEN 201111223J',
         roleLabel:    'Contractor',
         partyLabel:   'Receiver · Counterparty',
-        acceptorName: 'Khufra (Acme)',
+        acceptorName: 'Boon Keng (Acme)',
         primaryUserId:'boonkeng'                       // ADR 0031 — user-record-backed
       },
       element: {
@@ -386,13 +386,13 @@ const SCENE_SEEDS = {
         text:    'Acme is a cross-DEX counterparty (primary SGBuildex). Payload validation runs against BCA grade schema before dispatch — Operation Users cannot bypass.',
         ctaLabel:'Open validation log'
       },
-      // Activity rows — Alice is operator (literal actor); Acme's boonkeng is cross-org
+      // Activity rows — Bea is operator (literal actor); Acme's boonkeng is cross-org
       // (actorUserId); BCA + Marcus historical (literal actor).
       activity: [
-        { actor: 'Layla',              action: 'submitted Subcontractor Onboarding payload for May intake', time: 'Today · 11:30 SGT',         timeISO: '2026-05-17T11:30+08:00', dot: 'bx' },
+        { actor: 'Bea',              action: 'submitted Subcontractor Onboarding payload for May intake', time: 'Today · 11:30 SGT',         timeISO: '2026-05-17T11:30+08:00', dot: 'bx' },
         { actor: 'BCA Compliance Desk',action: 'acknowledged 142 submissions this week',                    time: 'Today · 09:00 SGT · automated', timeISO: '2026-05-17T09:00+08:00', dot: 'bx' },
         { actorUserId: 'boonkeng',     action: 'accepted the Agreement',                                     time: '28 Apr · 14:30 SGT',         timeISO: '2026-04-28T14:30+08:00', dot: 'green' },
-        { actor: 'Marcus Ong',         action: 'created the Agreement and sent the invitation (BX seat since reassigned to Layla per Issue 0002)', time: '24 Apr · 11:00 SGT', timeISO: '2026-04-24T11:00+08:00', dot: 'muted' }
+        { actor: 'Marcus Ong',         action: 'created the Agreement and sent the invitation (BX seat since reassigned to Bea per Issue 0002)', time: '24 Apr · 11:00 SGT', timeISO: '2026-04-24T11:00+08:00', dot: 'muted' }
       ]
     },
 
@@ -410,7 +410,7 @@ const SCENE_SEEDS = {
       ],
       team: [
         { title: 'Builder safety incident reports — 2 awaiting upload',                     meta: 'Compliance · oldest 6h ago',                                        btn: 'Claim', intent: 'decide', sourceType: 'agreement' },
-        { title: 'Layla approved subcontractor onboarding',                                  meta: 'Completed 4 min ago',                                              completion: true },
+        { title: 'Bea approved subcontractor onboarding',                                  meta: 'Completed 4 min ago',                                              completion: true },
         { title: 'Manpower utilization · May submission failed (retry available)',           meta: 'Operations · BCA receiver · 1 of 1 retries remaining',             btn: 'Claim', intent: 'fix', sourceType: 'message' }
       ]
     },
@@ -419,8 +419,8 @@ const SCENE_SEEDS = {
        deep-links cleanly without authoring a separate fixture.
        PACK-DETAIL aliases the entire agreements[] array so the pack-detail
        renderer can find the pack-parent + member rows in one place. */
-    'message-detail': { alias: 'alice-cosco-bx-C/messages[0]' },
-    'pack-detail':    { alias: 'alice-cosco-bx-C/agreements' },
+    'message-detail': { alias: 'bea-cosco-bx-C/messages[0]' },
+    'pack-detail':    { alias: 'bea-cosco-bx-C/agreements' },
 
     /* DASHBOARD deferred — INBOX_BY_DEX.bx fallback covers the placeholder shape. */
     dashboard: null,
@@ -475,7 +475,7 @@ const SCENE_SEEDS = {
 
   /* ----------------------------------------------------------
      david-cosco-hx-C — Issue 0010 placeholder for David's HX scenes
-     David is Cosco's HX Super Admin. Same pattern as Alice's placeholder —
+     David is Cosco's HX Super Admin. Same pattern as Bea's placeholder —
      INBOX_BY_DEX.hx is the rendering source today; this entry preserves the
      resolver's null-safety until HX-specific demo content is authored.
      ---------------------------------------------------------- */
@@ -508,7 +508,7 @@ const SCENE_SEEDS = {
         uen:          'UEN 200002698R',
         roleLabel:    'Healthcare cluster',
         partyLabel:   'Receiver · Counterparty',
-        acceptorName: 'Dr Estes (SingHealth)',
+        acceptorName: 'Dr Priya (SingHealth)',
         primaryUserId:'priya'                          // ADR 0031 — user-record-backed
       },
       element: {
@@ -541,10 +541,10 @@ const SCENE_SEEDS = {
       // Activity rows — David is operator; priya (SingHealth) is cross-org;
       // MOH automated entries use literal actor strings.
       activity: [
-        { actor: 'Lancelot',           action: 'completed annual data-classification review for HX residency-strict elements', time: '2 days ago · 16:00 SGT', timeISO: '2026-05-15T16:00+08:00', dot: 'hx' },
+        { actor: 'David',           action: 'completed annual data-classification review for HX residency-strict elements', time: '2 days ago · 16:00 SGT', timeISO: '2026-05-15T16:00+08:00', dot: 'hx' },
         { actor: 'MOH Compliance Desk', action: 'audited 1,284 patient referral records this quarter (no findings)',           time: '08 May · 09:00 SGT · automated', timeISO: '2026-05-08T09:00+08:00', dot: 'hx' },
         { actorUserId: 'priya',         action: 'accepted the Agreement',                                                       time: '12 Feb · 10:42 SGT',     timeISO: '2026-02-12T10:42+08:00', dot: 'green' },
-        { actor: 'Lancelot',           action: 'created the Agreement and sent the invitation',                                time: '08 Feb · 11:08 SGT',     timeISO: '2026-02-08T11:08+08:00', dot: 'muted' }
+        { actor: 'David',           action: 'created the Agreement and sent the invitation',                                time: '08 Feb · 11:08 SGT',     timeISO: '2026-02-08T11:08+08:00', dot: 'muted' }
       ]
     },
 
@@ -559,12 +559,12 @@ const SCENE_SEEDS = {
       mine: [
         { title: 'Annual compliance certificate expires in 14 days',                   meta: 'Renewal · residency-strict · no grace period',                                       btn: 'Renew',  cta: 'renew-strict', intent: 'confirm', sourceType: 'agreement', dueAt: '2026-06-02T00:00:00+08:00' },
         { title: 'Re-attest Patient Referral Record classification with SingHealth',   meta: 'Governance · residency-strict · attestation due 24 May',                            btn: 'Attest', cta: 'attest', intent: 'confirm', sourceType: 'governance', dueAt: '2026-05-24T00:00:00+08:00' },
-        { title: 'Promote Dr Angela to Operation User on SGHealthdex',                    meta: 'User management · 1 pending nomination from Polyclinic Bedok',                      btn: 'Open',   cta: 'open', intent: 'decide', sourceType: 'governance' }
+        { title: 'Promote Dr Joshua to Operation User on SGHealthdex',                    meta: 'User management · 1 pending nomination from Polyclinic Bedok',                      btn: 'Open',   cta: 'open', intent: 'decide', sourceType: 'governance' }
       ],
       team: [
         { title: 'Patient registry data classification review',                         meta: 'Governance · residency-strict · 2 Super Admins eligible',                            btn: 'Claim', intent: 'decide', sourceType: 'governance' },
         { title: 'Lab partnership Agreement awaiting compliance sign-off',              meta: 'Compliance review · with legal · 24h SLA',                                           btn: 'Claim', intent: 'decide', sourceType: 'agreement' },
-        { title: 'Lancelot approved Diabetic Foot Screening flow from Polyclinic Bedok',  meta: 'Completed 6 min ago · disappears from inbox in 3 min',                            completion: true }
+        { title: 'David approved Diabetic Foot Screening flow from Polyclinic Bedok',  meta: 'Completed 6 min ago · disappears from inbox in 3 min',                            completion: true }
       ]
     },
 
@@ -583,7 +583,7 @@ const SCENE_SEEDS = {
     /* PARTICIPANTS — directory cards anchored to ORGS + primary contacts. */
     participants: [
       { initials: 'SH', name: 'SingHealth',                  orgId: 'singhealth',       meta: 'Healthcare cluster · UEN 200002698R · 18 team members · 1 active Agreement with you', useCases: ['Patient referral', 'Clinical handover'],   status: { kind: 'active',  label: 'Active' },     joined: 'Joined 12 Feb 2024', primaryUserId: 'priya' },
-      { initials: 'ME', name: 'MOH Eye Screening Centre',    orgId: 'moh-esc',          meta: 'Regulator · MOH Singapore · 6 clinical leads · 1 active Agreement with you',          useCases: ['Diabetic Retinal Photography', 'Prescription dispense'], status: { kind: 'active', label: 'Active' }, joined: 'Joined 03 Apr 2024', primaryUserId: 'ruby' },
+      { initials: 'ME', name: 'MOH Eye Screening Centre',    orgId: 'moh-esc',          meta: 'Regulator · MOH Singapore · 6 clinical leads · 1 active Agreement with you',          useCases: ['Diabetic Retinal Photography', 'Prescription dispense'], status: { kind: 'active', label: 'Active' }, joined: 'Joined 03 Apr 2024', primaryUserId: 'rosalind' },
       { initials: 'PB', name: 'Polyclinic Bedok',            orgId: 'polyclinic-bedok', meta: 'Polyclinic · MOH-linked · 9 clinicians · 1 active Agreement with you',                 useCases: ['Diabetic Foot Screening'],                 status: { kind: 'active',  label: 'Active' },     joined: 'Joined 21 Jun 2024', primaryUserId: 'joshua' },
       { initials: 'KK', name: 'KK Women’s and Children’s Hospital', meta: 'Specialist hospital · KKH · onboarding in progress',                                              useCases: ['Patient referral (pending)'],              status: { kind: 'pending', label: 'Pending attestation' }, joined: 'Invited 4 days ago' }
     ],
@@ -652,7 +652,7 @@ const SCENE_SEEDS = {
         uen:          'UEN 197905XXXX',
         roleLabel:    'Port operator',
         partyLabel:   'Receiver · Counterparty',
-        acceptorName: 'Hayabusa (PSA)',                // (legacy fallback) — superseded by primaryUserId per Issue 0005
+        acceptorName: 'Wen Chen (PSA)',                // (legacy fallback) — superseded by primaryUserId per Issue 0005
         primaryUserId:'wenchen'                        // Issue 0005 / ADR 0031 — user-record-backed primary contact
       },
       element: {
@@ -687,7 +687,7 @@ const SCENE_SEEDS = {
       //
       // Per ADR 0031 (Event identity vs contractual identity): cross-org actors
       // (counterparty users) declare `actorUserId` so the renderer resolves
-      // "Hayabusa (PSA)" from USERS[uid] + ORGS[primaryOrgId].short — backed by
+      // "Wen Chen (PSA)" from USERS[uid] + ORGS[primaryOrgId].short — backed by
       // a real user record, not a hardcoded literal. Same-org operator actors
       // (Marcus on Cosco's view) keep the literal `actor` string for byte-
       // identical display (no "(Cosco)" annotation on the operator's own rows).
@@ -944,7 +944,7 @@ const SCENE_SEEDS = {
         ctaLabel:'Compose Message'
       },
       activity: [
-        { actor: 'Chou (CrimsonLogic)',    action: 'transmitted 48 bookings via CL-Shipping this week', time: 'Today · 10:15 SGT · automated', timeISO: '2026-05-17T10:15+08:00', dot: 'tx' },
+        { actor: 'Pat (CrimsonLogic)',    action: 'transmitted 48 bookings via CL-Shipping this week', time: 'Today · 10:15 SGT · automated', timeISO: '2026-05-17T10:15+08:00', dot: 'tx' },
         { actor: 'Marcus Ong (Cosco)',    action: 'accepted the Agreement',                            time: '16 Feb · 14:30 SGT',           timeISO: '2026-02-16T14:30+08:00', dot: 'green' },
         { actor: 'Maersk Logistics',      action: 'authorised CrimsonLogic as SP and invited Cosco',   time: '14 Feb · 09:00 SGT',           timeISO: '2026-02-14T09:00+08:00', dot: 'muted' }
       ]
@@ -967,7 +967,7 @@ const SCENE_SEEDS = {
       ],
       team: [
         { title: 'Hapag-Lloyd onboarding for Container Booking transmission', meta: 'New carrier · awaiting CL-Shipping setup · 4 SP-operators eligible', btn: 'Claim', intent: 'decide', sourceType: 'governance' },
-        { title: 'Aldous accepted ONE Line SP appointment', meta: 'Completed 8 min ago · disappears from inbox in 3 min', completion: true },
+        { title: 'Edwin accepted ONE Line SP appointment', meta: 'Completed 8 min ago · disappears from inbox in 3 min', completion: true },
         { title: 'Quarterly SP audit — pending CL-Customs sign-off', meta: 'Audit · oldest 1d ago · 2 SP-operators eligible', btn: 'Claim', intent: 'confirm', sourceType: 'governance' }
       ]
     }
@@ -1000,7 +1000,7 @@ const SCENE_SEEDS = {
         uen:          'UEN 200512345R',
         roleLabel:    'Carrier',
         partyLabel:   'Receiver · Counterparty',
-        acceptorName: 'Granger (Maersk)',         // (legacy fallback) — superseded by primaryUserId
+        acceptorName: 'Lars (Maersk)',         // (legacy fallback) — superseded by primaryUserId
         primaryUserId:'lars'                            // Issue 0006 / ADR 0031 — user-record-backed primary contact
       },
       element: {
@@ -1061,7 +1061,7 @@ const SCENE_SEEDS = {
         uen:          'UEN 200512345R',
         roleLabel:    'Carrier',
         partyLabel:   'Receiver · Counterparty',
-        acceptorName: 'Granger (Maersk)',         // (legacy fallback)
+        acceptorName: 'Lars (Maersk)',         // (legacy fallback)
         primaryUserId:'lars'                            // Issue 0006 / ADR 0031
       },
       element: {
@@ -1106,7 +1106,7 @@ const SCENE_SEEDS = {
    Powers the detail-page audit trail (".activity" <ol> on Agreement detail +
    Pack detail screens). Per-entry shape:
      actorUserId?:        userId resolved via USERS[id].name; renders as <strong>Name</strong>
-     actorDisplayOrg?:    optional org suffix when actorUserId present ("Granger (Maersk)")
+     actorDisplayOrg?:    optional org suffix when actorUserId present ("Lars (Maersk)")
      actorOrgOnly?:       use when the actor is the counterparty org itself, no user
      bodyHtml:            predicate text (or full sentence when actor is absent);
                           may contain inline <strong>/<em>

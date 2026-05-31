@@ -9,7 +9,7 @@ Every issue carries the `needs-triage` label until a triage role picks it up. Ea
 | # | Title | Type | Blocked by |
 |---|---|---|---|
 | [0001](./0001-resolver-foundation.md) | Resolver foundation — schema migration + resolveSeat() under adapter | AFK | — |
-| [0002](./0002-alice-on-buildex.md) | Alice on SGBuildex with off-DEX redirect minimum gate | HITL | 0001 |
+| [0002](./0002-bea-on-buildex.md) | Bea on SGBuildex with off-DEX redirect minimum gate | HITL | 0001 |
 | [0003](./0003-david-on-healthdex.md) | David on SGHealthdex | AFK | 0002 |
 | [0004](./0004-wei-lin-canonicalised-platform-tier.md) | Wei Lin canonicalised as platform-tier teammate | AFK | 0002 |
 | [0005](./0005-counterparty-attribution-rule-wen-chen-psa.md) | Counterparty attribution rule — Wen Chen at PSA | HITL | 0001 |

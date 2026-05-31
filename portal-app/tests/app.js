@@ -117,7 +117,7 @@ function goto(name) {
   // step 7 (before this goto), so rail-initiated transitions arrive with the
   // DOM correct. Plain in-app sidebar nav (NOT via the prototype rail) does
   // NOT go through applyScene — but the destination still needs to reflect
-  // the active (user × dex × scenario) tuple. Concretely: when Alice is the
+  // the active (user × dex × scenario) tuple. Concretely: when Bea is the
   // resolved user on /portal/bx and the operator clicks "Messages" in the
   // sidebar, the tbody must render BX seed content, not the static TX HTML.
   //
@@ -4201,8 +4201,8 @@ function buildPortalTopbarHtml() {
  * Returns the active role name. For platform-admin persona it's a platform-tier role
  * (SGTradex Admin / Super SGTradex Admin); for participant it's the per-DEX role.
  *
- * Per Issue 0002 (./docs/issues/0002-alice-on-buildex.md), the lookup queries the
- * RESOLVED ACTIVE USER (Marcus on TX, Alice on BX, David on HX once Issue 0003 lands)
+ * Per Issue 0002 (./docs/issues/0002-bea-on-buildex.md), the lookup queries the
+ * RESOLVED ACTIVE USER (Marcus on TX, Bea on BX, David on HX once Issue 0003 lands)
  * rather than the persona category's default user. INBOX_BY_DEX stays as a final
  * fallback for the transition window.
  *
@@ -4456,7 +4456,7 @@ function rebuildAllShells() {
  * with a colleague chevron when same-affiliation colleagues exist. Avatar
  * transitions via 200ms cross-fade — see .avatar transition rule in components.css. */
 function applyPersonaChrome() {
-  // Active user descriptor — Marcus on TX, Alice on BX, etc. Falls back to the
+  // Active user descriptor — Marcus on TX, Bea on BX, etc. Falls back to the
   // persona category's default user when the resolver finds no seat.
   const active = (typeof activeUserDescriptor === 'function') ? activeUserDescriptor() : PERSONAS[currentPersona];
   if (!active) return;

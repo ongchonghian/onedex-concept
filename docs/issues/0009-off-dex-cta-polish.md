@@ -5,7 +5,7 @@
 
 ## What to build
 
-Replace the minimum auto-redirect from [Issue 0002](./0002-alice-on-buildex.md) with the full Q9-f behaviour per [ADR 0030](../adr/0030-demo-persona-resolution-via-persona-pill-and-url-dex.md): **auto-redirect for accidental landings** (no prior cross-link), **"Switch to colleague X (on DEX Y)" CTA for cross-link entry**. The router differentiates based on whether navigation originated from inside the portal (cross-link → CTA) or from an external bookmark / URL-bar entry (accidental → redirect).
+Replace the minimum auto-redirect from [Issue 0002](./0002-bea-on-buildex.md) with the full Q9-f behaviour per [ADR 0030](../adr/0030-demo-persona-resolution-via-persona-pill-and-url-dex.md): **auto-redirect for accidental landings** (no prior cross-link), **"Switch to colleague X (on DEX Y)" CTA for cross-link entry**. The router differentiates based on whether navigation originated from inside the portal (cross-link → CTA) or from an external bookmark / URL-bar entry (accidental → redirect).
 
 This is the honest display of the new model's answer — *"you need a different person for this DEX"* — surfaced where the operator can understand and act on it, not silently bounced away.
 
@@ -20,4 +20,4 @@ This is the honest display of the new model's answer — *"you need a different 
 
 ## Blocked by
 
-- [Issue 0002 — Alice on SGBuildex](./0002-alice-on-buildex.md)
+- [Issue 0002 — Bea on SGBuildex](./0002-bea-on-buildex.md)

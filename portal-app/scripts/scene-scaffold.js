@@ -10,8 +10,8 @@
    pasteable directly into state.js's SCENE_SEEDS literal.
 
    Usage in the browser console:
-     > const s = scaffoldScene('alice', 'bx', 'A');
-     > console.log(s.key);              // "alice-cosco-bx-A"
+     > const s = scaffoldScene('bea', 'bx', 'A');
+     > console.log(s.key);              // "bea-cosco-bx-A"
      > console.log(s.toJSCode());       // pasteable JS literal
      > copy(s.toJSCode());              // copies to clipboard (DevTools helper)
 

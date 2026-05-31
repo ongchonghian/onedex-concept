@@ -38,7 +38,7 @@ const DEX_LABELS = { tx: 'SGTradex', bx: 'SGBuildex', hx: 'SGHealthdex' };
 
 function _extractTopBlock(src, blockName) {
   // Finds `const <blockName> = { ... };` at column 0 and returns the inner body
-  // string. Skips comments inline so apostrophes inside comments (e.g. "Alice's
+  // string. Skips comments inline so apostrophes inside comments (e.g. "Bea's
   // scenes") don't trick the brace walker into a fake string state.
   const re = new RegExp(`^const ${blockName}\\s*=\\s*\\{`, 'm');
   const m = re.exec(src);
@@ -302,7 +302,7 @@ See [seed-authoring.md](./seed-authoring.md). Quick path:
 
 \`\`\`js
 // in the browser console
-const s = scaffoldScene('alice', 'bx', 'A');
+const s = scaffoldScene('bea', 'bx', 'A');
 copy(s.toJSCode());                       // copy to clipboard
 // then paste into SCENE_SEEDS in portal-app/scripts/state.js
 \`\`\`

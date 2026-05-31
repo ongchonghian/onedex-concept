@@ -8,7 +8,7 @@
 Two parallel affordances for switching between colleagues at the same affiliation: the **workspace pill's chevron** (in-flow gesture, click adjacent to the avatar) and the **profile menu's "Switch colleague" row** (discoverable via avatar click). Clicking either reveals other users at the active user's same affiliation; selecting one switches the active user — and if the selected colleague's home DEX differs, navigates to it.
 
 Demonstrable for:
-- **Cosco trio** (Marcus → Alice → David, each on their respective DEX — switching colleague also flips URL DEX)
+- **Cosco trio** (Marcus → Bea → David, each on their respective DEX — switching colleague also flips URL DEX)
 - **SGTradex pair** (Sarah ↔ Wei Lin, both on the same platform tier — same-tier colleague switch, no DEX change)
 
 The profile menu's existing demo persona switcher row renames to *"Demo: switch persona category"* in the same pass per the Q9-c grilling decision, to disambiguate category-switching (`participant` ↔ `platform-admin` ↔ `sp-operator`) from colleague-switching.

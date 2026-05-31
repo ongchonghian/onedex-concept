@@ -29,7 +29,7 @@ USERS = {
 USER_ORG_AFFILIATIONS = {
   // Composite key: <userId>-<orgId>
   'marcus-cosco':       { startDate, status: 'active', dexRoles: { tx: 'Admin User' } },
-  'alice-cosco':        { startDate, status: 'active', dexRoles: { bx: 'Operation User' } },
+  'bea-cosco':        { startDate, status: 'active', dexRoles: { bx: 'Operation User' } },
   'david-cosco':        { startDate, status: 'active', dexRoles: { hx: 'Super Admin' } },
   'pat-crimsonlogic':   { startDate, status: 'active', dexRoles: { tx: 'Admin User' } },
   'sarah-sgtradex':     { startDate, status: 'active', platformRole: 'SGTradex Admin' },
@@ -79,8 +79,8 @@ Three properties drop out of this shape:
 - **`USERS.orgId` field is removed.** Replaced by `USERS.primaryOrgId` — the rendering anchor used by chrome when multiple affiliations exist (sparse seed today; field is the future-proof). The chrome's workspace pill reads `USERS[u].primaryOrgId` via `resolveActiveAffiliation()`.
 - **`resolveSeat(userId, dexId)`** becomes the new canonical read path. Old call sites that read `USER_ROLES[userId][dexId]` or `PERSONAS[currentPersona].role` are migrated in Phase 3 of the implementation plan. The adapter preserves the old shape until then.
 - **`PERSONAS` adapter shape** widens by one field: `userId` (already added in the May-17 Phase 1) is joined by `orgId` (the affiliation's org). Field set is otherwise unchanged.
-- **Phase 4 of the implementation plan strips Marcus's BX/HX `dexRoles` entries.** Marcus's affiliation becomes `{ dexRoles: { tx: 'Admin User' } }` — single-DEX. The Wei Lin seed-line contradiction in the BX inbox is reattributed to Alice in the same pass.
-- **Six new users seeded** in Phase 2: Alice (Cosco · BX), David (Cosco · HX), Pat unchanged, Sarah unchanged, **Wei Lin** (SGTradex · platform), **Wen Chen** (PSA · TX), **Lars Andersen** (Maersk · TX), **Tan Boon Keng** (Acme · BX). Total roster: 9 users across 8 orgs.
+- **Phase 4 of the implementation plan strips Marcus's BX/HX `dexRoles` entries.** Marcus's affiliation becomes `{ dexRoles: { tx: 'Admin User' } }` — single-DEX. The Wei Lin seed-line contradiction in the BX inbox is reattributed to Bea in the same pass.
+- **Six new users seeded** in Phase 2: Bea (Cosco · BX), David (Cosco · HX), Pat unchanged, Sarah unchanged, **Wei Lin** (SGTradex · platform), **Wen Chen** (PSA · TX), **Lars Andersen** (Maersk · TX), **Tan Boon Keng** (Acme · BX). Total roster: 9 users across 8 orgs.
 - **CONTEXT.md gains four new terms**: USER_ORG_AFFILIATION, primaryOrgId, dexRoles, platformRole. The pre-existing entry for `ORG_DEX_MEMBERSHIP` is expanded with the status enum.
 
 ## Relationship to existing ADRs

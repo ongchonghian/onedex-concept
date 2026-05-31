@@ -43,7 +43,7 @@
         ownerUserId: 'marcus',
         dexId: 'tx',
         bucket: 'team',
-        title: 'Layla completed Maersk acceptance',
+        title: 'Bea completed Maersk acceptance',
         meta: 'Completed 2 min ago · disappears from inbox in 3 min',
         completion: true,
         bundleEcho: false,
@@ -87,7 +87,7 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="inbox-tx"].active [data-demo="inbox.completion-echo-row"]',
         label: 'Step 1 of 4 — Work didn\'t silently vanish',
-        rationale: "Layla finished the Maersk acceptance two minutes ago without Marcus looking. The completion echo lingers in his queue so he knows the work moved — he isn't chasing her on Slack to check.",
+        rationale: "Bea finished the Maersk acceptance two minutes ago without Marcus looking. The completion echo lingers in his queue so he knows the work moved — he isn't chasing her on Slack to check.",
         dwell: 4600 },
 
       { action: 'annotate',
@@ -116,7 +116,7 @@
       { action: 'annotate',
         anchor: `.screen[data-screen="inbox-tx"].active [data-inbox-item-id="${TEAM_ITEM_ID}"]`,
         label: 'Step 4 of 4 — Now it\'s his to finish',
-        rationale: "The item lives in Mine until Marcus completes or releases it. Completing it emits the same kind of echo Layla left him two minutes ago — work moves visibly between teammates.",
+        rationale: "The item lives in Mine until Marcus completes or releases it. Completing it emits the same kind of echo Bea left him two minutes ago — work moves visibly between teammates.",
         dwell: 4600 },
     ]
   };

@@ -7,7 +7,7 @@
 
 Land the new identity schema and the `resolveSeat(userId, dexId)` helper. Migrate every identity-reading consumer (`applyPersonaChrome`, `refreshRoleChips`, `refreshCapabilityGates`, sidebar gating, persona switcher) to call `resolveSeat()` under the hood — while preserving the existing `PERSONAS[currentPersona]` adapter so call-site shapes don't change.
 
-The success condition is **invisible from the user's perspective**: the prototype on the new schema renders byte-identically to the prototype on the old schema. Marcus on TX, Pat on TX, Sarah on platform all look unchanged. Every internal call path goes through the new resolver. This is the de-risking slice — it lands the migration foundation so subsequent visible cuts (Alice on BX, David on HX) can ship safely.
+The success condition is **invisible from the user's perspective**: the prototype on the new schema renders byte-identically to the prototype on the old schema. Marcus on TX, Pat on TX, Sarah on platform all look unchanged. Every internal call path goes through the new resolver. This is the de-risking slice — it lands the migration foundation so subsequent visible cuts (Bea on BX, David on HX) can ship safely.
 
 ## Acceptance criteria
 

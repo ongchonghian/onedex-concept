@@ -7,7 +7,7 @@
 
 Wei Lin enters the roster as a platform-tier user at SGTradex — Sarah's teammate. The existing PLATFORM_INBOX seed line *"Wei Lin approved Greater Bay Logistics org admin role"* now reads from a real user record. Wei Lin appears as a claimable colleague on the platform-tier team inbox (the *Mine vs My team's* split per [ADR 0003](../adr/0003-inbox-with-claim-semantics.md)), giving Sarah a real teammate for completion-echo demos and claim-related scenarios.
 
-This issue completes the resolution of the cross-tier contradiction surfaced during the grilling: Wei Lin previously appeared as both a Cosco-BX colleague AND an SGTradex platform-admin colleague. [Issue 0002](./0002-alice-on-buildex.md) reattributed the BX seed line to Alice; this issue gives Wei Lin a single canonical home.
+This issue completes the resolution of the cross-tier contradiction surfaced during the grilling: Wei Lin previously appeared as both a Cosco-BX colleague AND an SGTradex platform-admin colleague. [Issue 0002](./0002-bea-on-buildex.md) reattributed the BX seed line to Bea; this issue gives Wei Lin a single canonical home.
 
 ## Acceptance criteria
 
@@ -20,4 +20,4 @@ This issue completes the resolution of the cross-tier contradiction surfaced dur
 
 ## Blocked by
 
-- [Issue 0002 — Alice on SGBuildex](./0002-alice-on-buildex.md)
+- [Issue 0002 — Bea on SGBuildex](./0002-bea-on-buildex.md)

@@ -666,8 +666,17 @@
             <i class="ti ti-upload"></i> Choose file
             <input type="file" id="workbook-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="adminWorkbookHandleFileInput(event)" />
           </label>
+          <div class="workbook-upload-templates">
+            <button class="link-btn" data-demo="workbook.download-template" onclick="adminWorkbookDownloadTemplate()">
+              <i class="ti ti-file-download"></i> Download empty template
+            </button>
+            <span class="workbook-template-sep">·</span>
+            <button class="link-btn" data-demo="workbook.download-sample" onclick="adminWorkbookDownloadSample()">
+              <i class="ti ti-file-download"></i> Download sample (Cosco)
+            </button>
+          </div>
           <p class="workbook-upload-sample">
-            Or <button class="link-btn" data-demo="workbook.load-sample" onclick="adminWorkbookLoadSample()">load the sample Cosco workbook</button> to see the preview.
+            Or <button class="link-btn" data-demo="workbook.load-sample" onclick="adminWorkbookLoadSample()">load the sample Cosco workbook</button> to see the preview without downloading.
           </p>
         </div>
       </div>`;
@@ -928,6 +937,142 @@
     }).catch((err) => {
       console.error('Workbook parse failed', err);
       if (typeof window.toast === 'function') window.toast('Parse failed: ' + err.message, 'warn');
+    });
+  }
+
+  /* ---------- Template / sample download (in-browser XLSX generation) ----------
+     Both download paths reuse the SheetJS loader that the parser uses. The
+     blank template ships only the canonical column headers per sheet — the
+     same headers HEADER_ALIASES recognises. The Cosco sample ships the same
+     pre-parsed data as `load sample`, so a round-trip (download → upload)
+     produces the same staged records the in-memory path produces. */
+
+  // Canonical header sets per sheet. The "(req)" marker is illustrative
+  // (humans can spot required columns in the template); the parser tolerates
+  // its absence — these tokens normalise back to the canonical key via
+  // HEADER_ALIASES.
+  const TEMPLATE_HEADERS = {
+    'Org': ['Short Name', 'Legal Name', 'UEN', 'Jurisdiction', 'Primary DEX', 'Contact Name', 'Contact Email', 'Business Address'],
+    'Pitstops': ['Name', 'Topology', 'Endpoint'],
+    'Users': ['Full Name', 'Email', 'Role'],
+    'Agreements (Direct)': ['Counterparty Name', 'Counterparty UEN', 'Element Name', 'Element Version', 'Direction', 'Duration Months', 'Notes'],
+    'Agreements (SP)': ['Data Owner UEN', 'Service Provider UEN', 'Counterparty UEN', 'Counterparty Name', 'Element Name', 'Flow Direction', 'Duration Months']
+  };
+
+  function _buildBlankWorkbook(XLSX) {
+    const wb = XLSX.utils.book_new();
+    Object.keys(TEMPLATE_HEADERS).forEach((sheetName) => {
+      // Two rows: the header row + one empty row (so a user can see where to type).
+      const sheet = XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS[sheetName], []]);
+      XLSX.utils.book_append_sheet(wb, sheet, sheetName);
+    });
+    return wb;
+  }
+
+  function _buildSampleWorkbook(XLSX, sample) {
+    const wb = XLSX.utils.book_new();
+
+    // Org — one row, headers + values
+    const orgRow = sample.org || {};
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      TEMPLATE_HEADERS.Org,
+      TEMPLATE_HEADERS.Org.map((h) => {
+        // Map the user-facing header to the camelCase key used in the JS fixture.
+        const map = {
+          'Short Name': 'shortName', 'Legal Name': 'legalName', 'UEN': 'uen',
+          'Jurisdiction': 'jurisdiction', 'Primary DEX': 'primaryDexId',
+          'Contact Name': 'contactName', 'Contact Email': 'contactEmail',
+          'Business Address': 'businessAddress'
+        };
+        return orgRow[map[h]] || '';
+      })
+    ]), 'Org');
+
+    // Pitstops
+    const pitstopRows = (sample.pitstops || []).map((p) => [p.name || '', p.topology || '', p.endpoint || '']);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(
+      [TEMPLATE_HEADERS.Pitstops].concat(pitstopRows)
+    ), 'Pitstops');
+
+    // Users
+    const userRows = (sample.users || []).map((u) => [u.fullName || '', u.email || '', u.role || '']);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(
+      [TEMPLATE_HEADERS.Users].concat(userRows)
+    ), 'Users');
+
+    // Direct Agreements
+    const directRows = (sample.directAgreements || []).map((a) => [
+      a.counterpartyName || '',
+      a.counterpartyUen || '',
+      a.elementName || '',
+      a.elementVersion || '',
+      a.direction || '',
+      a.durationMonths || '',
+      a.notes || ''
+    ]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(
+      [TEMPLATE_HEADERS['Agreements (Direct)']].concat(directRows)
+    ), 'Agreements (Direct)');
+
+    // SP Agreements (often empty — header-only sheet keeps the workbook complete)
+    const spRows = (sample.spAgreements || []).map((a) => [
+      a.dataOwnerUen || '',
+      a.serviceProviderUen || '',
+      a.counterpartyUen || '',
+      a.counterpartyName || '',
+      a.elementName || '',
+      a.flowDirection || '',
+      a.durationMonths || ''
+    ]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(
+      [TEMPLATE_HEADERS['Agreements (SP)']].concat(spRows)
+    ), 'Agreements (SP)');
+
+    return wb;
+  }
+
+  function _triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Defer revoke so Safari has time to begin the download.
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  function adminWorkbookDownloadTemplate() {
+    if (typeof window.toast === 'function') window.toast('Preparing blank template…');
+    loadSheetJs().then((XLSX) => {
+      const wb = _buildBlankWorkbook(XLSX);
+      const ab = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+      const blob = new Blob([ab], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      _triggerDownload(blob, 'org-onboarding-template.xlsx');
+      if (typeof window.toast === 'function') window.toast('Template downloaded.');
+    }).catch((err) => {
+      console.error('Template download failed', err);
+      if (typeof window.toast === 'function') window.toast('Download failed: ' + err.message, 'warn');
+    });
+  }
+
+  function adminWorkbookDownloadSample() {
+    const sample = window.SAMPLE_COSCO_ONBOARDING_WORKBOOK;
+    if (!sample) {
+      if (typeof window.toast === 'function') window.toast('Sample fixture not loaded', 'warn');
+      return;
+    }
+    if (typeof window.toast === 'function') window.toast('Preparing sample workbook…');
+    loadSheetJs().then((XLSX) => {
+      const wb = _buildSampleWorkbook(XLSX, sample);
+      const ab = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+      const blob = new Blob([ab], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      _triggerDownload(blob, 'sample-cosco-onboarding.xlsx');
+      if (typeof window.toast === 'function') window.toast('Sample workbook downloaded.');
+    }).catch((err) => {
+      console.error('Sample download failed', err);
+      if (typeof window.toast === 'function') window.toast('Download failed: ' + err.message, 'warn');
     });
   }
 
@@ -1287,6 +1432,8 @@
   window.listOrgKycEvents = listOrgKycEvents;
   window.adminWorkbookHandleFileInput = adminWorkbookHandleFileInput;
   window.adminWorkbookLoadSample = adminWorkbookLoadSample;
+  window.adminWorkbookDownloadTemplate = adminWorkbookDownloadTemplate;
+  window.adminWorkbookDownloadSample = adminWorkbookDownloadSample;
   window.adminWorkbookMaterialiseAndShow = adminWorkbookMaterialiseAndShow;
   window.adminWorkbookResetScreen = adminWorkbookResetScreen;
   // Phase 4d KYC decision UI handlers

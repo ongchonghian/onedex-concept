@@ -2,7 +2,7 @@
    DEMOS — flow: Register a Data Element with Smart Start assist
    Per ADR 0034 + 0037 + 0039 + 0040.
 
-   Story: Beatrix is a platform admin on SGBuildex. A BCA-issued
+   Story: Diane is a platform admin on SGBuildex. A BCA-issued
    "Environmental Site Observations" form needs to land in the catalogue.
    She uploads the PDF; Smart Start assist extracts the fields, groups
    them by section, and overlays suggestions across Schema / Complexity /
@@ -30,12 +30,12 @@
   const registerElementWithAssist = {
     id: 'register-element-with-assist',
     title: 'Register with Smart Start assist',
-    description: "Beatrix on SGBuildex uploads an Environmental Site Observations PDF. Smart Start assist extracts the fields grouped by section, overlays grounded suggestions across all four tabs, runs validation rules live in Test as operator, and Beatrix ships v1.0.",
+    description: "Diane on SGBuildex uploads an Environmental Site Observations PDF. Smart Start assist extracts the fields grouped by section, overlays grounded suggestions across all four tabs, runs validation rules live in Test as operator, and Diane ships v1.0.",
     adrs: ['0034', '0037', '0038', '0039', '0040'],
     durationSec: 120,
 
     seed: (workspace) => {
-      // Pin Beatrix (Diane) as the active platform-tier admin on SGBuildex.
+      // Pin Diane (Diane) as the active platform-tier admin on SGBuildex.
       // Per PLATFORM_ADMIN_BY_DEX (state.js), Diane is the BX platform
       // admin; setActivePersona ties her to the BX chrome.
       // setActivePersona writes workspace.meta.activeUserId / activeDexId.
@@ -71,8 +71,8 @@
 
       { action: 'annotate',
         anchor: '.screen[data-screen="data-elements"].active [data-demo="catalogue.new-element-cta"]',
-        label: 'Step 1 of 10 — Beatrix opens the SGBuildex catalogue',
-        rationale: "Beatrix is the platform admin on SGBuildex. A BCA inspector handed her an Environmental Site Observations form on PDF and asked for it in the catalogue by next week. The +New element button is hers — no service request, no ticket, no waiting on engineering.",
+        label: 'Step 1 of 10 — Diane opens the SGBuildex catalogue',
+        rationale: "Diane is the platform admin on SGBuildex. A BCA inspector handed her an Environmental Site Observations form on PDF and asked for it in the catalogue by next week. The +New element button is hers — no service request, no ticket, no waiting on engineering.",
         dwell: 4400 },
 
       { action: 'click', target: '.screen[data-screen="data-elements"].active [data-demo="catalogue.new-element-cta"]', dwell: 700 },
@@ -83,7 +83,7 @@
       { action: 'annotate',
         anchor: '#register-onramp-picker [data-demo="onramp.form"]',
         label: 'Step 2 of 10 — Pick the PDF on-ramp',
-        rationale: "Four ways to seed the canvas. Beatrix has the actual document, so she picks the PDF path — the system will read it, extract the fields, and group them by section before she ever touches the schema editor.",
+        rationale: "Four ways to seed the canvas. Diane has the actual document, so she picks the PDF path — the system will read it, extract the fields, and group them by section before she ever touches the schema editor.",
         dwell: 4400 },
 
       { action: 'click', target: '#register-onramp-picker [data-demo="onramp.form"]', dwell: 700 },
@@ -94,7 +94,7 @@
       { action: 'annotate',
         anchor: '#register-form-onramp [data-demo="onramp.form.dropzone"]',
         label: 'Step 3 of 10 — Drop the PDF',
-        rationale: "Beatrix drops the BCA Environmental Site Observations form on the dropzone. Stage 1 reads the PDF page by page and asks a vision model to pull out every labelled field. Stage 2 organises what came back into the logical sections the document itself uses.",
+        rationale: "Diane drops the BCA Environmental Site Observations form on the dropzone. Stage 1 reads the PDF page by page and asks a vision model to pull out every labelled field. Stage 2 organises what came back into the logical sections the document itself uses.",
         dwell: 4600 },
 
       // Simulate a successful VLM extraction without driving a real File
@@ -108,7 +108,7 @@
       { action: 'annotate',
         anchor: '#register-form-onramp [data-demo="onramp.form.summary"]',
         label: 'Step 4 of 10 — Extracted, grouped, ready to review',
-        rationale: "Three sections came back the way the form lays them out — Site identification, Observation, Sign-off. Beatrix sees the field types the system inferred and the count per group. If she'd uploaded a different form she'd get different groups; the grouping is what the document said, not what the system guessed.",
+        rationale: "Three sections came back the way the form lays them out — Site identification, Observation, Sign-off. Diane sees the field types the system inferred and the count per group. If she'd uploaded a different form she'd get different groups; the grouping is what the document said, not what the system guessed.",
         dwell: 5200 },
 
       { action: 'click', target: '#register-form-onramp [data-demo="onramp.form.use"]', dwell: 800 },
@@ -119,7 +119,7 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="register-element"].active [data-reg-tab-panel="schema"] [data-reg-field-list]',
         label: 'Step 5 of 10 — Grouping survives the handoff',
-        rationale: "The Schema tab keeps the same three groups Beatrix saw in the preview. The system added a couple of suggestions she didn't have — a residency-strict flag, a tighter type on observation_id — each with a provenance chip she can click to see the citation. Nothing's been committed yet; every change still needs her sign-off.",
+        rationale: "The Schema tab keeps the same three groups Diane saw in the preview. The system added a couple of suggestions she didn't have — a residency-strict flag, a tighter type on observation_id — each with a provenance chip she can click to see the citation. Nothing's been committed yet; every change still needs her sign-off.",
         dwell: 5400 },
 
       // ---- Compose complexity tab ----
@@ -129,10 +129,10 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="register-element"].active [data-reg-tab-panel="complexity"]',
         label: 'Step 6 of 10 — Routine, or legally significant?',
-        rationale: "The assist suggests high-stakes — the form carries a signature field and a regulatory citation, so contractors should get a 3-step review flow rather than a single-page submit. The suggestion is a recommendation with citations; the decision is Beatrix's, not the system's.",
+        rationale: "The assist suggests high-stakes — the form carries a signature field and a regulatory citation, so contractors should get a 3-step review flow rather than a single-page submit. The suggestion is a recommendation with citations; the decision is Diane's, not the system's.",
         dwell: 4800 },
 
-      // Beatrix confirms the assist's recommendation. The click also satisfies
+      // Diane confirms the assist's recommendation. The click also satisfies
       // the regPublish gate later (regPublish silently returns when
       // composeComplexity is null) — the canned-response auto-apply sets it
       // optimistically, but an explicit user click is the demo's promise.
@@ -145,7 +145,7 @@
       { action: 'annotate',
         anchor: '.screen[data-screen="register-element"].active [data-reg-tab-panel="rules"]',
         label: 'Step 7 of 10 — Validation rules, already drafted',
-        rationale: "Three rules came back with the assist: observation date can't be in the future, observation ID matches the BCA-prescribed format, and negative observations must carry a severity. Below them, the Suggested for your schema panel offers more in two clearly labelled groups — per-field rules (formats, ranges) and cross-field rules (date order, mutual exclusivity). Beatrix can pick more as she likes.",
+        rationale: "Three rules came back with the assist: observation date can't be in the future, observation ID matches the BCA-prescribed format, and negative observations must carry a severity. Below them, the Suggested for your schema panel offers more in two clearly labelled groups — per-field rules (formats, ranges) and cross-field rules (date order, mutual exclusivity). Diane can pick more as she likes.",
         dwell: 5400 },
 
       // ---- Review tab ----
@@ -165,7 +165,7 @@
       { action: 'annotate',
         anchor: '#register-test-modal [data-demo="test.submit"]',
         label: 'Step 9 of 10 — Test as operator',
-        rationale: "Before publishing, Beatrix wants to feel what a contractor will feel. The Test as operator modal renders the same form the contractor will get and runs every validation rule live against what she types. Submit stays locked until every rule passes — same engine, same messages, same gates as production.",
+        rationale: "Before publishing, Diane wants to feel what a contractor will feel. The Test as operator modal renders the same form the contractor will get and runs every validation rule live against what she types. Submit stays locked until every rule passes — same engine, same messages, same gates as production.",
         dwell: 5000 },
 
       // Type a valid observation_id so the matches() rule passes.
@@ -177,7 +177,7 @@
       { action: 'annotate',
         anchor: '#register-test-modal [data-demo="test.input.observation_id"]',
         label: 'Watch the rules light up',
-        rationale: "Beatrix types a valid observation ID. The matches() rule on the right flips from FAILS to PASSES the moment the pattern matches. If she'd typed something off-format, she'd see the operator-visible error message the same way a real contractor would.",
+        rationale: "Diane types a valid observation ID. The matches() rule on the right flips from FAILS to PASSES the moment the pattern matches. If she'd typed something off-format, she'd see the operator-visible error message the same way a real contractor would.",
         dwell: 4600 },
 
       // Close the test modal and ship it.

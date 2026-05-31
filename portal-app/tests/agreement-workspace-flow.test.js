@@ -243,14 +243,14 @@ test('listSwitchableAccounts returns every workspace user except the active one'
 
   // Default active user is Marcus. The list should include cross-org users
   // (Lars at Maersk, Pat at CrimsonLogic, Sarah at SGTradex) plus Marcus's
-  // same-org colleagues (Alice, David) — everyone except Marcus.
+  // same-org colleagues (Bea, David) — everyone except Marcus.
   const accounts = window.listSwitchableAccounts();
   const ids = accounts.map(a => a.userId).sort();
   assert.ok(!ids.includes('marcus'), 'active user excluded');
   assert.ok(ids.includes('lars'),  'cross-org participant included');
   assert.ok(ids.includes('pat'),   'sp-operator default included');
   assert.ok(ids.includes('sarah'), 'platform-admin default included');
-  assert.ok(ids.includes('alice'), 'same-org colleague included');
+  assert.ok(ids.includes('bea'), 'same-org colleague included');
 });
 
 test('listSwitchableAccounts surfaces orgName, homeDexLabel, personaType, personaTarget', () => {
@@ -784,7 +784,7 @@ test('switchToAccount pins to non-default same-category users', () => {
 /* ---------- theme.js off-DEX gate (workspace-backed identity reads) ---------- */
 
 test('switchDex reads identity through workspace.users/orgs (smoke: same-org colleague resolves cleanly)', () => {
-  // Marcus on TX → switch to BX. Alice (Marcus's same-org colleague) has a
+  // Marcus on TX → switch to BX. Bea (Marcus's same-org colleague) has a
   // BX seat, so the off-DEX gate's resolveActiveUserId returns truthy and
   // switchDex proceeds silently. Catches regressions where the workspace-
   // backed lookupUser / lookupOrg helpers fail to find users that ARE in

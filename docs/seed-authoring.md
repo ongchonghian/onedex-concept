@@ -90,16 +90,16 @@ const ORG_DEX_MEMBERSHIPS = {
 
 `<userId>-<orgId>-<dexId>-<scenarioId>` — see [ADR 0029](./adr/0029-user-org-affiliation-as-n-to-m-with-embedded-dex-roles.md) and Issue 0010. The resolver also falls back to the legacy `<userId>-<scenarioId>` shape during the transition window (deprecates 3 PRs after 2026-05-17).
 
-Examples: `marcus-cosco-tx-C`, `alice-cosco-bx-A`, `pat-crimsonlogic-tx-D`.
+Examples: `marcus-cosco-tx-C`, `bea-cosco-bx-A`, `pat-crimsonlogic-tx-D`.
 
 ## Per-screen seed shape
 
-Each scene maps screen ids to seed values. Setting a screen to `null` makes the renderer fall back to canonical fixtures (`INBOX_BY_DEX[dex]`, static HTML defaults). This is correct for most BX/HX scenes today — Alice's BX inbox renders from `INBOX_BY_DEX.bx`, not from a per-scene seed.
+Each scene maps screen ids to seed values. Setting a screen to `null` makes the renderer fall back to canonical fixtures (`INBOX_BY_DEX[dex]`, static HTML defaults). This is correct for most BX/HX scenes today — Bea's BX inbox renders from `INBOX_BY_DEX.bx`, not from a per-scene seed.
 
 | Screen | Used by | When to populate |
 |---|---|---|
 | `detail` | Agreement detail page (`renderScreenFromSeed → setDetailState`) | Always — this is the canonical demo page. See the existing `marcus-cosco-tx-C` as a complete template. |
-| `inbox` | Inbox screens | Only when this scene's inbox differs from `INBOX_BY_DEX[dex]`. Pat's scenario D has a custom SP-side inbox; Alice's BX scenes use the per-DEX fallback. |
+| `inbox` | Inbox screens | Only when this scene's inbox differs from `INBOX_BY_DEX[dex]`. Pat's scenario D has a custom SP-side inbox; Bea's BX scenes use the per-DEX fallback. |
 | `message-detail` | Message detail page | Optional. Often aliased to `messages[0]` via `{ alias: '<sceneKey>/messages[0]' }`. |
 | `dashboard` | Dashboard | Optional. |
 | `drafts` | Drafts list | Array of draft rows. |
@@ -136,7 +136,7 @@ For each screen's exact field set, scaffold a new scene and read the generated t
 
 3. **Scaffold the scene.** In the console:
    ```js
-   const s = scaffoldScene('alice', 'bx', 'A');
+   const s = scaffoldScene('bea', 'bx', 'A');
    copy(s.toJSCode());   // or console.log(s.toJSCode()) and copy manually
    ```
 

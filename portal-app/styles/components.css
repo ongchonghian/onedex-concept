@@ -2338,8 +2338,26 @@ body.demo-tools-open .demo-tools-drawer {
   transition: opacity 120ms ease-out;
 }
 .workbook-upload-btn:hover { opacity: 0.9; }
+.workbook-upload-templates {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 18px 0 6px;
+  font-size: 12px;
+  color: var(--g-30);
+}
+.workbook-upload-templates .link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.workbook-upload-templates .link-btn i { font-size: 14px; }
+.workbook-template-sep {
+  color: var(--g-70);
+}
 .workbook-upload-sample {
-  margin: 16px 0 0;
+  margin: 8px 0 0;
   font-size: 12px;
   color: var(--g-50);
 }

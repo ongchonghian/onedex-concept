@@ -5,7 +5,7 @@
 
 ## What to build
 
-Same shape as [Issue 0002](./0002-alice-on-buildex.md) for HX. Seed David Kim (Cosco · HX `Super Admin`), add `cosco-hx` ORG_DEX_MEMBERSHIP, strip Marcus's `hx` entry from his affiliation's `dexRoles` map. Navigating to `/portal/hx` with `participant` persona resolves to David. All chrome polish from Issue 0002 is reused — no new design decisions; the precedent is set.
+Same shape as [Issue 0002](./0002-bea-on-buildex.md) for HX. Seed David Kim (Cosco · HX `Super Admin`), add `cosco-hx` ORG_DEX_MEMBERSHIP, strip Marcus's `hx` entry from his affiliation's `dexRoles` map. Navigating to `/portal/hx` with `participant` persona resolves to David. All chrome polish from Issue 0002 is reused — no new design decisions; the precedent is set.
 
 Marcus's auto-redirect from `/portal/hx` to his home DEX exercises the same minimum gate shipped in Issue 0002.
 
@@ -23,4 +23,4 @@ AFK because Issue 0002 has already established the visible chrome contract; this
 
 ## Blocked by
 
-- [Issue 0002 — Alice on SGBuildex](./0002-alice-on-buildex.md)
+- [Issue 0002 — Bea on SGBuildex](./0002-bea-on-buildex.md)

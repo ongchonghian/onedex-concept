@@ -111,14 +111,14 @@ test('buildWorkspaceFromScene seeds scene-specific workspace records for a demo 
   });
 
   const workspace = window.buildWorkspaceFromScene({
-    user: 'alice',
+    user: 'bea',
     org: 'cosco',
     dex: 'bx',
     scenario: 'C',
     screen: 'agreements'
   });
 
-  assert.equal(workspace.meta.activeUserId, 'alice');
+  assert.equal(workspace.meta.activeUserId, 'bea');
   assert.equal(workspace.meta.activeDexId, 'bx');
   assert.ok(
     Object.values(workspace.agreements).some((agreement) => agreement.dexId === 'bx'),
