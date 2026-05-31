@@ -42,6 +42,39 @@ body.presenter-mode {
   opacity: 0;
 }
 
+/* ═══ City ground-plan labels ════════════════════════════════════════════
+   These float in the canvas space between slides. They're large (clearly
+   visible at scale=8 overview) and dim. When the camera zooms into a
+   detail slide, the labels fall outside the viewport. */
+.ground-label {
+  position: absolute;
+  font-family: 'Inter', sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.16);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  font-size: 360px;
+  line-height: 0.9;
+}
+.ground-label span {
+  display: block;
+  margin-top: 24px;
+  font-size: 140px;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.12);
+  font-weight: 500;
+  text-transform: none;
+}
+.ground-label--plaza { color: rgba(255, 180, 180, 0.18); }
+.ground-label--lookout { color: rgba(180, 180, 255, 0.18); }
+.ground-label--observatory { color: rgba(255, 215, 130, 0.18); }
+.ground-label--townhall { color: rgba(255, 140, 140, 0.22); }
+.ground-label--west,
+.ground-label--east { font-size: 280px; }
+
 .slide-bg {
   position: absolute;
   inset: 0;

@@ -25,22 +25,33 @@
        data-width="1920"
        data-height="1080">
 
-    <!-- ═════ Step 0 · OVERVIEW (camera at scale 8, sees the whole map) ═════
-         Classic Prezi opener: start with the entire spatial canvas visible,
-         then dive in on Right-arrow. Empty step — just a camera position. -->
+    <!-- ═════ City ground-plan annotations (visible in scale=8 overview only) ═══
+         These floating labels sit in canvas space and reveal the city analogy
+         when the camera is pulled back. At any closer zoom they fall outside
+         the viewport, so they don't clutter the content slides. -->
+    <div class="ground-label ground-label--plaza" style="left: 740px; top: 1670px;">THE PLAZA</div>
+    <div class="ground-label ground-label--lookout" style="left: 740px; top: -180px;">THE LOOKOUT</div>
+    <div class="ground-label ground-label--observatory" style="left: 4480px; top: -180px;">THE OBSERVATORY</div>
+    <div class="ground-label ground-label--west" style="left: -4750px; top: 1670px;">WEST ARM<br><span>customer journey</span></div>
+    <div class="ground-label ground-label--east" style="left: 5500px; top: 1670px;">EAST ARM<br><span>rollout journey</span></div>
+    <div class="ground-label ground-label--townhall" style="left: 740px; top: 4960px;">THE TOWN HALL</div>
+
+    <!-- ═════ Step 0 · OVERVIEW (camera at scale 8, sees the whole city) ═════
+         Classic Prezi opener: start with the entire spatial canvas + district
+         labels visible, then dive in on Right-arrow. Empty step. -->
     <div id="presenter-overview" class="step step--invisible"
-         data-x="2500" data-y="3500" data-scale="8"
+         data-x="500" data-y="2200" data-scale="8"
          data-step-number="0" data-section-id="" data-notes-key="Opener"
          aria-hidden="true">
       <div class="notes">[notes injected]</div>
     </div>
 
-    <!-- ═════ Slide 1 · Section 00 · TEN FRICTIONS · CENTER, TIGHT ═════ -->
+    <!-- ═════ Slide 1 · Section 00 · THE PLAZA · center of the city ════ -->
     <div class="step slide slide--stakes" data-x="0" data-y="0" data-scale="0.85" data-rotate="0"
          data-step-number="1" data-section-id="ov-stakes" data-notes-key="Section 00">
       <div class="slide-bg slide-bg--burgundy"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">00 · Why this needs leadership attention</p>
+        <p class="slide-eyebrow">00 · The Plaza · Why this needs leadership attention</p>
         <p class="slide-mega slide-mega--white">TEN.</p>
         <p class="slide-subhead slide-subhead--bright">recurring frictions that shape every Dex Technologies quarter</p>
         <div class="slide-twocol">
@@ -69,12 +80,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 2 · FIVE → ONE · swing down-left, tilted ═══════════ -->
-    <div class="step slide slide--mental-01" data-x="-4500" data-y="2500" data-scale="0.95" data-rotate="-18"
+    <!-- ═════ Slide 2 · West Arm · Upstream ═════════════════════════════ -->
+    <div class="step slide slide--mental-01" data-x="-4500" data-y="-1500" data-scale="0.9" data-rotate="-5"
          data-step-number="2" data-section-id="ov-mental-01" data-notes-key="Section 01">
       <div class="slide-bg slide-bg--midnight"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">01 · Upstream of compose</p>
+        <p class="slide-eyebrow">01 · West Arm · Upstream of compose</p>
         <h2 class="slide-headline">Five consent types collapse into one.</h2>
         <div class="slide-funnel">
           <div class="funnel-side">
@@ -98,12 +109,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 3 · CONSENT ≠ ACTION · continue down, opposite tilt ═ -->
-    <div class="step slide slide--mental-02" data-x="-3500" data-y="5500" data-scale="0.95" data-rotate="22"
+    <!-- ═════ Slide 3 · West Arm · Shift downstream ═════════════════════ -->
+    <div class="step slide slide--mental-02" data-x="-4500" data-y="1000" data-scale="0.9" data-rotate="5"
          data-step-number="3" data-section-id="ov-mental-02" data-notes-key="Section 02">
       <div class="slide-bg slide-bg--teal"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">02 · The shift, downstream</p>
+        <p class="slide-eyebrow">02 · West Arm · The shift, downstream</p>
         <h2 class="slide-headline">Consent and action are decoupled.</h2>
         <div class="slide-pairblocks">
           <div class="pairblock pairblock--blue">
@@ -125,12 +136,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 4 · 7 → 5 (operator) · swing right, level out ══════ -->
-    <div class="step slide slide--ba-03" data-x="-1500" data-y="7500" data-scale="1" data-rotate="-8"
+    <!-- ═════ Slide 4 · West Arm · Operator 7→5 ═════════════════════════ -->
+    <div class="step slide slide--ba-03" data-x="-4500" data-y="3500" data-scale="0.9" data-rotate="-5"
          data-step-number="4" data-section-id="ov-ba-03" data-notes-key="Section 03">
       <div class="slide-bg slide-bg--ember"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">03 · One task, two journeys</p>
+        <p class="slide-eyebrow">03 · West Arm · One task, two journeys</p>
         <h2 class="slide-headline">Send a Cargo manifest to Maersk.</h2>
         <div class="slide-stepcount">
           <div class="stepcount-side stepcount-side--today">
@@ -156,12 +167,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 5 · 9 → 5 (admin) · mirror to right side ═══════════ -->
-    <div class="step slide slide--ba-04" data-x="1500" data-y="7500" data-scale="1" data-rotate="8"
+    <!-- ═════ Slide 5 · West Arm · Admin 9→5 ════════════════════════════ -->
+    <div class="step slide slide--ba-04" data-x="-4500" data-y="6000" data-scale="0.9" data-rotate="5"
          data-step-number="5" data-section-id="ov-ba-04" data-notes-key="Section 04">
       <div class="slide-bg slide-bg--crimson"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">04 · Same story, for the admins</p>
+        <p class="slide-eyebrow">04 · West Arm · Same story, for the admins</p>
         <h2 class="slide-headline">Register a new document type.</h2>
         <div class="slide-versus">
           <div class="versus-side versus-side--bad">
@@ -183,12 +194,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 6 · MENTAL MODEL · huge pullback UP — the bridge ═══ -->
+    <!-- ═════ Slide 6 · The Lookout · big pullback UP from West Arm ════ -->
     <div class="step slide slide--concept" data-x="0" data-y="-4500" data-scale="0.85" data-rotate="0"
          data-step-number="6" data-section-id="ov-concept" data-notes-key="Section 05">
       <div class="slide-bg slide-bg--indigo"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">05 · The new mental model</p>
+        <p class="slide-eyebrow">05 · The Lookout · The new mental model</p>
         <h2 class="slide-headline">Three questions. Three sections.</h2>
         <div class="slide-pillars">
           <div class="pillar pillar--blue">
@@ -211,12 +222,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 7 · CONSTELLATION · swing right-up, dramatic tilt ══ -->
-    <div class="step slide slide--decisions" data-x="7500" data-y="-3000" data-scale="0.95" data-rotate="25"
+    <!-- ═════ Slide 7 · The Observatory · across the plaza ═════════════ -->
+    <div class="step slide slide--decisions" data-x="4500" data-y="-3500" data-scale="0.9" data-rotate="12"
          data-step-number="7" data-section-id="ov-decisions" data-notes-key="Section 06">
       <div class="slide-bg slide-bg--amber"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">06 · Ten decisions that shape the experience</p>
+        <p class="slide-eyebrow">06 · The Observatory · Ten decisions that shape the experience</p>
         <h2 class="slide-headline">Each cancels a Section 00 tax.</h2>
         <div class="slide-constellation">
           <div class="cn cn--1" style="--cn-x:8%;  --cn-y:18%;"><span class="cn-num">01</span><span class="cn-title">Inbox is home</span></div>
@@ -234,12 +245,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 8 · ROADMAP · drop to ground level ═════════════════ -->
-    <div class="step slide slide--roadmap" data-x="9000" data-y="500" data-scale="1" data-rotate="-12"
+    <!-- ═════ Slide 8 · East Arm · Roadmap workshop ═════════════════════ -->
+    <div class="step slide slide--roadmap" data-x="5500" data-y="1000" data-scale="0.9" data-rotate="-5"
          data-step-number="8" data-section-id="ov-roadmap" data-notes-key="Section 07">
       <div class="slide-bg slide-bg--forest"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">07 · What launches first vs what's deferred</p>
+        <p class="slide-eyebrow">07 · East Arm · What launches first vs what's deferred</p>
         <h2 class="slide-headline">Honest scoping.</h2>
         <div class="slide-scoping">
           <div class="scoping-col scoping-col--v1">
@@ -272,12 +283,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 9 · SOFT LANDING · continue down, alt tilt ═════════ -->
-    <div class="step slide slide--migration" data-x="9500" data-y="3500" data-scale="0.95" data-rotate="15"
+    <!-- ═════ Slide 9 · East Arm · Soft landing bridge ═════════════════ -->
+    <div class="step slide slide--migration" data-x="5500" data-y="3500" data-scale="0.9" data-rotate="5"
          data-step-number="9" data-section-id="ov-migration" data-notes-key="Section 08">
       <div class="slide-bg slide-bg--mustard"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">08 · Rollout day, for users already on the network</p>
+        <p class="slide-eyebrow">08 · East Arm · Rollout day, for users already on the network</p>
         <h2 class="slide-headline">Migration is a design problem. Not an afterthought.</h2>
         <div class="slide-guarantees">
           <div class="guarantee">
@@ -306,12 +317,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 10 · EMPTY → CONSEQUENTIAL · swing inward ══════════ -->
-    <div class="step slide slide--new-orgs" data-x="7500" data-y="6000" data-scale="0.95" data-rotate="-10"
+    <!-- ═════ Slide 10 · East Arm · Gateway for new orgs ═══════════════ -->
+    <div class="step slide slide--new-orgs" data-x="5500" data-y="6000" data-scale="0.9" data-rotate="-5"
          data-step-number="10" data-section-id="ov-new-orgs" data-notes-key="Section 09">
       <div class="slide-bg slide-bg--prussian"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">09 · Day one, for orgs joining the network</p>
+        <p class="slide-eyebrow">09 · East Arm · Day one, for orgs joining the network</p>
         <h2 class="slide-headline">Empty inbox → consequential inbox.</h2>
         <div class="slide-before-after">
           <div class="ba-side ba-side--before">
@@ -341,12 +352,12 @@
       </div>
     </div>
 
-    <!-- ═════ Slide 11 · THREE ASKS · DRAMATIC DIVE-IN to the close ════ -->
-    <div class="step slide slide--asks" data-x="4000" data-y="9000" data-scale="0.75" data-rotate="0"
+    <!-- ═════ Slide 11 · The Town Hall · landing zone for the asks ════ -->
+    <div class="step slide slide--asks" data-x="0" data-y="8000" data-scale="0.75" data-rotate="0"
          data-step-number="11" data-section-id="ov-asks" data-notes-key="Section 10">
       <div class="slide-bg slide-bg--bordeaux"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">10 · What we need from leadership</p>
+        <p class="slide-eyebrow">10 · The Town Hall · What we need from leadership</p>
         <h2 class="slide-headline">Three calls before the build begins.</h2>
         <div class="slide-asks">
           <article class="ask">
