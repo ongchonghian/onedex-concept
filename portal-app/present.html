@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Portal Rewrite — Presenter Mode</title>
+  <meta name="viewport" content="width=1024">
+  <link rel="stylesheet" href="styles/presenter.css">
+  <noscript>This presenter view requires JavaScript and must be served (not opened via file://). Run `python3 -m http.server` from portal-app/ and open http://localhost:8000/present.html.</noscript>
+</head>
+<body class="impress-not-supported presenter-mode">
+
+  <div class="fallback-message">
+    <p>This presentation requires a modern browser. Open <a href="index.html">index.html</a> for the standard view.</p>
+  </div>
+
+  <div id="impress" data-transition-duration="900">
+    <!-- step <div>s are injected here by presenter.js -->
+  </div>
+
+  <header class="presenter-topbar" hidden>
+    <span class="presenter-step-counter"></span>
+    <span class="presenter-section"></span>
+    <span class="presenter-narrative"></span>
+  </header>
+
+  <aside class="presenter-notes-overlay" hidden></aside>
+
+  <nav class="presenter-dot-nav" hidden></nav>
+
+  <script src="scripts/vendor/impress.min.js"></script>
+  <script src="scripts/presenter-steps.js"></script>
+  <script src="scripts/presenter-notes.js"></script>
+  <script src="scripts/presenter.js"></script>
+</body>
+</html>
