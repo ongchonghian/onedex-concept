@@ -4,9 +4,9 @@
 
 **Goal:** Build a zoom-pan canvas presenter mode at `portal-app/present.html` that flies the camera through the existing landing-page Sections 00–10 via 19 declarative camera stops, with speaker notes loaded live from `portal-rewrite-keynotes.md`.
 
-**Architecture:** Impress.js v2.0.0 (~183 KB unminified, MIT) as a thin camera layer. `presenter.js` harvests sections from `index.html` via `fetch()` + DOMParser, wraps each in `<div class="step">` with `data-x/y/scale/rotate` attributes, mounts them into Impress's root, then calls `impress().init()`. Speaker notes parsed from `portal-rewrite-keynotes.md` at boot. `presenter.css` provides dark-stage theming. Canvas is pinned to 1024×768 via `data-width`/`data-height` on `#impress` (v2.0.0 default is 1920×1080 — we pin to preserve the readability-budget calibration).
+**Architecture:** Impress.js v2.0.0 (~183 KB unminified, MIT) as a thin camera layer. `presenter.js` harvests sections from `index.html` via `fetch()` + DOMParser, wraps each in `<div class="step">` with `data-x/y/scale/rotate` attributes, injects per-step `<div class="notes">` blocks from parsed keynotes, mounts to Impress's root, then calls `impress().init()`. Impress.js v2.0.0 ships ~21 bundled plugins — we opt into 7 (`navigation`, `navigation-ui`, `impressConsole`, `mouse-timeout`, `fullscreen`, `blackout`, `help`) via data-attributes + CSS theming, no extra script tags. `presenter.css` provides dark-stage theming. Canvas is pinned to 1024×768 via `data-width`/`data-height` on `#impress` (v2.0.0 default is 1920×1080 — we pin to preserve the readability-budget calibration).
 
-**Tech Stack:** Vanilla JS · Impress.js v2.0.0 (vendored from cdn.jsdelivr.net/gh/impress/impress.js@2.0.0) · CSS3 transforms · node:test + JSDOM for unit tests · existing `portal-app/tests/helpers/load-portal.js` pattern for test infrastructure.
+**Tech Stack:** Vanilla JS · Impress.js v2.0.0 (vendored from cdn.jsdelivr.net/gh/impress/impress.js@2.0.0) + bundled plugins · CSS3 transforms · node:test + JSDOM for unit tests · existing `portal-app/tests/helpers/load-portal.js` pattern for test infrastructure.
 
 **Spec:** `docs/superpowers/specs/2026-05-31-prezi-presenter-mode-design.md`
 
@@ -1263,8 +1263,8 @@ git commit --allow-empty -m "chore(presenter): acceptance pass complete"
 | 6 Camera step model | Task 2 |
 | 7 Spatial layout | Task 2 (encoded as x/y values) |
 | 8 Camera step list (19) | Task 2 |
-| 9 Presenter chrome | Task 6, 7, 9, 10 |
-| 10 Speaker-notes integration | Task 3, 7 |
+| 9 Presenter chrome | Task 6 (revised), 9 (revised), 10 |
+| 10 Speaker-notes integration | Task 3, 7 (revised) |
 | 11 Browser fallback | Task 8, 10 |
 | 12 File map | All tasks |
 | 13 Theme | Task 10 |
@@ -1272,3 +1272,311 @@ git commit --allow-empty -m "chore(presenter): acceptance pass complete"
 | 15 Acceptance criteria | Task 12 |
 | 16 Effort estimate (~4 days) | 12 tasks ≈ 4 working days |
 | 17 Out of scope | No tasks |
+
+---
+
+## Plugin revision pass (2026-05-31)
+
+After the pilot (Tasks 1-3 complete), we discovered Impress.js v2.0.0 bundles ~21 plugins that absorb work originally planned as custom code. The tasks below **supersede** the bodies of Tasks 6, 7, and 9 as written above. The originals remain in this document for context but **do not execute them as-written** — execute the revised versions in this section instead. Tasks 5, 8, 10, 11, 12 are unchanged.
+
+### Task 5 — addendum
+
+When building the per-step `<div class="step">` wrapper in `presenter.js`, also inject a `<div class="notes">` child containing the markdown note body for that step (lookup via `notes[step.notesKey]`). This makes the notes available to the impressConsole plugin AND the inline overlay through a single data source. The element is hidden from the stage via CSS (`.step .notes { display: none; }`) — impressConsole reads it from the DOM regardless.
+
+Acceptance: the boot test in Task 5 already checks for 19 `.step` elements; add an assertion that each `.step` contains exactly one `.notes` child element.
+
+### Task 6 (revised) — Top-bar caption + mouse-idle hide via plugin body class
+
+**Files:**
+- Modify: `portal-app/scripts/presenter.js`
+
+- [ ] **Step 1: Write the failing test**
+
+Append to `portal-app/tests/presenter-boot.test.js`:
+
+```js
+test('Top-bar caption updates on impress:stepenter event', async () => {
+  const fetchStub = async (url) => url.endsWith('index.html')
+    ? { ok: true, status: 200, text: async () => FIXTURE_INDEX_HTML }
+    : { ok: true, status: 200, text: async () => '' };
+
+  const window = loadPresenter({ fetch: fetchStub });
+  await new Promise(r => setTimeout(r, 50));
+
+  const steps = window.document.querySelectorAll('#impress .step');
+  const target = steps[2]; // step 3
+  target.dispatchEvent(new window.CustomEvent('impress:stepenter', { bubbles: true }));
+
+  const counter = window.document.querySelector('.presenter-step-counter');
+  const narrative = window.document.querySelector('.presenter-narrative');
+  assert.equal(counter.textContent, 'step 3 / 19');
+  assert.match(narrative.textContent, /Customer-side 5 cards/);
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails.**
+
+`cd portal-app && node --test tests/presenter-boot.test.js` — expected FAIL.
+
+- [ ] **Step 3: Append `wireTopBar` to `presenter.js`**
+
+Inside the IIFE, before `bootPresenter`:
+
+```js
+  function wireTopBar() {
+    const topbar = document.querySelector('.presenter-topbar');
+    if (!topbar) return;
+    topbar.hidden = false;
+
+    const counter = topbar.querySelector('.presenter-step-counter');
+    const sectionLbl = topbar.querySelector('.presenter-section');
+    const narrative = topbar.querySelector('.presenter-narrative');
+
+    document.addEventListener('impress:stepenter', (e) => {
+      const stepNumber = parseInt(e.target.getAttribute('data-step-number'), 10);
+      const meta = STEPS.find(s => s.step === stepNumber);
+      if (!meta) return;
+      counter.textContent = `step ${meta.step} / ${STEPS.length}`;
+      sectionLbl.textContent = meta.sectionId;
+      narrative.textContent = meta.narrative;
+    });
+    // Auto-hide is handled by CSS responding to body.impress-mouse-timeout
+    // (mouse-timeout plugin), no custom JS needed.
+  }
+```
+
+Call `wireTopBar();` at the top of `bootPresenter()`. No custom mouse-idle timer JS — CSS in Task 10 hides the topbar under `body.impress-mouse-timeout`.
+
+- [ ] **Step 4: Run test — expect PASS.**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add portal-app/scripts/presenter.js portal-app/tests/presenter-boot.test.js
+git commit -m "feat(presenter): top-bar caption + mouse-timeout-driven auto-hide"
+```
+
+### Task 7 (revised) — Inline notes overlay (single-screen fallback) + enable impressConsole
+
+**Files:**
+- Modify: `portal-app/scripts/presenter.js`
+- Modify: `portal-app/present.html` (add `data-impress-console-url` if needed)
+
+- [ ] **Step 1: Verify impressConsole is bundled and what its activation requires.**
+
+Run: `grep -c "impressConsole" portal-app/scripts/vendor/impress.js` — expect 10 refs. impressConsole activates automatically — it listens for `P` keypress and opens its own window. To populate the notes panel, each step's `<div class="notes">` must contain the markdown body (already added by Task 5 addendum).
+
+No HTML change needed for impressConsole. The plugin opens its console window pointing at `impressConsole.html` by default; we serve our own bundled copy.
+
+- [ ] **Step 2: Write the failing test for the inline overlay (toggle with `N`)**
+
+Append to `portal-app/tests/presenter-boot.test.js`:
+
+```js
+test('Pressing N toggles inline notes overlay; content matches current step notesKey', async () => {
+  const fetchStub = async (url) => {
+    if (url.endsWith('index.html')) return { ok: true, status: 200, text: async () => FIXTURE_INDEX_HTML };
+    if (url.endsWith('portal-rewrite-keynotes.md')) {
+      return { ok: true, status: 200, text: async () => '## Section 00\n\nSection-00 speaker text' };
+    }
+    return { ok: false, status: 404, text: async () => '' };
+  };
+
+  const window = loadPresenter({ fetch: fetchStub });
+  await new Promise(r => setTimeout(r, 50));
+
+  const step2 = window.document.querySelectorAll('#impress .step')[1];
+  step2.dispatchEvent(new window.CustomEvent('impress:stepenter', { bubbles: true }));
+
+  const overlay = window.document.querySelector('.presenter-notes-overlay');
+  assert.equal(overlay.hidden, true, 'Overlay starts hidden');
+
+  window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'n' }));
+  assert.equal(overlay.hidden, false, 'Overlay visible after pressing N');
+  assert.match(overlay.textContent, /Section-00 speaker text/);
+
+  window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'n' }));
+  assert.equal(overlay.hidden, true, 'Overlay hidden after second N');
+});
+```
+
+- [ ] **Step 3: Run test to verify it fails.**
+
+- [ ] **Step 4: Append `wireInlineNotes` to `presenter.js`**
+
+```js
+  function wireInlineNotes() {
+    const overlay = document.querySelector('.presenter-notes-overlay');
+    if (!overlay) return;
+
+    let currentStepNumber = 1;
+
+    document.addEventListener('impress:stepenter', (e) => {
+      currentStepNumber = parseInt(e.target.getAttribute('data-step-number'), 10);
+      renderNotes();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      // Skip if impressConsole is open (impressConsole owns the P shortcut;
+      // N is ours and stays distinct).
+      if (e.key === 'n' || e.key === 'N') {
+        overlay.hidden = !overlay.hidden;
+        try { sessionStorage.setItem('presenter:notes-visible', overlay.hidden ? '0' : '1'); } catch {}
+      }
+    });
+
+    function renderNotes() {
+      const meta = STEPS.find(s => s.step === currentStepNumber);
+      if (!meta) return;
+      const notes = (window.__presenterNotes || {})[meta.notesKey];
+      overlay.innerHTML = notes
+        ? `<h3>${meta.notesKey}</h3><pre>${escapeHTML(notes)}</pre>`
+        : `<p>(no notes for ${meta.notesKey})</p>`;
+    }
+
+    function escapeHTML(s) {
+      return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    try {
+      if (sessionStorage.getItem('presenter:notes-visible') === '1') overlay.hidden = false;
+    } catch {}
+  }
+```
+
+Call `wireInlineNotes();` after `wireTopBar();`.
+
+- [ ] **Step 5: Run test — expect PASS.**
+
+- [ ] **Step 6: Manual verification of impressConsole** (out of automated test scope — JSDOM can't open windows). Document in test plan: from the browser, press `P` on `present.html`, verify a separate window opens with current/next slide + notes pulled from `<div class="notes">` + timer.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add portal-app/scripts/presenter.js portal-app/tests/presenter-boot.test.js
+git commit -m "feat(presenter): inline notes overlay (N) + impressConsole notes injection"
+```
+
+### Task 9 (revised) — Enable `navigation-ui` + free polish plugins
+
+**Files:**
+- Modify: `portal-app/present.html` (data-attributes for plugin opt-in)
+- Modify: `portal-app/styles/presenter.css` (theming for plugin-rendered UI)
+
+- [ ] **Step 1: Confirm plugin bundling**
+
+Run: `for p in navigation-ui fullscreen blackout help mouse-timeout impressConsole toolbar; do echo -n "$p: "; grep -c "$p" portal-app/scripts/vendor/impress.js; done`. All seven should be > 0.
+
+- [ ] **Step 2: Opt-in plugins via attribute on `#impress`**
+
+Most v2.0.0 plugins activate automatically when their JS executes. The `navigation-ui` plugin attaches to the `toolbar` plugin's docking element. Confirm by reading the Impress.js v2.0.0 `DOCUMENTATION.md` (vendored as part of the GitHub tag) — most plugins require zero opt-in. The few that need a hint use attributes like `data-help`. For our build the default activation is what we want — no opt-in attributes required.
+
+If `navigation-ui` doesn't render the dropdown in initial smoke-test, add `<div class="impress-toolbar"></div>` somewhere in the body — the toolbar plugin looks for that element and mounts its UI there. Otherwise it auto-creates one.
+
+- [ ] **Step 3: Add `.notes { display: none }` to `presenter.css` so step notes don't render on the stage**
+
+Append to `presenter.css`:
+
+```css
+/* Per-step <div class="notes"> is read by impressConsole — hide on stage. */
+#impress .step .notes { display: none; }
+```
+
+- [ ] **Step 4: Style the navigation-ui toolbar to match the dark stage**
+
+Append to `presenter.css`:
+
+```css
+/* navigation-ui plugin lives at .impress-toolbar — dark-stage theme. */
+.impress-toolbar {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 99px;
+  backdrop-filter: blur(6px);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  transition: opacity 240ms;
+}
+.impress-toolbar select,
+.impress-toolbar button {
+  background: transparent;
+  color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.impress-toolbar select option { color: #000; background: #fff; }
+
+/* Hide toolbar + topbar after 3s mouse idle (mouse-timeout plugin). */
+body.impress-mouse-timeout .impress-toolbar,
+body.impress-mouse-timeout .presenter-topbar { opacity: 0; pointer-events: none; }
+```
+
+- [ ] **Step 5: Manual smoke test from a served browser**
+
+```bash
+cd portal-app && python3 -m http.server 8765 &
+sleep 1
+# open http://localhost:8765/present.html
+# Verify in browser:
+#  - bottom toolbar shows step <select> + prev/next
+#  - press F → fullscreen toggles
+#  - press B → blackout
+#  - press H → help overlay
+#  - press P → impressConsole window opens (allow popups)
+#  - move mouse → topbar + toolbar reappear; idle 3s → fade out
+kill %1
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add portal-app/styles/presenter.css portal-app/present.html
+git commit -m "feat(presenter): enable navigation-ui, fullscreen, blackout, help, mouse-timeout, impressConsole plugins"
+```
+
+### Polish carry-over from Task 3 review
+
+When Task 12 (final integration) runs, also apply these one-line cleanups (caught by Task 3 code quality review, deferred to revision pass):
+
+- [ ] Strengthen `presenter-notes.test.js` test 3 — change `assert.ok(notes['Section 00'].length > 0)` to also assert the em-dash didn't bleed into the key: `assert.ok('Section 00' in notes); assert.ok(!('Section 00 —' in notes));`
+- [ ] Add a new test for parens-only headings:
+  ```js
+  test('parseKeynotes parses parens-only headings', () => {
+    const parseKeynotes = loadParser();
+    const notes = parseKeynotes('## Title (parens only)\n\nbody');
+    assert.ok(notes['Title']);
+    assert.match(notes['Title'], /body/);
+  });
+  ```
+- [ ] In `presenter-notes.js`, add a one-line note above the unconditional `---` skip: `// Note: HR strip is unconditional and would also remove --- lines inside future code fences. Acceptable for the current keynote (no code fences).`
+
+Commit message: `polish(presenter): strengthen notes parser tests + document HR-strip caveat`.
+
+### Acceptance criteria amendments
+
+Add to Task 12's "Verify acceptance criteria" list:
+
+- [ ] `P` opens impressConsole speaker window (manual; popup may need to be allowed)
+- [ ] `F` toggles fullscreen
+- [ ] `B` blacks out the stage
+- [ ] `H` shows keyboard-shortcut overlay
+- [ ] Bottom `<select>` lists all 19 step narratives and jumps when selected
+- [ ] `body.impress-mouse-timeout` appears after 3s idle and removes on mouse-move
+
+### Spec coverage check — revised
+
+| Spec section | Implementing task(s) |
+|---|---|
+| 4 Approach (Impress.js v2.0.0 + plugins) | Task 1, 5, **9 (revised)** |
+| 9 Presenter chrome | **Task 6 (revised), 9 (revised)**, 10 |
+| 10 Speaker-notes integration | Task 3, **Task 5 addendum, 7 (revised)** |
+| Everything else | unchanged |

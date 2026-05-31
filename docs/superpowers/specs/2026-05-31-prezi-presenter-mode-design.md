@@ -36,9 +36,26 @@ The landing page stays as the read-anywhere artefact; the presenter mode is a se
 
 **Impress.js v2.0.0 as a thin camera layer over harvested sections.** At boot, `presenter.js` fetches `index.html`, extracts every `<section class="ov-section">` under the overview screen, wraps each in an Impress.js `<div class="step">` with `data-x`/`data-y`/`data-scale`/`data-rotate` attributes, and lets Impress drive the keyboard + 3D-transform animation.
 
-**Why v2.0.0** (latest tagged release, GitHub `v2.0.0` tag from July 2024): adds a relative-rotation Rel plugin, custom substep ordering, and bumps `data-scale` headroom to 3× (so our `scale: 2.0` asks-step is well within bounds). Not on npm or cdnjs — vendored from `https://cdn.jsdelivr.net/gh/impress/impress.js@2.0.0/js/impress.js` (unminified, 183 KB).
+**Why v2.0.0** (latest tagged release, GitHub `v2.0.0` tag from July 2024): adds a relative-rotation Rel plugin, custom substep ordering, bumps `data-scale` headroom to 3× (covers our `scale: 2.0` asks-step), and — critically — ships a concatenated `js/impress.js` that already bundles ~21 plugins (`navigation`, `navigation-ui`, `impressConsole`, `mouse-timeout`, `fullscreen`, `blackout`, `help`, `toolbar`, etc.). No extra script tags or imports needed; plugins activate via data-attributes on the `#impress` root + minor CSS theming. Not on npm or cdnjs — vendored from `https://cdn.jsdelivr.net/gh/impress/impress.js@2.0.0/js/impress.js` (unminified, 183 KB).
 
 **Canvas pinned to 1024×768.** v2.0.0 changed the default `data-width`/`data-height` to 1920×1080. Our spatial layout (section 7) and readability budget (section 5) were calibrated against 1024×768. We pin explicitly on the `#impress` root (`data-width="1024" data-height="768"`) so the scale math stays valid. Re-calibration to 1920×1080 is a follow-up if we want sharper text on native-1080p projectors.
+
+**Plugins adopted from v2.0.0 bundle (no extra dependencies):**
+
+| Plugin | Trigger | What it gives us |
+|---|---|---|
+| `navigation` | `←/→/space/PgDn/PgUp` | Keyboard step advance (core). |
+| `navigation-ui` | passive | Bottom-bar `<select>` listing all 19 steps + prev/next buttons. Replaces our planned dot-nav with richer Q&A pivot affordance. |
+| `impressConsole` | `P` key | Opens a separate browser window with: current slide, NEXT slide, speaker notes from `<div class="notes">`, elapsed timer. Primary speaker view on multi-screen setups. |
+| `mouse-timeout` | passive | Adds `body.impress-mouse-timeout` after 3s idle. Hook for auto-hiding our top-bar caption and cursor. |
+| `fullscreen` | `F` key | Toggle fullscreen — standard presenter expectation. |
+| `blackout` | `B` key | Black out the screen during Q&A pivots. |
+| `help` | `H` key | Keyboard shortcut overlay — useful if anyone else drives the deck. |
+| `toolbar` | passive | Docking point for `navigation-ui` UI elements. |
+
+**Plugins deliberately NOT adopted:** `autoplay`/`stop` (speaker drives manually), `substep` (readability budget excludes card-by-card zooms), `media` (no audio/video on slides), `mobile`/`touch` (desktop-only per spec), `goto` (no hyperlink-jumps inside slides), `rel` (steps already absolute-positioned; rewrite cost > benefit), `skip` (no skipped steps), `form` (no inputs), `progress` (redundant with top-bar counter).
+
+**impress-extras (separate repo)** — `highlight`, `markdown`, `mathjax`, `mermaid` — none apply to our use case.
 
 Rejected alternatives (documented for traceability):
 
@@ -144,24 +161,58 @@ No card-by-card zooms — the readability budget is met at 1.5× wide, and indiv
 
 ## 9 · Presenter chrome
 
-A thin overlay layered on top of Impress.js:
+The chrome is a blend of Impress.js plugin-provided UI + a small amount of custom presenter glue.
 
-- **Top-bar (12px tall, low-contrast):** `step N / 19 · Section 03 · "7→5 steps"`. Auto-hides after 2s idle; reappears on mouse-move.
-- **Speaker-notes overlay (toggle with `N`):** floats bottom-third of screen at 25% viewport height. Loads from `portal-rewrite-keynotes.md` (live fetch at boot, parsed by section heading). For each step, the relevant section's "What to say" block is shown. Toggle persists per browser session via `sessionStorage`.
-- **Dot-nav (hover-reveal):** small dot row at bottom centre, visible only on `mousemove`. Click any dot to jump to that step. Critical for Q&A pivots.
+### Plugin-provided (zero custom code)
+
+- **`navigation-ui` bottom bar:** a `<select>` dropdown of all 19 step narratives + prev/next buttons, anchored at bottom-center via the `toolbar` plugin docking. Hover-revealed via the standard `body.impress-mouse-timeout` class (mouse-timeout plugin). Critical for Q&A pivots — speaker can read step names instead of guessing from dot positions.
+- **`fullscreen` (`F`):** toggle fullscreen.
+- **`blackout` (`B`):** screen blackout for Q&A focus.
+- **`help` (`H`):** keyboard-shortcut overlay.
+- **`mouse-timeout`:** adds `body.impress-mouse-timeout` after 3s cursor idle, removes on movement. Drives the auto-hide behaviour for our top-bar caption.
+
+### Custom (presenter.js)
+
+- **Top-bar caption (12px tall, low-contrast):** `step N / 19 · Section 03 · "7→5 steps"`. Visible by default; CSS hides it under `body.impress-mouse-timeout` so it fades out when the cursor is still.
 - **Exit (`esc`):** redirects to `index.html#<current-section-id>` so the audience can pick up the read-along version at the same place.
 
+### Removed from the original design
+
+- ~~Dot-nav~~ — replaced by `navigation-ui` (richer affordance for the same purpose).
+- ~~Custom mouse-idle auto-hide JS~~ — replaced by `mouse-timeout` plugin body class.
+
 ## 10 · Speaker-notes integration
+
+**Two display modes, speaker picks per session:**
+
+### Mode A — `impressConsole` separate window (primary for multi-screen setups)
+
+Press `P` to open. impressConsole opens a separate browser window containing:
+
+- Current slide preview
+- Next slide preview
+- Speaker notes for the current slide (pulled from `<div class="notes">` inside the step)
+- Elapsed timer
+
+The speaker keeps the console window on their laptop while the audience sees only the stage on the projector. This is the "proper" Prezi/PowerPoint presenter experience.
+
+### Mode B — Inline notes overlay (fallback for single-screen setups, or speaker preference)
+
+Press `N` to toggle. A bottom-third overlay shows the same notes content inline on the stage. Useful when the speaker only has a single screen, or when popups are blocked. Toggle state persists per browser session via `sessionStorage`.
+
+### Shared boot pipeline
 
 At boot, `presenter.js`:
 
 1. `fetch('../portal-rewrite-keynotes.md')` → returns the markdown text.
-2. Splits on `^## ` headings to get one block per section.
-3. Maps step `notesKey` (e.g., `"Section 00"`) → matching block by heading prefix.
-4. For each step, the "### What to say" sub-section is the primary read-aloud text; the rest is collapsible detail.
-5. Renders the matched block in the speaker-notes overlay when the user advances to that step.
+2. Calls `parseKeynotes(text)` (from `presenter-notes.js`, already built in Task 3) — splits on `^## ` headings to a record keyed by short notesKey (`Opener`, `Section 00`, …, `Section 10`).
+3. For each step, when building its `<div class="step">` wrapper, injects `<div class="notes">{markdown body for step.notesKey}</div>` inside it. impressConsole reads from this; the inline overlay reads from the same source (or directly from the parser output).
 
-If the markdown file is missing or unreachable, the overlay shows `(speaker notes unavailable — load portal-rewrite-keynotes.md alongside this page)` and the presentation otherwise runs normally.
+If the markdown file is missing or unreachable, both modes show `(speaker notes unavailable — load portal-rewrite-keynotes.md alongside this page)` and the presentation otherwise runs normally.
+
+### Rendering contract
+
+`parseKeynotes` returns raw markdown strings as note bodies. impressConsole renders them as-is in a `<pre>`-style block (acceptable for our use case — note blocks are short, structured, and readable as raw markdown). The inline overlay does the same. A future iteration could add markdown rendering via a small client-side library, but is not in scope here.
 
 ## 11 · Browser fallback
 
@@ -219,25 +270,33 @@ The implementation is done when:
 - [ ] `portal-app/present.html` opens to step 1 (opener) when loaded
 - [ ] Pressing `→` advances through all 19 steps in order with smooth zoom-pan transitions
 - [ ] Pressing `←` reverses
-- [ ] Pressing `N` toggles the speaker-notes overlay
+- [ ] Pressing `P` opens the impressConsole speaker window with current/next slide previews + notes + timer
+- [ ] Pressing `N` toggles the inline notes overlay (single-screen fallback)
+- [ ] Pressing `F` toggles fullscreen
+- [ ] Pressing `B` blacks out the stage
+- [ ] Pressing `H` shows the keyboard-shortcut overlay
 - [ ] Pressing `esc` redirects to `index.html` at the current section anchor
+- [ ] The bottom navigation-ui `<select>` lists all 19 step narratives and jumps to any selected step
 - [ ] At any narrated step, the smallest narrated text is visually ≥ 18px on a 1080p projection (manual back-of-room check)
 - [ ] Section 00 nested moves (steps 2–5) keep the customer + internal grids each fully visible at their assigned scale
-- [ ] Speaker notes load live from `portal-rewrite-keynotes.md`; editing the markdown and reloading reflects the change
+- [ ] Speaker notes load live from `portal-rewrite-keynotes.md`; editing the markdown and reloading reflects the change in both impressConsole and the inline overlay
 - [ ] Modifying `index.html` (e.g., updating a Section 00 card) propagates to the presenter on next reload — no copy-paste of section content into `present.html`
 - [ ] Browser without 3D transforms shows fallback message and redirects to `index.html` after 2s
 - [ ] Existing landing page (`index.html`) renders identically before and after this work — zero visual regression
 
-## 16 · Effort estimate
+## 16 · Effort estimate (post plugin adoption)
 
 - Spatial layout authoring + camera position tuning: **1 day**
-- `present.html` shell + Impress.js integration: **0.5 days**
-- DOM harvest + step wrapping in `presenter.js`: **0.5 days**
-- Presenter chrome (top-bar, dot-nav, exit): **0.5 days**
-- Speaker-notes markdown parser + overlay: **0.5 days**
-- Theme + readability tuning: **0.5 days**
-- Live rehearsal pass + tweak: **0.5 days**
-- **Total: ~4 days**
+- `present.html` shell + Impress.js integration: **0.5 days** *(done — Task 1)*
+- STEPS data + readability tests: **0.5 days** *(done — Task 2)*
+- Speaker-notes markdown parser: **0.5 days** *(done — Task 3)*
+- DOM harvest + step wrapping + `<div class="notes">` injection in `presenter.js`: **0.5 days**
+- Top-bar caption + Esc exit + fallback handler: **0.5 days** *(simplified — mouse-timeout plugin replaces custom auto-hide JS)*
+- Inline notes overlay (fallback mode for single-screen): **0.25 days** *(reduced — primary speaker view is now impressConsole)*
+- Enable plugins (navigation-ui, impressConsole, mouse-timeout, fullscreen, blackout, help) via data-attrs + CSS theming: **0.5 days**
+- Stage theme (dark canvas, full-bleed sections, hide nav chrome): **0.5 days**
+- Live rehearsal pass + tuning: **0.5 days**
+- **Total: ~4 days** *(roughly unchanged total — plugin adoption traded custom dot-nav + custom notes overlay for plugin integration work, but added free polish: fullscreen/blackout/help/separate-window presenter console)*
 
 ## 17 · Out of scope (for completeness)
 
