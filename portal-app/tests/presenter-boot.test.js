@@ -87,3 +87,24 @@ test('Top-bar caption updates on impress:stepenter event', async () => {
   assert.equal(counter.textContent, 'step 3 / 19');
   assert.match(narrative.textContent, /Customer-side 5 cards/);
 });
+
+test('Pressing N toggles inline notes overlay; content matches current step notesKey', async () => {
+  const window = loadPresenter({ fetch: buildFetch() });
+  await new Promise(r => setTimeout(r, 50));
+
+  // Enter step 2 (Section 00 headline) so the overlay knows what to render.
+  const step2 = window.document.querySelectorAll('#impress .step')[1];
+  step2.dispatchEvent(new window.CustomEvent('impress:stepenter', { bubbles: true }));
+
+  const overlay = window.document.querySelector('.presenter-notes-overlay');
+  assert.equal(overlay.hidden, true, 'Overlay starts hidden');
+
+  // Press N to show.
+  window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'n' }));
+  assert.equal(overlay.hidden, false, 'Overlay visible after pressing N');
+  assert.match(overlay.textContent, /section-00 body/);
+
+  // Press N again to hide.
+  window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'n' }));
+  assert.equal(overlay.hidden, true, 'Overlay hidden after second N');
+});

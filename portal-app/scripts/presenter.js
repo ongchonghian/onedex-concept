@@ -42,8 +42,49 @@
     // (mouse-timeout plugin, opted in via Task 9), no custom JS needed.
   }
 
+  function wireInlineNotes() {
+    const overlay = document.querySelector('.presenter-notes-overlay');
+    if (!overlay) return;
+
+    let currentStepNumber = 1;
+
+    document.addEventListener('impress:stepenter', (e) => {
+      currentStepNumber = parseInt(e.target.getAttribute('data-step-number'), 10);
+      renderNotes();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      // P is reserved for impressConsole (plugin-handled). N is the inline
+      // overlay's toggle — distinct so a speaker on a single-screen setup
+      // can read notes without opening the console window.
+      if (e.key === 'n' || e.key === 'N') {
+        overlay.hidden = !overlay.hidden;
+        try { sessionStorage.setItem('presenter:notes-visible', overlay.hidden ? '0' : '1'); } catch {}
+      }
+    });
+
+    function renderNotes() {
+      const meta = STEPS.find(s => s.step === currentStepNumber);
+      if (!meta) return;
+      const notes = (window.__presenterNotes || {})[meta.notesKey];
+      overlay.innerHTML = notes
+        ? `<h3>${meta.notesKey}</h3><pre>${escapeHTML(notes)}</pre>`
+        : `<p>(no notes for ${meta.notesKey})</p>`;
+    }
+
+    function escapeHTML(s) {
+      return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    // Restore previous session toggle state.
+    try {
+      if (sessionStorage.getItem('presenter:notes-visible') === '1') overlay.hidden = false;
+    } catch {}
+  }
+
   async function bootPresenter() {
     wireTopBar();
+    wireInlineNotes();
 
     const root = document.getElementById('impress');
     if (!root) {
