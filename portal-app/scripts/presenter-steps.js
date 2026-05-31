@@ -4,33 +4,38 @@
 // Each step is consumed by presenter.js, wrapped in <div class="step" data-x ... >,
 // and handed to Impress.js for animation.
 //
-// data-scale convention (Impress.js): higher = content appears bigger (closer camera).
-// Steps tagged readability:'narration' MUST have scale >= 1.5 (readable at back of room
-// at ~5m projection distance — see spec section 5).
+// data-scale convention (Impress.js v2.0.0): the CAMERA applies scale(1/data-scale).
+//   - data-scale < 1  → camera magnifies → content appears LARGER (zoomed in, readable)
+//   - data-scale = 1  → content appears at natural size
+//   - data-scale > 1  → camera retreats → content appears SMALLER (wide context)
+//
+// For our use case (back-of-room readability at ~5m projection): use data-scale ≤ 0.7
+// on every narrated step so the smallest narrated text projects at >= 18 effective px.
+//
+// Layout: linear horizontal canvas. Each section sits at (i × 3000, 0) with scale 0.7.
+// 3000px horizontal spacing × 0.7 scale gives a 1100-px-wide step a footprint of
+// 770px, leaving 2230px clearance between adjacent sections — no overlap.
+//
+// Section 00 is the tallest section in the landing page; the camera focuses
+// on its top half (headline + customer grid). The internal grid + stats strip
+// extend below the camera viewport. The speaker narrates those from notes —
+// per the spec's "wide shots only" constraint (no card-by-card zooms).
 //
 // IDs sectionId/notesKey reference: portal-app/index.html section IDs and
-// portal-rewrite-keynotes.md `## ...` headings respectively.
+// portal-app/portal-rewrite-keynotes.md `## ...` headings respectively.
 
 (function (global) {
   global.PRESENTER_STEPS = [
-    { step:  1, sectionId: 'ov-stakes',    x:     0, y:     0, scale: 0.6, rotate:  0, readability: 'context',   narrative: 'Opener — 60 sec framing',                       notesKey: 'Opener' },
-    { step:  2, sectionId: 'ov-stakes',    x:     0, y:  -300, scale: 1.8, rotate:  0, readability: 'narration', narrative: 'Section 00 — headline + lede',                  notesKey: 'Section 00' },
-    { step:  3, sectionId: 'ov-stakes',    x:  -280, y:    80, scale: 1.5, rotate:  0, readability: 'narration', narrative: 'Customer-side 5 cards (wide)',                         notesKey: 'Section 00' },
-    { step:  4, sectionId: 'ov-stakes',    x:   280, y:    80, scale: 1.5, rotate:  0, readability: 'narration', narrative: 'Internal-side 5 cards (wide)',                         notesKey: 'Section 00' },
-    { step:  5, sectionId: 'ov-stakes',    x:     0, y:   380, scale: 1.5, rotate:  0, readability: 'narration', narrative: 'Numbers strip + close 00',                      notesKey: 'Section 00' },
-    { step:  6, sectionId: 'ov-mental-01', x: -1800, y:  -400, scale: 1.5, rotate: -3, readability: 'narration', narrative: 'Section 01 — consent funnel',                   notesKey: 'Section 01' },
-    { step:  7, sectionId: 'ov-mental-02', x: -1800, y:   200, scale: 1.5, rotate:  0, readability: 'narration', narrative: 'Section 02 — compose shift',                    notesKey: 'Section 02' },
-    { step:  8, sectionId: 'ov-ba-03',     x: -1800, y:   800, scale: 1.5, rotate:  3, readability: 'narration', narrative: 'Section 03 — 7→5 steps',                        notesKey: 'Section 03' },
-    { step:  9, sectionId: 'ov-ba-04',     x: -1800, y:  1400, scale: 1.5, rotate:  0, readability: 'narration', narrative: 'Section 04 — admin 9→5',                        notesKey: 'Section 04' },
-    { step: 10, sectionId: 'ov-concept',   x:     0, y: -1200, scale: 1.5, rotate:  0, readability: 'narration', narrative: 'Section 05 — Work · Exchange · Directory',     notesKey: 'Section 05' },
-    { step: 11, sectionId: 'ov-decisions', x:  1800, y:  -400, scale: 1.6, rotate:  0, readability: 'narration', narrative: 'Section 06 — constellation overview',           notesKey: 'Section 06' },
-    { step: 12, sectionId: 'ov-roadmap',   x:  1600, y:   800, scale: 1.5, rotate:  0, readability: 'narration', narrative: 'Section 07 — v1 vs deferred',                   notesKey: 'Section 07' },
-    { step: 13, sectionId: 'ov-migration', x:   800, y:  1200, scale: 1.5, rotate:  0, readability: 'narration', narrative: 'Section 08 — soft landing',                     notesKey: 'Section 08' },
-    { step: 14, sectionId: 'ov-new-orgs',  x:   200, y:  1400, scale: 1.5, rotate:  0, readability: 'narration', narrative: 'Section 09 — pre-staged drafts',                notesKey: 'Section 09' },
-    { step: 15, sectionId: 'ov-asks',      x:     0, y:  1700, scale: 1.0, rotate:  0, readability: 'context',   narrative: 'Section 10 — open frame',                       notesKey: 'Section 10' },
-    { step: 16, sectionId: 'ov-asks',      x:  -220, y:  1820, scale: 2.0, rotate:  0, readability: 'narration', narrative: 'Ask A — data-owner rule',                       notesKey: 'Section 10' },
-    { step: 17, sectionId: 'ov-asks',      x:     0, y:  1820, scale: 2.0, rotate:  0, readability: 'narration', narrative: 'Ask B — revoke and recreate',                   notesKey: 'Section 10' },
-    { step: 18, sectionId: 'ov-asks',      x:   220, y:  1820, scale: 2.0, rotate:  0, readability: 'narration', narrative: 'Ask C — user-test greenlight',                  notesKey: 'Section 10' },
-    { step: 19, sectionId: 'ov-asks',      x:     0, y:  1820, scale: 1.4, rotate:  0, readability: 'context',   narrative: 'Closer + Q&A landing',                          notesKey: 'Section 10' }
+    { step:  1, sectionId: 'ov-stakes',    x:      0, y: 0, scale: 0.7, rotate: 0, readability: 'narration', narrative: 'Section 00 — Ten frictions',                       notesKey: 'Section 00' },
+    { step:  2, sectionId: 'ov-mental-01', x:   3000, y: 0, scale: 0.7, rotate: 0, readability: 'narration', narrative: 'Section 01 — Consent funnel',                     notesKey: 'Section 01' },
+    { step:  3, sectionId: 'ov-mental-02', x:   6000, y: 0, scale: 0.7, rotate: 0, readability: 'narration', narrative: 'Section 02 — Compose shift',                      notesKey: 'Section 02' },
+    { step:  4, sectionId: 'ov-ba-03',     x:   9000, y: 0, scale: 0.7, rotate: 0, readability: 'narration', narrative: 'Section 03 — 7→5 operator steps',                 notesKey: 'Section 03' },
+    { step:  5, sectionId: 'ov-ba-04',     x:  12000, y: 0, scale: 0.7, rotate: 0, readability: 'narration', narrative: 'Section 04 — 9→5 admin steps',                    notesKey: 'Section 04' },
+    { step:  6, sectionId: 'ov-concept',   x:  15000, y: 0, scale: 0.7, rotate: 0, readability: 'narration', narrative: 'Section 05 — Work · Exchange · Directory',       notesKey: 'Section 05' },
+    { step:  7, sectionId: 'ov-decisions', x:  18000, y: 0, scale: 0.7, rotate: 0, readability: 'narration', narrative: 'Section 06 — Ten decisions',                      notesKey: 'Section 06' },
+    { step:  8, sectionId: 'ov-roadmap',   x:  21000, y: 0, scale: 0.7, rotate: 0, readability: 'narration', narrative: 'Section 07 — v1 vs deferred',                     notesKey: 'Section 07' },
+    { step:  9, sectionId: 'ov-migration', x:  24000, y: 0, scale: 0.7, rotate: 0, readability: 'narration', narrative: 'Section 08 — Soft landing',                       notesKey: 'Section 08' },
+    { step: 10, sectionId: 'ov-new-orgs',  x:  27000, y: 0, scale: 0.7, rotate: 0, readability: 'narration', narrative: 'Section 09 — Pre-staged Drafts',                  notesKey: 'Section 09' },
+    { step: 11, sectionId: 'ov-asks',      x:  30000, y: 0, scale: 0.7, rotate: 0, readability: 'narration', narrative: 'Section 10 — The three asks',                     notesKey: 'Section 10' }
   ];
 }(typeof window !== 'undefined' ? window : globalThis));

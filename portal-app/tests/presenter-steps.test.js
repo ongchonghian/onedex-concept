@@ -12,15 +12,15 @@ function loadSteps() {
   return context.window.PRESENTER_STEPS;
 }
 
-test('STEPS array has exactly 19 entries', () => {
+test('STEPS array has exactly 11 entries (one per landing-page section)', () => {
   const steps = loadSteps();
-  assert.equal(steps.length, 19);
+  assert.equal(steps.length, 11);
 });
 
-test('Every narration step has data-scale >= 1.5', () => {
+test('Every narration step has data-scale <= 0.7 (Impress.js: lower scale = camera closer = larger text)', () => {
   const steps = loadSteps();
-  const offenders = steps.filter(s => s.readability === 'narration' && s.scale < 1.5);
-  assert.equal(offenders.length, 0, `Narration steps with scale<1.5: ${offenders.map(s => s.step).join(',')}`);
+  const offenders = steps.filter(s => s.readability === 'narration' && s.scale > 0.7);
+  assert.equal(offenders.length, 0, `Narration steps with scale>0.7: ${offenders.map(s => s.step).join(',')}`);
 });
 
 test('All required section IDs are referenced', () => {
