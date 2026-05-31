@@ -35,9 +35,12 @@ test('present.html ships 12 steps (1 opener overview + 11 content slides)', asyn
   assert.equal(steps.length, 12, `Expected 12 steps, got ${steps.length}`);
   assert.equal(window.__impressLog.initCalled, true, 'impress().init() must be called');
 
-  // First step is the invisible overview at scale 8 (Prezi dive-in opener)
+  // First step is the invisible overview at scale ≥ 6 (Prezi dive-in opener).
+  // The pyramid layout (slide 1 isolated at top, 9 in middle band, slide 11 at
+  // bottom) fits comfortably at scale 7; earlier scattered layouts needed 8.
   const overview = steps[0];
-  assert.equal(overview.getAttribute('data-scale'), '8', 'opener must be at scale 8 for dive-in');
+  const overviewScale = parseFloat(overview.getAttribute('data-scale'));
+  assert.ok(overviewScale >= 6, `opener scale should be >= 6 for dive-in, got ${overviewScale}`);
   assert.ok(overview.classList.contains('step--invisible'), 'opener must use invisible class');
 });
 
