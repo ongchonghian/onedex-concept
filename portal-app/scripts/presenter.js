@@ -1,110 +1,25 @@
 // portal-app/scripts/presenter.js
 //
-// Boot orchestrator for the Prezi presenter view.
+// Boot orchestrator for the Path-C presenter view.
 //
-// At boot:
-//   1. fetch('./index.html')  → DOMParser → harvest <section class="ov-section">
-//      by id from inside the [data-screen="overview"] root.
-//   2. fetch('../portal-rewrite-keynotes.md')  → parseKeynotes()  → notes-by-key.
-//   3. For each entry in PRESENTER_STEPS, build a <div class="step"> wrapper:
-//        - data-x / data-y / data-scale / data-rotate from the step entry
-//        - data-step-number = step number (1-indexed) for chrome lookups
-//        - clone of the harvested section as the visible child
-//        - <div class="notes">{markdown body for step.notesKey}</div>
-//          (read by impressConsole + the inline notes overlay; hidden on
-//           the stage via CSS in presenter.css).
+// Slides are hand-authored in present.html (each <div class="step slide">
+// already carries data-x/y/scale + data-step-number + data-section-id +
+// data-notes-key + a <div class="notes"> placeholder). presenter.js's job is:
+//   1. Fetch portal-rewrite-keynotes.md and parse it into a {notesKey: body} map.
+//   2. Populate each step's <div class="notes"> with the matched body
+//      (impressConsole reads from there; the inline overlay reads from the
+//      same source).
+//   3. Wire the four presenter chrome behaviors:
+//        - top-bar caption (updates on impress:stepenter)
+//        - inline notes overlay (N key)
+//        - Escape exit (redirects to ../index.html#<sectionId>)
+//        - 3D-transform fallback redirect (impress:notSupported)
 //   4. Hand off to impress().init().
 //
-// Idempotent — safe to re-import (boot runs once on DOMContentLoaded).
+// Idempotent — boot runs once on DOMContentLoaded.
 
 (function () {
-  const STEPS = (typeof window !== 'undefined' && window.PRESENTER_STEPS) || [];
   const parseKeynotes = (typeof window !== 'undefined' && window.parseKeynotes) || (() => ({}));
-
-  function wireTopBar() {
-    const topbar = document.querySelector('.presenter-topbar');
-    if (!topbar) return;
-    topbar.hidden = false;
-
-    const counter = topbar.querySelector('.presenter-step-counter');
-    const sectionLbl = topbar.querySelector('.presenter-section');
-    const narrative = topbar.querySelector('.presenter-narrative');
-
-    document.addEventListener('impress:stepenter', (e) => {
-      const stepNumber = parseInt(e.target.getAttribute('data-step-number'), 10);
-      const meta = STEPS.find(s => s.step === stepNumber);
-      if (!meta) return;
-      counter.textContent = `step ${meta.step} / ${STEPS.length}`;
-      sectionLbl.textContent = meta.sectionId;
-      narrative.textContent = meta.narrative;
-    });
-    // Auto-hide is handled by CSS responding to body.impress-mouse-timeout
-    // (mouse-timeout plugin, opted in via Task 9), no custom JS needed.
-  }
-
-  function wireInlineNotes() {
-    const overlay = document.querySelector('.presenter-notes-overlay');
-    if (!overlay) return;
-
-    let currentStepNumber = 1;
-
-    document.addEventListener('impress:stepenter', (e) => {
-      currentStepNumber = parseInt(e.target.getAttribute('data-step-number'), 10);
-      renderNotes();
-    });
-
-    document.addEventListener('keydown', (e) => {
-      // P is reserved for impressConsole (plugin-handled). N is the inline
-      // overlay's toggle — distinct so a speaker on a single-screen setup
-      // can read notes without opening the console window.
-      if (e.key === 'n' || e.key === 'N') {
-        overlay.hidden = !overlay.hidden;
-        try { sessionStorage.setItem('presenter:notes-visible', overlay.hidden ? '0' : '1'); } catch {}
-      }
-    });
-
-    function renderNotes() {
-      const meta = STEPS.find(s => s.step === currentStepNumber);
-      if (!meta) return;
-      const notes = (window.__presenterNotes || {})[meta.notesKey];
-      overlay.innerHTML = notes
-        ? `<h3>${meta.notesKey}</h3><pre>${escapeHTML(notes)}</pre>`
-        : `<p>(no notes for ${meta.notesKey})</p>`;
-    }
-
-    function escapeHTML(s) {
-      return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-    }
-
-    // Restore previous session toggle state.
-    try {
-      if (sessionStorage.getItem('presenter:notes-visible') === '1') overlay.hidden = false;
-    } catch {}
-  }
-
-  function wireExit() {
-    let currentSectionId = null;
-    document.addEventListener('impress:stepenter', (e) => {
-      const stepNumber = parseInt(e.target.getAttribute('data-step-number'), 10);
-      const meta = STEPS.find(s => s.step === stepNumber);
-      if (meta) currentSectionId = meta.sectionId;
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        const target = currentSectionId
-          ? `./index.html#${currentSectionId}`
-          : './index.html';
-        window.location.assign(target);
-      }
-    });
-  }
-
-  function wireFallback() {
-    window.addEventListener('impress:notSupported', () => {
-      setTimeout(() => window.location.assign('./index.html'), 2000);
-    });
-  }
 
   async function bootPresenter() {
     wireTopBar();
@@ -112,47 +27,9 @@
     wireExit();
     wireFallback();
 
-    const root = document.getElementById('impress');
-    if (!root) {
-      console.error('[presenter] #impress root not found');
-      return;
-    }
-
-    const [sectionsById, notes] = await Promise.all([
-      harvestSections(),
-      loadNotes()
-    ]);
-
-    if (!sectionsById) {
-      console.error('[presenter] Section harvest failed; cannot boot');
-      return;
-    }
+    const notes = await loadNotes();
     window.__presenterNotes = notes;
-
-    for (const step of STEPS) {
-      const sectionNode = sectionsById[step.sectionId];
-      if (!sectionNode) {
-        console.warn('[presenter] No section for step ' + step.step + ': ' + step.sectionId);
-        continue;
-      }
-      const wrapper = document.createElement('div');
-      wrapper.className = 'step';
-      wrapper.setAttribute('data-x', String(step.x));
-      wrapper.setAttribute('data-y', String(step.y));
-      wrapper.setAttribute('data-scale', String(step.scale));
-      if (step.rotate) wrapper.setAttribute('data-rotate', String(step.rotate));
-      wrapper.setAttribute('data-step-number', String(step.step));
-
-      wrapper.appendChild(sectionNode.cloneNode(true));
-
-      // Inject per-step notes for impressConsole + inline overlay.
-      const notesEl = document.createElement('div');
-      notesEl.className = 'notes';
-      notesEl.textContent = (notes && notes[step.notesKey]) || '';
-      wrapper.appendChild(notesEl);
-
-      root.appendChild(wrapper);
-    }
+    injectNotesIntoSteps(notes);
 
     if (typeof window.impress === 'function') {
       window.impress().init();
@@ -161,29 +38,16 @@
     }
   }
 
-  async function harvestSections() {
-    try {
-      const res = await fetch('./index.html');
-      if (!res.ok) throw new Error('fetch failed ' + res.status);
-      const html = await res.text();
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      const map = {};
-      doc.querySelectorAll('section[data-screen="overview"] .ov-section[id]').forEach(node => {
-        map[node.id] = node;
-      });
-      return map;
-    } catch (err) {
-      console.error('[presenter] harvest error:', err);
-      return null;
-    }
+  function injectNotesIntoSteps(notes) {
+    document.querySelectorAll('#impress .step').forEach((step) => {
+      const key = step.getAttribute('data-notes-key');
+      if (!key) return;
+      const notesEl = step.querySelector('.notes');
+      if (!notesEl) return;
+      notesEl.textContent = (notes && notes[key]) || '';
+    });
   }
 
-  // Speaker notes file lives in portal-app/ alongside present.html so any
-  // dev server with portal-app/ as docroot (Vite, Next, http-server, etc.)
-  // can serve it without needing to follow symlinks or traverse above
-  // the docroot. If a future setup serves design-concepts/ as docroot,
-  // open http://<host>/portal-app/present.html (the './' lookup still
-  // works because URL-resolution is relative to the document URL).
   async function loadNotes() {
     try {
       const res = await fetch('./portal-rewrite-keynotes.md');
@@ -194,6 +58,109 @@
     } catch {}
     console.warn('[presenter] portal-rewrite-keynotes.md not reachable; speaker notes will be empty');
     return {};
+  }
+
+  function wireTopBar() {
+    const topbar = document.querySelector('.presenter-topbar');
+    if (!topbar) return;
+    topbar.hidden = false;
+
+    const counter = topbar.querySelector('.presenter-step-counter');
+    const sectionLbl = topbar.querySelector('.presenter-section');
+    const narrative = topbar.querySelector('.presenter-narrative');
+
+    const totalSteps = document.querySelectorAll('#impress .step').length;
+
+    document.addEventListener('impress:stepenter', (e) => {
+      const stepNumber = e.target.getAttribute('data-step-number') || '?';
+      const sectionId = e.target.getAttribute('data-section-id') || '';
+      const narrText = stepNarrativeFromDom(e.target);
+      counter.textContent = `step ${stepNumber} / ${totalSteps}`;
+      sectionLbl.textContent = sectionId;
+      narrative.textContent = narrText;
+    });
+  }
+
+  function stepNarrativeFromDom(stepEl) {
+    // Use the slide's eyebrow text (e.g., "00 · Why this needs leadership attention")
+    // as the narrative; falls back to the step's data-notes-key.
+    const eyebrow = stepEl.querySelector('.slide-eyebrow');
+    if (eyebrow) return eyebrow.textContent.trim();
+    return stepEl.getAttribute('data-notes-key') || '';
+  }
+
+  function wireInlineNotes() {
+    const overlay = document.querySelector('.presenter-notes-overlay');
+    if (!overlay) return;
+
+    let currentNotesKey = null;
+    let currentSectionId = null;
+
+    document.addEventListener('impress:stepenter', (e) => {
+      currentNotesKey = e.target.getAttribute('data-notes-key');
+      currentSectionId = e.target.getAttribute('data-section-id');
+      renderNotes();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      // P is reserved for impressConsole (plugin-handled). N toggles our overlay.
+      if (e.key === 'n' || e.key === 'N') {
+        overlay.hidden = !overlay.hidden;
+        try { sessionStorage.setItem('presenter:notes-visible', overlay.hidden ? '0' : '1'); } catch {}
+      }
+    });
+
+    function renderNotes() {
+      if (!currentNotesKey) {
+        overlay.innerHTML = '<p>(no current step)</p>';
+        return;
+      }
+      const notes = (window.__presenterNotes || {})[currentNotesKey];
+      overlay.innerHTML = notes
+        ? `<h3>${escapeHTML(currentNotesKey)}</h3><pre>${escapeHTML(notes)}</pre>`
+        : `<p>(no notes for ${escapeHTML(currentNotesKey)})</p>`;
+    }
+
+    function escapeHTML(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    try {
+      if (sessionStorage.getItem('presenter:notes-visible') === '1') overlay.hidden = false;
+    } catch {}
+  }
+
+  function wireExit() {
+    let currentSectionId = null;
+    document.addEventListener('impress:stepenter', (e) => {
+      currentSectionId = e.target.getAttribute('data-section-id');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const target = currentSectionId
+          ? `./index.html#${currentSectionId}`
+          : './index.html';
+        // Indirect call so JSDOM tests can stub via window.__presenter_navigate.
+        if (typeof window.__presenter_navigate === 'function') {
+          window.__presenter_navigate(target);
+        } else {
+          window.location.assign(target);
+        }
+      }
+    });
+  }
+
+  function wireFallback() {
+    window.addEventListener('impress:notSupported', () => {
+      setTimeout(() => {
+        if (typeof window.__presenter_navigate === 'function') {
+          window.__presenter_navigate('./index.html');
+        } else {
+          window.location.assign('./index.html');
+        }
+      }, 2000);
+    });
   }
 
   if (document.readyState === 'loading') {

@@ -39,24 +39,16 @@ function loadPresenter(opts = {}) {
     opts.beforeScripts(window);
   }
 
-  // Load scripts in dependency order.
+  // Load scripts in dependency order. presenter-steps.js was retired in Path C
+  // (slides are now hand-authored in present.html instead of being driven by a
+  // STEPS data array), so the loader only needs notes + boot.
   let scriptPaths = opts.scriptPaths || [
-    'scripts/presenter-steps.js',
     'scripts/presenter-notes.js',
     'scripts/presenter.js'
   ];
 
   scriptPaths.forEach((scriptPath) => {
-    let source = fs.readFileSync(path.join(PORTAL_DIR, scriptPath), 'utf8');
-    
-    // Wrapper: inject a hook for location.assign so tests can intercept calls
-    if (scriptPath.endsWith('presenter.js')) {
-      source = source.replace(
-        'window.location.assign(target)',
-        '(window.__presenter_navigate || window.location.assign)(target)'
-      );
-    }
-    
+    const source = fs.readFileSync(path.join(PORTAL_DIR, scriptPath), 'utf8');
     window.eval(source);
   });
 

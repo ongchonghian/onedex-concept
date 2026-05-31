@@ -1,93 +1,750 @@
 /* portal-app/styles/presenter.css
-   Dark stage, full-bleed sections, hide nav chrome, dot-nav + topbar styling. */
+   Stage-quality typography for Path C presenter. Inter for sans, JetBrains Mono
+   for numerics/code accents. Each slide gets a chromatic background "moment". */
 
 html, body { margin: 0; padding: 0; height: 100%; }
 
 body.presenter-mode {
-  background: #0b1020;
+  background: #050608;
   color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-feature-settings: 'ss01', 'cv02', 'cv11';
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Stage container — Impress.js writes its own transforms onto #impress. */
+/* ═══ Stage container ═══════════════════════════════════════════════════ */
 #impress {
   position: relative;
   width: 100%;
   height: 100vh;
 }
 
-/* Each step wrapper renders a cloned section on a white card with a soft shadow
-   to lift it off the dark canvas. */
-#impress .step {
-  width: 1100px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+/* ═══ Slide frame ══════════════════════════════════════════════════════ */
+#impress .step.slide {
+  width: 1920px;
+  height: 1080px;
+  padding: 0;
   overflow: hidden;
-  padding: 32px 40px;
-  color: #1a1a1a;
+  position: relative;
+  border-radius: 0;
+  box-shadow: 0 60px 200px rgba(0, 0, 0, 0.65);
 }
 
-/* Per-step <div class="notes"> is read by impressConsole + inline overlay — hide on stage. */
-#impress .step .notes { display: none; }
+.slide-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
 
-/* Hide the cloned landing-page chrome — nav, search, role chip, etc. — at stage time.
-   These selectors match the existing portal-app shell classes. */
-body.presenter-mode .workspace-pill,
-body.presenter-mode .search-pill,
-body.presenter-mode .role-chip,
-body.presenter-mode .pr-pill,
-body.presenter-mode .pr-pill-sub,
-body.presenter-mode .canvas-meta,
-body.presenter-mode .canvas-tip,
-body.presenter-mode .ov-jump-cta,
-body.presenter-mode .ov-cta-pair { display: none !important; }
+.slide-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 96px 120px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 
-/* Top-bar */
+.slide-inner--centered {
+  align-items: stretch;
+  text-align: center;
+}
+
+/* ═══ Chromatic backgrounds (one moment per slide) ═════════════════════ */
+.slide-bg--burgundy {
+  background: radial-gradient(ellipse at top, #5a1126 0%, #2a0a16 60%, #150509 100%);
+}
+.slide-bg--midnight {
+  background: radial-gradient(ellipse at center, #1a3360 0%, #0b1a36 60%, #050a1a 100%);
+}
+.slide-bg--teal {
+  background: radial-gradient(ellipse at center, #0e4d52 0%, #062b30 60%, #03161a 100%);
+}
+.slide-bg--ember {
+  background: radial-gradient(ellipse at center, #b86214 0%, #6d340a 60%, #2e1604 100%);
+}
+.slide-bg--crimson {
+  background: radial-gradient(ellipse at center, #7a1024 0%, #420816 60%, #1d0309 100%);
+}
+.slide-bg--indigo {
+  background: radial-gradient(ellipse at center, #2a2766 0%, #16143c 60%, #07061a 100%);
+}
+.slide-bg--amber {
+  background: radial-gradient(ellipse at center, #6e4d0e 0%, #3e2a07 60%, #1a1102 100%);
+}
+.slide-bg--forest {
+  background: radial-gradient(ellipse at center, #1d513a 0%, #0e2c1f 60%, #050f0a 100%);
+}
+.slide-bg--mustard {
+  background: radial-gradient(ellipse at center, #8e6a10 0%, #4f3a07 60%, #1e1604 100%);
+}
+.slide-bg--prussian {
+  background: radial-gradient(ellipse at center, #163d6a 0%, #0a2243 60%, #04101f 100%);
+}
+.slide-bg--bordeaux {
+  background: radial-gradient(ellipse at center, #4d0820 0%, #2a0511 60%, #11020a 100%);
+}
+
+/* ═══ Typography scale ════════════════════════════════════════════════ */
+.slide-eyebrow {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 0 32px;
+}
+
+.slide-headline {
+  font-size: 76px;
+  font-weight: 900;
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  color: #fff;
+  margin: 0 auto 56px;
+  max-width: 1500px;
+}
+
+.slide-mega {
+  font-size: 380px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  margin: 0 0 20px;
+}
+
+.slide-mega--white { color: #fff; text-shadow: 0 4px 60px rgba(255, 255, 255, 0.12); }
+
+.slide-subhead {
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.78);
+  margin: 0 auto 56px;
+  max-width: 1200px;
+}
+
+.slide-subhead--bright { color: rgba(255, 255, 255, 0.95); }
+
+.slide-pull {
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.85);
+  font-style: italic;
+  margin: 56px auto 0;
+  max-width: 1200px;
+  letter-spacing: -0.005em;
+}
+
+.slide-closer {
+  font-size: 26px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 56px auto 0;
+  letter-spacing: 0.01em;
+}
+
+/* ═══ Slide 1 · TWO COLUMNS (customer / internal) ═════════════════════ */
+.slide-twocol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  margin: 32px auto 0;
+  text-align: left;
+  max-width: 1500px;
+}
+.slide-col-eyebrow {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 215, 175, 0.85);
+  margin: 0 0 18px;
+}
+.slide-bigbullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.slide-bigbullets li {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+}
+.slide-bigbullets li:last-child { border-bottom: none; }
+.b-tax {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 3px 12px;
+  background: rgba(255, 220, 180, 0.12);
+  border-radius: 99px;
+  color: #ffd9a8;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* ═══ Slide 2 · Funnel ════════════════════════════════════════════════ */
+.slide-funnel {
+  display: grid;
+  grid-template-columns: 1fr 200px 1.2fr;
+  align-items: center;
+  gap: 32px;
+  margin: 32px auto;
+  max-width: 1400px;
+}
+.funnel-side { display: flex; flex-direction: column; gap: 14px; }
+.funnel-box {
+  font-size: 28px;
+  font-weight: 600;
+  padding: 18px 28px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.78);
+}
+.funnel-arrows {
+  width: 200px;
+  height: 280px;
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 2;
+  fill: none;
+}
+.funnel-target {
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 56px 32px;
+  background: linear-gradient(135deg, #6c8eff 0%, #4d6ce8 100%);
+  border-radius: 14px;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(76, 109, 232, 0.4);
+}
+
+/* ═══ Slide 3 · Pairblocks (Consent ≠ Action) ═════════════════════════ */
+.slide-pairblocks {
+  display: grid;
+  grid-template-columns: 1fr 120px 1fr;
+  align-items: center;
+  gap: 32px;
+  margin: 32px auto;
+  max-width: 1400px;
+}
+.pairblock {
+  padding: 56px 48px;
+  border-radius: 16px;
+  text-align: left;
+  color: #fff;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+.pairblock--blue { background: linear-gradient(135deg, #1f4ea0 0%, #143778 100%); }
+.pairblock--green { background: linear-gradient(135deg, #167f4d 0%, #0c5933 100%); }
+.pairblock-eyebrow {
+  font-size: 16px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 12px;
+  font-weight: 700;
+}
+.pairblock-title {
+  font-size: 56px;
+  font-weight: 900;
+  margin: 0 0 18px;
+  letter-spacing: -0.02em;
+}
+.pairblock-desc {
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.88);
+}
+.pairblock-sever {
+  font-size: 96px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+}
+
+/* ═══ Slide 4 · 7 → 5 step count ══════════════════════════════════════ */
+.slide-stepcount {
+  display: grid;
+  grid-template-columns: 1fr 140px 1fr;
+  align-items: center;
+  gap: 32px;
+  margin: 24px auto 32px;
+  max-width: 1400px;
+}
+.stepcount-side {
+  padding: 48px 32px;
+  border-radius: 16px;
+  text-align: center;
+  color: #fff;
+}
+.stepcount-side--today { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); }
+.stepcount-side--new { background: linear-gradient(135deg, #e89e3a 0%, #b86214 100%); box-shadow: 0 20px 60px rgba(232, 158, 58, 0.32); }
+.stepcount-label {
+  font-size: 18px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin: 0 0 14px;
+  color: rgba(255, 255, 255, 0.65);
+}
+.stepcount-num {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 220px;
+  font-weight: 700;
+  line-height: 1;
+  margin: 0 0 14px;
+  letter-spacing: -0.02em;
+}
+.stepcount-detail {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+}
+.stepcount-dots {
+  margin-top: 18px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.stepcount-dots span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+}
+.stepcount-side--new .stepcount-dots span { background: #fff; }
+.stepcount-arrow {
+  font-size: 88px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+/* ═══ Slide 5 · 9 → 5 versus ══════════════════════════════════════════ */
+.slide-versus {
+  display: grid;
+  grid-template-columns: 1fr 140px 1fr;
+  align-items: center;
+  gap: 32px;
+  margin: 32px auto;
+  max-width: 1300px;
+}
+.versus-side {
+  padding: 56px 32px;
+  border-radius: 16px;
+  text-align: center;
+}
+.versus-side--bad {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  color: rgba(255, 200, 200, 0.85);
+}
+.versus-side--good {
+  background: linear-gradient(135deg, #d5436a 0%, #7a1024 100%);
+  box-shadow: 0 24px 80px rgba(213, 67, 106, 0.35);
+  color: #fff;
+}
+.versus-num {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 200px;
+  font-weight: 700;
+  line-height: 1;
+  margin: 0 0 14px;
+  letter-spacing: -0.02em;
+}
+.versus-label {
+  font-size: 20px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin: 0 0 24px;
+  opacity: 0.7;
+}
+.versus-extra {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 6px 0;
+}
+.versus-extra strong { color: #fff; font-weight: 900; }
+.versus-arrow {
+  font-size: 88px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+/* ═══ Slide 6 · Three pillars ═════════════════════════════════════════ */
+.slide-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px;
+  margin: 32px auto;
+  max-width: 1500px;
+}
+.pillar {
+  padding: 64px 36px;
+  border-radius: 18px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+.pillar--blue { background: linear-gradient(180deg, #2a4dad 0%, #15296b 100%); }
+.pillar--teal { background: linear-gradient(180deg, #0f7a78 0%, #054544 100%); }
+.pillar--amber { background: linear-gradient(180deg, #c08418 0%, #6e4d0e 100%); }
+.pillar-question {
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 22px;
+}
+.pillar-name {
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 0 0 22px;
+}
+.pillar-items {
+  font-size: 22px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  margin: 0;
+}
+
+/* ═══ Slide 7 · Constellation ═════════════════════════════════════════ */
+.slide-constellation {
+  position: relative;
+  width: 1500px;
+  height: 480px;
+  margin: 24px auto;
+}
+.cn {
+  position: absolute;
+  left: var(--cn-x);
+  top: var(--cn-y);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 200px;
+  text-align: center;
+}
+.cn-num {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 24px;
+  font-weight: 700;
+  background: radial-gradient(circle, #ffe49a 0%, #c08418 65%);
+  color: #2a1c00;
+  box-shadow: 0 0 32px rgba(255, 220, 130, 0.5);
+}
+.cn-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 240, 200, 0.9);
+  line-height: 1.3;
+}
+
+/* ═══ Slide 8 · Scoping ═══════════════════════════════════════════════ */
+.slide-scoping {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  margin: 24px auto;
+  max-width: 1500px;
+  text-align: left;
+}
+.scoping-col {
+  padding: 40px;
+  border-radius: 14px;
+}
+.scoping-col--v1 {
+  background: linear-gradient(180deg, rgba(43, 138, 92, 0.3) 0%, rgba(20, 70, 45, 0.5) 100%);
+  border: 1px solid rgba(108, 230, 152, 0.4);
+}
+.scoping-col--deferred {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+}
+.scoping-tag {
+  font-size: 16px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 18px;
+}
+.scoping-col--v1 .scoping-tag { color: #a6e9bf; }
+.scoping-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.scoping-list li {
+  font-size: 20px;
+  font-weight: 500;
+  padding: 8px 0 8px 28px;
+  position: relative;
+  line-height: 1.4;
+}
+.scoping-col--v1 .scoping-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #4ad080;
+  font-weight: 700;
+}
+.scoping-list--muted li {
+  color: rgba(255, 255, 255, 0.55);
+}
+.scoping-list--muted li::before {
+  content: '○';
+  position: absolute;
+  left: 0;
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 500;
+}
+
+/* ═══ Slide 9 · Migration guarantees ══════════════════════════════════ */
+.slide-guarantees {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px;
+  margin: 24px auto;
+  max-width: 1500px;
+}
+.guarantee {
+  padding: 48px 36px;
+  border-radius: 16px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 215, 110, 0.25);
+  color: #fff;
+}
+.guarantee-icon {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 28px;
+  color: #ffd76e;
+}
+.guarantee-icon svg { width: 100%; height: 100%; }
+.guarantee-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 14px;
+  letter-spacing: -0.01em;
+}
+.guarantee-detail {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+}
+
+/* ═══ Slide 10 · Before / After ═══════════════════════════════════════ */
+.slide-before-after {
+  display: grid;
+  grid-template-columns: 1fr 100px 1fr;
+  align-items: center;
+  gap: 32px;
+  margin: 24px auto;
+  max-width: 1500px;
+}
+.ba-side { text-align: left; }
+.ba-label {
+  font-size: 16px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0 0 14px;
+}
+.ba-frame {
+  background: #fff;
+  border-radius: 12px;
+  padding: 36px;
+  color: #1a1a1a;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+  min-height: 340px;
+}
+.ba-frame--empty .ba-frame-headline { color: #555; }
+.ba-frame--empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.ba-frame-headline {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+.ba-frame-empty {
+  font-size: 18px;
+  color: #888;
+  margin: 16px 0 0;
+}
+.ba-frame-aside {
+  font-size: 16px;
+  color: #b94a3c;
+  margin: 28px 0 0;
+  font-style: italic;
+}
+.ba-frame--full .ba-frame-headline { color: #18342a; }
+.ba-frame-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+}
+.ba-frame-list li {
+  font-size: 16px;
+  font-weight: 500;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: #f4f7f1;
+  border-left: 3px solid #4ad080;
+  border-radius: 6px;
+  color: #1d3a2a;
+}
+.ba-arrow {
+  font-size: 88px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+/* ═══ Slide 11 · Three asks ═══════════════════════════════════════════ */
+.slide-asks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  margin: 24px auto;
+  max-width: 1600px;
+  text-align: left;
+}
+.ask {
+  padding: 40px 32px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 200, 200, 0.3);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 380px;
+}
+.ask-letter {
+  font-size: 120px;
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  margin: 0 0 14px;
+  background: linear-gradient(135deg, #ffb4b4 0%, #ff6e8e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.ask-title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0 0 16px;
+  color: #fff;
+}
+.ask-detail {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.45;
+  margin: 0 0 20px;
+  color: rgba(255, 255, 255, 0.78);
+  flex-grow: 1;
+}
+.ask-owner {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 180, 180, 0.85);
+  margin: 0;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 200, 200, 0.2);
+}
+
+/* ═══ Per-step notes (read by impressConsole; hidden on stage) ════════ */
+.slide .notes { display: none; }
+
+/* ═══ Presenter chrome ════════════════════════════════════════════════ */
 .presenter-topbar {
   position: fixed;
-  top: 12px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
-  padding: 6px 14px;
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.85);
+  padding: 8px 18px;
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.88);
   border-radius: 99px;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   display: flex;
-  gap: 14px;
+  gap: 16px;
   align-items: center;
   transition: opacity 240ms;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
-.presenter-step-counter { font-weight: 500; }
-.presenter-section { opacity: 0.6; }
-.presenter-narrative { color: #fff; }
+.presenter-step-counter { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.presenter-section { opacity: 0.55; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
+.presenter-narrative { color: #fff; font-weight: 500; }
 
-/* Speaker-notes overlay — bottom third, dismissible. */
+/* ═══ Speaker notes overlay (single-screen fallback) ══════════════════ */
 .presenter-notes-overlay {
   position: fixed;
   left: 5vw;
   right: 5vw;
   bottom: 5vh;
-  max-height: 25vh;
+  max-height: 30vh;
   overflow-y: auto;
   z-index: 100;
-  padding: 18px 24px;
-  background: rgba(0, 0, 0, 0.78);
+  padding: 22px 28px;
+  background: rgba(0, 0, 0, 0.88);
   color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
-  font-size: 14px;
+  border-radius: 14px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  font-size: 15px;
   line-height: 1.6;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .presenter-notes-overlay h3 {
-  margin: 0 0 8px;
-  font-size: 14px;
-  opacity: 0.7;
-  font-weight: 500;
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 700;
 }
 .presenter-notes-overlay pre {
   margin: 0;
@@ -95,46 +752,49 @@ body.presenter-mode .ov-cta-pair { display: none !important; }
   font-family: inherit;
 }
 
-/* navigation-ui plugin lives at .impress-toolbar — dark-stage theme. */
+/* ═══ Impress.js plugin toolbar ═══════════════════════════════════════ */
 .impress-toolbar {
   position: fixed;
-  bottom: 12px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
-  padding: 6px 12px;
-  background: rgba(255,255,255,0.08);
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.55);
   border-radius: 99px;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
   transition: opacity 240ms;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .impress-toolbar select,
 .impress-toolbar button {
   background: transparent;
-  color: rgba(255,255,255,0.85);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 6px;
-  padding: 3px 8px;
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 5px 10px;
   font-size: 12px;
   cursor: pointer;
+  font-family: inherit;
 }
-.impress-toolbar select option { color: #000; background: #fff; }
+.impress-toolbar select option { color: #1a1a1a; background: #fff; }
 
-/* Auto-hide topbar + toolbar after mouse-timeout plugin marks body.impress-mouse-timeout. */
+/* Auto-hide chrome on idle */
 body.impress-mouse-timeout .presenter-topbar,
 body.impress-mouse-timeout .impress-toolbar { opacity: 0; pointer-events: none; }
 
-/* Fallback for browsers without 3D transforms. */
+/* ═══ Browser-fallback ════════════════════════════════════════════════ */
 .impress-not-supported .fallback-message {
   display: block;
-  max-width: 480px;
-  margin: 30vh auto;
+  max-width: 520px;
+  margin: 35vh auto;
   text-align: center;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.6;
+  color: #fff;
 }
 .impress-supported .fallback-message { display: none; }
 .fallback-message a { color: #fff; text-decoration: underline; }
