@@ -83,7 +83,7 @@ function switchDex(dex, opts) {
     patchWorkspaceMeta({ activeDexId: dex });
     // Slice 5.8 — re-resolve activeUserId for the current persona on the new
     // DEX. Platform-admin maps to a different person per DEX via
-    // PLATFORM_ADMIN_BY_DEX (Kagura on TX/HX, Beatrix on BX); participant
+    // PLATFORM_ADMIN_BY_DEX (Sarah on TX/HX, Diane on BX); participant
     // already picked up colleagues via the same mechanism. Skip when pinned.
     if (typeof resolveActiveUserId === 'function' && typeof currentPersona === 'string' &&
         (typeof pinnedActiveUserId !== 'string' || !pinnedActiveUserId)) {
@@ -93,7 +93,7 @@ function switchDex(dex, opts) {
   }
   themeInboxContent(dex);
   // Flow-ribbon refresh removed in Phase 5 of ADR 0034 alongside the rail.
-  // Active user can change on DEX switch (Marcus on TX → Alice on BX), so re-apply
+  // Active user can change on DEX switch (Marcus on TX → Bea on BX), so re-apply
   // persona chrome (workspace pill sub-label, avatar cross-fade, profile menu).
   if (typeof applyPersonaChrome === 'function') applyPersonaChrome();
   // User's permission level can differ per DEX (Admin on SGTradex, Operation User on SGBuildex,

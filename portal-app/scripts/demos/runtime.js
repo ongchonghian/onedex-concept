@@ -74,6 +74,15 @@
       speed: Number(localStorage.getItem('dex-demo-speed') || '1'),
       annotateCount: 0,
       currentCallout: null,
+      // annotationHistory — every annotate step pushes its rendered state here
+      // so the Back button can re-show a prior annotation without re-running
+      // intermediate click/type steps (which would re-mutate workspace state).
+      // Each entry: { anchor, label, rationale }.
+      annotationHistory: [],
+      // viewingHistoryIndex — when the user clicks Back, the runtime is paused
+      // and this index points at the entry in annotationHistory currently
+      // being shown. null means we're following the live run (latest annotate).
+      viewingHistoryIndex: null,
       // Per ADR 0037: headless mode skips cursor/callout/control-bar DOM
       // mounting, skips visibility checks (unreliable under JSDOM, which has
       // no layout engine), and collapses sleeps to zero. Selectors and click
@@ -256,6 +265,7 @@
     bar.innerHTML = `
       <div class="demo-progress-dots" data-progress></div>
       <span class="demo-step-label" data-step-label>Starting…</span>
+      <button type="button" class="demo-ctrl-btn" data-back title="Re-show the previous annotation" disabled><i class="ti ti-player-skip-back"></i>Back</button>
       <button type="button" class="demo-ctrl-btn" data-pause><i class="ti ti-player-pause"></i><span data-pause-label>Pause</span></button>
       <button type="button" class="demo-ctrl-btn" data-stop><i class="ti ti-player-stop"></i>Stop</button>
       <select class="demo-speed" data-speed aria-label="Demo speed">
@@ -273,6 +283,7 @@
       localStorage.setItem('dex-demo-speed', speedSel.value);
     });
 
+    bar.querySelector('[data-back]').addEventListener('click', stepBackToPreviousAnnotation);
     bar.querySelector('[data-pause]').addEventListener('click', togglePause);
     bar.querySelector('[data-stop]').addEventListener('click', stopDemoFlow);
 
@@ -291,18 +302,33 @@
   function updateControlBar() {
     const bar = controlBarEl();
     if (!bar) return;
-    // Update progress dots based on annotateCount
+    // Update progress dots based on annotateCount. If the operator is
+    // viewing history (clicked Back), highlight the viewed entry instead of
+    // the live tip so the dots reflect what's on screen.
     const dots = bar.querySelectorAll('.demo-progress-dot');
     const total = dots.length;
+    const currentMarker = (runtime.viewingHistoryIndex != null)
+      ? runtime.viewingHistoryIndex
+      : runtime.annotateCount - 1;
     dots.forEach((dot, i) => {
       dot.classList.remove('is-done', 'is-current');
-      if (i < runtime.annotateCount - 1) dot.classList.add('is-done');
-      else if (i === runtime.annotateCount - 1) dot.classList.add('is-current');
+      if (i < currentMarker) dot.classList.add('is-done');
+      else if (i === currentMarker) dot.classList.add('is-current');
     });
     // Update label from current callout if any
     const labelEl = bar.querySelector('[data-step-label]');
     if (labelEl && runtime.currentCallout) {
       labelEl.textContent = runtime.currentCallout.label;
+    }
+    // Back button enabled when there's a previous annotation to view.
+    // Disabled at the start of the run (history empty or only one entry,
+    // and not yet viewing history) and once we've stepped all the way back.
+    const backBtn = bar.querySelector('[data-back]');
+    if (backBtn) {
+      const canGoBack = runtime.viewingHistoryIndex == null
+        ? runtime.annotationHistory.length > 1
+        : runtime.viewingHistoryIndex > 0;
+      backBtn.disabled = !canGoBack;
     }
     void total;
   }
@@ -320,6 +346,47 @@
     } else {
       icon.className = 'ti ti-player-pause';
       label.textContent = 'Pause';
+      // Resuming after Back: if we were viewing a prior annotation, leave the
+      // history-view state behind and let the live run advance from where it
+      // paused. The next annotate step will push a fresh entry to history.
+      runtime.viewingHistoryIndex = null;
+    }
+  }
+
+  /* stepBackToPreviousAnnotation — re-show a prior annotation card.
+     Workspace state is NOT rewound — intermediate click/type/select steps
+     have side effects (publish a Draft, write to ORGS, etc.) that can't be
+     unwound cheaply. Back is a *reading* affordance: pauses the demo and
+     re-displays the previous annotation's cursor + callout so the operator
+     can re-read what was said. Resume continues from where the demo paused. */
+  function stepBackToPreviousAnnotation() {
+    if (!runtime || !runtime.annotationHistory.length) return;
+    // Auto-pause so the run loop stops advancing while the operator reads.
+    if (!runtime.paused) togglePause();
+    // Determine which entry to show. If we're not currently viewing history,
+    // the latest entry is the current callout — Back goes to the one before.
+    // If we're already viewing history, step further back.
+    const lastIdx = runtime.annotationHistory.length - 1;
+    let targetIdx;
+    if (runtime.viewingHistoryIndex == null) {
+      targetIdx = Math.max(0, lastIdx - 1);
+    } else {
+      targetIdx = Math.max(0, runtime.viewingHistoryIndex - 1);
+    }
+    runtime.viewingHistoryIndex = targetIdx;
+    const entry = runtime.annotationHistory[targetIdx];
+    if (!entry) return;
+    if (!runtime.headless) {
+      const anchorEl = entry.anchor ? $(entry.anchor) : null;
+      if (anchorEl && typeof anchorEl.scrollIntoView === 'function') {
+        anchorEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        // No sleep needed here — the user is reading, not driving a flow.
+        if (anchorEl.getBoundingClientRect().width > 0) {
+          moveCursorToElement(anchorEl);
+        }
+      }
+      showCallout({ anchor: entry.anchor, label: entry.label, rationale: entry.rationale });
+      updateControlBar();
     }
   }
 
@@ -462,6 +529,16 @@
 
       case 'annotate': {
         runtime.annotateCount++;
+        // Push to the annotation history so the Back button can recall this
+        // moment without re-running intermediate steps. The viewingHistoryIndex
+        // resets to null because the live run has advanced past any previously
+        // rewound state.
+        runtime.annotationHistory.push({
+          anchor: step.anchor,
+          label: step.label,
+          rationale: step.rationale
+        });
+        runtime.viewingHistoryIndex = null;
         if (!runtime.headless) {
           const anchorEl = step.anchor ? $(step.anchor) : null;
           const anchorVisible = !!(anchorEl && anchorEl.getBoundingClientRect().width > 0);

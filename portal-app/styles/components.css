@@ -2338,8 +2338,26 @@ body.demo-tools-open .demo-tools-drawer {
   transition: opacity 120ms ease-out;
 }
 .workbook-upload-btn:hover { opacity: 0.9; }
+.workbook-upload-templates {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 18px 0 6px;
+  font-size: 12px;
+  color: var(--g-30);
+}
+.workbook-upload-templates .link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.workbook-upload-templates .link-btn i { font-size: 14px; }
+.workbook-template-sep {
+  color: var(--g-70);
+}
 .workbook-upload-sample {
-  margin: 16px 0 0;
+  margin: 8px 0 0;
   font-size: 12px;
   color: var(--g-50);
 }
@@ -2944,4 +2962,42 @@ body.demo-tools-open .demo-tools-drawer {
   display: flex;
   justify-content: center;
   gap: 8px;
+}
+
+/* ========== ADR 0043 sub-decision 8a — schema-walker per-field AJV at blur ===
+ * Each .sw-field that fails AJV on blur gains .is-field-error (red ring on the
+ * input) and a trailing .sw-field-error slot carrying the operator-readable
+ * message. Mirrors the .reg-test-l1-error anatomy in screens.css — same
+ * accent + animation — but lives on the Composer surface, not the Test modal. */
+.sw-field.is-field-error > .sw-input {
+  border-color: var(--red-50);
+  box-shadow: 0 0 0 3px rgba(180, 55, 27, 0.10);
+}
+.sw-field.is-field-error > .sw-input:focus-visible {
+  border-color: var(--red-50);
+  box-shadow: 0 0 0 3px rgba(180, 55, 27, 0.20);
+}
+.sw-field-error {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--g-10);
+  animation: swFieldErrorIn var(--motion-base, 180ms) var(--easing, ease-out);
+}
+.sw-field-error-icon {
+  font-size: 13px;
+  color: var(--red-50);
+  flex: 0 0 auto;
+}
+.sw-field-error-msg { text-wrap: pretty; }
+@keyframes swFieldErrorIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sw-field-error { animation: none; }
 }

@@ -2,19 +2,19 @@
 
 The prototype rail (introduced 2026-05-17 by `2026-05-17-app-like-rbac-company-rail-cleanup.md`) exposes scene-switching to a demo controller via persona pills and scenario pills. After [ADR 0029](./0029-user-org-affiliation-as-n-to-m-with-embedded-dex-roles.md) restructures identity into a richer model (6 users, 3 operator-side affiliations, 3 DEXes, 6 scenarios), the rail has more dimensions to expose than it has surface area to host.
 
-This ADR pins the rail's shape: **three persona pills (category-level) with DEX-aware user resolution.** The active human is *derived* from `(persona category, URL DEX)` rather than picked from a roster — the rail stays at 3 pills, the URL stays load-bearing for DEX context per ADR 0001, and the chrome's workspace pill carries the resolved user as a sub-label. To make this work cleanly, **Marcus is stripped to TX-only**: Alice handles BX, David handles HX, and each demo persona-on-DEX has exactly one coherent operator identity.
+This ADR pins the rail's shape: **three persona pills (category-level) with DEX-aware user resolution.** The active human is *derived* from `(persona category, URL DEX)` rather than picked from a roster — the rail stays at 3 pills, the URL stays load-bearing for DEX context per ADR 0001, and the chrome's workspace pill carries the resolved user as a sub-label. To make this work cleanly, **Marcus is stripped to TX-only**: Bea handles BX, David handles HX, and each demo persona-on-DEX has exactly one coherent operator identity.
 
 ## Considered Options
 
-- **Option 1 — Three persona pills, DEX-aware user resolution (chosen).** Rail stays at 3 pills (`participant` / `platform-admin` / `sp-operator`). The active user is derived: `(persona category, URL DEX) → user`. Switching DEX while the participant pill is active flips the chrome's user from Marcus → Alice → David transparently. A 200ms avatar cross-fade signals the switch to stakeholders.
-- **Option 2 — Six user pills, DEX independent (rejected).** Replace persona pills with 6 user pills, one per seeded operator. Explicit, no surprise person-switching. Rejected because (a) Marcus/Alice/David are conceptually "the same persona across DEXes," and flattening them into peers in the rail loses that hierarchy, (b) 6 pills crowds the rail, (c) the URL would no longer carry the user dimension, decoupling rail state from URL state and breaking the shareability of links per ADR 0001.
+- **Option 1 — Three persona pills, DEX-aware user resolution (chosen).** Rail stays at 3 pills (`participant` / `platform-admin` / `sp-operator`). The active user is derived: `(persona category, URL DEX) → user`. Switching DEX while the participant pill is active flips the chrome's user from Marcus → Bea → David transparently. A 200ms avatar cross-fade signals the switch to stakeholders.
+- **Option 2 — Six user pills, DEX independent (rejected).** Replace persona pills with 6 user pills, one per seeded operator. Explicit, no surprise person-switching. Rejected because (a) Marcus/Bea/David are conceptually "the same persona across DEXes," and flattening them into peers in the rail loses that hierarchy, (b) 6 pills crowds the rail, (c) the URL would no longer carry the user dimension, decoupling rail state from URL state and breaking the shareability of links per ADR 0001.
 - **Option 3 — Three persona pills with sub-selector dropdowns (rejected).** Persona pills expand into sub-selectors when clicked. Rejected because the sub-selector competes visually with the DEX switcher (also rail-adjacent), risking stakeholder conflation between "switch DEX" and "switch user." More rail chrome to maintain for marginal expressive gain.
 
 ## What "DEX-aware user resolution" means
 
 | Persona pill | URL = `/portal/tx` | URL = `/portal/bx` | URL = `/portal/hx` | URL = `/portal/all` |
 |---|---|---|---|---|
-| Participant operator | **Marcus** (Cosco · TX Admin) | **Alice** (Cosco · BX Operation) | **David** (Cosco · HX Super) | Marcus (primary) |
+| Participant operator | **Marcus** (Cosco · TX Admin) | **Bea** (Cosco · BX Operation) | **David** (Cosco · HX Super) | Marcus (primary) |
 | SP operator | **Pat** (CrimsonLogic · TX Admin) | n/a (Pat has no BX seat → router redirects) | n/a (Pat has no HX seat → router redirects) | Pat |
 | Platform operator | **Sarah** (SGTradex platform) | Sarah | Sarah | Sarah |
 
@@ -26,10 +26,10 @@ The original prototype seeded Marcus with three roles — `tx: 'Admin User', bx:
 
 Phase 4 of the implementation plan removes Marcus's BX and HX entries. The corresponding demo personas are:
 
-- **Alice Ho** (Cosco) — `dexRoles: { bx: 'Operation User' }`. Reuses the name "Alice" that already appears in the existing TX team inbox seed line ("Alice approved CrimsonLogic appointment for ABC Logistics") — that seed line is reattributed to the same Alice once she exists as a fixture.
+- **Bea Ho** (Cosco) — `dexRoles: { bx: 'Operation User' }`. Reuses the name "Bea" that already appears in the existing TX team inbox seed line ("Bea approved CrimsonLogic appointment for ABC Logistics") — that seed line is reattributed to the same Bea once she exists as a fixture.
 - **David Kim** (Cosco) — `dexRoles: { hx: 'Super Admin' }`. New fixture for SGHealthdex.
 
-The existing BX team inbox seed line "Wei Lin approved subcontractor onboarding" — which previously named someone who also appears in the platform inbox — is reattributed to Alice in the same pass. Wei Lin is anchored to her single canonical home: platform-tier SGTradex teammate.
+The existing BX team inbox seed line "Wei Lin approved subcontractor onboarding" — which previously named someone who also appears in the platform inbox — is reattributed to Bea in the same pass. Wei Lin is anchored to her single canonical home: platform-tier SGTradex teammate.
 
 ## Chrome impact
 
@@ -55,13 +55,13 @@ Auto-navigation is preferred over disabling because the scenario's *point* is to
 
 Per Phase 4 of `2026-05-17-app-like-rbac-company-rail-cleanup.md` (extended at the end of the grilling session):
 
-1. **Phase 4 (visible cut).** Strip Marcus's BX/HX roles; reattribute Wei Lin's BX seed line to Alice. Add bare-minimum auto-redirect for off-DEX navigation so a logged-in Marcus on `/portal/bx` doesn't render a broken "no access" state during the gap before Phase 5.
+1. **Phase 4 (visible cut).** Strip Marcus's BX/HX roles; reattribute Wei Lin's BX seed line to Bea. Add bare-minimum auto-redirect for off-DEX navigation so a logged-in Marcus on `/portal/bx` doesn't render a broken "no access" state during the gap before Phase 5.
 2. **Phase 5 (chrome polish).** Workspace pill sub-label, avatar cross-fade, profile menu colleague-switch row, role chip hide-on-empty, sidebar "switch colleague" CTA copy, rail caption suffix.
-3. **Phase 6 (`SCENE_SEEDS` migration).** Rename keys to `<affiliationId>-<dexId>-<scenarioId>` per the affiliation-keyed shape. Add seeds for Alice (BX scenarios) and David (HX scenarios).
+3. **Phase 6 (`SCENE_SEEDS` migration).** Rename keys to `<affiliationId>-<dexId>-<scenarioId>` per the affiliation-keyed shape. Add seeds for Bea (BX scenarios) and David (HX scenarios).
 
 ## Consequences
 
-- **Marcus loses observable access to BX and HX.** Stakeholders who saw earlier demos with Marcus across all DEXes will see a different operator on BX/HX after Phase 4. The rail caption explicitly names the new operator ("Scenario A · Alice (Cosco · SGBuildex)") to head off the "what happened to Marcus" question.
+- **Marcus loses observable access to BX and HX.** Stakeholders who saw earlier demos with Marcus across all DEXes will see a different operator on BX/HX after Phase 4. The rail caption explicitly names the new operator ("Scenario A · Bea (Cosco · SGBuildex)") to head off the "what happened to Marcus" question.
 - **`primaryOrgId` on `USERS`** becomes the resolver tiebreaker for users with multiple matching affiliations on the same DEX. Sparse today; future-proof.
 - **Off-DEX-route handling** is now a real code path. Previously masked by Marcus's universal access; now exercised by every "wrong persona on this DEX" navigation. The Phase 4 auto-redirect is the minimum-viable gate; Phase 5 adds the CTA polish.
 - **`ROLE_CAPABILITIES` lookup** moves to `resolveSeat().role`. No new capability strings; the lookup just goes through one more layer.

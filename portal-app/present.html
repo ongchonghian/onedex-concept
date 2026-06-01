@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<!--
+  Local preview / rehearsal copy. The authoritative presentation is the
+  Prezi you'll build using ./prezi-import-guide.md — this file mirrors
+  the same content + spatial map for offline walkthrough, with metaphor-
+  free editorial typography (no plaza / city / mail / port framing). -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Portal Rewrite — Local Preview</title>
+  <meta name="viewport" content="width=1024">
+  <link rel="stylesheet" href="styles/presenter.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body class="impress-not-supported presenter-mode">
+
+  <div class="fallback-message">
+    <p>This presentation requires a modern browser. Open <a href="index.html">index.html</a> for the standard view.</p>
+  </div>
+
+  <!--
+    Impress.js stage. Canvas pinned to 1920×1080 (Full HD) for native-resolution
+    projector clarity. Slides are hand-authored stage content (Path C — not
+    cloned from the landing page).
+  -->
+  <div id="impress"
+       data-transition-duration="1200"
+       data-width="1920"
+       data-height="1080">
+
+    <!-- ═════ Step 0 · OVERVIEW (camera at scale 8, sees the whole canvas) ═══
+         Classic Prezi opener: start with the entire spatial canvas visible,
+         then dive in on Right-arrow. Empty step — just a camera position. -->
+    <div id="presenter-overview" class="step step--invisible"
+         data-x="0" data-y="1100" data-scale="7"
+         data-step-number="0" data-section-id="" data-notes-key="Opener"
+         aria-hidden="true">
+      <div class="notes">[notes injected]</div>
+    </div>
+
+    <!-- ═════ Slide 1 · Section 00 · Ten frictions ═════════════════════
+         Editorial composition. Massive '10' as the focal point. Two clean
+         columns of personas with their pain phrase. No metaphor, no
+         district label, no decorative chrome. -->
+    <div class="step slide slide--stakes" data-x="0" data-y="-3000" data-scale="0.85" data-rotate="0"
+         data-step-number="1" data-section-id="ov-stakes" data-notes-key="Section 00">
+      <div class="slide-bg slide-bg--burgundy"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">00 · Why this needs leadership attention</p>
+        <p class="slide-mega slide-mega--white">10.</p>
+        <p class="slide-subhead slide-subhead--bright">recurring frictions that shape every Dex Technologies quarter</p>
+        <div class="slide-twocol">
+          <div class="slide-col">
+            <p class="slide-col-eyebrow">Five paid by customers</p>
+            <ul class="slide-bigbullets">
+              <li>Operator <span class="b-tax">retention risk</span></li>
+              <li>Service Provider <span class="b-tax">audit exposure</span></li>
+              <li>DEX admin <span class="b-tax">time-to-market</span></li>
+              <li>Platform admin <span class="b-tax">activation drop-off</span></li>
+              <li>Pack dispatcher <span class="b-tax">top-account ceiling</span></li>
+            </ul>
+          </div>
+          <div class="slide-col">
+            <p class="slide-col-eyebrow">Five paid by our teams</p>
+            <ul class="slide-bigbullets">
+              <li>BD <span class="b-tax">pipeline velocity</span></li>
+              <li>Product <span class="b-tax">roadmap drag</span></li>
+              <li>Engineering <span class="b-tax">catalogue relay</span></li>
+              <li>UIUX <span class="b-tax">surface-area sprawl</span></li>
+              <li>Ops <span class="b-tax">ticket &amp; change load</span></li>
+            </ul>
+          </div>
+        </div>
+        <p class="slide-pull">Customers move the metric. Our teams move the cost.</p>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
+    <!-- ═════ Slide 2 · Section 01 · Five → One ═════════════════════════════ -->
+    <div class="step slide slide--mental-01" data-x="-3000" data-y="0" data-scale="0.85" data-rotate="-3"
+         data-step-number="2" data-section-id="ov-mental-01" data-notes-key="Section 01">
+      <div class="slide-bg slide-bg--midnight"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">01 · Upstream of compose</p>
+        <h2 class="slide-headline">Five consent types collapse into one.</h2>
+        <div class="slide-funnel">
+          <div class="funnel-side">
+            <div class="funnel-box">Subscription</div>
+            <div class="funnel-box">DER</div>
+            <div class="funnel-box">SPR</div>
+            <div class="funnel-box">Tripartite</div>
+            <div class="funnel-box">Direct</div>
+          </div>
+          <svg class="funnel-arrows" viewBox="0 0 200 280" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0,30  Q100,30  200,140" />
+            <path d="M0,80  Q100,80  200,140" />
+            <path d="M0,140 Q100,140 200,140" />
+            <path d="M0,200 Q100,200 200,140" />
+            <path d="M0,250 Q100,250 200,140" />
+          </svg>
+          <div class="funnel-target">AGREEMENT</div>
+        </div>
+        <p class="slide-pull">One contract type. One wizard. One lifecycle.</p>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
+    <!-- ═════ Slide 3 · Section 02 · Consent ≠ Action ═════════════════════ -->
+    <div class="step slide slide--mental-02" data-x="-1000" data-y="0" data-scale="0.85" data-rotate="3"
+         data-step-number="3" data-section-id="ov-mental-02" data-notes-key="Section 02">
+      <div class="slide-bg slide-bg--teal"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">02 · The shift, downstream</p>
+        <h2 class="slide-headline">Consent and action are decoupled.</h2>
+        <div class="slide-pairblocks">
+          <div class="pairblock pairblock--blue">
+            <p class="pairblock-eyebrow">Consent</p>
+            <p class="pairblock-title">Decided once</p>
+            <p class="pairblock-desc">at Agreement creation —<br>the contract carries every dimension</p>
+          </div>
+          <div class="pairblock-sever" aria-hidden="true">
+            <span>≠</span>
+          </div>
+          <div class="pairblock pairblock--green">
+            <p class="pairblock-eyebrow">Action</p>
+            <p class="pairblock-title">Just fill data</p>
+            <p class="pairblock-desc">for every Message —<br>operator never re-picks the structure</p>
+          </div>
+        </div>
+        <p class="slide-pull">The structural shift. Not a UI re-skin.</p>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
+    <!-- ═════ Slide 4 · Section 03 · 7 → 5 ═════════════════════════ -->
+    <div class="step slide slide--ba-03" data-x="1000" data-y="0" data-scale="0.85" data-rotate="-3"
+         data-step-number="4" data-section-id="ov-ba-03" data-notes-key="Section 03">
+      <div class="slide-bg slide-bg--ember"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">03 · One task, two journeys</p>
+        <h2 class="slide-headline">Send a Cargo manifest to Maersk.</h2>
+        <div class="slide-stepcount">
+          <div class="stepcount-side stepcount-side--today">
+            <p class="stepcount-label">Today</p>
+            <p class="stepcount-num">7</p>
+            <p class="stepcount-detail">steps · refresh-to-verify ·<br>EForm-vs-ETR vocabulary</p>
+            <div class="stepcount-dots">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <div class="stepcount-arrow" aria-hidden="true">→</div>
+          <div class="stepcount-side stepcount-side--new">
+            <p class="stepcount-label">New portal</p>
+            <p class="stepcount-num">5</p>
+            <p class="stepcount-detail">steps · live timeline ·<br>1 vocabulary (Agreement → Message)</p>
+            <div class="stepcount-dots">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+        <p class="slide-pull">Same task. Two fewer translation steps.</p>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
+    <!-- ═════ Slide 5 · Section 04 · 9 → 5 ════════════════════════════ -->
+    <div class="step slide slide--ba-04" data-x="3000" data-y="0" data-scale="0.85" data-rotate="3"
+         data-step-number="5" data-section-id="ov-ba-04" data-notes-key="Section 04">
+      <div class="slide-bg slide-bg--crimson"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">04 · Same story, for the admins</p>
+        <h2 class="slide-headline">Register a new document type.</h2>
+        <div class="slide-versus">
+          <div class="versus-side versus-side--bad">
+            <p class="versus-num">9</p>
+            <p class="versus-label">steps</p>
+            <p class="versus-extra"><strong>4</strong> actor types</p>
+            <p class="versus-extra">days → weeks</p>
+          </div>
+          <div class="versus-arrow" aria-hidden="true">→</div>
+          <div class="versus-side versus-side--good">
+            <p class="versus-num">5</p>
+            <p class="versus-label">steps</p>
+            <p class="versus-extra"><strong>1</strong> admin</p>
+            <p class="versus-extra">minutes</p>
+          </div>
+        </div>
+        <p class="slide-pull">Smart Start drafts. Test-as-operator verifies. The catalogue relay is gone.</p>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
+    <!-- ═════ Slide 6 · Section 05 · Mental model ════ -->
+    <div class="step slide slide--concept" data-x="-4000" data-y="2200" data-scale="0.85" data-rotate="-4"
+         data-step-number="6" data-section-id="ov-concept" data-notes-key="Section 05">
+      <div class="slide-bg slide-bg--indigo"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">05 · The new mental model</p>
+        <h2 class="slide-headline">Three questions. Three sections.</h2>
+        <div class="slide-pillars">
+          <div class="pillar pillar--blue">
+            <p class="pillar-question">"What needs my attention?"</p>
+            <p class="pillar-name">WORK</p>
+            <p class="pillar-items">Inbox · Drafts</p>
+          </div>
+          <div class="pillar pillar--teal">
+            <p class="pillar-question">"What's the business state?"</p>
+            <p class="pillar-name">EXCHANGE</p>
+            <p class="pillar-items">Agreements · Messages</p>
+          </div>
+          <div class="pillar pillar--amber">
+            <p class="pillar-question">"What are the building blocks?"</p>
+            <p class="pillar-name">DIRECTORY</p>
+            <p class="pillar-items">Data elements · Participants</p>
+          </div>
+        </div>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
+    <!-- ═════ Slide 7 · Section 06 · Ten decisions ═════════════ -->
+    <div class="step slide slide--decisions" data-x="-2000" data-y="2200" data-scale="0.85" data-rotate="3"
+         data-step-number="7" data-section-id="ov-decisions" data-notes-key="Section 06">
+      <div class="slide-bg slide-bg--amber"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">06 · Ten decisions that shape the experience</p>
+        <h2 class="slide-headline">Each cancels a Section 00 tax.</h2>
+        <div class="slide-constellation">
+          <div class="cn cn--1" style="--cn-x:8%;  --cn-y:18%;"><span class="cn-num">01</span><span class="cn-title">Inbox is home</span></div>
+          <div class="cn cn--2" style="--cn-x:24%; --cn-y:8%;"><span class="cn-num">02</span><span class="cn-title">One Messages page</span></div>
+          <div class="cn cn--3" style="--cn-x:42%; --cn-y:22%;"><span class="cn-num">03</span><span class="cn-title">One status vocab</span></div>
+          <div class="cn cn--4" style="--cn-x:60%; --cn-y:12%;"><span class="cn-num">04</span><span class="cn-title">Compose under Agreement</span></div>
+          <div class="cn cn--5" style="--cn-x:78%; --cn-y:24%;"><span class="cn-num">05</span><span class="cn-title">Terms frozen at acceptance</span></div>
+          <div class="cn cn--6" style="--cn-x:12%; --cn-y:62%;"><span class="cn-num">06</span><span class="cn-title">Notifications match stakes</span></div>
+          <div class="cn cn--7" style="--cn-x:30%; --cn-y:80%;"><span class="cn-num">07</span><span class="cn-title">Multi-counterparty packs</span></div>
+          <div class="cn cn--8" style="--cn-x:50%; --cn-y:68%;"><span class="cn-num">08</span><span class="cn-title">Describe your own side</span></div>
+          <div class="cn cn--9" style="--cn-x:68%; --cn-y:82%;"><span class="cn-num">09</span><span class="cn-title">Admins author elements</span></div>
+          <div class="cn cn--10" style="--cn-x:86%; --cn-y:62%;"><span class="cn-num">10</span><span class="cn-title">Pre-staged Drafts</span></div>
+        </div>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
+    <!-- ═════ Slide 8 · Section 07 · Roadmap ═════════════════════ -->
+    <div class="step slide slide--roadmap" data-x="0" data-y="2200" data-scale="0.85" data-rotate="-3"
+         data-step-number="8" data-section-id="ov-roadmap" data-notes-key="Section 07">
+      <div class="slide-bg slide-bg--forest"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">07 · What launches first vs what's deferred</p>
+        <h2 class="slide-headline">Honest scoping.</h2>
+        <div class="slide-scoping">
+          <div class="scoping-col scoping-col--v1">
+            <p class="scoping-tag">v1 · Six months</p>
+            <ul class="scoping-list">
+              <li>One portal, sign-in unified</li>
+              <li>Inbox home + team-claim</li>
+              <li>One Messages page</li>
+              <li>Live timeline + retry/close</li>
+              <li>One Composer + auto-review</li>
+              <li>Watch toggle + digest</li>
+              <li>Cross-network warnings</li>
+              <li>Settings → Pitstops page</li>
+            </ul>
+          </div>
+          <div class="scoping-col scoping-col--deferred">
+            <p class="scoping-tag">Deferred · Needs platform</p>
+            <ul class="scoping-list scoping-list--muted">
+              <li>Schema-negotiation handshake</li>
+              <li>In-place Agreement amendments</li>
+              <li>Bulk send (one→many)</li>
+              <li>Test mode</li>
+              <li>Org-wide failure banner</li>
+              <li>Mobile push</li>
+            </ul>
+          </div>
+        </div>
+        <p class="slide-pull">Deferred items all wait on one shared coordination layer.</p>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
+    <!-- ═════ Slide 9 · Section 08 · Soft landing ═════════════════ -->
+    <div class="step slide slide--migration" data-x="2000" data-y="2200" data-scale="0.85" data-rotate="4"
+         data-step-number="9" data-section-id="ov-migration" data-notes-key="Section 08">
+      <div class="slide-bg slide-bg--mustard"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">08 · Rollout day, for users already on the network</p>
+        <h2 class="slide-headline">Migration is a design problem. Not an afterthought.</h2>
+        <div class="slide-guarantees">
+          <div class="guarantee">
+            <div class="guarantee-icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3"><path d="M16 32 L48 32" stroke-linecap="round"/><path d="M40 24 L48 32 L40 40" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="32" r="28"/></svg>
+            </div>
+            <p class="guarantee-title">Bookmarks don't break</p>
+            <p class="guarantee-detail">Legacy URLs redirect to their new home automatically.</p>
+          </div>
+          <div class="guarantee">
+            <div class="guarantee-icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3"><rect x="8" y="14" width="48" height="40" rx="3"/><path d="M8 22 L24 22 L28 14"/></svg>
+            </div>
+            <p class="guarantee-title">Drafts carry over</p>
+            <p class="guarantee-detail">In-progress Agreements + Messages appear at the same stage.</p>
+          </div>
+          <div class="guarantee">
+            <div class="guarantee-icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3"><circle cx="32" cy="32" r="28"/><line x1="32" y1="22" x2="32" y2="36"/><circle cx="32" cy="44" r="1.5" fill="currentColor"/></svg>
+            </div>
+            <p class="guarantee-title">One "what's changed" panel</p>
+            <p class="guarantee-detail">Dismissible, audit-logged, gone after first acknowledgement.</p>
+          </div>
+        </div>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
+    <!-- ═════ Slide 10 · Section 09 · Empty → consequential ═══════════════ -->
+    <div class="step slide slide--new-orgs" data-x="4000" data-y="2200" data-scale="0.85" data-rotate="-3"
+         data-step-number="10" data-section-id="ov-new-orgs" data-notes-key="Section 09">
+      <div class="slide-bg slide-bg--prussian"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">09 · Day one, for orgs joining the network</p>
+        <h2 class="slide-headline">Empty inbox → consequential inbox.</h2>
+        <div class="slide-before-after">
+          <div class="ba-side ba-side--before">
+            <p class="ba-label">Today</p>
+            <div class="ba-frame ba-frame--empty">
+              <p class="ba-frame-headline">Welcome.</p>
+              <p class="ba-frame-empty">No items in your inbox.</p>
+              <p class="ba-frame-aside">"Where do I start?"</p>
+            </div>
+          </div>
+          <div class="ba-arrow" aria-hidden="true">→</div>
+          <div class="ba-side ba-side--after">
+            <p class="ba-label">New portal</p>
+            <div class="ba-frame ba-frame--full">
+              <p class="ba-frame-headline">Welcome. 8 drafts ready for review.</p>
+              <ul class="ba-frame-list">
+                <li>Cargo manifest → Maersk · staged by KYC</li>
+                <li>Bunker delivery note → PSA · staged by KYC</li>
+                <li>Vessel arrival pack → 4 logistics partners</li>
+                <li>+ 5 more</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <p class="slide-pull">Platform Admin's due-diligence labour becomes the new operator's first impression.</p>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
+    <!-- ═════ Slide 11 · Section 10 · Three asks ════ -->
+    <div class="step slide slide--asks" data-x="0" data-y="5200" data-scale="0.85" data-rotate="0"
+         data-step-number="11" data-section-id="ov-asks" data-notes-key="Section 10">
+      <div class="slide-bg slide-bg--bordeaux"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">10 · What we need from leadership</p>
+        <h2 class="slide-headline">Three calls before the build begins.</h2>
+        <div class="slide-asks">
+          <article class="ask">
+            <p class="ask-letter">A</p>
+            <h3 class="ask-title">Confirm who can send data on each Agreement</h3>
+            <p class="ask-detail">Only data owners (or SPs explicitly acting on their behalf) compose Messages. Today's system is more permissive.</p>
+            <p class="ask-owner">Product Lead + Compliance · before kickoff</p>
+          </article>
+          <article class="ask">
+            <p class="ask-letter">B</p>
+            <h3 class="ask-title">Confirm "revoke and recreate" for schema changes</h3>
+            <p class="ask-detail">In-place amendments arrive later, when the coordination layer ships. Acceptable for the first customer launch?</p>
+            <p class="ask-owner">Product Lead + Engineering Lead · before kickoff</p>
+          </article>
+          <article class="ask">
+            <p class="ask-letter">C</p>
+            <h3 class="ask-title">Greenlight a one-week user-test round</h3>
+            <p class="ask-detail">5–6 operators · 3 sample tasks each. A week of design + an afternoon of sessions. Validates the consolidated Messages page + Composer before build.</p>
+            <p class="ask-owner">UIUX Lead + Product Lead · within 2 weeks</p>
+          </article>
+        </div>
+        <p class="slide-closer">Decisions today. Build kicks off in 2 weeks. v1 ships in 6 months.</p>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
+  </div>
+
+  <header class="presenter-topbar" hidden>
+    <span class="presenter-step-counter"></span>
+    <span class="presenter-section"></span>
+    <span class="presenter-narrative"></span>
+  </header>
+
+  <aside class="presenter-notes-overlay" hidden></aside>
+
+  <script src="scripts/vendor/impress.js"></script>
+  <script src="scripts/presenter-notes.js"></script>
+  <script src="scripts/presenter.js"></script>
+</body>
+</html>

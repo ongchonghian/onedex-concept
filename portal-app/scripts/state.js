@@ -136,7 +136,7 @@ const ORGS = {
   'tfg-marine': { name: 'TFG Marine',         short: 'TFG Marine',   initials: 'TF', tier: 'participant', primaryDexId: 'tx' },
   acme:         { name: 'Acme Construction Pte Ltd', short: 'Acme', initials: 'AC', tier: 'participant', primaryDexId: 'bx' },  // Issue 0007 — BX-primary; cross-DEX on TX
 
-  /* ---------- BX/HX counterparty orgs (added for Alice + David scenes) ----------
+  /* ---------- BX/HX counterparty orgs (added for Bea + David scenes) ----------
      Anchored in the dex-monorepo:
        · JTC          — statutory board for industrial land; consumes manpower + safety on SGBuildex
        · SingHealth   — Singapore healthcare cluster; data consumer on SGHealthdex
@@ -169,27 +169,27 @@ const USERS = {
   // Marcus is the canonical demo operator — keep as-is.
   marcus: { name: 'Marcus Ong', email: 'marcus.ong@cosco.com.sg',  initials: 'MO', primaryOrgId: 'cosco',        personaType: 'participant' },
 
-  // All other users are renamed to Mobile Legends: Bang Bang heroes — userId
-  // tokens (`alice`, `david`, …) preserved so SCENE_SEEDS keys + affiliation
-  // keys remain valid; only display fields (`name` / `email` / `initials`) change.
-  alice:  { name: 'Layla',      email: 'layla@cosco.com.sg',            initials: 'LA', primaryOrgId: 'cosco',        personaType: 'participant' },  // Issue 0002 — Cosco BX operator (Malefic Gunner)
-  david:  { name: 'Lancelot',   email: 'lancelot@cosco.com.sg',         initials: 'LC', primaryOrgId: 'cosco',        personaType: 'participant' },  // Issue 0003 — Cosco HX Super Admin (Perfumed Knight)
-  wenchen:{ name: 'Hayabusa',   email: 'hayabusa@globalpsa.com',        initials: 'HB', primaryOrgId: 'psa',          personaType: 'participant' },  // Issue 0005 — PSA TX admin (Shadow of Iga)
-  lars:   { name: 'Granger',    email: 'granger@maersk.com',            initials: 'GR', primaryOrgId: 'maersk',       personaType: 'participant' },  // Issue 0006 — Maersk TX admin (Death Chanter)
-  boonkeng:{ name: 'Khufra',    email: 'khufra@acme-co.com',            initials: 'KH', primaryOrgId: 'acme',         personaType: 'participant' },  // Issue 0007 — Acme BX admin (Tyrant of the Desert Sands)
-  pat:    { name: 'Chou',       email: 'chou@crimsonlogic.com',         initials: 'CH', primaryOrgId: 'crimsonlogic', personaType: 'participant' },  // CrimsonLogic SP-operator (Kung Fu Boy)
-  sarah:  { name: 'Kagura',     email: 'kagura@sgtradex.com',           initials: 'KG', primaryOrgId: 'sgtradex',     personaType: 'platform-admin' }, // SGTradex Admin (Onmyoji)
-  weilin: { name: 'Lesley',     email: 'lesley@sgtradex.com',           initials: 'LE', primaryOrgId: 'sgtradex',     personaType: 'platform-admin' }, // Issue 0004 — platform teammate (Twilight Sniper)
-  diane:  { name: 'Beatrix',    email: 'beatrix@sgtradex.com',          initials: 'BX', primaryOrgId: 'sgtradex',     personaType: 'platform-admin' }, // SGBuildex-focused platform admin (Magnum Opus) — the same Diane Lim named as the BD contact in env-site-obs Confluence fixtures (ADR 0040 Slice 1 canned-response)
+  // Other personas use realistic Singapore-context first names. userId tokens
+  // (`bea`, `david`, …) match the display name so SCENE_SEEDS keys, affiliation
+  // keys, and display fields (`name` / `email` / `initials`) all stay aligned.
+  bea:  { name: 'Bea',      email: 'bea@cosco.com.sg',            initials: 'BE', primaryOrgId: 'cosco',        personaType: 'participant' },  // Issue 0002 — Cosco BX operator
+  david:  { name: 'David',   email: 'david@cosco.com.sg',         initials: 'DV', primaryOrgId: 'cosco',        personaType: 'participant' },  // Issue 0003 — Cosco HX Super Admin
+  wenchen:{ name: 'Wen Chen',   email: 'wenchen@globalpsa.com',        initials: 'WC', primaryOrgId: 'psa',          personaType: 'participant' },  // Issue 0005 — PSA TX admin
+  lars:   { name: 'Lars',    email: 'lars@maersk.com',            initials: 'LR', primaryOrgId: 'maersk',       personaType: 'participant' },  // Issue 0006 — Maersk TX admin
+  boonkeng:{ name: 'Boon Keng',    email: 'boonkeng@acme-co.com',            initials: 'BK', primaryOrgId: 'acme',         personaType: 'participant' },  // Issue 0007 — Acme BX admin
+  pat:    { name: 'Pat',       email: 'pat@crimsonlogic.com',         initials: 'PT', primaryOrgId: 'crimsonlogic', personaType: 'participant' },  // CrimsonLogic SP-operator
+  sarah:  { name: 'Sarah',     email: 'sarah@sgtradex.com',           initials: 'SA', primaryOrgId: 'sgtradex',     personaType: 'platform-admin' }, // SGTradex Admin
+  weilin: { name: 'Wei Lin',     email: 'weilin@sgtradex.com',           initials: 'WL', primaryOrgId: 'sgtradex',     personaType: 'platform-admin' }, // Issue 0004 — platform teammate
+  diane:  { name: 'Diane',    email: 'diane@sgtradex.com',          initials: 'DI', primaryOrgId: 'sgtradex',     personaType: 'platform-admin' }, // SGBuildex-focused platform admin  — the same Diane Lim named as the BD contact in env-site-obs Confluence fixtures (ADR 0040 Slice 1 canned-response)
 
   /* BX/HX primary contacts on the counterparty side — surface in participants
      directory + activity log via ADR 0031's actorUserId dispatch rule.
-     The three SGHealthdex counterparts use healer-archetype MLBB heroes (Estes /
-     Rafaela / Angela) to keep the clinical tone, prefixed with "Dr". */
-  kelvin:  { name: 'Hilda',       email: 'hilda@jtc.gov.sg',            initials: 'HD', primaryOrgId: 'jtc',              personaType: 'participant' },  // JTC inspector — BX counterparty primary contact (Frostiron Hunter)
-  priya:   { name: 'Dr Estes',    email: 'estes@singhealth.com.sg',     initials: 'ES', primaryOrgId: 'singhealth',       personaType: 'participant' },  // SingHealth admin — HX counterparty primary contact (Holy Priest)
-  ruby:    { name: 'Dr Rafaela',  email: 'rafaela@moh.gov.sg',          initials: 'RF', primaryOrgId: 'moh-esc',          personaType: 'participant' },  // MOH-ESC compliance lead — HX (Wings of Holiness)
-  joshua:  { name: 'Dr Angela',   email: 'angela@polyclinic-bedok.sg',  initials: 'AG', primaryOrgId: 'polyclinic-bedok', personaType: 'participant' }   // Polyclinic Bedok lead — HX (Heart of Mech)
+     The three SGHealthdex counterparts use healer-archetype MLBB heroes (Priya /
+     Rosalind / Joshua) to keep the clinical tone, prefixed with "Dr". */
+  kelvin:  { name: 'Kelvin',       email: 'kelvin@jtc.gov.sg',            initials: 'KW', primaryOrgId: 'jtc',              personaType: 'participant' },  // JTC inspector — BX counterparty primary contact
+  priya:   { name: 'Dr Priya',    email: 'priya@singhealth.com.sg',     initials: 'PR', primaryOrgId: 'singhealth',       personaType: 'participant' },  // SingHealth admin — HX counterparty primary contact
+  rosalind:    { name: 'Dr Rosalind',  email: 'rosalind@moh.gov.sg',          initials: 'RO', primaryOrgId: 'moh-esc',          personaType: 'participant' },  // MOH-ESC compliance lead — HX
+  joshua:  { name: 'Dr Joshua',   email: 'joshua@polyclinic-bedok.sg',  initials: 'JO', primaryOrgId: 'polyclinic-bedok', personaType: 'participant' }   // Polyclinic Bedok lead — HX
 };
 
 /* ---------- USER_ORG_AFFILIATIONS ----------
@@ -206,7 +206,7 @@ const USERS = {
    the new model expresses the same fact via `tier === 'platform'`, a real schema
    property. The resolver branches on tier — no '*' fallback required.
 
-   Issues 0002 + 0003 strip Marcus's BX and HX seats — Alice picks up BX, David picks up HX.
+   Issues 0002 + 0003 strip Marcus's BX and HX seats — Bea picks up BX, David picks up HX.
    Marcus is now Cosco's TX-only operator. */
 const USER_ORG_AFFILIATIONS = {
   'marcus-cosco': {
@@ -215,7 +215,7 @@ const USER_ORG_AFFILIATIONS = {
     dexRoles:  { tx: 'Admin User' },                     // BX (Issue 0002) + HX (Issue 0003) stripped
     dexJoinDates: { tx: '2024-03-14' }                   // Per-DEX role start; surfaced in Settings → Roles by DEX
   },
-  'alice-cosco': {                                       // Issue 0002 — Cosco BX operator
+  'bea-cosco': {                                       // Issue 0002 — Cosco BX operator
     status:    'active',
     startDate: '2024-09-14',
     dexRoles:  { bx: 'Operation User' }
@@ -261,7 +261,7 @@ const USER_ORG_AFFILIATIONS = {
     platformRole: 'SGTradex Admin'             // BX face on /portal/bx/ when ADR 0030's rail resolver gains
   },                                           // DEX-aware platform-admin disambiguation.
 
-  /* BX/HX counterparty primary-contact affiliations (added for Alice + David scenes). */
+  /* BX/HX counterparty primary-contact affiliations (added for Bea + David scenes). */
   'kelvin-jtc': {                              // JTC inspector — BX counterparty primary contact
     status:    'active',
     startDate: '2023-05-18',
@@ -272,7 +272,7 @@ const USER_ORG_AFFILIATIONS = {
     startDate: '2024-02-12',
     dexRoles:  { hx: 'Admin User' }
   },
-  'ruby-moh-esc': {                            // MOH-ESC compliance lead — HX counterparty primary contact
+  'rosalind-moh-esc': {                            // MOH-ESC compliance lead — HX counterparty primary contact
     status:    'active',
     startDate: '2024-04-03',
     dexRoles:  { hx: 'Admin User' }
@@ -295,7 +295,7 @@ const USER_ORG_AFFILIATIONS = {
    Issue 0001 seeds the memberships that match the current roster's actual reach.
    Counterparty memberships (PSA-TX, Maersk-TX, Acme-BX, Acme-TX, PCL-TX pending)
    are filled in by Issues 0005-0007. Cosco-BX and Cosco-HX exist today because
-   Marcus has BX/HX seats; they will outlast Marcus's strip (Alice and David
+   Marcus has BX/HX seats; they will outlast Marcus's strip (Bea and David
    inherit them). */
 const ORG_DEX_MEMBERSHIPS = {
   'cosco-tx':           { joinedDate: '2023-08-22', status: 'active' },
@@ -307,7 +307,7 @@ const ORG_DEX_MEMBERSHIPS = {
   'acme-bx':            { joinedDate: '2024-11-04', status: 'active' },  // Issue 0007 — Acme's primary DEX
   'acme-tx':            { joinedDate: '2026-04-12', status: 'active' },  // Issue 0007 — Acme cross-DEX onto SGTradex
 
-  /* BX/HX counterparty memberships (added for Alice + David scenes). */
+  /* BX/HX counterparty memberships (added for Bea + David scenes). */
   'jtc-bx':                  { joinedDate: '2023-05-18', status: 'active' },  // JTC — BX statutory consumer of manpower + safety data
   'singhealth-hx':           { joinedDate: '2024-02-12', status: 'active' },  // SingHealth — HX referral consumer
   'moh-esc-hx':              { joinedDate: '2024-04-03', status: 'active' },  // MOH-ESC — HX clinical-imaging regulator
@@ -340,14 +340,14 @@ const PERSONA_TO_USER = {
  *
  * Previously the rail resolved 'platform-admin' to Sarah on every URL DEX
  * (per ADR 0030 Table). That worked but produced jarring chrome — Sarah's
- * org reads "SGTradex" on /portal/bx/. With Diane (Beatrix) added as a
+ * org reads "SGTradex" on /portal/bx/. With Diane (Diane) added as a
  * SGBuildex-focused platform admin, the rail can now present a DEX-coherent
  * face per URL DEX. Falls back to PERSONA_TO_USER['platform-admin'] when no
  * entry is configured for a DEX. */
 const PLATFORM_ADMIN_BY_DEX = {
-  tx: 'sarah',     // Kagura — historical default
-  bx: 'diane',     // Beatrix — SGBuildex platform admin, closes loop with env-site-obs Confluence fixture
-  hx: 'sarah'      // Kagura — no HX-specific platform admin yet; falls through to Sarah
+  tx: 'sarah',     // Sarah — historical default
+  bx: 'diane',     // Diane — SGBuildex platform admin, closes loop with env-site-obs Confluence fixture
+  hx: 'sarah'      // Sarah — no HX-specific platform admin yet; falls through to Sarah
 };
 
 const PERSONA_LABELS = {
@@ -766,7 +766,7 @@ const USER_PITSTOP_ROLES = {
     { dexId: 'bx', pitstopId: 'cosco-bx-main',  role: 'Operation User' },
     { dexId: 'hx', pitstopId: null,             role: 'Super Admin' }
   ],
-  'alice': [
+  'bea': [
     { dexId: 'tx', pitstopId: 'cosco-tx-ops',   role: 'Operation User' },
     { dexId: 'bx', pitstopId: 'cosco-bx-main',  role: 'Operation User' }
   ],
@@ -793,7 +793,7 @@ const USER_PITSTOP_ROLES = {
 const PITSTOP_ACTIVITY_LOGS = {
   'cosco-tx-ops': [
     { actorUserId: 'marcus', action: 'confirmed SG-Logistics as the primary dispatch seat for Mass Flow Meter Receipt', time: '21 Mar 2026 · 09:14 SGT' },
-    { actorUserId: 'alice',  action: 'was assigned as an Operations User on this Pitstop',                               time: '12 Mar 2026 · 16:05 SGT' },
+    { actorUserId: 'bea',  action: 'was assigned as an Operations User on this Pitstop',                               time: '12 Mar 2026 · 16:05 SGT' },
     { actor: 'System migration', action: 'seeded Vessel Voyage Schedule and Statement of Facts from historical tracking', time: '04 Mar 2026 · 02:10 SGT' }
   ],
   'cosco-tx-finance': [
@@ -807,7 +807,7 @@ const PITSTOP_ACTIVITY_LOGS = {
     { actorUserId: 'marcus', action: 'soft-retired SG-Logistics-Old after consolidation into SG-Logistics', time: '04 Mar 2026 · 09:00 SGT' }
   ],
   'cosco-bx-main': [
-    { actorUserId: 'alice', action: 'confirmed Manpower utilization scope for SGBuildex-Main', time: '28 Apr 2026 · 15:06 SGT' }
+    { actorUserId: 'bea', action: 'confirmed Manpower utilization scope for SGBuildex-Main', time: '28 Apr 2026 · 15:06 SGT' }
   ],
   'cosco-hx-main': [
     { actorUserId: 'david', action: 'reviewed residency-strict routing for Patient Referral Record', time: '12 Feb 2026 · 11:20 SGT' }

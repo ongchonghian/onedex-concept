@@ -20,7 +20,7 @@ Legend: **F** = full seed · **·** = placeholder (null/empty) · **—** = slot
 
 | Scene key | User | Org | DEX | Scen | detail | inbox | message-detail | dashboard | drafts | participants | agreements | messages |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `alice-cosco-bx-C` | alice | cosco | bx | C | F | F | F | · | F | F | F | F |
+| `bea-cosco-bx-C` | bea | cosco | bx | C | F | F | F | · | F | F | F | F |
 | `david-cosco-hx-C` | david | cosco | hx | C | F | F | F | · | F | F | F | F |
 | `marcus-cosco-tx-A` | marcus | cosco | tx | A | F | — | — | — | — | — | — | — |
 | `marcus-cosco-tx-B` | marcus | cosco | tx | B | F | — | — | — | — | — | — | — |
@@ -39,7 +39,7 @@ Legend: **F** = full seed · **·** = placeholder (null/empty) · **—** = slot
   - `marcus-cosco-tx-E`
   - `marcus-cosco-tx-F`
 - **SGBuildex**: 1 scene (1 full)
-  - `alice-cosco-bx-C`
+  - `bea-cosco-bx-C`
 - **SGHealthdex**: 1 scene (1 full)
   - `david-cosco-hx-C`
 
@@ -49,7 +49,7 @@ See [seed-authoring.md](./seed-authoring.md). Quick path:
 
 ```js
 // in the browser console
-const s = scaffoldScene('alice', 'bx', 'A');
+const s = scaffoldScene('bea', 'bx', 'A');
 copy(s.toJSCode());                       // copy to clipboard
 // then paste into SCENE_SEEDS in portal-app/scripts/state.js
 ```

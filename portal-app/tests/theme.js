@@ -64,7 +64,7 @@ function switchDex(dex, opts) {
   // Keep any active flow ribbon copy aligned with the new DEX (e.g. "First-time user:
   // you're a new admin on SGBuildex ..." after switching from SGTradex). No-op if no flow active.
   if (typeof refreshFlowRibbon === 'function') refreshFlowRibbon();
-  // Active user can change on DEX switch (Marcus on TX → Alice on BX), so re-apply
+  // Active user can change on DEX switch (Marcus on TX → Bea on BX), so re-apply
   // persona chrome (workspace pill sub-label, avatar cross-fade, profile menu).
   if (typeof applyPersonaChrome === 'function') applyPersonaChrome();
   // User's permission level can differ per DEX (Admin on SGTradex, Operation User on SGBuildex,

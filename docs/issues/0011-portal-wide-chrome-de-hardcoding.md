@@ -40,7 +40,7 @@ This is technically a "hardcoded path" inconsistency rather than a hardcoded *li
 ## Acceptance criteria
 
 - [ ] A single page audit (grep) finds zero remaining instances of these literals in user-facing chrome (excluding `canvas-meta` / `canvas-tip` dev annotations and fixture-content card bodies):
-  - Hardcoded user names: `Marcus`, `Layla`, `Lancelot`, `Chou`, `Kagura`, `Lesley` (when used as the *active* operator's name rather than a counterparty / activity-log actor)
+  - Hardcoded user names: `Marcus`, `Bea`, `David`, `Pat`, `Sarah`, `Wei Lin` (when used as the *active* operator's name rather than a counterparty / activity-log actor)
   - Hardcoded org names: `Cosco Shipping`, `Cosco Construction`, `Cosco Health Services`, `CrimsonLogic`, `SGTradex Platform` (when used as the *active* operator's org rather than a counterparty)
   - Hardcoded role labels: `Admin User`, `Operation User`, `Super Admin`, `Admin on SGTradex` (when used in lede / hero copy rather than role chips, which are already dynamic)
   - Hardcoded DEX names in placeholder copy: `Search ... on SGTradex` patterns

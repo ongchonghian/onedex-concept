@@ -6,7 +6,7 @@ When an existing user's org joins a new DEX (scenario 2a) or an existing user is
 
 1. **Banner at top of `/portal/all` on first login post-change.** Non-blocking. Two CTAs: "Explore SGBuildex →" and "Dismiss." Copy is event-specific:
    - 2a: *"Your org just joined SGBuildex. Your SGTradex work is unchanged."*
-   - 2b: *"You've been added to SGBuildex by Alice Tan. You can now do X, Y, Z here."*
+   - 2b: *"You've been added to SGBuildex by Bea Tan. You can now do X, Y, Z here."*
    Auto-dismisses after 7 days or explicit dismiss, whichever first.
 2. **Themed empty state on first navigation to `/portal/<newdex>`.** Mirrors the brand-new-user pattern from [ADR 0015](./0015-onboarding-via-design-discipline-not-tours.md) — heading, role-specific capability sentence, two suggested-action cards — rendered in the new DEX's chrome.
 3. **DEX switcher + sidebar update automatically.** The new DEX appears in the switcher with a small **"New" dot** for 7 days, computed **per-user** (not per-DEX-event) — a user who joins the org 3 weeks after acquisition still sees the dot relative to their own arrival.

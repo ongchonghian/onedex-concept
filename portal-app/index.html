@@ -80,10 +80,10 @@
           <i class="ti ti-user" aria-hidden="true"></i>Marcus <span class="pr-pill-sub">· Cosco</span>
         </button>
         <button type="button" class="pr-pill" data-pr-persona="sp-operator" onclick="switchPersonaFromRail('sp-operator', this)" aria-pressed="false">
-          <i class="ti ti-user-share" aria-hidden="true"></i>Chou <span class="pr-pill-sub">· CrimsonLogic SP</span>
+          <i class="ti ti-user-share" aria-hidden="true"></i>Pat <span class="pr-pill-sub">· CrimsonLogic SP</span>
         </button>
         <button type="button" class="pr-pill" data-pr-persona="platform-admin" onclick="switchPersonaFromRail('platform-admin', this)" aria-pressed="false">
-          <i class="ti ti-shield-check" aria-hidden="true"></i>Kagura <span class="pr-pill-sub">· SGTradex admin</span>
+          <i class="ti ti-shield-check" aria-hidden="true"></i>Sarah <span class="pr-pill-sub">· SGTradex admin</span>
         </button>
         <button type="button" class="pr-icon-btn pr-glossary" onclick="openGlossary()" title="Open glossary" aria-label="Open glossary"><i class="ti ti-book" aria-hidden="true"></i></button>
       </div>
@@ -1639,45 +1639,374 @@
 <section class="screen active" data-screen="overview" aria-labelledby="ov-h1">
   <div class="overview-page">
 
-    <!-- HERO -->
-    <header class="ov-hero">
-      <span class="ov-eyebrow">Concept brief <span style="opacity:0.5;padding:0 2px">·</span> May 2026</span>
-      <h1 id="ov-h1">From two systems to one portal</h1>
-      <p class="ov-lede">Today, operators move between two separate portals — one to set up data-sharing relationships, another to actually exchange data — translating between several different vocabularies along the way. The platform rewrite consolidates this into one portal with one mental model: <strong>set up an Agreement with a counterparty once, then exchange Messages under it</strong>. The expected outcomes: about 40% fewer clicks on common operator tasks, a single training curriculum instead of two, and a new safety affordance for legally-significant documents that the current system lacks.</p>
+    <!-- STAKES — 5-sec infographic + quantifiable relief, then deep stakeholder voices below -->
+    <section id="ov-stakes" class="ov-section ov-stakes ov-section--accent-red ov-section--banded">
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>00</b> Why this needs leadership attention</p>
+      <h2>Ten frictions. Ten costs that shape every Dex Technologies quarter.</h2>
+      <p class="ov-section-lede">The platform works — orders flow on SGTradex, dashboards land on SGBuildex, e-forms submit on SGHealthdex. But the same friction taxes both sides of the business: <strong>five customer-side frictions</strong> silently move metrics leadership owns — anchor-tenant retention, regulatory exposure, time-to-market for new sectors, activation conversion, top-account scaling ceiling — and <strong>five internal-team frictions</strong> tax BD&rsquo;s pipeline velocity, Product&rsquo;s roadmap throughput, Engineering&rsquo;s automation goal, UIUX&rsquo;s design-system surface area, and Ops&rsquo; L1 ticket load. None of these costs sits on a P&amp;L line; together they decide whether we land Healthdex&rsquo;s next sector, ship Buildex SMP, and free Karthik&rsquo;s Exchanges tribe to build instead of relay.</p>
+
+      <!-- CUSTOMER-SIDE TAX SUBHEAD -->
+      <p style="margin-top:var(--sp-5);margin-bottom:var(--sp-3);font-weight:600;color:var(--g-10);font-size:var(--fs-md);display:flex;align-items:center;gap:8px"><i class="ti ti-users" aria-hidden="true" style="color:var(--red-50)"></i>Customer-side taxes — the five stakeholders our anchor tenants and new prospects already pay every quarter:</p>
+
+      <!-- 5-CELL CUSTOMER PAIN GRID — each card pairs the pain (red) with the specific prototype mechanism that cancels it (green), inline and visible (not in a tooltip) -->
+      <div class="tax-infographic" style="display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-3);margin-top:var(--sp-3);margin-bottom:var(--sp-6)">
+        <!-- Operator -->
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <i class="ti ti-user" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Operator <span style="font-weight:400;text-transform:none;opacity:0.7">· Marcus, Cosco</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Retention risk</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; <strong>7 steps</strong> per send</li>
+              <li style="padding:1px 0">&times; Form-route guesswork (<strong>EForm vs ETR</strong>)</li>
+              <li style="padding:1px 0">&times; Refresh-to-verify delivery</li>
+              <li style="padding:1px 0">&times; No auto-review on legal docs</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Agreement-anchored Composer</strong> → 5 steps</li>
+              <li style="padding:1px 0">&check; <strong>Live Message timeline</strong> — no refresh</li>
+              <li style="padding:1px 0">&check; <strong>Auto-review</strong> on legally-significant</li>
+              <li style="padding:1px 0">&check; ETR keeps its own workspace</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0020 / 21 / 24 · Decisions 03, 04</p>
+          </div>
+        </div>
+        <!-- Service Provider -->
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <i class="ti ti-user-share" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Service Provider <span style="font-weight:400;text-transform:none;opacity:0.7">· Pat, CrimsonLogic</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Audit exposure</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; Audit logs <strong>user</strong>, not acting-as <strong>org</strong></li>
+              <li style="padding:1px 0">&times; Picking the wrong owner is silent</li>
+              <li style="padding:1px 0">&times; Regulator scrutiny lands on platform</li>
+              <li style="padding:1px 0">&times; SPs absorb per-owner compliance risk</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Acting-as chip</strong> on every send — unmissable</li>
+              <li style="padding:1px 0">&check; Audit triple: <code style="font-size:10px">composed_by · acting_as_org · pitstop</code></li>
+              <li style="padding:1px 0">&check; Per-owner compliance trail, clean</li>
+              <li style="padding:1px 0">&check; SP can&rsquo;t silently mis-attribute</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADR 0024 · Decision 04</p>
+          </div>
+        </div>
+        <!-- DEX admin -->
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <i class="ti ti-shield-lock" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">DEX admin <span style="font-weight:400;text-transform:none;opacity:0.7">· Sarah, SGTradex</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Time-to-market</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; <strong>Weeks</strong> per new document type</li>
+              <li style="padding:1px 0">&times; <strong>4-actor relay</strong>: admin → dev → tech lead → ops</li>
+              <li style="padding:1px 0">&times; Quarterly <strong>spec drift</strong></li>
+              <li style="padding:1px 0">&times; New sectors onboard at competitor pace</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Single-page</strong> admin-authored registration</li>
+              <li style="padding:1px 0">&check; <strong>Smart Start</strong> grounds in BD sheet + IMDA / BCA / MOH</li>
+              <li style="padding:1px 0">&check; <strong>Test-as-operator</strong> before publish</li>
+              <li style="padding:1px 0">&check; <strong>Refit</strong> on revised spec — closes drift</li>
+              <li style="padding:1px 0">&check; <strong>9 → 5</strong> steps to publish</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 40 / 41 / 42 / 47 · Decision 09</p>
+          </div>
+        </div>
+        <!-- Platform admin -->
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <i class="ti ti-id-badge-2" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Platform admin <span style="font-weight:400;text-transform:none;opacity:0.7">· KYC &amp; onboarding</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Activation drop-off</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; KYC labour <strong>evaporates</strong> into email threads</li>
+              <li style="padding:1px 0">&times; First impression: <strong>empty inbox</strong></li>
+              <li style="padding:1px 0">&times; Below-benchmark first-week conversion</li>
+              <li style="padding:1px 0">&times; CAC inflates</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Onboarding workbook</strong> during KYC pass</li>
+              <li style="padding:1px 0">&check; First-login <strong>pre-staged Drafts</strong></li>
+              <li style="padding:1px 0">&check; Tagged with who staged + why</li>
+              <li style="padding:1px 0">&check; Forward-refs hold until counterparty active</li>
+              <li style="padding:1px 0">&check; <em>Empty</em> → <em>consequential</em></li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADR 0048 · Decision 10</p>
+          </div>
+        </div>
+        <!-- Pack dispatcher -->
+        <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <i class="ti ti-stack-2" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Pack dispatcher <span style="font-weight:400;text-transform:none;opacity:0.7">· top accounts (PSA, Maersk)</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Top-account ceiling</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; <strong>4 Agreements</strong> for 1 vessel pack</li>
+              <li style="padding:1px 0">&times; <strong>4 sends</strong>, 4 inboxes to reconcile</li>
+              <li style="padding:1px 0">&times; An afternoon of identical work</li>
+              <li style="padding:1px 0">&times; Top accounts eye direct integration</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Agreement pack</strong> — one wizard pass</li>
+              <li style="padding:1px 0">&check; <strong>Send-pack</strong> dispatches to all members</li>
+              <li style="padding:1px 0">&check; Per-counterparty audit preserved</li>
+              <li style="padding:1px 0">&check; <strong>Minutes</strong>, not an afternoon</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADR 0027 · Decision 07</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERNAL TEAM TAX SUBHEAD — what the same prototype does for Dex Technologies' own teams -->
+      <p style="margin-top:var(--sp-6);margin-bottom:var(--sp-3);font-weight:600;color:var(--g-10);font-size:var(--fs-md);display:flex;align-items:center;gap:8px"><i class="ti ti-building-skyscraper" aria-hidden="true" style="color:var(--g-30)"></i>Internal-team taxes — the five Dex Technologies teams whose capacity ships every DEX:</p>
+      <p style="margin-top:0;margin-bottom:var(--sp-4);color:var(--g-30);font-size:var(--fs-meta-plus);line-height:1.55">Per the Buildex Customer Journey Map, every customer phase from Awareness → Advocacy already names <em>BD · Product · Solution Architect · Developer · UXUI Designer · Ops</em> as the internal teams on the hook. Today, each of them pays a recurring tax to keep two portals × three DEXes × five consent vocabularies running.</p>
+
+      <!-- 5-CELL INTERNAL TEAM TAX GRID — accent yellow to distinguish from the red customer grid above; each card now visibly pairs the pain with the prototype mechanism that cancels it -->
+      <div class="tax-infographic" style="display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-3);margin-top:var(--sp-3);margin-bottom:var(--sp-6)">
+        <!-- BD -->
+        <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-target-arrow" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">BD <span style="font-weight:400;text-transform:none;opacity:0.7">· Business Development</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Pipeline velocity</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; <strong>Weeks</strong> waiting on engineering per document type</li>
+              <li style="padding:1px 0">&times; Can&rsquo;t demo a prospect&rsquo;s Excel live</li>
+              <li style="padding:1px 0">&times; Competitors close in PR-review time</li>
+              <li style="padding:1px 0">&times; Healthdex / Buildex sector expansion drags</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; Drop prospect&rsquo;s Excel into <strong>Smart Start</strong></li>
+              <li style="padding:1px 0">&check; Demo a working schema in <strong>minutes</strong></li>
+              <li style="padding:1px 0">&check; Quarters → <strong>days</strong> to POC</li>
+              <li style="padding:1px 0">&check; Live pitches close while competitors wait</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 40 / 41 · Decision 09</p>
+          </div>
+        </div>
+        <!-- Product -->
+        <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-bulb" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Product <span style="font-weight:400;text-transform:none;opacity:0.7">· PRD throughput</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Roadmap drag</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; Every feature ships <strong>twice</strong> (admin + pitstop)</li>
+              <li style="padding:1px 0">&times; <strong>5 vocabularies</strong>: Subscription, DER, SPR, EForm, ETR</li>
+              <li style="padding:1px 0">&times; Catalogue plumbing crowds revenue features</li>
+              <li style="padding:1px 0">&times; PRD-to-ship cycles unpredictable</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>2 portals → 1</strong> (Centralised Log-In)</li>
+              <li style="padding:1px 0">&check; <strong>5 vocabularies → 2</strong>: Agreement + Message</li>
+              <li style="padding:1px 0">&check; Catalogue work leaves product backlog</li>
+              <li style="padding:1px 0">&check; <strong>One PRD</strong> per feature; ships once</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0007 / 13 / 39 · Decisions 01-10</p>
+          </div>
+        </div>
+        <!-- Engineering -->
+        <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-cpu" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Engineering <span style="font-weight:400;text-transform:none;opacity:0.7">· Karthik&rsquo;s Exchanges tribe</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Catalogue relay</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; PR review per document type</li>
+              <li style="padding:1px 0">&times; Manual <strong>schema copy</strong> across envs</li>
+              <li style="padding:1px 0">&times; <strong>4 manual API calls</strong> + infra restart</li>
+              <li style="padding:1px 0">&times; Blocks 2025 <strong>80%-automation</strong> goal</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; Bundle exports to <strong>admin-corev2</strong></li>
+              <li style="padding:1px 0">&check; No PR, no schema copy, no restart</li>
+              <li style="padding:1px 0">&check; Squads off the catalogue relay</li>
+              <li style="padding:1px 0">&check; Capacity → platform infrastructure</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 46 · Decision 09</p>
+          </div>
+        </div>
+        <!-- UIUX -->
+        <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-palette" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">UIUX <span style="font-weight:400;text-transform:none;opacity:0.7">· Veronica&rsquo;s team</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Surface-area sprawl</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; <strong>2 portals × 3 DEXes</strong> of design surface</li>
+              <li style="padding:1px 0">&times; Personas inconsistent across portals</li>
+              <li style="padding:1px 0">&times; <strong>DS v1.0 adoption gaps</strong> (pitstop ↔ admin drift)</li>
+              <li style="padding:1px 0">&times; Every audit runs N times</li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>One portal · one design system</strong></li>
+              <li style="padding:1px 0">&check; One role taxonomy w/ capability gates</li>
+              <li style="padding:1px 0">&check; <strong>DS v1.0 → v2.0</strong>, half the surface area</li>
+              <li style="padding:1px 0">&check; Audits run <strong>once</strong>, not N times</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0001 / 30 / 32 · informs DS v2.0</p>
+          </div>
+        </div>
+        <!-- Ops -->
+        <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-headset" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
+            <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Ops <span style="font-weight:400;text-transform:none;opacity:0.7">· Suraj&rsquo;s tribe · L1 &amp; change risk</span></p>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Ticket &amp; change load</strong>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
+              <li style="padding:1px 0">&times; &quot;Where do I start?&quot; tickets</li>
+              <li style="padding:1px 0">&times; &quot;Where&rsquo;s my data?&quot; tickets</li>
+              <li style="padding:1px 0">&times; Manual use-case / DE-approval / org-delete</li>
+              <li style="padding:1px 0">&times; Every content change = <strong>change-risk review</strong></li>
+            </ul>
+          </div>
+          <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
+              <li style="padding:1px 0">&check; <strong>Pre-staged Drafts</strong> close empty-inbox tickets</li>
+              <li style="padding:1px 0">&check; <strong>Live timeline</strong> closes status tickets</li>
+              <li style="padding:1px 0">&check; Admin-authored elements bypass API tooling</li>
+              <li style="padding:1px 0">&check; <strong>Bulk-onboarding workbook</strong> for Ops</li>
+              <li style="padding:1px 0">&check; Change-risk surface shrinks</li>
+            </ul>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 46 / 48 · Decisions 03, 10</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- BRIDGE FOR MANAGEMENT — explicit framing of what approval unlocks -->
+      <p style="margin-top:0;margin-bottom:var(--sp-5);padding:var(--sp-4);background:var(--yellow-98,#fff8f1);border-left:3px solid var(--yellow-50,#7a6007);border-radius:6px;color:var(--g-10);font-size:var(--fs-meta-plus);line-height:1.55"><strong>The decision:</strong> this prototype is not a UI rewrite. It is the <em>cancellation of ten recurring taxes</em> — five paid by anchor tenants &amp; new prospects, five paid by BD, Product, Engineering, UIUX, and Ops, whose throughput already gates Healthdex&rsquo;s next sector, Buildex SMP, and TraDex&rsquo;s top-account ceiling.</p>
+
+      <p style="margin-top:var(--sp-4);margin-bottom:var(--sp-4);font-weight:500;color:var(--g-10);font-size:var(--fs-md)"><i class="ti ti-arrow-down" aria-hidden="true" style="margin-right:6px"></i>And in numbers — here is the tax each stakeholder (customer-side and internal) stops paying once the rewrite ships:</p>
 
       <div class="ov-stats">
         <div class="ov-stat ov-stat--featured">
-          <p class="ov-stat-num">~40%</p>
+          <p class="ov-stat-num">~29%</p>
           <div class="ov-stat--featured-body">
-            <p class="ov-stat-lbl">Fewer clicks on common operator tasks</p>
-            <p class="ov-stat-sub">Estimated from screen-count comparison across the two systems · user testing in Phase 5 will validate the figure with measured time.</p>
+            <p class="ov-stat-lbl">Fewer steps on a common operator send (Cargo manifest to Maersk)</p>
+            <p class="ov-stat-sub">Counted 7 operator clicks in the legacy pitstop portal vs 5 in the new portal — and the new 5 include a live delivery timeline and an automatic review step the legacy didn't have. User testing in Phase 5 will validate with measured time.</p>
           </div>
         </div>
         <div class="ov-stat">
           <p class="ov-stat-num">2 <span class="arrow">→</span> 1</p>
-          <p class="ov-stat-lbl">Portals operators use</p>
-          <p class="ov-stat-sub">One sign-in, one home page, one navigation model</p>
+          <p class="ov-stat-lbl">Portals the platform maintains</p>
+          <p class="ov-stat-sub">admin-ui and pitstop-ui consolidate into one codebase. Customer-success runs one training curriculum, engineering maintains one stack, admins log in once instead of switching. Operators were already in one portal; they now share it with everyone.</p>
         </div>
         <div class="ov-stat">
-          <p class="ov-stat-num">4 <span class="arrow">→</span> 1</p>
-          <p class="ov-stat-lbl">Vocabularies to learn</p>
-          <p class="ov-stat-sub">Operators speak <strong>Agreement</strong> and <strong>Message</strong> everywhere — no more translating between legacy terms</p>
+          <p class="ov-stat-num">5 <span class="arrow">→</span> 2</p>
+          <p class="ov-stat-lbl">Legacy vocabularies across both portals</p>
+          <p class="ov-stat-sub">Subscription, DER, SPR (admin-side consent record types) and EForm, ETR (operator-side form routes) all collapse into two words: <strong>Agreement</strong> (the contract) and <strong>Message</strong> (the data flowing under it). Admins stop translating between consent types; operators stop translating between form routes.</p>
         </div>
         <div class="ov-stat">
-          <p class="ov-stat-num">All <span class="arrow">→</span> 1</p>
-          <p class="ov-stat-lbl">Inbox spans every DEX</p>
-          <p class="ov-stat-sub">SGTradex, SGBuildex, SGHealthdex — one queue across all networks, with explicit warnings on any action that crosses a regulated boundary.</p>
+          <p class="ov-stat-num">9 <span class="arrow">→</span> 5</p>
+          <p class="ov-stat-lbl">Steps to publish a new document type</p>
+          <p class="ov-stat-sub">Cancels the DEX admin's four-actor relay tax + engineering's catalogue-bottleneck tax. Single admin, single screen, minutes — Smart Start drafts, Test-as-operator verifies, production registry receives the version the same minute.</p>
         </div>
         <div class="ov-stat">
-          <p class="ov-stat-num">6 mo</p>
-          <p class="ov-stat-lbl">To first customer launch</p>
-          <p class="ov-stat-sub">Plus a separate post-launch roadmap that depends on supporting platform work</p>
+          <p class="ov-stat-num">0 <span class="arrow">→</span> N</p>
+          <p class="ov-stat-lbl">Drafts waiting at a new org's first login</p>
+          <p class="ov-stat-sub">Cancels the Platform Admin's evaporating-due-diligence tax + the new operator's empty-inbox tax. KYC context materialises as pre-staged Drafts — the org's first impression flips from <em>nothing</em> to <em>consequential</em>.</p>
         </div>
       </div>
-    </header>
+
+      <p style="margin-top:var(--sp-7);margin-bottom:var(--sp-4);font-weight:500;color:var(--g-10);font-size:var(--fs-md)"><i class="ti ti-chevron-down" aria-hidden="true" style="margin-right:6px"></i>Hear each stakeholder describe the tax in their own words — for the leadership who want the deeper read:</p>
+
+      <div class="ov-ba-callouts">
+        <div class="ov-callout">
+          <i class="ti ti-user" aria-hidden="true"></i>
+          <p><strong>Operator</strong> · Marcus, Cosco · <em>"I work in the pitstop portal — the admin portal where consents are managed is for the SGTradex team, not me. I open Shared data, click Share data, pick the counterparty from the dropdown (the consent records the admin portal manages have already synced over), pick the element. The system routes me to a form — but if I'd picked an ETR element I'd be on a different page entirely. I fill, submit, and then refresh to see if it actually delivered. Seven steps. And there's no review step on legally-significant routine documents — they submit with the same path as anything else."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> 7 steps per send in the pitstop portal. No live delivery status — I refresh to check. No automatic review step on legally-significant routine documents. Two form-route vocabularies (EForm vs ETR) the operator has to have learned.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"The Composer already knows the contract — counterparty, data type, terms — and I just fill the data. The Message detail page has a live timeline I watch instead of refreshing. And when an element is legally-significant, the Composer adds a review step automatically — I can't accidentally skip it. Legally-transferable records keep their own workspace, so I don't have to pick which form to use either."</em></p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-user-share" aria-hidden="true"></i>
+          <p><strong>Service Provider</strong> · Pat, CrimsonLogic · <em>"I compose Messages on behalf of several data owners. The Composer doesn't show me whose data I'm sending — the audit records me as the sender, but not the org I was acting for. If I pick the wrong owner, no banner catches it."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> No visible "whose data am I sending?" surface. Audit records the user but not the acting-as org. SPs absorb compliance risk for each owner's send.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"An 'Acting as {OwnerOrg}' chip is on the Composer for every send — it's unmissable. The audit records both me and the owner I was acting for, so the compliance trail is clean per owner."</em></p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-shield-lock" aria-hidden="true"></i>
+          <p><strong>DEX admin</strong> · Sarah, SGTradex · <em>"A new document type takes weeks. I author an Excel signoff sheet, raise a service request, a developer codes it into a schema PR, tech leads copy the schema across environments, ops restarts infrastructure. When BD revises the spec quarterly, the schema drifts because re-authoring 49 rows by hand is brutal — so we just don't."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> 4-actor relay across days-to-weeks per element. Quarterly spec drift because re-authoring is too painful. Authoring starts from a blank page every time — Confluence requirements + BD spec sheet + IMDA standard get hand-translated each time.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"One screen. Smart Start reads my three sources and proposes the schema with citations — I adjudicate evidence. When BD revises the Excel, I re-upload it and the system preserves my edits — I only adjudicate the diff. Before publish, Test-as-operator lets me experience the partner-side form myself, so I catch my mistakes."</em></p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-id-badge-2" aria-hidden="true"></i>
+          <p><strong>Platform admin</strong> · Sarah, Super SGTradex Admin · <em>"I complete KYC, gather every counterparty the prospect wants to transact with, learn the terms. None of that survives into the operator's first session. They land on an empty inbox and message us asking where to start. We've done the work; nothing arrives."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> Due-diligence labour evaporates into email threads. The prospect org's peak-end first impression is <em>empty</em>. Onboarding intent gets recreated from scratch by the operator — sometimes incorrectly.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"I capture the onboarding intent in a workbook during the same KYC pass I'm already running. At the operator's first login, every Agreement I staged appears in their Drafts, pre-filled and tagged with who staged it and why. They review and send. The work I did is what they see."</em></p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-stack-2" aria-hidden="true"></i>
+          <p><strong>Pack dispatcher</strong> · Cosco shipping ops · <em>"When the same data needs to go to four logistics partners — a Vessel arrival pack with ETA, vessel particulars, crew list and cargo manifest — I create four separate Agreements with four separate counterparties, send four separate Messages, and reconcile four separate inboxes. It's an afternoon of identical work."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax I pay:</span> Multi-counterparty distributions take an afternoon of repetitive Agreement creation and per-message dispatch. Each member is independent so the per-counterparty audit trail is correct, but the gesture is N times the work.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What I get instead:</span> <em>"One wizard pass creates all four Agreements as a pack. One Send-pack action dispatches Messages to every member at once. Each member stays an independent Agreement — my audit trail is still per-counterparty — but the work is minutes, not an afternoon."</em></p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-code" aria-hidden="true"></i>
+          <p><strong>Engineering</strong> · <em>"Every new document type needs a PR. We translate the CSM's Excel into a schema, review and merge, manually copy the schema into the registry per environment, make four manual API calls via a developer tool to register the schema + use case + persona relationships + verification flow, then ops restarts the relevant infrastructure. Days pass. We're the bottleneck on what is fundamentally a content decision."</em><br><span style="display:inline-block;margin-top:6px;color:var(--red-50);font-weight:500">The tax we pay:</span> Engineering capacity bleeds into content work. PR + 4 manual API calls + multi-env schema copy + infra restart, every time. The catalogue relay is the steady-state cost of <em>not</em> investing in admin-authoring.<br><span style="display:inline-block;margin-top:6px;color:var(--green-50);font-weight:500">What we get instead:</span> <em>"Admins author the elements themselves and the published bundle ships directly into the production DataElement registry. No PR for us, no manual schema copy, no infra restart. We're off the catalogue relay; we get to spend our time on infrastructure that actually needs code."</em></p>
+        </div>
+      </div>
+
+      <p style="margin-top:var(--sp-5);font-weight:500;color:var(--g-10)"><i class="ti ti-arrow-down" aria-hidden="true" style="margin-right:6px"></i>The ten sections below are the bill we stop paying — sorted by stakeholder, with the trade-offs leadership needs to confirm at the end.</p>
+    </section>
 
     <!-- AGREEMENT SETUP — upstream of compose -->
-    <section class="ov-section ov-mental ov-section--accent-tx">
+    <section id="ov-mental-01" class="ov-section ov-mental ov-section--accent-tx">
       <p class="ov-eyebrow ov-eyebrow-numbered"><b>01</b> Upstream of compose</p>
       <h2>Two ways to set up consent</h2>
       <p class="ov-section-lede">Before any Message can flow, an Agreement has to exist between two parties. The legacy world had 3–4 consent representations to choose between; the new portal has one record with two intents.</p>
@@ -1765,7 +2094,7 @@
     </section>
 
     <!-- MESSAGE COMPOSE MENTAL MODEL SHIFT -->
-    <section class="ov-section ov-mental ov-section--accent-bx ov-section--banded">
+    <section id="ov-mental-02" class="ov-section ov-mental ov-section--accent-bx ov-section--banded">
       <p class="ov-eyebrow ov-eyebrow-numbered"><b>02</b> The shift, downstream</p>
       <h2>Two ways to think about composing a Message</h2>
       <p class="ov-section-lede">Once Agreements are set up, composing a Message under one is the dominant operator task. Step reduction is the symptom; this is the cause.</p>
@@ -1810,13 +2139,13 @@
         <div>
           <p class="ov-anchor-head">Where did the "pick" steps go?</p>
           <p>The three "pick" steps from the legacy model — pick counterparty, pick data element, pick form route — are <strong>not deleted</strong>. They are <strong>moved upstream into Agreement creation</strong>, where they belong as deliberate consent decisions made once, with the counterparty's explicit acceptance.</p>
-          <p>That is why the same operator action ("send a Cargo manifest to Maersk") takes 5 steps instead of 9 — the dimensions are decided once at Agreement creation and reused for every Message sent under it. <strong>Consent and action are decoupled.</strong></p>
+          <p>That is why the same operator action ("send a Cargo manifest to Maersk") takes 5 steps instead of 7 — the dimensions are decided once at Agreement creation and reused for every Message sent under it. <strong>Consent and action are decoupled.</strong></p>
         </div>
       </div>
     </section>
 
     <!-- BEFORE / AFTER on one task -->
-    <section class="ov-section ov-ba ov-section--accent-hx">
+    <section id="ov-ba-03" class="ov-section ov-ba ov-section--accent-hx">
       <p class="ov-eyebrow ov-eyebrow-numbered"><b>03</b> One task, two journeys</p>
       <h2>Send a Cargo manifest to Maersk</h2>
       <p class="ov-section-lede">A routine high-stakes data element — non-ETR, fillable via form, legally significant for customs declarations. Same outcome, fewer surfaces, less translation between vocabularies — because the dimensions were already decided at Agreement creation.</p>
@@ -1824,24 +2153,22 @@
       <div class="ov-ba-grid">
         <!-- Legacy -->
         <article class="ov-ba-col ov-ba-legacy">
-          <header><span class="ov-badge legacy">Today</span><span class="ov-meta">Two systems · multiple vocabularies</span></header>
+          <header><span class="ov-badge legacy">Today</span><span class="ov-meta">Pitstop portal · multiple form routes</span></header>
           <ol class="ov-steps">
-            <li>Log in to the <strong>setup portal</strong> to confirm a sharing relationship exists for this data element</li>
-            <li>Switch to the <strong>operations portal</strong> (separate sign-in)</li>
-            <li>Navigate to the <em>Shared data</em> page</li>
-            <li>Click "Share data" — the page is only available if your organisation is permitted to send data on this network</li>
-            <li>Pick the counterparty from the dropdown of organisations you can send to</li>
+            <li>Open the <em>Shared data</em> page in the pitstop portal</li>
+            <li>Click "Share data" — only available if your org is permitted to send on this network (the underlying <em>consent record</em> was created in the admin portal and the pitstop periodically syncs it across — the operator can't see or edit it here)</li>
+            <li>Pick the counterparty from the dropdown of organisations you can send to (populated from the synced consent records)</li>
             <li>Pick the data element to send (Cargo manifest v3.0)</li>
-            <li>System routes to the standard form page · single-page form with 29 fields</li>
+            <li>System routes to the standard form page · 29 fields — but if you'd picked an ETR data type, you'd be on a different page entirely, and you have to know which</li>
             <li>Fill the form <em>with no review step</em> · submit (no confirmation)</li>
-            <li>Refresh the page to verify delivery</li>
+            <li>Refresh the page to verify delivery (no live status)</li>
           </ol>
-          <p class="ov-ba-totals"><strong>9 steps</strong> · 2 systems · multiple vocabularies to translate between</p>
+          <p class="ov-ba-totals"><strong>7 steps</strong> · refresh-to-verify · pick-the-right-form vocabulary (EForm vs ETR)</p>
         </article>
 
         <!-- New -->
         <article class="ov-ba-col ov-ba-new">
-          <header><span class="ov-badge new">New portal</span><span class="ov-meta">One system · one vocabulary</span></header>
+          <header><span class="ov-badge new">New portal</span><span class="ov-meta">One vocabulary · one form, contract-anchored</span></header>
           <ol class="ov-steps">
             <li>Open the Agreement detail page for "Cargo manifest with Maersk" (or click <strong>+ New Message</strong> from the Messages list → pick the Agreement)</li>
             <li>Click <strong>+ Send Message</strong> on the Agreement</li>
@@ -1849,27 +2176,27 @@
             <li><strong>Review</strong> step (the system adds this automatically because Cargo manifest is tagged as legally significant) → <strong>Submit</strong></li>
             <li>Land on the Message detail page with a live timeline showing the document move through Queued → Sent → Delivered → Acknowledged</li>
           </ol>
-          <p class="ov-ba-totals"><strong>5 steps</strong> · 1 system · 1 vocabulary (Agreement → Message)</p>
+          <p class="ov-ba-totals"><strong>5 steps</strong> · live timeline (no refresh) · 1 vocabulary (Agreement → Message)</p>
         </article>
       </div>
 
-      <!-- Step-count infographic — turns the "9 → 5" claim into a picture
+      <!-- Step-count infographic — turns the "7 → 5" claim into a picture
            before the supporting callouts unpack the why. -->
       <div class="ov-ba-viz" aria-hidden="true">
         <div class="ov-ba-viz-rows">
           <div class="ov-ba-viz-row is-legacy">
             <span class="ov-ba-viz-label">Today</span>
             <div class="ov-ba-viz-bar"><span class="ov-ba-viz-bar-fill" style="width:100%"></span></div>
-            <span class="ov-ba-viz-count">9</span>
+            <span class="ov-ba-viz-count">7</span>
           </div>
           <div class="ov-ba-viz-row is-new">
             <span class="ov-ba-viz-label">New portal</span>
-            <div class="ov-ba-viz-bar"><span class="ov-ba-viz-bar-fill" style="width:55.6%"></span></div>
+            <div class="ov-ba-viz-bar"><span class="ov-ba-viz-bar-fill" style="width:71.4%"></span></div>
             <span class="ov-ba-viz-count">5</span>
           </div>
         </div>
         <div class="ov-ba-viz-delta">
-          <p class="ov-ba-viz-delta-num">−44%</p>
+          <p class="ov-ba-viz-delta-num">−29%</p>
           <p class="ov-ba-viz-delta-lbl">Steps</p>
         </div>
       </div>
@@ -1877,7 +2204,7 @@
       <div class="ov-ba-callouts">
         <div class="ov-callout">
           <i class="ti ti-trending-down" aria-hidden="true"></i>
-          <p><strong>~44% fewer steps</strong> on this task. Estimated from counting screens and clicks; user testing during Phase 5 will validate with measured time.</p>
+          <p><strong>~29% fewer steps</strong> on this task. Counted from operator clicks in the pitstop portal (operators don't access the admin portal — the consent records sync to pitstop in the background); user testing during Phase 5 will validate with measured time.</p>
         </div>
         <div class="ov-callout">
           <i class="ti ti-language" aria-hidden="true"></i>
@@ -1895,7 +2222,7 @@
     </section>
 
     <!-- ADMIN BEFORE / AFTER — register a new data element -->
-    <section class="ov-section ov-ba ov-section--accent-tx">
+    <section id="ov-ba-04" class="ov-section ov-ba ov-section--accent-tx">
       <p class="ov-eyebrow ov-eyebrow-numbered"><b>04</b> Same story, for the admins behind the catalogue</p>
       <h2>Register a new document type</h2>
       <p class="ov-section-lede">The catalogue of document types — Bill of Lading, Cargo manifest, Concrete cube test, and so on — is curated by DEX admins. Today, adding a new one or revising an existing one is a multi-day relay across four different teams. In the new portal, a single admin does it on a single screen.</p>
@@ -1923,10 +2250,10 @@
           <header><span class="ov-badge new">New portal</span><span class="ov-meta">One admin · one screen · minutes</span></header>
           <ol class="ov-steps">
             <li>The DEX admin opens the Data elements catalogue and clicks <strong>+ New element</strong></li>
-            <li>Picks how to start — describe in plain English, drop a sample CSV, upload the legacy PDF or Word form, or fork an existing element</li>
-            <li>Refines the auto-drafted schema; the form preview shows what partners will fill in, updating as she edits</li>
-            <li>Marks the document routine or legally significant; optionally adds cross-field business rules</li>
-            <li>Reviews everything in one place and publishes — the new version is available to new agreements immediately</li>
+            <li>Picks an on-ramp — drop the BD spec sheet (the same <em>Signoff_MasterData_DE</em> Excel already used at sign-off), upload the legacy PDF or Word form, paste a sample record, describe it in plain English, or fork an existing element</li>
+            <li><strong>Smart Start proposes field <em>meaning</em>, not just structure</strong> — it reads the requirements page and authoritative standards (BCA, IMDA, MOH publications) and drafts names, types, descriptions, and cross-field rules, each suggestion citing the verbatim source text it came from</li>
+            <li>Sarah refines the draft; <strong>Test-as-operator</strong> opens a full operator-side Composer with every production validation engine wired live — shape errors at first keystroke, conditional visibility re-rendering, cross-field rules blocking submit — so the partner-side experience is verified before publish</li>
+            <li>Marks routine or legally significant, reviews everything in one place, and publishes — the version ships as a real DataElement in the production registry, picker-ready the same minute for every new Agreement</li>
           </ol>
           <p class="ov-ba-totals"><strong>5 steps</strong> · 1 admin · 1 screen · minutes</p>
         </article>
@@ -1962,12 +2289,20 @@
           <p><strong>Days to minutes.</strong> Engineering teams come off the catalogue relay. Their time goes to the things that actually need code.</p>
         </div>
         <div class="ov-callout">
-          <i class="ti ti-shield-check" aria-hidden="true"></i>
-          <p><strong>Partners on existing agreements aren't disturbed.</strong> Publishing a new version of a document creates a new record — every agreement already running keeps the version it originally consented to. New agreements pick the latest from the moment of publish. No silent rewrite under participants' feet.</p>
+          <i class="ti ti-sparkles" aria-hidden="true"></i>
+          <p><em>"Every quarter I open three tabs — the Confluence requirements page, the BD spec sheet, the IMDA standard — and hand-translate them into a schema, from a blank page every time."</em> — Sarah, DEX admin. Smart Start reads the same three sources and proposes the schema with the verbatim text it came from cited per suggestion. She adjudicates real evidence instead of authoring from a blank page.</p>
         </div>
         <div class="ov-callout">
-          <i class="ti ti-eye" aria-hidden="true"></i>
-          <p><strong>What partners will see is visible while authoring.</strong> The admin watches the partner-facing form preview update as she edits the schema. No surprise at the other end; no round-trip through staging to verify.</p>
+          <i class="ti ti-target-arrow" aria-hidden="true"></i>
+          <p><em>"My authoring mistakes don't surface until a partner submits and fails — sometimes at 11pm. The audit shows what got submitted, not what I reviewed."</em> — Sarah. Test-as-operator lets her live through the partner-side form with every validation engine wired live (shape errors as she types, conditional visibility, cross-field rules at submit). The first person to catch a mistake is the admin, not a partner.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-table" aria-hidden="true"></i>
+          <p><em>"When BD revises the signoff Excel, I either spend a day re-authoring 49 rows by hand or — honestly — I just don't. So the schema falls behind for quarters."</em> — Sarah. Re-uploading the revised sheet preserves her hand edits; she adjudicates only the structural diff. The silent-drift failure mode simply closes.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-shield-check" aria-hidden="true"></i>
+          <p><strong>Partners on existing agreements aren't disturbed.</strong> Publishing a new version of a document creates a new record — every agreement already running keeps the version it originally consented to. New agreements pick the latest from the moment of publish. No silent rewrite under participants' feet.</p>
         </div>
       </div>
     </section>
@@ -1990,7 +2325,7 @@
     </aside>
 
     <!-- CONCEPT MAP -->
-    <section class="ov-section ov-concept ov-section--accent-blu ov-section--banded">
+    <section id="ov-concept" class="ov-section ov-concept ov-section--accent-blu ov-section--banded">
       <p class="ov-eyebrow ov-eyebrow-numbered"><b>05</b> The new mental model</p>
       <h2>Three sections answer three questions</h2>
       <p class="ov-section-lede">The portal's outer sidebar is grouped around what an operator is trying to do — not around legacy module boundaries.</p>
@@ -2025,10 +2360,10 @@
     </section>
 
     <!-- KEY DECISIONS — stakeholder framing -->
-    <section class="ov-section ov-decisions ov-section--accent-tx">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>06</b> Nine decisions that shape the experience</p>
-      <h2>Why operators (and admins) will find this simpler</h2>
-      <p class="ov-section-lede">The decisions below were made deliberately during design. Each has a clear business consequence for operators and the organisations using the network.</p>
+    <section id="ov-decisions" class="ov-section ov-decisions ov-section--accent-tx">
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>06</b> Ten decisions that shape the experience</p>
+      <h2>Each decision cancels a specific tax from Section 00</h2>
+      <p class="ov-section-lede">The decisions below are not feature inventory — each one is the deliberate answer to a stakeholder tax we identified above. Read them as <em>"because operators pay X today, we made decision Y"</em>. The "Customer outcome" line at the bottom of every card names which side of the tax it cancels.</p>
 
       <div class="ov-decisions-grid">
         <div class="ov-decision">
@@ -2085,16 +2420,23 @@
         </div>
         <div class="ov-decision ov-decision--wide">
           <p class="ov-deci-num">09</p>
-          <h4>Admins author elements themselves, no engineering relay</h4>
-          <p>Today, adding a new document type — or revising an existing one — requires a customer-success manager to draft an Excel, a developer to translate it into code, tech leads to manually copy schemas across environments, and the operations team to restart infrastructure. Four actor types coordinate; days pass; engineering is the bottleneck on what is fundamentally a content decision.</p>
-          <p>In the new portal, a DEX admin opens the Data elements catalogue and authors the new document directly. She picks how to start — describe in plain English, drop a sample CSV, upload the legacy PDF or Word form, or fork an existing element — refines the auto-drafted schema with the partner-facing form preview visible beside her, marks the document routine or legally significant, optionally adds cross-field business rules, reviews everything in one place, and publishes. Single screen; single admin; minutes. Snapshot semantics protect every existing agreement automatically: bumping a version creates a new record rather than rewriting the old one, so partners already in flight aren't disturbed.</p>
-          <p class="ov-deci-src">Customer outcome — new document types live the same day they're decided; engineering teams come off the catalogue relay; partners on existing agreements are never disturbed by version bumps</p>
+          <h4>Admins author elements themselves, no engineering relay — and Smart Start does the translation</h4>
+          <p><em>"When I want to add a new document type today, four other people have to coordinate — customer success drafts an Excel, a developer translates it into code, tech leads copy schemas across environments, ops restarts infrastructure. Days pass. I'm the bottleneck on what is fundamentally a content decision."</em> — Sarah, DEX admin.</p>
+          <p>In the new portal, she opens the Data elements catalogue and authors directly. She drops the BD spec sheet (the same <em>Signoff_MasterData_DE</em> Excel she already uses at sign-off), uploads a PDF or Word form, pastes a sample, describes the document in plain English, or forks an existing element. <strong>Smart Start fills in field meaning, not just structure</strong> — it reads the requirements page and authoritative standards (BCA, IMDA, MOH publications) and proposes names, types, descriptions, and cross-field rules, with the verbatim source visible per suggestion so she adjudicates real evidence rather than guessing. <strong>Test-as-operator</strong> opens a full Composer with the three production validation engines wired live so she experiences the partner-side form before publish. The published version ships as a real DataElement in the production registry — picker-ready the same minute — and existing Agreements keep the version they originally consented to. Quarterly spec updates no longer drift either: she re-uploads the revised spec sheet and only adjudicates the diff.</p>
+          <p class="ov-deci-src">Customer outcome — new document types live the same day they're decided; engineering teams come off the catalogue relay; admins adjudicate evidence instead of authoring from scratch; partners on existing agreements are never disturbed by version bumps</p>
+        </div>
+        <div class="ov-decision ov-decision--wide">
+          <p class="ov-deci-num">10</p>
+          <h4>Brand-new orgs land on pre-staged work, not an empty inbox</h4>
+          <p><em>"I do KYC, I provision the org, I invite the org admin — and then everything I learned about who they want to transact with and how lives in my email threads. None of it reaches the operator."</em> — Platform Admin. <em>"My first login is an empty inbox. I message support asking where to start."</em> — new operator.</p>
+          <p>In the new portal, the Platform Admin captures that context once in an onboarding workbook — N Agreements with M counterparties, with terms — during the same due-diligence pass she's doing anyway. At first login the org admin opens Drafts and finds the wizard already filled out, each draft tagged with who staged it and why. He reviews, adjusts if needed, and sends — no parallel email thread, no recreate-from-scratch. Forward-references work too: if the Platform Admin stages an Agreement with a counterparty whose own onboarding hasn't completed yet, the draft holds until the counterparty appears, then activates.</p>
+          <p class="ov-deci-src">Customer outcome — peak-end first impression for prospect orgs; the Platform Admin's due-diligence labour converts from invisible to consequential; the activation gap closes</p>
         </div>
       </div>
     </section>
 
     <!-- ROADMAP -->
-    <section class="ov-section ov-roadmap ov-section--accent-grn ov-section--banded">
+    <section id="ov-roadmap" class="ov-section ov-roadmap ov-section--accent-grn ov-section--banded">
       <p class="ov-eyebrow ov-eyebrow-numbered"><b>07</b> What launches first vs what's deferred</p>
       <h2>Honest scoping</h2>
       <p class="ov-section-lede">Several capabilities depend on supporting work that the platform team has not yet built. We design them now, document the plan, and ship them when the foundations are ready. Here is what each phase delivers.</p>
@@ -2142,8 +2484,8 @@
     </section>
 
     <!-- MIGRATION REASSURANCE -->
-    <section class="ov-section ov-migration ov-section--accent-ylw">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>08</b> What happens on rollout day</p>
+    <section id="ov-migration" class="ov-section ov-migration ov-section--accent-ylw">
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>08</b> Rollout day, for users already on the network</p>
       <h2>Existing operators get a soft landing</h2>
       <p class="ov-section-lede">Migration is treated as a design problem, not an afterthought. Three things happen automatically so legacy users land productive — no parallel run, no manual cutover, no lost work.</p>
 
@@ -2163,9 +2505,35 @@
       </div>
     </section>
 
+    <!-- BRAND-NEW ORG ONBOARDING -->
+    <section id="ov-new-orgs" class="ov-section ov-migration ov-section--accent-blu ov-section--banded">
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>09</b> Day one, for orgs joining the network</p>
+      <h2>Prospect orgs land on pre-staged work, not an empty inbox</h2>
+      <p class="ov-section-lede"><em>"I sit through KYC and gather every counterparty the prospect wants to transact with — and then none of it survives into their first session."</em> — Platform Admin. <em>"I log in for the first time and my inbox is empty. I message support asking where to start."</em> — new operator. The cure is not to do less due diligence; it is to make the due diligence consequential.</p>
+
+      <div class="ov-ba-callouts">
+        <div class="ov-callout">
+          <i class="ti ti-table" aria-hidden="true"></i>
+          <p><em>"I capture all this in email threads and a private spreadsheet anyway — the question is whether what I capture is reusable."</em> — Platform Admin. The onboarding workbook structures the same KYC pass into an audit-traceable artefact, alongside the org and pitstop records the Platform Admin was going to create regardless. Same labour, durable output.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-folders" aria-hidden="true"></i>
+          <p><em>"My first login is an empty inbox. I read back through the email chain and recreate the intent by hand."</em> — new operator. At first login Drafts is already populated — the wizard pre-filled for every staged Agreement, tagged with who staged it and why. Review, adjust, send. The peak-end first impression flips from <em>empty</em> to <em>consequential</em>.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-link" aria-hidden="true"></i>
+          <p><em>"If I'm onboarding two orgs that need to transact with each other, neither of us can stage the Agreement until the other side's KYC clears. We ping each other on email."</em> — Platform Admin. Forward-references close this: the draft holds until the counterparty appears, then activates on its own. No orphaned drafts, no email ping-pong.</p>
+        </div>
+        <div class="ov-callout">
+          <i class="ti ti-shield-check" aria-hidden="true"></i>
+          <p><em>"The drafts arrive as drafts, not as signed Agreements — I still review and send each one myself. The workbook gives me a head-start, not a fait accompli."</em> — new operator. Compliance does not pay an autonomy tax for the activation win.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- WHAT WE'D ASK FOR -->
-    <section class="ov-section ov-asks ov-section--accent-red ov-section--banded">
-      <p class="ov-eyebrow ov-eyebrow-numbered"><b>09</b> What we need from leadership</p>
+    <section id="ov-asks" class="ov-section ov-asks ov-section--accent-red ov-section--banded">
+      <p class="ov-eyebrow ov-eyebrow-numbered"><b>10</b> What we need from leadership</p>
       <h2>Three calls before the build begins</h2>
       <div class="ov-asks-grid">
         <div class="ov-ask">
@@ -2209,12 +2577,22 @@
       </div>
     </section>
 
+    <!-- Floating shortcut hint: press Shift+P to open the Prezi presenter view.
+         Visible only on the overview screen, dim/unobtrusive, auto-hides on mouse idle. -->
+    <a id="presenter-shortcut-hint" href="./present.html"
+       title="Open the Prezi-style presenter view (or press Shift + P)"
+       aria-label="Open presenter view (keyboard shortcut: Shift + P)">
+      <i class="ti ti-presentation" aria-hidden="true"></i>
+      <span class="psh-label">Present</span>
+      <span class="psh-keys"><kbd>⇧</kbd><kbd>P</kbd></span>
+    </a>
+
     <!-- FOOTER LINKS -->
     <footer class="ov-footer">
       <p class="ov-footer-head">Design &amp; decisions reference</p>
       <p class="ov-footer-intro">This brief is the strategic story for leadership. Every claim in it is backed by a longer design record — linked below for anyone (product reviewers, compliance officers, delivery leads) who wants to verify the trade-offs, see what was rejected, or onboard new team members. Stakeholders typically don't need to open these; they're available for due diligence.</p>
       <div class="ov-footer-links">
-        <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('adrs')"><i class="ti ti-stack"></i><span><strong>Decision records</strong><span class="meta">39 structural decisions · each with options considered + trade-offs</span></span></a>
+        <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('adrs')"><i class="ti ti-stack"></i><span><strong>Decision records</strong><span class="meta">48 structural decisions · each with options considered + trade-offs</span></span></a>
         <a class="ov-footer-link" href="#" onclick="event.preventDefault(); goto('risks')"><i class="ti ti-shield-exclamation"></i><span><strong>Risk register</strong><span class="meta">19 design risks · with defined tests + planned mitigations</span></span></a>
         <a class="ov-footer-link" href="#" onclick="event.preventDefault(); toast('Opens portal_grilling_summary.md')"><i class="ti ti-file-text"></i><span><strong>Design grilling summary</strong><span class="meta">A walkthrough of every key design question that was raised, debated, and resolved</span></span></a>
         <a class="ov-footer-link" href="#" onclick="event.preventDefault(); toast('Opens platform_rewrite_breakdown.md')"><i class="ti ti-list-numbers"></i><span><strong>Phase-by-phase delivery plan</strong><span class="meta">Delivery breakdown of what launches when and in what order</span></span></a>
@@ -2231,17 +2609,17 @@
     <header class="ov-hero" style="padding-bottom:18px">
       <span class="ov-eyebrow">Reference</span>
       <h1 id="adrs-h1">Architecture Decision Records</h1>
-      <p class="ov-lede">39 structural decisions banked across the design grilling rounds. Each captures the considered options, the chosen path, the consequences, and any risk it introduces. Click a row to read the full ADR in <code>design-concepts/docs/adr/</code>.</p>
+      <p class="ov-lede">48 structural decisions banked across the design grilling rounds. Each captures the considered options, the chosen path, the consequences, and any risk it introduces. Click a row to read the full ADR in <code>design-concepts/docs/adr/</code>.</p>
     </header>
 
     <div class="ref-toolbar">
       <div class="ref-filter-chips" role="toolbar" aria-label="Filter ADRs">
-        <span class="chip solid">All · 39</span>
+        <span class="chip solid">All · 48</span>
         <span class="chip muted">Foundations · 7</span>
         <span class="chip muted">Agreement model · 10</span>
-        <span class="chip muted">UX · 13</span>
+        <span class="chip muted">UX · 14</span>
         <span class="chip muted">Messages · 4</span>
-        <span class="chip muted">Composer + Catalogue · 5</span>
+        <span class="chip muted">Composer + Catalogue · 13</span>
       </div>
     </div>
 
@@ -2296,6 +2674,15 @@
           <tr onclick="openAdrPanel('0037', 'Auto-demo runner decoupled from markup via demo anchors', 'ux')"><td class="ref-num">0037</td><td><strong>Auto-demo runner decoupled from markup via demo anchors</strong><p class="ref-meta">Supplements 0034 — <code>data-demo</code> for unique anchors · <code>data-{entity}-id</code> for repeated rows · JSDOM smoke iterates every registered flow · <code>nth-child</code> banned · headless mode skips cursor/callout/visibility checks</p></td><td>Demo runner · All demo flows · Markup contract</td><td><span class="ref-tag ux">UX</span></td><td><span class="ref-status active">Active</span></td></tr>
           <tr onclick="openAdrPanel('0038', 'Data Element governance — three independent layers', 'cmp')"><td class="ref-num">0038</td><td><strong>Data Element governance — three independent layers</strong><p class="ref-meta">Schema (JSON Schema · AJV+RJSF · per-version) · Validation rules (govaluate expressions · submission time) · Routing rules (orchestrator JSONB · cross-version). Names what the dex-monorepo backend already implements; surfaces it as portal IA.</p></td><td>Data elements registration · Composer submission · Orchestrator</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
           <tr onclick="openAdrPanel('0039', 'Data Element registration — admin-authored single-page flow', 'cmp')"><td class="ref-num">0039</td><td><strong>Data Element registration — admin-authored single-page flow</strong><p class="ref-meta">14 sub-decisions consolidating the registration UX · 2 CTAs (new element / new version) · Smart Start with 4 on-ramps (sample / form / NL / fork) · 4-tab canvas · DEX-admin-owned, no engineering relay · supersedes the 9-step legacy process documented in <em>update-process-190526-231734.pdf</em></p></td><td>Data elements catalogue · Registration canvas · 5 new modals</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0040', 'Smart Start assist — grounded cross-tab suggestion engine', 'cmp')"><td class="ref-num">0040</td><td><strong>Smart Start assist — grounded cross-tab suggestion engine</strong><p class="ref-meta">Reads Confluence requirements page + BD spec sheet + authoritative standards (BCA, IMDA, MOH) · proposes field meaning grounded in verbatim citations · 13-kind closed suggestion vocabulary · structural-aware extraction with refit-suggestion self-audit</p></td><td>Registration canvas · Smart Start drawer</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0041', 'Smart Start refit — mid-edit structural restatement engine', 'cmp')"><td class="ref-num">0041</td><td><strong>Smart Start refit — mid-edit structural restatement engine</strong><p class="ref-meta">Preserves Sarah's hand edits when re-running structure on spec updates · adjudicate-the-diff workflow · radio-cluster / table-region / repeated-pattern repair without rebuild</p></td><td>Registration canvas · Refit drawer</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0042', 'Element spec-sheet on-ramp — deterministic parser + audit-log provenance', 'cmp')"><td class="ref-num">0042</td><td><strong>Element spec-sheet on-ramp — deterministic parser + audit-log provenance</strong><p class="ref-meta">Closes the <em>Signoff_MasterData_DE_*.xlsx</em> staleness loop · deterministic xlsx parser · audit-log-only provenance (no x-* residue on published schema) · refit three-way merge preserves edits</p></td><td>Registration canvas · Smart Start on-ramps</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0043', 'Element persistence + schema-driven Composer — workspace v6', 'cmp')"><td class="ref-num">0043</td><td><strong>Element persistence + schema-driven Composer — workspace v6</strong><p class="ref-meta">Closes the registration → Agreement → Message chain end-to-end · workspace.dataElements collection · Agreement snapshots (element_id, version) · Composer renders from elementSchema, not hardcoded HTML variants</p></td><td>Workspace storage · Composer · Agreement wizard</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0044', 'LLM-overlay shared core — multi-source verbatim defense', 'cmp')"><td class="ref-num">0044</td><td><strong>LLM-overlay shared core — multi-source verbatim defense + VLM-vs-LLM conflict semantics</strong><p class="ref-meta">Shared overlay logic across spec-sheet and form/PDF on-ramps · 13-kind closed vocabulary · verbatim normaliser · provenance stamper · prevents on-ramp drift on hallucination defense and suggestion-envelope shape</p></td><td>Smart Start on-ramps · Structural Review drawer</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0045', 'Nested-structure handoff + array row-mode depth cap lift', 'cmp')"><td class="ref-num">0045</td><td><strong>Nested-structure handoff + array row-mode depth cap lift</strong><p class="ref-meta">On-ramp handoff carries <code>children</code> through to canvas · fresh IDs on fork · array row-mode (Fixed labels / Chosen by operator) available at any depth</p></td><td>On-ramp handoff · Fork flow · Array expander</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0046', 'Data Element bundle export to admin-corev2 DataElement registry', 'cmp')"><td class="ref-num">0046</td><td><strong>Data Element bundle export to admin-corev2 registry</strong><p class="ref-meta">Published element ships as a real DataElement in the production registry (admin-corev2 Postgres) · RJSF cutover — elementSchema + uiSchema + uiRules + rules + authoringMetadata · DRAFT → ACTIVE lifecycle</p></td><td>Catalogue · Production registry · Bundle export modal</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0047', 'Layered validation surfaces in Test-as-operator (AJV + RJSF visibility + govaluate)', 'cmp')"><td class="ref-num">0047</td><td><strong>Layered validation surfaces in Test-as-operator</strong><p class="ref-meta">All three production validation engines visible in the Composer preview · AJV shape errors at first keystroke · RJSF conditional visibility re-rendering · govaluate cross-field rules blocking submit · layered-help discipline (named layers, strict boundaries) per angle-gauge-ui precedent</p></td><td>Registration Review tab · Test-as-operator modal</td><td><span class="ref-tag cmp">Catalogue</span></td><td><span class="ref-status active">Active</span></td></tr>
+          <tr onclick="openAdrPanel('0048', 'Bulk org onboarding via Platform-Admin workbook with Drafts-view materialisation', 'ux')"><td class="ref-num">0048</td><td><strong>Bulk org onboarding via Platform-Admin workbook + Drafts-view materialisation</strong><p class="ref-meta">Platform Admin captures KYC + due-diligence intent in one workbook (N Agreements × M counterparties + terms) · materialises as pre-staged drafts in the operator's Drafts view at first login · forward-references for cross-onboarding counterparties · operator stays in control of consent (drafts not fait-accompli)</p></td><td>Platform Admin workbook · Drafts view · First-login panel</td><td><span class="ref-tag ux">UX</span></td><td><span class="ref-status active">Active</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -2611,7 +2998,7 @@
     <h3>Who's the counterparty?</h3>
     <div class="selected-cp"><div class="cp-avatar" style="background:var(--bx-95);color:var(--bx-20)">AC</div><div class="cp-body"><div class="cp-name">Acme Construction Pte Ltd</div><div style="display:flex;gap:6px;margin-top:2px;align-items:center"><span class="dex-chip bx" style="font-size:10px;padding:2px 6px"><span class="dex-dot"></span>SGBuildex</span><span style="font-size:11px;color:var(--g-50)">Contractor · UEN 201111223J</span></div></div><i class="ti ti-check" style="font-size:16px;color:var(--green-50)"></i></div>
     <!-- Issue 0007 — Acme is the canonical cross-DEX example (primaryDexId='bx'). Warning copy + primary contact line below. -->
-    <div class="warn-panel"><div class="row"><i class="ti ti-alert-triangle"></i><div><p class="ttl">This Agreement crosses a DEX boundary</p><p class="desc">Acme Construction's primary DEX is <strong>SGBuildex</strong>. You're creating this Agreement from <strong>SGTradex</strong>. SGBuildex residency rules apply to outgoing data.</p><p class="desc" style="margin-top:6px"><strong style="font-weight:500">Primary contact at Acme:</strong> Khufra <span style="color:var(--g-50)">(khufra@acme-co.com)</span></p><p class="audit">Your acknowledgement of this warning will be audit-logged.</p></div></div></div>
+    <div class="warn-panel"><div class="row"><i class="ti ti-alert-triangle"></i><div><p class="ttl">This Agreement crosses a DEX boundary</p><p class="desc">Acme Construction's primary DEX is <strong>SGBuildex</strong>. You're creating this Agreement from <strong>SGTradex</strong>. SGBuildex residency rules apply to outgoing data.</p><p class="desc" style="margin-top:6px"><strong style="font-weight:500">Primary contact at Acme:</strong> Boon Keng <span style="color:var(--g-50)">(boonkeng@acme-co.com)</span></p><p class="audit">Your acknowledgement of this warning will be audit-logged.</p></div></div></div>
     <div class="warn-actions"><button class="btn-cancel" onclick="toast('Cancelled · returning to counterparty picker','warn'); goto('cp-picker')">Cancel</button><button class="btn-deliberate" onclick="acknowledgeWarn()">Continue anyway</button></div>
   </div>
 </section>
@@ -4551,7 +4938,7 @@
 <div class="popover" id="notif-popover" hidden>
   <div class="popover-head"><h5>Notifications</h5><a onclick="markAllRead()">Mark all read</a></div>
   <div class="popover-list">
-    <div class="popover-item" onclick="closeNotif(); goto('detail')"><span class="pn-dot unread"></span><div class="pn-body"><p><strong>Granger (Maersk)</strong> accepted your Agreement</p><p class="pn-time">21 Mar · 09:12 SGT</p></div></div>
+    <div class="popover-item" onclick="closeNotif(); goto('detail')"><span class="pn-dot unread"></span><div class="pn-body"><p><strong>Lars (Maersk)</strong> accepted your Agreement</p><p class="pn-time">21 Mar · 09:12 SGT</p></div></div>
     <div class="popover-item" onclick="closeNotif(); openExtend('Cosco Shipping')"><span class="pn-dot unread"></span><div class="pn-body"><p>Agreement with <strong>Cosco</strong> expires in 9 days</p><p class="pn-time">Today · 08:00 SGT</p></div></div>
     <div class="popover-item" onclick="closeNotif(); goto('inbox-tx')"><span class="pn-dot read"></span><div class="pn-body"><p><strong>3 contributor enrolments</strong> awaiting your approval</p><p class="pn-time">Yesterday · 14:23 SGT</p></div></div>
   </div>

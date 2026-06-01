@@ -693,11 +693,11 @@ function buildWorkspaceFromScene(scene = {}) {
    workspace bootstrap pulls into ONE snapshot. The end state (post Phase 7)
    has no scene runtime; this list survives only as the recipe for what to
    load into the workspace at first boot. Marcus's TX seat is the default
-   active surface; Alice's BX seat and David's HX seat add the cross-DEX
+   active surface; Bea's BX seat and David's HX seat add the cross-DEX
    data so a single workspace covers all three rails out of the box. */
 const UNIFIED_SEED_SCENES = [
   { user: 'marcus', org: 'cosco',        dex: 'tx', scenario: 'C', screen: 'agreements' },
-  { user: 'alice',  org: 'cosco',        dex: 'bx', scenario: 'C', screen: 'agreements' },
+  { user: 'bea',  org: 'cosco',        dex: 'bx', scenario: 'C', screen: 'agreements' },
   { user: 'david',  org: 'cosco',        dex: 'hx', scenario: 'C', screen: 'agreements' },
   // SP-operator + platform personas — included so that switching persona in
   // the chrome lands on populated screens out of the box.

@@ -6,7 +6,7 @@ const WORKSPACE_STORAGE_KEY = 'dex-portal-workspace';
    Phase-2 footnote at register-element.js:9518. Existing v5 snapshots
    archive-and-rebuild on first read.
 
-   Schema 5 (2026-05-21): adds Diane (Beatrix) as SGBuildex platform admin +
+   Schema 5 (2026-05-21): adds Diane (Diane) as SGBuildex platform admin +
    PLATFORM_ADMIN_BY_DEX-driven DEX-aware platform-admin resolution. Existing
    v4 snapshots froze users + affiliations without Diane; archive-and-rebuild
    so the profile menu, role-row copy, and rail resolution all pick her up.
