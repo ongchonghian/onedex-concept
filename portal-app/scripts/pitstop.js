@@ -898,7 +898,7 @@ function renderScopeCaptureStep() {
     const isSuggested = !!(suggestion && suggestion.pitstopId === p.id);
     const checked = isExistingChoice || isSuggested;
     const suggestedMark = isSuggested
-      ? `<div class="sc-suggested-pill" style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 8px;background:var(--theme-95);color:var(--theme-20);border-radius:10px;font-size:11px;font-weight:500"><i class="ti ti-sparkles" style="font-size:11px"></i>Suggested — ${suggestion.reason}</div>`
+      ? `<div class="sc-suggested-pill" style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 8px;background:var(--theme-95);color:var(--theme-20);border-radius:10px;font-size:14.5px;font-weight:500"><i class="ti ti-sparkles" style="font-size:14.5px"></i>Suggested — ${suggestion.reason}</div>`
       : '';
     return `<label class="sc-checkbox-row" data-demo="wizard.scope-option" data-pitstop-id="${p.id}" data-suggested="${isSuggested ? '1' : '0'}">
       <input type="checkbox" value="${p.id}" ${checked ? 'checked' : ''} onchange="onScopeCaptureChange()" aria-label="Use ${p.name} for ${displayName}${isSuggested ? ' — suggested based on your past choices' : ''}">
@@ -1545,7 +1545,7 @@ function renderSettingsPitstops() {
     ? `<p style="color:var(--g-50);font-style:italic;padding:14px 0">No active Pitstops in SGTradex. Provision one to start operating here.</p>`
     : active.map(p => renderRow(p, false)).join('');
   retiredList.innerHTML = retired.length === 0
-    ? `<p style="color:var(--g-50);font-style:italic;padding:8px 0;font-size:12px">No retired Pitstops. Soft-retired Pitstops appear here for audit and historical reference per ADR 0028.</p>`
+    ? `<p style="color:var(--g-50);font-style:italic;padding:8px 0;font-size:16px">No retired Pitstops. Soft-retired Pitstops appear here for audit and historical reference per ADR 0028.</p>`
     : retired.map(p => renderRow(p, true)).join('');
 
   if (activePitstopConfigId) {

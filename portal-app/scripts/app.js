@@ -475,7 +475,7 @@ SCREEN_RENDERERS['detail'] = function renderDetailFromSeed(seed) {
         const contact = USERS[cp.primaryUserId];
         const line = document.createElement('p');
         line.className = 'primary-contact-line';
-        line.style.cssText = 'font-size:11px;color:var(--g-50);margin-top:6px';
+        line.style.cssText = 'font-size:12.5px;color:var(--g-50);margin-top:6px';
         line.textContent = `Primary contact: ${contact.name}`;
         partyCards[1].appendChild(line);
       }
@@ -490,7 +490,7 @@ SCREEN_RENDERERS['detail'] = function renderDetailFromSeed(seed) {
     if (coveredCard) {
       const nameP = coveredCard.querySelector('p[style*="font-weight:500"]');
       if (nameP) nameP.innerHTML = `${el.name} <span style="font-weight:400;color:var(--g-50)">· ${el.version || ''}</span>`;
-      const snapshotP = coveredCard.querySelector('p[style*="font-size:11px"]');
+      const snapshotP = coveredCard.querySelector('p[style*="font-size:12.5px"]');
       if (snapshotP) snapshotP.textContent = el.snapshotText || '';
       const complexity = coveredCard.querySelector('.complexity-pill');
       if (complexity && el.complexity) {
@@ -1710,7 +1710,7 @@ function renderSchemaDrivenPayloadSection(message) {
   // Surface rule eval if any rules ran at submit time.
   if (Array.isArray(payload.rulesEval) && payload.rulesEval.length) {
     const note = document.createElement('p');
-    note.style.cssText = 'font-size:11px;color:var(--g-50);margin-top:6px';
+    note.style.cssText = 'font-size:12.5px;color:var(--g-50);margin-top:6px';
     const pass = payload.rulesEval.filter(r => r.result === 'pass').length;
     note.textContent = pass + ' of ' + payload.rulesEval.length + ' rules passed at submit time';
     container.parentNode.insertBefore(note, container.nextSibling);
@@ -2857,7 +2857,7 @@ function hydrateSettingsOtherDexMembershipsChrome() {
   otherDexPitstops.forEach((p) => { (byDex[p.dexId] = byDex[p.dexId] || []).push(p); });
   const heading = '<h3>Other DEX memberships</h3>';
   if (otherDexPitstops.length === 0) {
-    host.innerHTML = heading + '<p class="s-empty" style="font-size:12px;color:var(--g-50)">Your org isn\'t a member of any DEX outside its home DEX.</p>';
+    host.innerHTML = heading + '<p class="s-empty" style="font-size:14px;color:var(--g-50)">Your org isn\'t a member of any DEX outside its home DEX.</p>';
     return;
   }
   const rows = otherDexPitstops.map((p) => {
@@ -2955,7 +2955,7 @@ function hydrateSettingsDexRolesChrome() {
   }).filter(Boolean);
   const heading = '<h3>Roles by DEX</h3>';
   if (rows.length === 0) {
-    host.innerHTML = heading + '<p class="s-empty" style="font-size:12px;color:var(--g-50)">No active DEX roles for this user.</p>';
+    host.innerHTML = heading + '<p class="s-empty" style="font-size:14px;color:var(--g-50)">No active DEX roles for this user.</p>';
     return;
   }
   host.innerHTML = heading + rows.join('');
@@ -2986,7 +2986,7 @@ function hydrateDexSwitcherChrome() {
     const isActive = d === activeDex;
     const cls = `switcher-item ${escAttr(d)}${isActive ? ' active' : ''}`;
     const trailing = isActive
-      ? `<i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:14px"></i>`
+      ? `<i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:16px"></i>`
       : (waitingCount > 0 ? `<span style="margin-left:auto;width:6px;height:6px;background:var(--red-50);border-radius:50%"></span>` : '');
     const roleClause = role ? `${escAttr(role)} · ${waitingCount} item${waitingCount === 1 ? '' : 's'} waiting` : `${waitingCount} item${waitingCount === 1 ? '' : 's'} waiting`;
     return `<div class="${cls}" role="menuitem" onclick="switchDex('${escAttr(d)}')"><span class="ws-tile">${escAttr(tile(d))}</span><div><div class="label">${escAttr(dexLabel)}</div><div class="role">${roleClause}</div></div>${trailing}</div>`;
@@ -3354,8 +3354,8 @@ SCREEN_RENDERERS['participants'] = function renderParticipantsFromSeed(seed) {
       return `<span class="uc-pill"${tint}>${uc}</span>`;
     }).join('');
     const avatarStyle = primaryDexCode === 'bx'
-      ? 'width:44px;height:44px;font-size:13px;background:var(--bx-95);color:var(--bx-20)'
-      : 'width:44px;height:44px;font-size:13px';
+      ? 'width:44px;height:44px;font-size:15px;background:var(--bx-95);color:var(--bx-20)'
+      : 'width:44px;height:44px;font-size:15px';
     let statusBlock;
     if (p.status && p.status.kind === 'cross-dex') {
       // Show a DEX chip instead of a status pill for cross-DEX participants.
@@ -3385,7 +3385,7 @@ SCREEN_RENDERERS['participants'] = function renderParticipantsFromSeed(seed) {
     // informational.
     let primaryContactLine = '';
     if (p.primaryUserId && typeof USERS !== 'undefined' && USERS[p.primaryUserId]) {
-      primaryContactLine = `<div class="pc-primary-contact" style="font-size:11px;color:var(--g-50);margin-top:4px">Primary contact: ${USERS[p.primaryUserId].name}</div>`;
+      primaryContactLine = `<div class="pc-primary-contact" style="font-size:12.5px;color:var(--g-50);margin-top:4px">Primary contact: ${USERS[p.primaryUserId].name}</div>`;
     }
 
     return `<div class="participant-card" data-participant-status="${filterToken}" onclick="goto('detail')">` +
@@ -3445,7 +3445,7 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
     if (!t) return '';
     if (typeof t === 'string') return t;
     // type with tooltip (e.g., Service-Provider · Appointed via CrimsonLogic)
-    return `<span style="display:inline-flex;align-items:center;gap:4px">${t.label}<i class="ti ti-info-circle" style="font-size:12px;color:var(--g-50)" title="${t.tooltip || ''}"></i></span>`;
+    return `<span style="display:inline-flex;align-items:center;gap:4px">${t.label}<i class="ti ti-info-circle" style="font-size:14px;color:var(--g-50)" title="${t.tooltip || ''}"></i></span>`;
   };
 
   const statusCell = (s) => {
@@ -3455,7 +3455,7 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
 
   const untilCell = (until, note) => {
     if (!until) return '';
-    const tag = note ? ` <span style="color:var(--yellow-50);font-size:11px">· ${note}</span>` : '';
+    const tag = note ? ` <span style="color:var(--yellow-50);font-size:12.5px">· ${note}</span>` : '';
     return `${until}${tag}`;
   };
 
@@ -3465,7 +3465,7 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
       const packIdAttr = row.id ? ` data-agreement-id="${escAttr(row.id)}"` : '';
       return `<tr class="pack-parent" data-demo="pack.parent-row"${packIdAttr} onclick="goto('pack-detail')">` +
         `<td><div class="cp-cell"><i class="ti ti-chevron-down pack-toggle" aria-hidden="true"></i><div class="pack-ic"><i class="ti ti-stack-2"></i></div>` +
-          `<div><div class="cp-name">${row.name || ''} <span class="pack-tag">${row.packTag || 'PACK'}</span></div><div style="font-size:11px;color:var(--g-50)">${row.childCount || 0} Agreements · ${row.cpCount || 0} counterparties</div></div></div></td>` +
+          `<div><div class="cp-name">${row.name || ''} <span class="pack-tag">${row.packTag || 'PACK'}</span></div><div style="font-size:12.5px;color:var(--g-50)">${row.childCount || 0} Agreements · ${row.cpCount || 0} counterparties</div></div></div></td>` +
         `<td>${elementCell(row.element)}</td>` +
         `<td>${typeCell(row.type)}</td>` +
         `<td>${statusCell(row.status)}</td>` +
@@ -3483,7 +3483,7 @@ SCREEN_RENDERERS['agreements'] = function renderAgreementsListFromSeed(seed) {
     const idAttr = row.id ? ` data-agreement-id="${escAttr(row.id)}"` : '';
     return `<tr class="${cls}"${idAttr}${cls === 'pack-member' ? ' data-demo="pack.member-row"' : ''} onclick="${openHandler}">` +
       `<td><div class="cp-cell${cpCellExtra}"><div class="cp-avatar">${cp.initials || ''}</div>` +
-        `<div><div class="cp-name">${cp.name || ''}</div><div style="font-size:11px;color:var(--g-50)">${cp.role || ''} · ${cp.dex || ''}</div></div></div></td>` +
+        `<div><div class="cp-name">${cp.name || ''}</div><div style="font-size:12.5px;color:var(--g-50)">${cp.role || ''} · ${cp.dex || ''}</div></div></div></td>` +
       `<td>${elementCell(row.element)}</td>` +
       `<td>${typeCell(row.type)}</td>` +
       `<td>${statusCell(row.status)}</td>` +
@@ -3520,7 +3520,7 @@ SCREEN_RENDERERS['messages'] = function renderMessagesListFromSeed(seed) {
   };
 
   const cpCellHtml = (cp, pitstop) => {
-    const base = `<div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">${(cp && cp.initials) || ''}</div><span style="font-size:12px">${(cp && cp.name) || ''}</span></div>`;
+    const base = `<div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:11.5px">${(cp && cp.initials) || ''}</div><span style="font-size:14px">${(cp && cp.name) || ''}</span></div>`;
     if (!pitstop) return base;
     if (pitstop.retired) {
       return base + `<span class="pitstop-chip retired" title="Pitstop was retired ${pitstop.retiredDate ? 'on ' + pitstop.retiredDate : ''} — historical Message still references it (audit-preserved per ADR 0028)"><i class="ti ti-map-pin-off" aria-hidden="true"></i>from <strong>${pitstop.name || ''}</strong>${pitstop.retiredDate ? ' · retired since ' + pitstop.retiredDate : ''}</span>`;
@@ -3530,7 +3530,7 @@ SCREEN_RENDERERS['messages'] = function renderMessagesListFromSeed(seed) {
 
   const elementCellMsg = (el) => {
     if (!el) return '';
-    const v = el.version ? ` <span style="color:var(--g-50);font-size:11px">${el.version}</span>` : '';
+    const v = el.version ? ` <span style="color:var(--g-50);font-size:12.5px">${el.version}</span>` : '';
     return `${el.name || ''}${v}`;
   };
 
@@ -3593,7 +3593,7 @@ SCREEN_RENDERERS['messages'] = function renderMessagesListFromSeed(seed) {
       `<td>${elementCellMsg(m.element)}</td>` +
       `<td>${agreementCell(m.agreement)}</td>` +
       `<td>${statusCellMsg(m.status)}</td>` +
-      `<td><span style="font-size:11px;color:var(--g-50)">${m.time || ''}</span></td>` +
+      `<td><span style="font-size:12.5px;color:var(--g-50)">${m.time || ''}</span></td>` +
       `<td class="row-actions">${actionsHtml}</td>` +
     `</tr>`;
   }).join('');
@@ -3720,11 +3720,11 @@ SCREEN_RENDERERS['pack-detail'] = function renderPackDetailFromSeed(agreementsSe
       const statusCls = status.kind === 'failed' ? 'failed' : (status.kind === 'pending' ? 'pending' : 'active');
       const memberId = m.id || (parent.id ? `${parent.id}/m${i + 1}` : `—`);
       return `<tr onclick="goto('detail')">` +
-        `<td><div class="cp-cell"><div class="cp-avatar">${cp.initials || ''}</div><div><div class="cp-name">${cp.name || ''}</div><div style="font-size:11px;color:var(--g-50)">${cp.role || ''}</div></div></div></td>` +
-        `<td>${el.name || ''}${el.version ? ` <span style="color:var(--g-50);font-size:11px">${el.version}</span>` : ''}</td>` +
+        `<td><div class="cp-cell"><div class="cp-avatar">${cp.initials || ''}</div><div><div class="cp-name">${cp.name || ''}</div><div style="font-size:12.5px;color:var(--g-50)">${cp.role || ''}</div></div></div></td>` +
+        `<td>${el.name || ''}${el.version ? ` <span style="color:var(--g-50);font-size:12.5px">${el.version}</span>` : ''}</td>` +
         `<td><code class="agr-mono">${memberId}</code></td>` +
         `<td><span class="status-cell ${statusCls}"><span class="dot"></span>${status.label || ''}</span></td>` +
-        `<td><span style="font-size:11px;color:var(--g-50)">Acknowledged · recent</span></td>` +
+        `<td><span style="font-size:12.5px;color:var(--g-50)">Acknowledged · recent</span></td>` +
         `<td class="row-actions">` +
           `<button data-demo="pack.send-pack-btn" onclick="event.stopPropagation(); toast('Opens Composer in pack mode · dispatches 1 Message per member')" title="Send pack now"><i class="ti ti-send"></i></button>` +
           `<button onclick="event.stopPropagation(); goto('detail')" title="Open"><i class="ti ti-arrow-right"></i></button>` +
@@ -3838,12 +3838,12 @@ SCREEN_RENDERERS['message-detail'] = function renderMessageDetailFromSeed(seed) 
     if (agrCard) {
       const elFull = el.name ? `${el.name}${el.version ? ' · ' + el.version : ''}` : '';
       agrCard.innerHTML =
-        '<i class="ti ti-file-text" style="font-size:18px;color:var(--g-50)" aria-hidden="true"></i>' +
+        '<i class="ti ti-file-text" style="font-size:20.5px;color:var(--g-50)" aria-hidden="true"></i>' +
         '<div style="flex:1;min-width:0">' +
-        '  <p style="font-size:13px;font-weight:500;color:var(--g-10)">' + seed.agreement + (elFull ? ' · ' + elFull : '') + '</p>' +
-        '  <p style="font-size:11px;color:var(--g-50);margin-top:2px">Source Agreement · click to open</p>' +
+        '  <p style="font-size:15px;font-weight:500;color:var(--g-10)">' + seed.agreement + (elFull ? ' · ' + elFull : '') + '</p>' +
+        '  <p style="font-size:12.5px;color:var(--g-50);margin-top:2px">Source Agreement · click to open</p>' +
         '</div>' +
-        '<i class="ti ti-arrow-right" style="font-size:14px;color:var(--theme-20)" aria-hidden="true"></i>';
+        '<i class="ti ti-arrow-right" style="font-size:16px;color:var(--theme-20)" aria-hidden="true"></i>';
     }
   }
 
@@ -3938,13 +3938,13 @@ function renderDataElementsCatalogFromDex(dexCode) {
       const iconColor = isPack ? 'var(--theme-50)' : 'var(--g-50)';
       const iconKind = isPack ? 'stack' : (r.icon || 'file-text');
       const nameCell = isPack
-        ? `<div style="font-weight:500">${r.name} <span class="version-badge active" style="margin-left:6px">PACK</span></div><div style="font-size:11px;color:var(--g-50)">Curated pack · maintained by ${dexLabel} admins</div>`
-        : `<div style="font-weight:500">${r.name}</div><div style="font-size:11px;color:var(--g-50)">${dexLabel} data element</div>`;
+        ? `<div style="font-weight:500">${r.name} <span class="version-badge active" style="margin-left:6px">PACK</span></div><div style="font-size:12.5px;color:var(--g-50)">Curated pack · maintained by ${dexLabel} admins</div>`
+        : `<div style="font-weight:500">${r.name}</div><div style="font-size:12.5px;color:var(--g-50)">${dexLabel} data element</div>`;
       const versionCell = isPack
-        ? `<span style="font-size:11px;color:var(--g-50)">Mutable group</span>`
-        : (r.version ? `<span class="version-badge active">${r.version}</span>` : '<span style="font-size:11px;color:var(--g-50)">—</span>');
+        ? `<span style="font-size:12.5px;color:var(--g-50)">Mutable group</span>`
+        : (r.version ? `<span class="version-badge active">${r.version}</span>` : '<span style="font-size:12.5px;color:var(--g-50)">—</span>');
       const complexityCell = isPack
-        ? `<span style="font-size:10px;color:var(--g-50)" title="Group inherits complexity from its elements at compose-time">mixed</span>`
+        ? `<span style="font-size:11.5px;color:var(--g-50)" title="Group inherits complexity from its elements at compose-time">mixed</span>`
         : `<span class="complexity-pill ${r.complexity || 'high-stakes'}" role="button" tabindex="0" title="Click to toggle simple ↔ high-stakes (admin only)" onclick="event.stopPropagation(); typeof toggleDeComplexity === 'function' && toggleDeComplexity(this, '${(r.name || '').replace(/'/g, "\\'")}')">${r.complexity || 'high-stakes'}</span>`;
       const usagePct = isPack ? 55 : 50 + Math.floor((r.name || '').length * 3) % 45;
       const usageMeta = isPack ? `in ${1 + ((r.name || '').length % 4)} Agreements` : `${10 + ((r.name || '').length % 30)} orgs`;
@@ -3954,11 +3954,11 @@ function renderDataElementsCatalogFromDex(dexCode) {
         : `<button onclick="event.stopPropagation(); openDataElementDetail('${safeName}')" title="Impact analysis"><i class="ti ti-chart-bar"></i></button>`;
       const clickHandler = `openDataElementDetail('${safeName}')`;
       return `<tr onclick="${clickHandler}">` +
-        `<td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-${iconKind}" style="font-size:16px;color:${iconColor}"></i><div>${nameCell}</div></div></td>` +
+        `<td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-${iconKind}" style="font-size:18.5px;color:${iconColor}"></i><div>${nameCell}</div></div></td>` +
         `<td>${versionCell}</td>` +
         `<td>${r.group || ''}</td>` +
         `<td>${complexityCell}</td>` +
-        `<td><span class="usage-bar"><span class="fill" style="width:${usagePct}%"></span></span><span style="font-size:11px;color:var(--g-50)">${usageMeta}</span></td>` +
+        `<td><span class="usage-bar"><span class="fill" style="width:${usagePct}%"></span></span><span style="font-size:12.5px;color:var(--g-50)">${usageMeta}</span></td>` +
         `<td><span class="status-cell active"><span class="dot"></span>Active</span></td>` +
         `<td class="row-actions">${actionBtn}</td>` +
       `</tr>`;
@@ -4249,7 +4249,7 @@ function renderDataElementDetail(detail) {
           + '<td><span class="version-badge ' + stateCls + '">' + v.state + '</span></td>'
           + '<td>' + v.released + '</td>'
           + '<td>' + (v.breaking ? '<span style="color:var(--red-50);font-weight:500">Breaking</span>' : '<span style="color:var(--g-50)">No</span>') + '</td>'
-          + '<td><span style="font-size:11px;color:var(--g-50)">' + v.usage + '</span></td>'
+          + '<td><span style="font-size:12.5px;color:var(--g-50)">' + v.usage + '</span></td>'
           + '<td class="row-actions">' + action + '</td>'
           + '</tr>';
       }).join('');
@@ -4271,11 +4271,11 @@ function renderDataElementDetail(detail) {
         const navTarget = isPackRow ? 'pack-detail' : 'detail';
         const statusCls = a.status === 'Active' ? 'active' : a.status === 'Pending' ? 'pending' : 'ended';
         return '<tr onclick="goto(\'' + navTarget + '\')">'
-          + '<td><div class="cp-cell"><div class="cp-avatar">' + a.cpInitials + '</div><div><div class="cp-name">' + a.cp + '</div><div style="font-size:11px;color:var(--g-50)">' + (isPackRow ? 'Pack (per ADR 0027)' : 'Counterparty') + '</div></div></div></td>'
+          + '<td><div class="cp-cell"><div class="cp-avatar">' + a.cpInitials + '</div><div><div class="cp-name">' + a.cp + '</div><div style="font-size:12.5px;color:var(--g-50)">' + (isPackRow ? 'Pack (per ADR 0027)' : 'Counterparty') + '</div></div></div></td>'
           + '<td><code class="agr-mono">' + a.agrId + '</code></td>'
           + '<td>' + a.dir + '</td>'
           + '<td><span class="status-cell ' + statusCls + '"><span class="dot"></span>' + a.status + '</span></td>'
-          + '<td><span style="font-size:11px;color:var(--g-50)">' + a.last + '</span></td>'
+          + '<td><span style="font-size:12.5px;color:var(--g-50)">' + a.last + '</span></td>'
           + '<td class="row-actions"><button onclick="event.stopPropagation(); goto(\'' + navTarget + '\')" title="Open"><i class="ti ti-arrow-right"></i></button></td>'
           + '</tr>';
       }).join('');
@@ -4412,7 +4412,7 @@ function renderDataPickerFromDex(dexCode) {
     const h = reg.headline;
     const isPack = h.kind === 'pack';
     const headIcon = isPack ? 'stack' : 'file-text';
-    const pill = isPack ? `<span class="group-pill" style="padding:1px 6px;background:var(--theme-90);color:var(--theme-20);border-radius:3px;font-size:10px;font-weight:500;margin-left:4px">pack</span>` : '';
+    const pill = isPack ? `<span class="group-pill" style="padding:1px 6px;background:var(--theme-90);color:var(--theme-20);border-radius:3px;font-size:11.5px;font-weight:500;margin-left:4px">pack</span>` : '';
     const snapshotLabel = h.snapshotLabel || `Snapshot · ${(h.elements || []).length} element${(h.elements || []).length === 1 ? '' : 's'}`;
     const snapshotRows = (h.elements || []).map(e => {
       const v = e.version ? ` · <span class="v">${e.version}</span>` : '';
@@ -4424,7 +4424,7 @@ function renderDataPickerFromDex(dexCode) {
     // CTAs that previously sat side-by-side at the bottom of this step.
     detail.innerHTML =
       `<div class="picker-detail-head"><i class="ti ti-${headIcon}"></i><span class="name">${h.name}</span>${pill}</div>` +
-      `<p style="font-size:12px;color:var(--g-50);line-height:1.5">${h.blurb || ''}</p>` +
+      `<p style="font-size:14px;color:var(--g-50);line-height:1.5">${h.blurb || ''}</p>` +
       `<p class="snapshot-label">${snapshotLabel}</p>` +
       `<div class="snapshot-list">${snapshotRows}</div>` +
       (isPack ? `<button class="add-individual"><i class="ti ti-plus"></i>Add individual elements</button>` : '') +
@@ -4843,7 +4843,7 @@ function confirmInviteParticipant() {
     card.className = 'participant-card';
     card.setAttribute('onclick', "toast('Pending KYC — profile opens once onboarding completes')");
     card.innerHTML =
-      '<div class="cp-avatar" style="width:44px;height:44px;font-size:13px">' + initials + '</div>' +
+      '<div class="cp-avatar" style="width:44px;height:44px;font-size:15px">' + initials + '</div>' +
       '<div class="pc-body">' +
         '<div class="pc-name">' + escName + '</div>' +
         '<div class="pc-meta">' + escMeta + '</div>' +
@@ -4910,7 +4910,7 @@ function loadMoreParticipants() {
     card.className = 'participant-card';
     card.setAttribute('onclick', "goto('detail')");
     card.innerHTML =
-      '<div class="cp-avatar" style="width:44px;height:44px;font-size:13px">' + p.initials + '</div>' +
+      '<div class="cp-avatar" style="width:44px;height:44px;font-size:15px">' + p.initials + '</div>' +
       '<div class="pc-body">' +
         '<div class="pc-name">' + p.name + '</div>' +
         '<div class="pc-meta">' + p.role + ' · UEN ' + p.uen + '</div>' +
@@ -5704,12 +5704,12 @@ function setMessageFlow(flow, btn) {
     const agrCard = document.getElementById('msg-agr-card');
     if (agrCard) {
       agrCard.innerHTML =
-          '<i class="ti ti-file-text" style="font-size:18px;color:var(--g-50)" aria-hidden="true"></i>'
+          '<i class="ti ti-file-text" style="font-size:20.5px;color:var(--g-50)" aria-hidden="true"></i>'
         + '<div style="flex:1;min-width:0">'
-        + '  <p style="font-size:13px;font-weight:500;color:var(--g-10)">' + data.agreement.id + ' · ' + data.agreement.title + '</p>'
-        + '  <p style="font-size:11px;color:var(--g-50);margin-top:2px">' + data.agreement.meta + '</p>'
+        + '  <p style="font-size:15px;font-weight:500;color:var(--g-10)">' + data.agreement.id + ' · ' + data.agreement.title + '</p>'
+        + '  <p style="font-size:12.5px;color:var(--g-50);margin-top:2px">' + data.agreement.meta + '</p>'
         + '</div>'
-        + '<i class="ti ti-arrow-right" style="font-size:14px;color:var(--theme-20)" aria-hidden="true"></i>';
+        + '<i class="ti ti-arrow-right" style="font-size:16px;color:var(--theme-20)" aria-hidden="true"></i>';
     }
   }
 
@@ -6008,7 +6008,7 @@ function retryRow(tr) {
   delete tr.dataset.owner;
   const statusCell = tr.querySelector('td:nth-child(5)');
   if (statusCell) {
-    statusCell.innerHTML = '<span class="status-cell pending"><span class="dot"></span>In flight</span><p style="font-size:11px;color:var(--g-50);margin-top:2px"><i class="ti ti-refresh" style="font-size:10px"></i> retry queued · same idempotency key</p>';
+    statusCell.innerHTML = '<span class="status-cell pending"><span class="dot"></span>In flight</span><p style="font-size:12.5px;color:var(--g-50);margin-top:2px"><i class="ti ti-refresh" style="font-size:11.5px"></i> retry queued · same idempotency key</p>';
   }
   const action = tr.querySelector('.row-actions button');
   if (action) {
@@ -6039,7 +6039,7 @@ function restageRow(tr) {
   delete tr.dataset.owner;
   const statusCell = tr.querySelector('td:nth-child(5)');
   if (statusCell) {
-    statusCell.innerHTML = '<span class="status-cell pending"><span class="dot"></span>In flight</span><p style="font-size:11px;color:var(--g-50);margin-top:2px"><i class="ti ti-refresh" style="font-size:10px"></i> re-staged · new key · TTL 7d</p>';
+    statusCell.innerHTML = '<span class="status-cell pending"><span class="dot"></span>In flight</span><p style="font-size:12.5px;color:var(--g-50);margin-top:2px"><i class="ti ti-refresh" style="font-size:11.5px"></i> re-staged · new key · TTL 7d</p>';
   }
   toast('Re-staged · new STORE record written · counterparty will be notified');
   applyMsgFilters();
@@ -6575,7 +6575,7 @@ function pickComposeSchema(card) {
 
   // Update sub-line + complexity pill
   const sub = document.getElementById('compose-hdr-sub');
-  if (sub) sub.innerHTML = 'Schema <strong>' + schemaName + ' ' + version + '</strong> · selected from pack snapshot · this Message gets idempotency key <code style="font-family:var(--font-mono);font-size:11px;background:rgba(0,0,0,0.04);padding:0 4px;border-radius:3px">' + newKey + '</code>';
+  if (sub) sub.innerHTML = 'Schema <strong>' + schemaName + ' ' + version + '</strong> · selected from pack snapshot · this Message gets idempotency key <code style="font-family:var(--font-mono);font-size:12.5px;background:rgba(0,0,0,0.04);padding:0 4px;border-radius:3px">' + newKey + '</code>';
 
   const isHighStakes = card.dataset.schema === 'bol';
   const pill = document.getElementById('compose-complexity-pill');
@@ -6752,7 +6752,7 @@ function openAdrPanel(id, title, group) {
   document.getElementById('adr-panel-eyebrow').textContent = 'ADR · ' + groupLabel;
   document.getElementById('adr-panel-heading').textContent = 'ADR ' + id + ' · ' + title;
   document.getElementById('adr-panel-body').innerHTML = (ADR_SUMMARIES[id] || '<p>Summary forthcoming — see the full ADR file.</p>')
-    + '<p style="font-size:11px;color:var(--g-50);margin-top:14px;padding-top:10px;border-top:0.5px dashed var(--g-90)"><i class="ti ti-file-text" style="font-size:12px;vertical-align:-1px"></i> Full text: <code>design-concepts/docs/adr/' + id + '-*.md</code></p>';
+    + '<p style="font-size:12.5px;color:var(--g-50);margin-top:14px;padding-top:10px;border-top:0.5px dashed var(--g-90)"><i class="ti ti-file-text" style="font-size:14px;vertical-align:-1px"></i> Full text: <code>design-concepts/docs/adr/' + id + '-*.md</code></p>';
 
   const panel = document.getElementById('adr-panel');
   panel.hidden = false;
@@ -7238,13 +7238,13 @@ function applyCpPanelHeader(panel) {
     if (!banner) {
       banner = document.createElement('div');
       banner.className = 'cp-audit-banner';
-      banner.style.cssText = 'background:var(--yellow-98,#fffbeb);border:0.5px solid var(--yellow-90,#fde68a);color:var(--g-30);font-size:11px;padding:8px 10px;border-radius:6px;margin-bottom:12px;line-height:1.5;display:flex;gap:6px;align-items:flex-start';
+      banner.style.cssText = 'background:var(--yellow-98,#fffbeb);border:0.5px solid var(--yellow-90,#fde68a);color:var(--g-30);font-size:12.5px;padding:8px 10px;border-radius:6px;margin-bottom:12px;line-height:1.5;display:flex;gap:6px;align-items:flex-start';
       body.insertBefore(banner, body.firstChild);
     }
     if (primaryUser) {
-      banner.innerHTML = `<i class="ti ti-shield" style="font-size:13px;color:var(--yellow-50);margin-top:1px"></i><span>Impersonation session — any action taken here is logged under <strong style="font-weight:500">${primaryUser.name}</strong>'s identity with your operator id attached. See ADR 0002 (View-as-participant audit signature).</span>`;
+      banner.innerHTML = `<i class="ti ti-shield" style="font-size:15px;color:var(--yellow-50);margin-top:1px"></i><span>Impersonation session — any action taken here is logged under <strong style="font-weight:500">${primaryUser.name}</strong>'s identity with your operator id attached. See ADR 0002 (View-as-participant audit signature).</span>`;
     } else {
-      banner.innerHTML = `<i class="ti ti-shield" style="font-size:13px;color:var(--yellow-50);margin-top:1px"></i><span>Read-only counterparty view. No actions taken.</span>`;
+      banner.innerHTML = `<i class="ti ti-shield" style="font-size:15px;color:var(--yellow-50);margin-top:1px"></i><span>Read-only counterparty view. No actions taken.</span>`;
     }
   }
 }
@@ -7321,9 +7321,9 @@ function renderGroupDetail(name) {
     <div class="picker-detail-head">
       <i class="ti ti-stack" aria-hidden="true"></i>
       <span class="name">${name}</span>
-      <span class="group-pill" style="padding:1px 6px;background:var(--theme-90);color:var(--theme-20);border-radius:3px;font-size:10px;font-weight:500;margin-left:4px">pack</span>
+      <span class="group-pill" style="padding:1px 6px;background:var(--theme-90);color:var(--theme-20);border-radius:3px;font-size:11.5px;font-weight:500;margin-left:4px">pack</span>
     </div>
-    <p style="font-size:12px;color:var(--g-50);line-height:1.5">${data.description}</p>
+    <p style="font-size:14px;color:var(--g-50);line-height:1.5">${data.description}</p>
     <p class="snapshot-label">Snapshot · ${data.elements.length} elements (deselect any)</p>
     <div class="snapshot-list">${elementsHtml}</div>
     <button class="add-individual"><i class="ti ti-plus" aria-hidden="true"></i>Add individual elements</button>
@@ -7340,10 +7340,10 @@ function renderElementDetail(name, version) {
     usage: ''
   };
   const prevList = data.previousVersions.length
-    ? `<div style="margin-top:8px"><p style="font-size:11px;color:var(--g-50);margin-bottom:2px">Previous versions</p>${data.previousVersions.map(v => `<p style="font-size:11px;color:var(--g-50);margin-left:8px">· ${v}</p>`).join('')}</div>`
+    ? `<div style="margin-top:8px"><p style="font-size:12.5px;color:var(--g-50);margin-bottom:2px">Previous versions</p>${data.previousVersions.map(v => `<p style="font-size:12.5px;color:var(--g-50);margin-left:8px">· ${v}</p>`).join('')}</div>`
     : '';
   const usageRow = data.usage
-    ? `<div style="display:grid;grid-template-columns:90px 1fr;gap:8px;font-size:12px;padding-top:8px"><span style="color:var(--g-50)">Usage</span><span style="color:var(--g-10)">${data.usage}</span></div>`
+    ? `<div style="display:grid;grid-template-columns:90px 1fr;gap:8px;font-size:14px;padding-top:8px"><span style="color:var(--g-50)">Usage</span><span style="color:var(--g-10)">${data.usage}</span></div>`
     : '';
   return `
     <div class="picker-detail-head">
@@ -7351,11 +7351,11 @@ function renderElementDetail(name, version) {
       <span class="name">${name}</span>
       <span class="version-badge active" style="margin-left:6px">${data.activeVersion}</span>
     </div>
-    <p style="font-size:12px;color:var(--g-50);line-height:1.5">${data.description}</p>
+    <p style="font-size:14px;color:var(--g-50);line-height:1.5">${data.description}</p>
 
     <p class="snapshot-label">Element details</p>
     <div style="background:var(--surface);border:0.5px solid var(--g-90);border-radius:var(--r-md);padding:12px 14px">
-      <div style="display:grid;grid-template-columns:90px 1fr;gap:8px;font-size:12px">
+      <div style="display:grid;grid-template-columns:90px 1fr;gap:8px;font-size:14px">
         <span style="color:var(--g-50)">Category</span><span style="color:var(--g-10)">${data.category}</span>
         <span style="color:var(--g-50)">Active</span><span style="color:var(--g-10)">${data.activeVersion}</span>
       </div>
@@ -8914,7 +8914,7 @@ function expandAudit(e) {
     div.innerHTML = `<span class="ev-dot ${ev.dot}"></span><div class="ev-body"><p><strong>${ev.who}</strong> ${ev.what}</p><p class="ev-time">${ev.time}</p></div>`;
     activity.appendChild(div);
   });
-  foot.innerHTML = '<span style="color:var(--g-50);font-size:11px">Showing 10 of 24 entries · <a onclick="toast(\'Exporting full audit log as CSV (mock)\')" style="color:var(--g-50);text-decoration:underline;cursor:pointer">Export full audit log</a></span>';
+  foot.innerHTML = '<span style="color:var(--g-50);font-size:12.5px">Showing 10 of 24 entries · <a onclick="toast(\'Exporting full audit log as CSV (mock)\')" style="color:var(--g-50);text-decoration:underline;cursor:pointer">Export full audit log</a></span>';
 }
 
 /* ============================================================
@@ -9033,11 +9033,11 @@ function buildPortalTopbarHtml() {
   const initialRole = (INBOX_BY_DEX.tx && INBOX_BY_DEX.tx.role) || 'Admin';
   const slug = initialRole.toLowerCase().replace(/[^a-z]/g, '-');
   return `
-    <button class="workspace-pill" onclick="toggleSwitcher(event)" aria-haspopup="menu" aria-label="Workspace switcher"><span class="dot"></span><span class="ws-label">SGTradex</span><i class="ti ti-chevron-down" style="font-size:14px" aria-hidden="true"></i></button>
+    <button class="workspace-pill" onclick="toggleSwitcher(event)" aria-haspopup="menu" aria-label="Workspace switcher"><span class="dot"></span><span class="ws-label">SGTradex</span><i class="ti ti-chevron-down" style="font-size:16px" aria-hidden="true"></i></button>
     <span class="role-chip" data-role="${slug}" title="Your permission level on this DEX. Admin can manage Agreements; Participant has read + accept rights; Super-admin can take governance actions."><i class="ti ti-id-badge-2" aria-hidden="true"></i><span class="role-chip-label">${initialRole}</span></span>
     <div class="search-pill" role="button" tabindex="0" onclick="openSearch()" onkeydown="if(event.key==='Enter'){openSearch()}" aria-label="Open search"><i class="ti ti-search" aria-hidden="true"></i><span>Search</span><kbd>⌘K</kbd></div>
     <div class="spacer"></div>
-    <button class="btn-primary" data-create-btn onclick="toggleDropdown(event)" aria-haspopup="menu" aria-label="Create new Agreement"><i class="ti ti-plus" aria-hidden="true"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px" aria-hidden="true"></i></button>
+    <button class="btn-primary" data-create-btn onclick="toggleDropdown(event)" aria-haspopup="menu" aria-label="Create new Agreement"><i class="ti ti-plus" aria-hidden="true"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:14px" aria-hidden="true"></i></button>
     <button class="btn-ghost" data-notif-btn onclick="openNotif(event)" aria-label="Notifications"><i class="ti ti-bell" aria-hidden="true"></i><span class="badge-dot"></span></button>
     <div class="avatar" data-profile-btn onclick="openProfile(event)" style="cursor:pointer" tabindex="0" onkeydown="if(event.key==='Enter'){openProfile(event)}" aria-label="Marcus Ong · profile menu">MO</div>
   `;
@@ -9485,7 +9485,7 @@ function applyWorkspacePillUserSubLabel(pill, active) {
   // Render the sub-label. Chevron icon is only included when colleagues exist —
   // sole-employee orgs (Pat at CrimsonLogic, Wen Chen at PSA) get name only.
   const chevIcon = hasColleagues
-    ? '<i class="ti ti-chevron-down ws-colleague-chevron" aria-hidden="true" style="font-size:11px;opacity:0.55;margin-left:4px"></i>'
+    ? '<i class="ti ti-chevron-down ws-colleague-chevron" aria-hidden="true" style="font-size:12.5px;opacity:0.55;margin-left:4px"></i>'
     : '';
   chev.innerHTML = ' <span class="ws-user-name">· ' + firstName + '</span>' + chevIcon;
   const trailingChev = pill.querySelector('.ti-chevron-down:not(.ws-colleague-chevron)');
@@ -9802,7 +9802,7 @@ function syncProfilePersonaSwitchRow() {
   if (colleagues.length) {
     const heading = document.createElement('div');
     heading.className = 'profile-switcher-heading';
-    heading.style.cssText = 'font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--g-50);padding:8px 12px 4px';
+    heading.style.cssText = 'font-size:11.5px;text-transform:uppercase;letter-spacing:0.04em;color:var(--g-50);padding:8px 12px 4px';
     heading.textContent = 'Switch colleague';
     parent.insertBefore(heading, anchor);
 
@@ -9836,7 +9836,7 @@ function syncProfilePersonaSwitchRow() {
   if (otherAccounts.length) {
     const heading2 = document.createElement('div');
     heading2.className = 'profile-switcher-heading';
-    heading2.style.cssText = 'font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--g-50);padding:6px 12px 4px';
+    heading2.style.cssText = 'font-size:11.5px;text-transform:uppercase;letter-spacing:0.04em;color:var(--g-50);padding:6px 12px 4px';
     heading2.textContent = 'Switch to account';
     parent.insertBefore(heading2, anchor);
 

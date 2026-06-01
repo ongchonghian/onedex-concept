@@ -28,7 +28,7 @@ function renderReadyPill(state) {
 function renderInboxCard(item, chip, group, opts) {
   if (item.completion) {
     return `<div class="inbox-card completion">
-      <i class="ti ti-check" style="font-size:16px;color:var(--green-50);flex-shrink:0" aria-hidden="true"></i>
+      <i class="ti ti-check" style="font-size:21.5px;color:var(--green-50);flex-shrink:0" aria-hidden="true"></i>
       <div class="body"><div class="title">${item.title}</div><div class="meta">${item.meta}</div></div>
     </div>`;
   }
@@ -55,7 +55,7 @@ function renderInboxCard(item, chip, group, opts) {
       : cta === 'renew-strict' ? "event.stopPropagation(); toast('Routed to governance review (residency-strict)','warn')"
       : "event.stopPropagation(); openClaim()";
     const cls = cta === 'review' ? 'btn-primary' : 'btn-secondary';
-    buttonHtml = `<button class="${cls}" style="padding:5px 10px;font-size:11px" onclick="${handler}">${item.btn}</button>`;
+    buttonHtml = `<button class="${cls}" style="padding:5px 10px;font-size:14.5px" onclick="${handler}">${item.btn}</button>`;
   }
   const grpCls = group === 'team' ? ' team' : '';
   return `<div class="inbox-card${grpCls}" onclick="goto('detail')">

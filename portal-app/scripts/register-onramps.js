@@ -349,7 +349,7 @@ function regGenerateFromNl() {
     if (matchedExample) {
       note.textContent = ''; // exact example — no note needed
     } else {
-      note.innerHTML = '<i class="ti ti-info-circle" style="font-size: 12px"></i> Using example output for demo (' + chosen.id + '). Production version generates a fresh schema from your description.';
+      note.innerHTML = '<i class="ti ti-info-circle" style="font-size: 16px"></i> Using example output for demo (' + chosen.id + '). Production version generates a fresh schema from your description.';
     }
   }
   // Arm the "Use this schema" button immediately — the seed is decided at this

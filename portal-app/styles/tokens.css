@@ -160,22 +160,22 @@
   --font-sans: 'Avenir', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
-  --fs-display-lg: 44px; --lh-display-lg: 48px;   /* landing-page hero */
-  --fs-display: 40px;    --lh-display: 48px;
-  --fs-h1: 32px;         --lh-h1: 40px;
-  --fs-h2-lg: 28px;      --lh-h2-lg: 34px;        /* section heads on landing */
-  --fs-h2: 24px;         --lh-h2: 32px;
-  --fs-h3: 21px;         --lh-h3: 28px;
-  --fs-h4: 18px;         --lh-h4: 24px;
-  --fs-h5: 16px;         --lh-h5: 22px;
-  --fs-h6: 15px;         --lh-h6: 21px;
-  --fs-body: 14px;       --lh-body: 20px;
-  --fs-sm: 13px;         --lh-sm: 19px;           /* dense body / step text */
-  --fs-meta: 12px;       --lh-meta: 16px;
-  --fs-meta-plus: 11.5px;                          /* between meta and micro */
-  --fs-micro-plus: 11px;                           /* uppercase eyebrows */
-  --fs-micro: 10px;
-  --fs-micro-2: 10.5px;                            /* deci-src eyebrow */
+  --fs-display-lg: 50.5px; --lh-display-lg: 55px;  /* landing-page hero */
+  --fs-display: 46px;    --lh-display: 55px;
+  --fs-h1: 37px;         --lh-h1: 46px;
+  --fs-h2-lg: 32px;      --lh-h2-lg: 39px;         /* section heads on landing */
+  --fs-h2: 27.5px;       --lh-h2: 37px;
+  --fs-h3: 24px;         --lh-h3: 32px;
+  --fs-h4: 20.5px;       --lh-h4: 27.5px;
+  --fs-h5: 18.5px;       --lh-h5: 25px;
+  --fs-h6: 17px;         --lh-h6: 24px;
+  --fs-body: 16px;       --lh-body: 23px;
+  --fs-sm: 15px;         --lh-sm: 22px;            /* dense body / step text */
+  --fs-meta: 14px;       --lh-meta: 18.5px;
+  --fs-meta-plus: 13px;                            /* between meta and micro */
+  --fs-micro-plus: 12.5px;                         /* uppercase eyebrows */
+  --fs-micro: 11.5px;
+  --fs-micro-2: 12px;                              /* deci-src eyebrow */
 
   --fw-light: 300;
   --fw-regular: 400;

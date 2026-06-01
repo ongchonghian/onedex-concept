@@ -11,7 +11,7 @@ function renderStepper() {
   if (!el) return;
   el.innerHTML = wizardSteps.map((s, i) => {
     const state = i < wiz.idx ? 'done' : i === wiz.idx ? 'curr' : 'future';
-    const num = state === 'done' ? '<i class="ti ti-check" style="font-size:13px"></i>' : (i + 1);
+    const num = state === 'done' ? '<i class="ti ti-check" style="font-size:17px"></i>' : (i + 1);
     return `<div class="step ${state}"><span class="num">${num}</span><span class="lbl">${s.label}</span></div>`;
   }).join('');
 }
@@ -304,7 +304,7 @@ function syncWizardFoot() {
     : wiz.idx === lastIdx
       ? 'Done'
       : 'Continue to ' + wizardSteps[wiz.idx + 1].label.toLowerCase();
-  next.innerHTML = nextLabel + (wiz.idx < reviewIdx ? ' <i class="ti ti-arrow-right" style="font-size:12px"></i>' : '');
+  next.innerHTML = nextLabel + (wiz.idx < reviewIdx ? ' <i class="ti ti-arrow-right" style="font-size:16px"></i>' : '');
   prev.textContent = wiz.idx === 0 ? 'Cancel' : '← Back';
   foot.style.display = wiz.idx === lastIdx ? 'none' : 'flex';
   warn.hidden = !(wiz.idx === reviewIdx && wiz.crossDex);

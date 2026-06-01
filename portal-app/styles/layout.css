@@ -27,7 +27,7 @@ main.canvas { overflow-y: auto; padding: var(--sp-6) 28px 60px; }
   flex-wrap: wrap;
 }
 .canvas-meta .meta-label {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: var(--fw-medium);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -39,7 +39,7 @@ main.canvas { overflow-y: auto; padding: var(--sp-6) 28px 60px; }
   background: var(--g-95);
   color: var(--g-30);
   border-radius: var(--r-sm);
-  font-size: 11px;
+  font-size: 14.5px;
   font-weight: var(--fw-medium);
   cursor: pointer;
 }
@@ -58,7 +58,7 @@ main.canvas { overflow-y: auto; padding: var(--sp-6) 28px 60px; }
   gap: var(--sp-2);
   align-items: flex-start;
 }
-.canvas-tip i { color: var(--yellow-50); flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+.canvas-tip i { color: var(--yellow-50); flex-shrink: 0; font-size: 18.5px; margin-top: 1px; }
 .canvas-tip strong { font-weight: var(--fw-medium); }
 
 /* ---------- Screen base (active-only display) ---------- */
@@ -104,7 +104,7 @@ main.canvas { overflow-y: auto; padding: var(--sp-6) 28px 60px; }
 .sidebar .side-footer { margin-top: auto; padding-bottom: 4px; }
 .sidebar .side-footer .side-divider { margin-top: 0; }
 .sidebar .sec-label {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: var(--fw-medium);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -123,7 +123,7 @@ main.canvas { overflow-y: auto; padding: var(--sp-6) 28px 60px; }
   transition: background var(--motion-fast) var(--easing);
 }
 .sidebar .side-link:not(.active):hover { background: var(--g-95); }
-.sidebar .side-link i { font-size: 14px; color: var(--g-50); flex-shrink: 0; }
+.sidebar .side-link i { font-size: 18.5px; color: var(--g-50); flex-shrink: 0; }
 .sidebar .side-link.active {
   background: var(--theme-95);
   color: var(--theme-20);
@@ -141,7 +141,7 @@ main.canvas { overflow-y: auto; padding: var(--sp-6) 28px 60px; }
   margin-left: auto;
   background: var(--theme-50);
   color: #ffffff;
-  font-size: 10px;
+  font-size: 13px;
   padding: 1px 5px;
   border-radius: var(--sp-2);
   font-weight: var(--fw-medium);
@@ -154,7 +154,7 @@ main.canvas { overflow-y: auto; padding: var(--sp-6) 28px 60px; }
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-1) 14px;
-  font-size: 11px;
+  font-size: 14.5px;
   color: var(--g-50);
   cursor: pointer;
   transition: background var(--motion-fast) var(--easing);
@@ -163,7 +163,7 @@ main.canvas { overflow-y: auto; padding: var(--sp-6) 28px 60px; }
 .sidebar .dex-mini .dex-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .sidebar .new-dot { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--red-50); }
 .sidebar .show-hidden {
-  font-size: 11px;
+  font-size: 14.5px;
   color: var(--g-70);
   margin: var(--sp-4) 14px 0;
   cursor: pointer;
@@ -188,14 +188,14 @@ details.group-block summary {
   margin-bottom: 10px;
 }
 details.group-block summary::-webkit-details-marker { display: none; }
-details.group-block summary i.chev { font-size: 14px; color: var(--g-50); transition: transform var(--motion-fast) var(--easing); }
+details.group-block summary i.chev { font-size: 18.5px; color: var(--g-50); transition: transform var(--motion-fast) var(--easing); }
 details.group-block:not([open]) summary i.chev { transform: rotate(-90deg); }
-details.group-block summary .ttl { font-size: 13px; font-weight: var(--fw-medium); color: var(--g-10); }
-details.group-block summary .sub { font-size: 11px; color: var(--g-50); }
+details.group-block summary .ttl { font-size: 17px; font-weight: var(--fw-medium); color: var(--g-10); }
+details.group-block summary .sub { font-size: 14.5px; color: var(--g-50); }
 
 /* ---------- Section label (within screens) ---------- */
 .section-label {
-  font-size: 11px;
+  font-size: 14.5px;
   font-weight: var(--fw-medium);
   letter-spacing: 0.06em;
   text-transform: uppercase;

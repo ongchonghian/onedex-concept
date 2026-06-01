@@ -360,7 +360,7 @@
     var failedChip = document.getElementById('failed-filter-chip');
     if (failedChip) {
       failedChip.innerHTML = 'Failed (' + counts['failed-mine'] + ') · ' + counts.failed +
-        ' <i class="ti ti-chevron-down" style="font-size:9px;margin-left:2px"></i>';
+        ' <i class="ti ti-chevron-down" style="font-size:12px;margin-left:2px"></i>';
       failedChip.title = 'Failed · mine (' + counts['failed-mine'] +
         ') + theirs (' + counts['failed-theirs'] + ') + expired (' + counts['failed-expired'] + ')';
     }
