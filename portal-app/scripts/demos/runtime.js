@@ -529,6 +529,7 @@
 
       case 'annotate': {
         runtime.annotateCount++;
+        const annotateDwell = (step.dwell || 1800) + 1000;
         // Push to the annotation history so the Back button can recall this
         // moment without re-running intermediate steps. The viewingHistoryIndex
         // resets to null because the live run has advanced past any previously
@@ -563,11 +564,11 @@
               anchor:    step.anchor || null,
               anchorFound:   !!anchorEl,
               anchorVisible,
-              dwell:     step.dwell || 1800,
+              dwell:     annotateDwell,
             });
           } catch (e) { /* best-effort */ }
         }
-        await sleep(step.dwell || 1800);
+        await sleep(annotateDwell);
         break;
       }
 
