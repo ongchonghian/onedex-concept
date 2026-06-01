@@ -7051,6 +7051,36 @@ function composerSubmit_schemaDriven() {
   }
   const values = schemaWalker_readValues(formEl, rec.elementSchema);
 
+  // AJV gate (L1, per CONTEXT.md three-layer governance). Reuses the same
+  // ajv2020 singleton + format registrations as register-element's Test
+  // surface, compiled against the snapshotted, interop-clean elementSchema.
+  // Runs BEFORE govaluate so a missing-required or wrong-type can't reach the
+  // rules engine — the rule pass assumes well-shaped input.
+  if (typeof regGetAjvInstance === 'function') {
+    const ajv = regGetAjvInstance();
+    if (ajv) {
+      let validate = null;
+      try { validate = ajv.compile(rec.elementSchema); }
+      catch (e) { console.warn('AJV compile failed on element schema:', e); }
+      if (validate && !validate(values)) {
+        const errs = validate.errors || [];
+        const summary = errs.map(e =>
+          '  · ' + (e.instancePath || '(root)') +
+          (e.params && e.params.missingProperty ? ('/' + e.params.missingProperty) : '') +
+          ' — ' + (e.message || 'invalid')
+        ).join('\n');
+        if (typeof window.alert === 'function') {
+          window.alert(errs.length + ' schema violation' + (errs.length === 1 ? '' : 's') + ':\n\n' + summary +
+            '\n\nFix the fields and resubmit. AJV gate per CONTEXT.md three-layer governance.');
+        } else {
+          toast(errs.length + ' schema violation' + (errs.length === 1 ? '' : 's') + ' · see console');
+        }
+        console.warn('Schema-driven Submit blocked by AJV violations:', errs);
+        return;
+      }
+    }
+  }
+
   // Evaluate rules against the values. regEvalExpression is exposed by
   // register-element.js for the Test-as-operator surface; we reuse it so
   // rule semantics match the registration flow's Test surface.
@@ -7062,9 +7092,12 @@ function composerSubmit_schemaDriven() {
       let message = '';
       try {
         const evalResult = regEvalExpression(rule.expression, values);
-        if (!evalResult || evalResult.passed === false) {
+        // regEvalExpression returns { ok, error, value } — `ok` is true when
+        // the expression's value is truthy (the rule predicate held). A
+        // missing/falsy `ok` (or a thrown expression) is a rule failure.
+        if (!evalResult || !evalResult.ok) {
           result = 'fail';
-          message = (rule.on_failure || rule.message || 'Rule failed');
+          message = (rule.on_failure || rule.message || evalResult && evalResult.error || 'Rule failed');
           failedCount++;
         }
       } catch (e) {
