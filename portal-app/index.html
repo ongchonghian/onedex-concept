@@ -285,11 +285,11 @@
 
   <div class="portal-frame">
     <div class="topbar">
-      <button class="workspace-pill" onclick="toggleSwitcher(event)" aria-label="Switch workspace (current: SGTradex)" aria-haspopup="true"><span class="dot" aria-hidden="true"></span>SGTradex<i class="ti ti-chevron-down" style="font-size:18.5px" aria-hidden="true"></i></button>
+      <button class="workspace-pill" onclick="toggleSwitcher(event)" aria-label="Switch workspace (current: SGTradex)" aria-haspopup="true"><span class="dot" aria-hidden="true"></span>SGTradex<i class="ti ti-chevron-down" style="font-size:14px" aria-hidden="true"></i></button>
       <span class="role-chip" data-role="admin-user" title="Your role on this DEX (per dex-repo admin-corev2 Role enum). Admin User can create Agreements + manage relationships; cannot manage users. Per-DEX scope — you may hold a different role on SGBuildex / SGHealthdex."><i class="ti ti-id-badge-2" aria-hidden="true"></i><span class="role-chip-label">Admin User</span></span>
       <button type="button" class="search-pill" onclick="openSearch()" aria-label="Search across this workspace"><i class="ti ti-search" aria-hidden="true"></i><span>Search</span><kbd>⌘K</kbd></button>
       <div class="spacer"></div>
-      <button class="btn-primary" data-create-btn onclick="toggleDropdown(event)" aria-haspopup="true"><i class="ti ti-plus" aria-hidden="true"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:16px" aria-hidden="true"></i></button>
+      <button class="btn-primary" data-create-btn onclick="toggleDropdown(event)" aria-haspopup="true"><i class="ti ti-plus" aria-hidden="true"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px" aria-hidden="true"></i></button>
       <button class="btn-ghost" data-notif-btn aria-label="Notifications" onclick="openNotif(event)"><i class="ti ti-bell" aria-hidden="true"></i><span class="badge-dot" aria-hidden="true"></span></button>
       <button type="button" class="avatar" data-profile-btn onclick="openProfile(event)" aria-label="Open profile menu">MO</button>
 
@@ -394,10 +394,10 @@
 
   <div class="portal-frame">
     <div class="topbar">
-      <button class="workspace-pill is-all" onclick="goto('inbox-tx')" aria-label="Switch workspace (current: All DEXes)" aria-haspopup="true"><span class="dot-grid" aria-hidden="true"><span class="dot-grid-row"><span class="dot-grid-cell"></span><span class="dot-grid-cell alt"></span></span><span class="dot-grid-row"><span class="dot-grid-cell alt"></span><span class="dot-grid-cell"></span></span></span>All DEXes<i class="ti ti-chevron-down" style="font-size:18.5px" aria-hidden="true"></i></button>
+      <button class="workspace-pill is-all" onclick="goto('inbox-tx')" aria-label="Switch workspace (current: All DEXes)" aria-haspopup="true"><span class="dot-grid" aria-hidden="true"><span class="dot-grid-row"><span class="dot-grid-cell"></span><span class="dot-grid-cell alt"></span></span><span class="dot-grid-row"><span class="dot-grid-cell alt"></span><span class="dot-grid-cell"></span></span></span>All DEXes<i class="ti ti-chevron-down" style="font-size:14px" aria-hidden="true"></i></button>
       <button type="button" class="search-pill" onclick="openSearch()" aria-label="Search across DEXes"><i class="ti ti-search" aria-hidden="true"></i><span>Search across DEXes</span><kbd>⌘K</kbd></button>
       <div class="spacer"></div>
-      <button class="btn-primary neutral" onclick="toast('Pick a DEX to create on — switching to SGTradex'); setTimeout(() => { goto('inbox-tx'); toggleDropdown({stopPropagation:()=>{}}); }, 400)" aria-haspopup="true"><i class="ti ti-plus" aria-hidden="true"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:16px" aria-hidden="true"></i></button>
+      <button class="btn-primary neutral" onclick="toast('Pick a DEX to create on — switching to SGTradex'); setTimeout(() => { goto('inbox-tx'); toggleDropdown({stopPropagation:()=>{}}); }, 400)" aria-haspopup="true"><i class="ti ti-plus" aria-hidden="true"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px" aria-hidden="true"></i></button>
       <button class="btn-ghost" data-notif-btn aria-label="Notifications" onclick="openNotif(event)"><i class="ti ti-bell" aria-hidden="true"></i><span class="badge-dot" aria-hidden="true"></span></button>
       <button type="button" class="avatar neutral" data-profile-btn onclick="openProfile(event)" aria-label="Open profile menu">MO</button>
     </div>
@@ -463,9 +463,9 @@
   <div class="canvas-tip"><i class="ti ti-pointer"></i><div>No tour. No checklist. The empty state IS the onboarding.</div></div>
   <div class="portal-frame">
     <div class="topbar">
-      <button class="workspace-pill" onclick="toggleSwitcher(event)"><span class="dot"></span>SGTradex<i class="ti ti-chevron-down" style="font-size:18.5px"></i></button>
+      <button class="workspace-pill" onclick="toggleSwitcher(event)"><span class="dot"></span>SGTradex<i class="ti ti-chevron-down" style="font-size:14px"></i></button>
       <div class="spacer"></div>
-      <button class="btn-primary" data-create-btn onclick="toggleDropdown(event)" aria-haspopup="menu"><i class="ti ti-plus"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:16px"></i></button>
+      <button class="btn-primary" data-create-btn onclick="toggleDropdown(event)" aria-haspopup="menu"><i class="ti ti-plus"></i>New Agreement<i class="ti ti-chevron-down" style="font-size:12px"></i></button>
       <button class="btn-ghost" data-notif-btn onclick="openNotif(event)"><i class="ti ti-bell"></i></button>
       <div class="avatar" data-profile-btn onclick="openProfile(event)" style="cursor:pointer">MO</div>
     </div>
@@ -500,7 +500,7 @@
           <a class="suggest-card" onclick="goto('inbox-tx')"><div class="ic-pill"><i class="ti ti-file-text"></i></div><p class="ttl">Review your org's Agreements</p><p class="desc" data-empty-hero-org-agreements>Get the lay of the land on your org's active Agreements.</p><p class="more">View Agreements <i class="ti ti-arrow-right"></i></p></a>
           <a class="suggest-card primary" data-demo="empty-state.primary-cta" onclick="startWizard('direct', { direction: 'send' })" style="cursor:pointer"><div class="ic-pill"><i class="ti ti-plus"></i></div><p class="ttl">Create your first Agreement</p><p class="desc">Set up data sharing with a counterparty, or appoint a service provider to act for you.</p><p class="more">Start now <i class="ti ti-arrow-right"></i></p></a>
         </div>
-        <p style="font-size:14.5px;color:var(--g-70);margin:20px 0 0;max-width:480px;line-height:1.6">When items arrive, they'll appear above, split into <strong style="font-weight:500;color:var(--g-10)">Mine</strong> and <strong style="font-weight:500;color:var(--g-10)">My team's</strong>.</p>
+        <p style="font-size:11px;color:var(--g-70);margin:20px 0 0;max-width:480px;line-height:1.6">When items arrive, they'll appear above, split into <strong style="font-weight:500;color:var(--g-10)">Mine</strong> and <strong style="font-weight:500;color:var(--g-10)">My team's</strong>.</p>
       </main>
     </div>
   </div>
@@ -518,7 +518,7 @@
     </div>
     <p class="section-label">Pick the service provider</p>
     <div style="background:#ffffff;border:0.5px solid var(--g-90);border-radius:var(--r-md);overflow:hidden">
-      <div style="padding:10px 14px;border-bottom:0.5px solid var(--g-90);display:flex;align-items:center;gap:8px"><i class="ti ti-search" style="font-size:18.5px;color:var(--g-50)"></i><input type="text" placeholder="Search service providers" style="flex:1;border:none;outline:none;font-family:inherit;font-size:16px;background:transparent"><span style="font-size:14.5px;color:var(--g-50)">3 SPs your org has worked with</span></div>
+      <div style="padding:10px 14px;border-bottom:0.5px solid var(--g-90);display:flex;align-items:center;gap:8px"><i class="ti ti-search" style="font-size:14px;color:var(--g-50)"></i><input type="text" placeholder="Search service providers" style="flex:1;border:none;outline:none;font-family:inherit;font-size:12px;background:transparent"><span style="font-size:11px;color:var(--g-50)">3 SPs your org has worked with</span></div>
       <button class="cp-row" onclick="pickSp(this, 'CrimsonLogic Pte Ltd', 'Service provider · UEN 198812345J · used 4× by your org')"><div class="cp-avatar">CL</div><div class="cp-body"><div class="cp-name">CrimsonLogic Pte Ltd</div><div class="cp-meta">Service provider · UEN 198812345J · 4 prior SP relationships with you</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill"><i class="ti ti-check"></i>Onboarded</span></button>
       <button class="cp-row" onclick="pickSp(this, 'Logistics Bridge Asia', 'Service provider · UEN 200334567C')"><div class="cp-avatar">LB</div><div class="cp-body"><div class="cp-name">Logistics Bridge Asia</div><div class="cp-meta">Service provider · UEN 200334567C · 1 prior relationship</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill"><i class="ti ti-check"></i>Onboarded</span></button>
       <button class="cp-row" onclick="pickSp(this, 'OceanRoute Services', 'Service provider · UEN 199822334Z')"><div class="cp-avatar">OR</div><div class="cp-body"><div class="cp-name">OceanRoute Services</div><div class="cp-meta">Service provider · UEN 199822334Z · new relationship</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill invite"><i class="ti ti-mail"></i>Invitation required</span></button>
@@ -568,8 +568,8 @@
         </details>
       </div>
       <div class="picker-detail">
-        <div class="picker-detail-head"><i class="ti ti-stack"></i><span class="name">Vessel arrival pack</span><span class="group-pill" style="padding:1px 6px;background:var(--theme-90);color:var(--theme-20);border-radius:3px;font-size:13px;font-weight:500;margin-left:4px">pack</span></div>
-        <p style="font-size:16px;color:var(--g-50);line-height:1.5">Curated Data element pack — flows together when a vessel arrives. Maintained by SGTradex admins.</p>
+        <div class="picker-detail-head"><i class="ti ti-stack"></i><span class="name">Vessel arrival pack</span><span class="group-pill" style="padding:1px 6px;background:var(--theme-90);color:var(--theme-20);border-radius:3px;font-size:10px;font-weight:500;margin-left:4px">pack</span></div>
+        <p style="font-size:12px;color:var(--g-50);line-height:1.5">Curated Data element pack — flows together when a vessel arrives. Maintained by SGTradex admins.</p>
         <p class="snapshot-label">Snapshot · 4 elements (deselect any)</p>
         <div class="snapshot-list">
           <label class="snapshot-row"><i class="ti ti-square-check-filled"></i><span class="nm">ETA · <span class="v">v2.0</span></span></label>
@@ -654,7 +654,7 @@
     </div>
 
     <footer class="pf-foot">
-      <button class="btn-cancel" onclick="wiz.viaPackSplit = false; goto('data-picker')"><i class="ti ti-arrow-left" style="font-size:16px"></i>Back to data element</button>
+      <button class="btn-cancel" onclick="wiz.viaPackSplit = false; goto('data-picker')"><i class="ti ti-arrow-left" style="font-size:12px"></i>Back to data element</button>
       <span class="pf-foot-hint">Pick a card above to continue</span>
     </footer>
   </div>
@@ -706,12 +706,12 @@
     </div>
 
     <footer class="pf-foot">
-      <button class="btn-cancel" onclick="goto('data-picker')"><i class="ti ti-arrow-left" style="font-size:16px"></i>Back to data element</button>
+      <button class="btn-cancel" onclick="goto('data-picker')"><i class="ti ti-arrow-left" style="font-size:12px"></i>Back to data element</button>
       <span class="pf-foot-hint" id="sc-foot-hint">Pick at least one Pitstop to continue</span>
       <!-- ADR 0033 §Decision ¶1: skippable. Picks nothing; agreement is created with empty scope.
            The Composer chip (capture mode) handles the question on first send. -->
-      <button class="btn-cancel" id="sc-skip-btn" onclick="deferScopeCapture()" title="We'll ask the first time you actually use this element"><i class="ti ti-clock" style="font-size:16px"></i>Decide later</button>
-      <button class="btn-primary" id="sc-continue-btn" disabled onclick="confirmScopeCapture()">Continue to counterparty <i class="ti ti-arrow-right" style="font-size:16px"></i></button>
+      <button class="btn-cancel" id="sc-skip-btn" onclick="deferScopeCapture()" title="We'll ask the first time you actually use this element"><i class="ti ti-clock" style="font-size:12px"></i>Decide later</button>
+      <button class="btn-primary" id="sc-continue-btn" disabled onclick="confirmScopeCapture()">Continue to counterparty <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
     </footer>
   </div>
 </section>
@@ -809,10 +809,10 @@
     </div>
 
     <footer class="ps-foot">
-      <button class="btn-cancel" onclick="wiz.viaPackSplit = false; goto('pack-fork')"><i class="ti ti-arrow-left" style="font-size:16px"></i>Back</button>
+      <button class="btn-cancel" onclick="wiz.viaPackSplit = false; goto('pack-fork')"><i class="ti ti-arrow-left" style="font-size:12px"></i>Back</button>
       <div class="grow"></div>
       <span class="foot-hint">Assign all 4 elements before continuing · 3 of 4 done</span>
-      <button class="btn-primary" onclick="if (typeof maybePromptPackSplitConflicts === 'function' && maybePromptPackSplitConflicts()) return; toast('Continue → terms · then review · then submit (creates 1 pack + 4 member Agreements)'); if (wiz.active) { wiz.viaPackSplit = true; wizardJumpTo(wizardSteps.findIndex(s => s.screen === 'wiz-terms')); } else { goto('wiz-terms'); }">Continue to terms <i class="ti ti-arrow-right" style="font-size:16px"></i></button>
+      <button class="btn-primary" onclick="if (typeof maybePromptPackSplitConflicts === 'function' && maybePromptPackSplitConflicts()) return; toast('Continue → terms · then review · then submit (creates 1 pack + 4 member Agreements)'); if (wiz.active) { wiz.viaPackSplit = true; wizardJumpTo(wizardSteps.findIndex(s => s.screen === 'wiz-terms')); } else { goto('wiz-terms'); }">Continue to terms <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
     </footer>
   </div>
 </section>
@@ -825,11 +825,11 @@
     <div class="picker-search"><i class="ti ti-search"></i><input type="text" data-dex-suffix-placeholder="Search counterparties on" data-dex-suffix-tail=" (name, UEN, trading alias)" placeholder="Search counterparties on SGTradex (name, UEN, trading alias)"></div>
     <div class="picker-toolbar">
       <span class="chip solid">Any type</span><span class="chip muted">Carrier</span><span class="chip muted">Shipper</span><span class="chip muted">Service provider</span>
-      <span class="chip tx" style="font-weight:500"><i class="ti ti-check" style="font-size:16px"></i>Ready for B/L sharing</span>
+      <span class="chip tx" style="font-weight:500"><i class="ti ti-check" style="font-size:12px"></i>Ready for B/L sharing</span>
       <label class="toggle-row" onclick="toggleCpDexFilter(event, this)"><span class="toggle-track" id="cp-toggle-track"><span class="toggle-knob" id="cp-toggle-knob"></span></span>Include other DEXes</label>
     </div>
     <details open>
-      <summary style="display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;list-style:none;font-size:14.5px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--g-50);background:var(--g-98)"><i class="ti ti-chevron-down" style="font-size:18.5px"></i>Counterparties your org has worked with (8)</summary>
+      <summary style="display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;list-style:none;font-size:11px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--g-50);background:var(--g-98)"><i class="ti ti-chevron-down" style="font-size:14px"></i>Counterparties your org has worked with (8)</summary>
       <div class="cp-list">
         <button class="cp-row" data-cp-id="maersk" onclick="goto('warn-inline')"><div class="cp-avatar">Mk</div><div class="cp-body"><div class="cp-name">Maersk Logistics Pte Ltd</div><div class="cp-meta">Carrier · UEN 200512345R · 3 active Agreements with you</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill"><i class="ti ti-check"></i>Ready</span></button>
         <button class="cp-row" data-cp-id="psa" onclick="toast('PSA selected'); setTimeout(() => goto('detail'), 600)"><div class="cp-avatar">PS</div><div class="cp-body"><div class="cp-name">PSA International</div><div class="cp-meta">Port operator · UEN 199702345K · 1 active Agreement with you</div></div><span class="dex-chip tx"><span class="dex-dot"></span>SGTradex</span><span class="ready-pill"><i class="ti ti-check"></i>Ready</span></button>
@@ -934,14 +934,14 @@
       <div class="review-card"><div class="rc-head"><i class="ti ti-users"></i><span class="rc-title">Sender</span></div><div class="rc-body"><p>Maersk Logistics Pte Ltd</p><p class="muted">Carrier · UEN 200512345R · 3 prior Agreements with you</p></div></div>
       <div class="review-card"><div class="rc-head"><i class="ti ti-calendar"></i><span class="rc-title">Terms</span></div><div class="rc-body"><p>12 months · Standard residency</p><p class="muted">They'll send a renewal request 30 days before expiry.</p></div></div>
     </div>
-    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:20px"><button class="btn-secondary" onclick="exitFlow(); goto('inbox-tx')">Back to inbox</button><button class="btn-primary" onclick="goto('ap-decide')">Decide <i class="ti ti-arrow-right" style="font-size:16px"></i></button></div>
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:20px"><button class="btn-secondary" onclick="exitFlow(); goto('inbox-tx')">Back to inbox</button><button class="btn-primary" onclick="goto('ap-decide')">Decide <i class="ti ti-arrow-right" style="font-size:12px"></i></button></div>
   </div>
 </section>
 
 <section class="screen" data-screen="ap-decide">
   <div class="canvas-meta"><span class="meta-label">Approve incoming · step 2 of 3</span><h1>Your decision</h1></div>
   <div class="approve-frame">
-    <p style="font-size:17px; color:var(--g-30); margin-bottom:14px">Pick one. Maersk is notified immediately either way. Audit-logged.</p>
+    <p style="font-size:13px; color:var(--g-30); margin-bottom:14px">Pick one. Maersk is notified immediately either way. Audit-logged.</p>
     <div class="decision">
       <div class="decision-card accept" onclick="startDataFlowSim(); if (typeof setPendingAgreementHighlight === 'function') setPendingAgreementHighlight('AGR-2026-04829'); setTimeout(() => goto('ap-success'), 2400)"><div class="dc-head"><i class="ti ti-check"></i><span>Accept</span></div><p class="dc-desc">Agreement transitions to ACTIVE. Data flow begins within 5 minutes.</p></div>
       <div class="decision-card changes" onclick="toast('Routed to changes-requested flow','warn')"><div class="dc-head"><i class="ti ti-edit"></i><span>Request changes</span></div><p class="dc-desc">Open a back-and-forth thread with Maersk before accepting.</p></div>
@@ -973,7 +973,7 @@
   </div>
   <div class="canvas-tip">
     <i class="ti ti-pointer" aria-hidden="true"></i>
-    <div>Replaces the legacy <code style="font-family:var(--font-mono);background:var(--g-95);padding:1px 4px;border-radius:3px;font-size:13px">shared-data</code> + <code style="font-family:var(--font-mono);background:var(--g-95);padding:1px 4px;border-radius:3px;font-size:13px">received-data</code> split. One feed with stats strip + live pulse + filter chips. Failed rows highlighted with inline retry. Click any row → message detail. <strong>Pitstop chips</strong> (small map-pin badge in the Counterparty cell) show <em>your</em> dispatching Pitstop per ADR 0028 — the counterparty's Pitstop never appears at this surface; per-Pitstop forensics live on the message detail's View Delivery Trace.</div>
+    <div>Replaces the legacy <code style="font-family:var(--font-mono);background:var(--g-95);padding:1px 4px;border-radius:3px;font-size:10px">shared-data</code> + <code style="font-family:var(--font-mono);background:var(--g-95);padding:1px 4px;border-radius:3px;font-size:10px">received-data</code> split. One feed with stats strip + live pulse + filter chips. Failed rows highlighted with inline retry. Click any row → message detail. <strong>Pitstop chips</strong> (small map-pin badge in the Counterparty cell) show <em>your</em> dispatching Pitstop per ADR 0028 — the counterparty's Pitstop never appears at this surface; per-Pitstop forensics live on the message detail's View Delivery Trace.</div>
   </div>
 
   <!-- Stats strip — flow-agnostic 4-status taxonomy per ADR 0021 -->
@@ -992,12 +992,12 @@
       </div>
       <div class="filter-chips" style="margin-bottom:0;position:relative" role="toolbar" aria-label="Status filters" id="msg-filter-chips">
         <span class="chip solid"     onclick="setMsgFilter('all', this)"          data-filter="all">All · 1,247</span>
-        <span class="chip muted"     onclick="setMsgFilter('sent', this)"         data-filter="sent"><i class="ti ti-arrow-up-right" style="font-size:13px"></i>Sent · 798</span>
-        <span class="chip muted"     onclick="setMsgFilter('received', this)"    data-filter="received"><i class="ti ti-arrow-down-left" style="font-size:13px"></i>Received · 449</span>
+        <span class="chip muted"     onclick="setMsgFilter('sent', this)"         data-filter="sent"><i class="ti ti-arrow-up-right" style="font-size:10px"></i>Sent · 798</span>
+        <span class="chip muted"     onclick="setMsgFilter('received', this)"    data-filter="received"><i class="ti ti-arrow-down-left" style="font-size:10px"></i>Received · 449</span>
         <span class="chip muted"     onclick="setMsgFilter('in-flight', this)"   data-filter="in-flight">In flight · 7</span>
         <span class="chip muted"     onclick="setMsgFilter('delivered', this)"   data-filter="delivered">Delivered · 0</span>
         <span class="chip muted"     onclick="setMsgFilter('acknowledged', this)" data-filter="acknowledged">Acknowledged · 1,232</span>
-        <span class="chip muted failed-multi" style="color:var(--red-50)" onclick="openFailedFilterPop(event)" id="failed-filter-chip" data-demo="messages.failed-filter" title="Failed · mine (3) + theirs (4) + expired (1)" data-filter="failed">Failed (3) · 8 <i class="ti ti-chevron-down" style="font-size:12px;margin-left:2px"></i></span>
+        <span class="chip muted failed-multi" style="color:var(--red-50)" onclick="openFailedFilterPop(event)" id="failed-filter-chip" data-demo="messages.failed-filter" title="Failed · mine (3) + theirs (4) + expired (1)" data-filter="failed">Failed (3) · 8 <i class="ti ti-chevron-down" style="font-size:9px;margin-left:2px"></i></span>
         <span class="chip muted closed-toggle" style="color:var(--g-50)" onclick="toggleClosedVisibility(this)" id="closed-filter-chip" title="Closed Messages are hidden by default — click to reveal (per ADR 0021)" data-filter="closed">Closed · hidden</span>
         <!-- Popover for Failed sub-filter (ADR 0021) -->
         <div class="failed-pop" id="failed-filter-pop" hidden role="menu" aria-label="Failed sub-filters">
@@ -1018,13 +1018,13 @@
         <tr class="new-arrival" onclick="goto('message-detail')" data-dir="sent" data-status="delivered">
           <td><span class="direction-cell sent"><i class="ti ti-arrow-up-right" aria-hidden="true"></i>Sent</span></td>
           <td>
-            <div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">Mk</div><span style="font-size:16px">Maersk Logistics</span></div>
+            <div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">Mk</div><span style="font-size:12px">Maersk Logistics</span></div>
             <span class="pitstop-chip" title="Your dispatching Pitstop — ADR 0028"><i class="ti ti-map-pin" aria-hidden="true"></i>from <strong>SG-Logistics</strong></span>
           </td>
-          <td>Bill of Lading <span style="color:var(--g-50);font-size:14.5px">v2.1</span></td>
+          <td>Bill of Lading <span style="color:var(--g-50);font-size:11px">v2.1</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04829</a></td>
           <td><span class="status-cell active"><span class="dot"></span>Delivered</span></td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">just now</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">just now</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); goto('message-detail')" title="View" aria-label="View message detail"><i class="ti ti-eye" aria-hidden="true"></i></button></td>
         </tr>
         <!-- Scenario E demonstration: historical Message dispatched via a now-retired Pitstop.
@@ -1033,182 +1033,182 @@
         <tr onclick="goto('message-detail')" data-dir="sent" data-status="acknowledged">
           <td><span class="direction-cell sent"><i class="ti ti-arrow-up-right" aria-hidden="true"></i>Sent</span></td>
           <td>
-            <div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">Mk</div><span style="font-size:16px">Maersk Logistics</span></div>
+            <div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">Mk</div><span style="font-size:12px">Maersk Logistics</span></div>
             <span class="pitstop-chip retired" title="Pitstop was retired 2 months ago — historical Message still references it (audit-preserved per ADR 0028)"><i class="ti ti-map-pin-off" aria-hidden="true"></i>from <strong>SG-Logistics-Old</strong> · retired since 2026-03-04</span>
           </td>
-          <td>Bill of Lading <span style="color:var(--g-50);font-size:14.5px">v2.1</span></td>
+          <td>Bill of Lading <span style="color:var(--g-50);font-size:11px">v2.1</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04829</a></td>
           <td><span class="status-cell active"><span class="dot"></span>Acknowledged</span></td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">2 months ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">2 months ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); goto('message-detail')" title="View" aria-label="View message detail"><i class="ti ti-eye" aria-hidden="true"></i></button></td>
         </tr>
         <tr class="failed" onclick="goto('message-detail')" data-dir="sent" data-status="failed" data-owner="mine">
           <td><span class="direction-cell sent"><i class="ti ti-arrow-up-right" aria-hidden="true"></i>Sent</span></td>
           <td>
-            <div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">PS</div><span style="font-size:16px">PSA International</span></div>
+            <div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">PS</div><span style="font-size:12px">PSA International</span></div>
             <span class="pitstop-chip" title="Your dispatching Pitstop — ADR 0028"><i class="ti ti-map-pin" aria-hidden="true"></i>from <strong>SG-Finance</strong></span>
           </td>
-          <td>Bunker delivery <span style="color:var(--g-50);font-size:14.5px">v0.9</span></td>
+          <td>Bunker delivery <span style="color:var(--g-50);font-size:11px">v0.9</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04822</a></td>
           <td>
             <span class="status-cell" style="background:var(--red-98);color:var(--red-50)"><span class="dot" style="background:var(--red-50)"></span>Failed</span>
             <span class="owner-badge mine" title="You can remediate this alone — Retry, fix payload, or escalate">Your action</span>
             <p class="msg-error-line"><i class="ti ti-x-circle" aria-hidden="true"></i>Payload validation failed · field <code>quantityMt</code> out of range</p>
           </td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">3 min ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">3 min ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); retryRow(this.closest('tr'))" title="Retry — re-send payload to PSA"><i class="ti ti-refresh"></i></button></td>
         </tr>
         <!-- PULL flow sample (v1 scope per ADR 0021) -->
         <tr onclick="goto('message-detail')" data-dir="received" data-status="in-flight">
           <td><span class="direction-cell received"><i class="ti ti-arrow-down-left" aria-hidden="true"></i>Received</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">Mk</div><span style="font-size:16px">Maersk Logistics</span></div></td>
-          <td>Container tracking pull <span style="color:var(--g-50);font-size:14.5px">v1.2 · request</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">Mk</div><span style="font-size:12px">Maersk Logistics</span></div></td>
+          <td>Container tracking pull <span style="color:var(--g-50);font-size:11px">v1.2 · request</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04829</a></td>
           <td><span class="status-cell pending"><span class="dot"></span>In flight</span></td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">2 min ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">2 min ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Inspecting pull request')" title="View"><i class="ti ti-eye"></i></button></td>
         </tr>
         <!-- STORE flow sample (v1 scope per ADR 0021) -->
         <tr class="failed" onclick="goto('message-detail')" data-dir="sent" data-status="failed" data-owner="expired">
           <td><span class="direction-cell sent"><i class="ti ti-arrow-up-right" aria-hidden="true"></i>Sent</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">AB</div><span style="font-size:16px">ABC Logistics</span></div></td>
-          <td>Daily customs digest <span style="color:var(--g-50);font-size:14.5px">v2.0 · stored</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">AB</div><span style="font-size:12px">ABC Logistics</span></div></td>
+          <td>Daily customs digest <span style="color:var(--g-50);font-size:11px">v2.0 · stored</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04501</a></td>
           <td>
             <span class="status-cell" style="background:var(--red-98);color:var(--red-50)"><span class="dot" style="background:var(--red-50)"></span>Failed</span>
             <span class="owner-badge expired" title="Time-bound flow timed out — re-stage with fresh TTL if data still needed">Expired</span>
             <p class="msg-error-line"><i class="ti ti-clock-x" aria-hidden="true"></i>7-day TTL elapsed without retrieval · data purged</p>
           </td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">2h ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">2h ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); restageRow(this.closest('tr'))" title="Re-stage — write new record with fresh TTL"><i class="ti ti-refresh"></i></button></td>
         </tr>
         <tr onclick="goto('message-detail')" data-dir="received" data-status="acknowledged">
           <td><span class="direction-cell received"><i class="ti ti-arrow-down-left" aria-hidden="true"></i>Received</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">CS</div><span style="font-size:16px">Cosco Shipping</span></div></td>
-          <td>Vessel arrival pack <span style="color:var(--g-50);font-size:14.5px">pack · 4 elements</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">CS</div><span style="font-size:12px">Cosco Shipping</span></div></td>
+          <td>Vessel arrival pack <span style="color:var(--g-50);font-size:11px">pack · 4 elements</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-03917</a></td>
           <td><span class="status-cell active"><span class="dot"></span>Acknowledged</span></td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">8 min ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">8 min ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Exported message JSON')" title="Export"><i class="ti ti-download"></i></button></td>
         </tr>
         <tr class="queued" onclick="goto('message-detail')" data-dir="sent" data-status="in-flight">
           <td><span class="direction-cell sent"><i class="ti ti-arrow-up-right" aria-hidden="true"></i>Sent</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">AB</div><span style="font-size:16px">ABC Logistics</span></div></td>
-          <td>Certificate of origin <span style="color:var(--g-50);font-size:14.5px">v1.4</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">AB</div><span style="font-size:12px">ABC Logistics</span></div></td>
+          <td>Certificate of origin <span style="color:var(--g-50);font-size:11px">v1.4</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04501</a></td>
           <td><span class="status-cell pending"><span class="dot"></span>In flight</span></td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">12 min ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">12 min ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Message inspected')" title="View"><i class="ti ti-eye"></i></button></td>
         </tr>
         <tr onclick="goto('message-detail')" data-dir="received" data-status="delivered">
           <td><span class="direction-cell received"><i class="ti ti-arrow-down-left" aria-hidden="true"></i>Received</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">Mk</div><span style="font-size:16px">Maersk Logistics</span></div></td>
-          <td>Cargo manifest <span style="color:var(--g-50);font-size:14.5px">v3.0</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">Mk</div><span style="font-size:12px">Maersk Logistics</span></div></td>
+          <td>Cargo manifest <span style="color:var(--g-50);font-size:11px">v3.0</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04829</a></td>
           <td><span class="status-cell active"><span class="dot"></span>Delivered</span></td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">18 min ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">18 min ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Exported message JSON')" title="Export"><i class="ti ti-download"></i></button></td>
         </tr>
         <tr onclick="goto('message-detail')" data-dir="sent" data-status="delivered">
           <td><span class="direction-cell sent"><i class="ti ti-arrow-up-right" aria-hidden="true"></i>Sent</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">CL</div><span style="font-size:16px">CrimsonLogic <span style="color:var(--g-50);font-size:13px">(SP)</span></span></div></td>
-          <td>Bill of Lading <span style="color:var(--g-50);font-size:14.5px">v2.1</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">CL</div><span style="font-size:12px">CrimsonLogic <span style="color:var(--g-50);font-size:10px">(SP)</span></span></div></td>
+          <td>Bill of Lading <span style="color:var(--g-50);font-size:11px">v2.1</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04711</a></td>
           <td><span class="status-cell active"><span class="dot"></span>Delivered</span></td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">22 min ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">22 min ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Exported message JSON')" title="Export"><i class="ti ti-download"></i></button></td>
         </tr>
         <tr onclick="goto('message-detail')" data-dir="received" data-status="acknowledged">
           <td><span class="direction-cell received"><i class="ti ti-arrow-down-left" aria-hidden="true"></i>Received</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">PS</div><span style="font-size:16px">PSA International</span></div></td>
-          <td>ETA <span style="color:var(--g-50);font-size:14.5px">v2.0</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">PS</div><span style="font-size:12px">PSA International</span></div></td>
+          <td>ETA <span style="color:var(--g-50);font-size:11px">v2.0</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-03917</a></td>
           <td><span class="status-cell active"><span class="dot"></span>Acknowledged</span></td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">31 min ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">31 min ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Exported message JSON')" title="Export"><i class="ti ti-download"></i></button></td>
         </tr>
         <!-- Failed · their action: counterparty pitstop rejected -->
         <tr class="failed" onclick="goto('message-detail')" data-dir="sent" data-status="failed" data-owner="theirs">
           <td><span class="direction-cell sent"><i class="ti ti-arrow-up-right" aria-hidden="true"></i>Sent</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">DH</div><span style="font-size:16px">DHL Global Forwarding</span></div></td>
-          <td>Consignment note <span style="color:var(--g-50);font-size:14.5px">v1.3</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">DH</div><span style="font-size:12px">DHL Global Forwarding</span></div></td>
+          <td>Consignment note <span style="color:var(--g-50);font-size:11px">v1.3</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04102</a></td>
           <td>
             <span class="status-cell" style="background:var(--red-98);color:var(--red-50)"><span class="dot" style="background:var(--red-50)"></span>Failed</span>
             <span class="owner-badge theirs" title="Counterparty pitstop rejected — nudge or accept loss">Their action</span>
             <p class="msg-error-line"><i class="ti ti-shield-x" aria-hidden="true"></i>DHL pitstop returned 403 · schema validation rejected v1.3 (expecting v1.4)</p>
           </td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">42 min ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">42 min ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); nudgeCp('DHL Global Forwarding', this)" title="Nudge counterparty"><i class="ti ti-bell-ringing"></i></button></td>
         </tr>
         <!-- Failed · their action: PULL fulfilment refused -->
         <tr class="failed" onclick="goto('message-detail')" data-dir="received" data-status="failed" data-owner="theirs">
           <td><span class="direction-cell received"><i class="ti ti-arrow-down-left" aria-hidden="true"></i>Received</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">Mk</div><span style="font-size:16px">Maersk Logistics</span></div></td>
-          <td>Vessel particulars pull <span style="color:var(--g-50);font-size:14.5px">v2.0 · request</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">Mk</div><span style="font-size:12px">Maersk Logistics</span></div></td>
+          <td>Vessel particulars pull <span style="color:var(--g-50);font-size:11px">v2.0 · request</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04829</a></td>
           <td>
             <span class="status-cell" style="background:var(--red-98);color:var(--red-50)"><span class="dot" style="background:var(--red-50)"></span>Failed</span>
             <span class="owner-badge theirs" title="Counterparty refused fulfilment of the PULL request">Their action</span>
             <p class="msg-error-line"><i class="ti ti-circle-x" aria-hidden="true"></i>Fulfilment refused · Maersk policy denies bulk pulls outside business hours</p>
           </td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">1h 14m ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">1h 14m ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); nudgeCp('Maersk Logistics', this)" title="Nudge counterparty"><i class="ti ti-bell-ringing"></i></button></td>
         </tr>
         <!-- Failed · your action: second mine failure -->
         <tr class="failed" onclick="goto('message-detail')" data-dir="sent" data-status="failed" data-owner="mine">
           <td><span class="direction-cell sent"><i class="ti ti-arrow-up-right" aria-hidden="true"></i>Sent</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">JT</div><span style="font-size:16px">Jurong Terminals</span></div></td>
-          <td>Berth allocation <span style="color:var(--g-50);font-size:14.5px">v0.8</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">JT</div><span style="font-size:12px">Jurong Terminals</span></div></td>
+          <td>Berth allocation <span style="color:var(--g-50);font-size:11px">v0.8</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04388</a></td>
           <td>
             <span class="status-cell" style="background:var(--red-98);color:var(--red-50)"><span class="dot" style="background:var(--red-50)"></span>Failed</span>
             <span class="owner-badge mine" title="Your pitstop unreachable — restart pitstop or escalate">Your action</span>
             <p class="msg-error-line"><i class="ti ti-plug-x" aria-hidden="true"></i>Your pitstop unreachable · TLS handshake timeout at 14:09 SGT</p>
           </td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">1h 32m ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">1h 32m ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); retryRow(this.closest('tr'))" title="Retry — re-send via your pitstop"><i class="ti ti-refresh"></i></button></td>
         </tr>
         <!-- Failed · your action: third mine failure -->
         <tr class="failed" onclick="goto('message-detail')" data-dir="sent" data-status="failed" data-owner="mine">
           <td><span class="direction-cell sent"><i class="ti ti-arrow-up-right" aria-hidden="true"></i>Sent</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">Mk</div><span style="font-size:16px">Maersk Logistics</span></div></td>
-          <td>Phytosanitary cert <span style="color:var(--g-50);font-size:14.5px">v1.1</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">Mk</div><span style="font-size:12px">Maersk Logistics</span></div></td>
+          <td>Phytosanitary cert <span style="color:var(--g-50);font-size:11px">v1.1</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04829</a></td>
           <td>
             <span class="status-cell" style="background:var(--red-98);color:var(--red-50)"><span class="dot" style="background:var(--red-50)"></span>Failed</span>
             <span class="owner-badge mine" title="Payload missing required field — fix and re-send">Your action</span>
             <p class="msg-error-line"><i class="ti ti-x-circle" aria-hidden="true"></i>Missing required field <code>inspectionDate</code> · payload rejected at pre-send validation</p>
           </td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">2h 8m ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">2h 8m ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); retryRow(this.closest('tr'))" title="Retry — fix payload and re-send"><i class="ti ti-refresh"></i></button></td>
         </tr>
         <!-- Failed · their action: third theirs -->
         <tr class="failed" onclick="goto('message-detail')" data-dir="sent" data-status="failed" data-owner="theirs">
           <td><span class="direction-cell sent"><i class="ti ti-arrow-up-right" aria-hidden="true"></i>Sent</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">CS</div><span style="font-size:16px">Cosco Shipping</span></div></td>
-          <td>Dangerous goods manifest <span style="color:var(--g-50);font-size:14.5px">v2.1</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">CS</div><span style="font-size:12px">Cosco Shipping</span></div></td>
+          <td>Dangerous goods manifest <span style="color:var(--g-50);font-size:11px">v2.1</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-03917</a></td>
           <td>
             <span class="status-cell" style="background:var(--red-98);color:var(--red-50)"><span class="dot" style="background:var(--red-50)"></span>Failed</span>
             <span class="owner-badge theirs" title="Counterparty pitstop unreachable for 6+ hours — try later or accept loss">Their action</span>
             <p class="msg-error-line"><i class="ti ti-server-off" aria-hidden="true"></i>Cosco pitstop offline · 5 retries exhausted over 6h</p>
           </td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">2h 51m ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">2h 51m ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); nudgeCp('Cosco Shipping', this)" title="Nudge counterparty"><i class="ti ti-bell-ringing"></i></button></td>
         </tr>
         <!-- Failed · their action: fourth theirs -->
         <tr class="failed" onclick="goto('message-detail')" data-dir="received" data-status="failed" data-owner="theirs">
           <td><span class="direction-cell received"><i class="ti ti-arrow-down-left" aria-hidden="true"></i>Received</span></td>
-          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:13px">DH</div><span style="font-size:16px">DHL Global Forwarding</span></div></td>
-          <td>Track-and-trace ping pull <span style="color:var(--g-50);font-size:14.5px">v1.0 · request</span></td>
+          <td><div class="cp-cell"><div class="cp-avatar" style="width:24px;height:24px;font-size:10px">DH</div><span style="font-size:12px">DHL Global Forwarding</span></div></td>
+          <td>Track-and-trace ping pull <span style="color:var(--g-50);font-size:11px">v1.0 · request</span></td>
           <td><a style="color:var(--theme-20);text-decoration:underline;cursor:pointer" onclick="event.stopPropagation(); goto('detail')">AGR-2026-04102</a></td>
           <td>
             <span class="status-cell" style="background:var(--red-98);color:var(--red-50)"><span class="dot" style="background:var(--red-50)"></span>Failed</span>
             <span class="owner-badge theirs" title="Counterparty rate-limit triggered — pull blocked until tomorrow">Their action</span>
             <p class="msg-error-line"><i class="ti ti-clock-stop" aria-hidden="true"></i>Rate limit hit · DHL pitstop returned 429 · next quota window 00:00 SGT</p>
           </td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">3h 22m ago</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">3h 22m ago</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); nudgeCp('DHL Global Forwarding', this)" title="Nudge counterparty"><i class="ti ti-bell-ringing"></i></button></td>
         </tr>
       </tbody>
@@ -1217,7 +1217,7 @@
     <div class="list-foot-paging">
       <span id="msg-list-count">Showing 14 of 1,247 messages today · <a onclick="toast('Loading older messages')" style="color:var(--theme-20);cursor:pointer;text-decoration:underline">load more</a></span>
       <div class="pager-btns">
-        <button onclick="openComposerPicker()" class="btn-primary-mini" title="Compose a new Message — pick which Agreement (counterparty + data element) to compose under"><i class="ti ti-pencil-plus" style="font-size:16px"></i>New Message</button>
+        <button onclick="openComposerPicker()" class="btn-primary-mini" title="Compose a new Message — pick which Agreement (counterparty + data element) to compose under"><i class="ti ti-pencil-plus" style="font-size:12px"></i>New Message</button>
         <button onclick="openBulkRetryModal()" id="msg-bulk-retry-btn" data-demo="messages.bulk-retry-btn" title="Retry all Failed · your action Messages with the same idempotency keys">Bulk Retry · 3</button>
         <button onclick="openBulkCloseModal()" id="msg-bulk-close-btn" title="Close all Failed · their action Messages with one shared reason">Bulk Close · 4</button>
         <button onclick="toast('Exporting today\'s messages as signed CSV')">Export today</button>
@@ -1280,7 +1280,7 @@
 
       <!-- Lifecycle — flow-specific timeline (ADR 0021) -->
       <section aria-labelledby="msg-lifecycle-h">
-        <p class="section-label" id="msg-lifecycle-h">Lifecycle <span style="font-size:13px;color:var(--g-50);font-weight:400;margin-left:6px" id="msg-flow-hint">PUSH flow · 4 stages</span></p>
+        <p class="section-label" id="msg-lifecycle-h">Lifecycle <span style="font-size:10px;color:var(--g-50);font-weight:400;margin-left:6px" id="msg-flow-hint">PUSH flow · 4 stages</span></p>
         <ol class="msg-timeline" id="msg-timeline" aria-label="Message lifecycle">
           <!-- timeline nodes rendered by setMessageFlow() -->
         </ol>
@@ -1302,10 +1302,10 @@
       <section aria-labelledby="msg-payload-h" id="msg-payload-section">
         <p class="section-label" id="msg-payload-h">Payload</p>
         <div class="payload-toolbar">
-          <span id="msg-payload-summary" style="font-size:14.5px;color:var(--g-50)">JSON · encrypted in transit (TLS 1.3) · at rest (AES-256)</span>
+          <span id="msg-payload-summary" style="font-size:11px;color:var(--g-50)">JSON · encrypted in transit (TLS 1.3) · at rest (AES-256)</span>
           <span class="grow"></span>
-          <button onclick="toast('Toggled view: raw / pretty / decrypted')"><i class="ti ti-binary" style="font-size:16px;vertical-align:-2px;margin-right:4px"></i>Toggle view</button>
-          <button onclick="toast('Copied payload to clipboard')"><i class="ti ti-copy" style="font-size:16px;vertical-align:-2px;margin-right:4px"></i>Copy</button>
+          <button onclick="toast('Toggled view: raw / pretty / decrypted')"><i class="ti ti-binary" style="font-size:12px;vertical-align:-2px;margin-right:4px"></i>Toggle view</button>
+          <button onclick="toast('Copied payload to clipboard')"><i class="ti ti-copy" style="font-size:12px;vertical-align:-2px;margin-right:4px"></i>Copy</button>
         </div>
         <pre class="payload-viewer" id="msg-payload-viewer"></pre>
       </section>
@@ -1600,10 +1600,10 @@
          RIGHT: hint + primary action (Review on step 1; Submit on step 2 / simple)
          Cancel lives in the compose-header top-right (matches wizard-bar pattern) — single location, top of view, always accessible. -->
     <footer class="compose-foot" data-demo="compose.foot">
-      <button class="btn-cancel compose-back" id="compose-back" hidden onclick="composerStep(-1)"><i class="ti ti-arrow-left" style="font-size:16px"></i>Back</button>
+      <button class="btn-cancel compose-back" id="compose-back" hidden onclick="composerStep(-1)"><i class="ti ti-arrow-left" style="font-size:12px"></i>Back</button>
       <div class="grow"></div>
       <span class="foot-hint" id="compose-foot-hint">All required fields filled · ready to review</span>
-      <button class="btn-primary compose-next" id="compose-next" onclick="composerStep(1)">Review <i class="ti ti-arrow-right" style="font-size:16px"></i></button>
+      <button class="btn-primary compose-next" id="compose-next" onclick="composerStep(1)">Review <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
       <button class="btn-primary compose-submit" id="compose-submit" hidden onclick="composerSubmit()">Submit · send to Maersk</button>
     </footer>
 
@@ -1653,12 +1653,12 @@
         <!-- Operator -->
         <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <i class="ti ti-user" aria-hidden="true" style="font-size:37px;color:var(--red-50)"></i>
+            <i class="ti ti-user" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
             <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Operator <span style="font-weight:400;text-transform:none;opacity:0.7">· Marcus, Cosco</span></p>
-            <strong style="font-size:23.5px;color:var(--red-30);text-align:center;line-height:1.15">Retention risk</strong>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Retention risk</strong>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
               <li style="padding:1px 0">&times; <strong>7 steps</strong> per send</li>
               <li style="padding:1px 0">&times; Form-route guesswork (<strong>EForm vs ETR</strong>)</li>
@@ -1667,25 +1667,25 @@
             </ul>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
               <li style="padding:1px 0">&check; <strong>Agreement-anchored Composer</strong> → 5 steps</li>
               <li style="padding:1px 0">&check; <strong>Live Message timeline</strong> — no refresh</li>
               <li style="padding:1px 0">&check; <strong>Auto-review</strong> on legally-significant</li>
               <li style="padding:1px 0">&check; ETR keeps its own workspace</li>
             </ul>
-            <p style="margin:6px 0 0;font-size:13px;color:var(--g-30);font-style:italic">ADRs 0020 / 21 / 24 · Decisions 03, 04</p>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0020 / 21 / 24 · Decisions 03, 04</p>
           </div>
         </div>
         <!-- Service Provider -->
         <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <i class="ti ti-user-share" aria-hidden="true" style="font-size:37px;color:var(--red-50)"></i>
+            <i class="ti ti-user-share" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
             <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Service Provider <span style="font-weight:400;text-transform:none;opacity:0.7">· Pat, CrimsonLogic</span></p>
-            <strong style="font-size:23.5px;color:var(--red-30);text-align:center;line-height:1.15">Audit exposure</strong>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Audit exposure</strong>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
               <li style="padding:1px 0">&times; Audit logs <strong>user</strong>, not acting-as <strong>org</strong></li>
               <li style="padding:1px 0">&times; Picking the wrong owner is silent</li>
@@ -1694,25 +1694,25 @@
             </ul>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
               <li style="padding:1px 0">&check; <strong>Acting-as chip</strong> on every send — unmissable</li>
-              <li style="padding:1px 0">&check; Audit triple: <code style="font-size:13px">composed_by · acting_as_org · pitstop</code></li>
+              <li style="padding:1px 0">&check; Audit triple: <code style="font-size:10px">composed_by · acting_as_org · pitstop</code></li>
               <li style="padding:1px 0">&check; Per-owner compliance trail, clean</li>
               <li style="padding:1px 0">&check; SP can&rsquo;t silently mis-attribute</li>
             </ul>
-            <p style="margin:6px 0 0;font-size:13px;color:var(--g-30);font-style:italic">ADR 0024 · Decision 04</p>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADR 0024 · Decision 04</p>
           </div>
         </div>
         <!-- DEX admin -->
         <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <i class="ti ti-shield-lock" aria-hidden="true" style="font-size:37px;color:var(--red-50)"></i>
+            <i class="ti ti-shield-lock" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
             <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">DEX admin <span style="font-weight:400;text-transform:none;opacity:0.7">· Sarah, SGTradex</span></p>
-            <strong style="font-size:23.5px;color:var(--red-30);text-align:center;line-height:1.15">Time-to-market</strong>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Time-to-market</strong>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
               <li style="padding:1px 0">&times; <strong>Weeks</strong> per new document type</li>
               <li style="padding:1px 0">&times; <strong>4-actor relay</strong>: admin → dev → tech lead → ops</li>
@@ -1721,7 +1721,7 @@
             </ul>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
               <li style="padding:1px 0">&check; <strong>Single-page</strong> admin-authored registration</li>
               <li style="padding:1px 0">&check; <strong>Smart Start</strong> grounds in BD sheet + IMDA / BCA / MOH</li>
@@ -1729,18 +1729,18 @@
               <li style="padding:1px 0">&check; <strong>Refit</strong> on revised spec — closes drift</li>
               <li style="padding:1px 0">&check; <strong>9 → 5</strong> steps to publish</li>
             </ul>
-            <p style="margin:6px 0 0;font-size:13px;color:var(--g-30);font-style:italic">ADRs 0039 / 40 / 41 / 42 / 47 · Decision 09</p>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 40 / 41 / 42 / 47 · Decision 09</p>
           </div>
         </div>
         <!-- Platform admin -->
         <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <i class="ti ti-id-badge-2" aria-hidden="true" style="font-size:37px;color:var(--red-50)"></i>
+            <i class="ti ti-id-badge-2" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
             <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Platform admin <span style="font-weight:400;text-transform:none;opacity:0.7">· KYC &amp; onboarding</span></p>
-            <strong style="font-size:23.5px;color:var(--red-30);text-align:center;line-height:1.15">Activation drop-off</strong>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Activation drop-off</strong>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
               <li style="padding:1px 0">&times; KYC labour <strong>evaporates</strong> into email threads</li>
               <li style="padding:1px 0">&times; First impression: <strong>empty inbox</strong></li>
@@ -1749,7 +1749,7 @@
             </ul>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
               <li style="padding:1px 0">&check; <strong>Onboarding workbook</strong> during KYC pass</li>
               <li style="padding:1px 0">&check; First-login <strong>pre-staged Drafts</strong></li>
@@ -1757,18 +1757,18 @@
               <li style="padding:1px 0">&check; Forward-refs hold until counterparty active</li>
               <li style="padding:1px 0">&check; <em>Empty</em> → <em>consequential</em></li>
             </ul>
-            <p style="margin:6px 0 0;font-size:13px;color:var(--g-30);font-style:italic">ADR 0048 · Decision 10</p>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADR 0048 · Decision 10</p>
           </div>
         </div>
         <!-- Pack dispatcher -->
         <div style="background:#fff;border:1px solid var(--red-90);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <i class="ti ti-stack-2" aria-hidden="true" style="font-size:37px;color:var(--red-50)"></i>
+            <i class="ti ti-stack-2" aria-hidden="true" style="font-size:28px;color:var(--red-50)"></i>
             <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Pack dispatcher <span style="font-weight:400;text-transform:none;opacity:0.7">· top accounts (PSA, Maersk)</span></p>
-            <strong style="font-size:23.5px;color:var(--red-30);text-align:center;line-height:1.15">Top-account ceiling</strong>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Top-account ceiling</strong>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
               <li style="padding:1px 0">&times; <strong>4 Agreements</strong> for 1 vessel pack</li>
               <li style="padding:1px 0">&times; <strong>4 sends</strong>, 4 inboxes to reconcile</li>
@@ -1777,14 +1777,14 @@
             </ul>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
               <li style="padding:1px 0">&check; <strong>Agreement pack</strong> — one wizard pass</li>
               <li style="padding:1px 0">&check; <strong>Send-pack</strong> dispatches to all members</li>
               <li style="padding:1px 0">&check; Per-counterparty audit preserved</li>
               <li style="padding:1px 0">&check; <strong>Minutes</strong>, not an afternoon</li>
             </ul>
-            <p style="margin:6px 0 0;font-size:13px;color:var(--g-30);font-style:italic">ADR 0027 · Decision 07</p>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADR 0027 · Decision 07</p>
           </div>
         </div>
       </div>
@@ -1798,13 +1798,13 @@
         <!-- BD -->
         <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <span style="display:inline-block;font-size:12px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
-            <i class="ti ti-target-arrow" aria-hidden="true" style="font-size:37px;color:var(--yellow-50,#7a6007)"></i>
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-target-arrow" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
             <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">BD <span style="font-weight:400;text-transform:none;opacity:0.7">· Business Development</span></p>
-            <strong style="font-size:23.5px;color:var(--red-30);text-align:center;line-height:1.15">Pipeline velocity</strong>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Pipeline velocity</strong>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
               <li style="padding:1px 0">&times; <strong>Weeks</strong> waiting on engineering per document type</li>
               <li style="padding:1px 0">&times; Can&rsquo;t demo a prospect&rsquo;s Excel live</li>
@@ -1813,26 +1813,26 @@
             </ul>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
               <li style="padding:1px 0">&check; Drop prospect&rsquo;s Excel into <strong>Smart Start</strong></li>
               <li style="padding:1px 0">&check; Demo a working schema in <strong>minutes</strong></li>
               <li style="padding:1px 0">&check; Quarters → <strong>days</strong> to POC</li>
               <li style="padding:1px 0">&check; Live pitches close while competitors wait</li>
             </ul>
-            <p style="margin:6px 0 0;font-size:13px;color:var(--g-30);font-style:italic">ADRs 0039 / 40 / 41 · Decision 09</p>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 40 / 41 · Decision 09</p>
           </div>
         </div>
         <!-- Product -->
         <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <span style="display:inline-block;font-size:12px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
-            <i class="ti ti-bulb" aria-hidden="true" style="font-size:37px;color:var(--yellow-50,#7a6007)"></i>
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-bulb" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
             <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Product <span style="font-weight:400;text-transform:none;opacity:0.7">· PRD throughput</span></p>
-            <strong style="font-size:23.5px;color:var(--red-30);text-align:center;line-height:1.15">Roadmap drag</strong>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Roadmap drag</strong>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
               <li style="padding:1px 0">&times; Every feature ships <strong>twice</strong> (admin + pitstop)</li>
               <li style="padding:1px 0">&times; <strong>5 vocabularies</strong>: Subscription, DER, SPR, EForm, ETR</li>
@@ -1841,26 +1841,26 @@
             </ul>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
               <li style="padding:1px 0">&check; <strong>2 portals → 1</strong> (Centralised Log-In)</li>
               <li style="padding:1px 0">&check; <strong>5 vocabularies → 2</strong>: Agreement + Message</li>
               <li style="padding:1px 0">&check; Catalogue work leaves product backlog</li>
               <li style="padding:1px 0">&check; <strong>One PRD</strong> per feature; ships once</li>
             </ul>
-            <p style="margin:6px 0 0;font-size:13px;color:var(--g-30);font-style:italic">ADRs 0007 / 13 / 39 · Decisions 01-10</p>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0007 / 13 / 39 · Decisions 01-10</p>
           </div>
         </div>
         <!-- Engineering -->
         <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <span style="display:inline-block;font-size:12px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
-            <i class="ti ti-cpu" aria-hidden="true" style="font-size:37px;color:var(--yellow-50,#7a6007)"></i>
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-cpu" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
             <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Engineering <span style="font-weight:400;text-transform:none;opacity:0.7">· Karthik&rsquo;s Exchanges tribe</span></p>
-            <strong style="font-size:23.5px;color:var(--red-30);text-align:center;line-height:1.15">Catalogue relay</strong>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Catalogue relay</strong>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
               <li style="padding:1px 0">&times; PR review per document type</li>
               <li style="padding:1px 0">&times; Manual <strong>schema copy</strong> across envs</li>
@@ -1869,26 +1869,26 @@
             </ul>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
               <li style="padding:1px 0">&check; Bundle exports to <strong>admin-corev2</strong></li>
               <li style="padding:1px 0">&check; No PR, no schema copy, no restart</li>
               <li style="padding:1px 0">&check; Squads off the catalogue relay</li>
               <li style="padding:1px 0">&check; Capacity → platform infrastructure</li>
             </ul>
-            <p style="margin:6px 0 0;font-size:13px;color:var(--g-30);font-style:italic">ADRs 0039 / 46 · Decision 09</p>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 46 · Decision 09</p>
           </div>
         </div>
         <!-- UIUX -->
         <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <span style="display:inline-block;font-size:12px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
-            <i class="ti ti-palette" aria-hidden="true" style="font-size:37px;color:var(--yellow-50,#7a6007)"></i>
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-palette" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
             <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">UIUX <span style="font-weight:400;text-transform:none;opacity:0.7">· Veronica&rsquo;s team</span></p>
-            <strong style="font-size:23.5px;color:var(--red-30);text-align:center;line-height:1.15">Surface-area sprawl</strong>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Surface-area sprawl</strong>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
               <li style="padding:1px 0">&times; <strong>2 portals × 3 DEXes</strong> of design surface</li>
               <li style="padding:1px 0">&times; Personas inconsistent across portals</li>
@@ -1897,26 +1897,26 @@
             </ul>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
               <li style="padding:1px 0">&check; <strong>One portal · one design system</strong></li>
               <li style="padding:1px 0">&check; One role taxonomy w/ capability gates</li>
               <li style="padding:1px 0">&check; <strong>DS v1.0 → v2.0</strong>, half the surface area</li>
               <li style="padding:1px 0">&check; Audits run <strong>once</strong>, not N times</li>
             </ul>
-            <p style="margin:6px 0 0;font-size:13px;color:var(--g-30);font-style:italic">ADRs 0001 / 30 / 32 · informs DS v2.0</p>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0001 / 30 / 32 · informs DS v2.0</p>
           </div>
         </div>
         <!-- Ops -->
         <div style="background:#fff;border:1px solid var(--yellow-95,#ffecc3);border-radius:10px;padding:var(--sp-4);display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <span style="display:inline-block;font-size:12px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
-            <i class="ti ti-headset" aria-hidden="true" style="font-size:37px;color:var(--yellow-50,#7a6007)"></i>
+            <span style="display:inline-block;font-size:9px;font-weight:600;color:var(--g-30);background:var(--yellow-98,#fff8f1);border:1px solid var(--yellow-95,#ffecc3);border-radius:99px;padding:2px 8px;letter-spacing:0.06em;text-transform:uppercase">Internal · Dex Technologies</span>
+            <i class="ti ti-headset" aria-hidden="true" style="font-size:28px;color:var(--yellow-50,#7a6007)"></i>
             <p style="font-size:var(--fs-micro-plus);font-weight:600;color:var(--g-10);text-transform:uppercase;letter-spacing:0.04em;margin:0;text-align:center">Ops <span style="font-weight:400;text-transform:none;opacity:0.7">· Suraj&rsquo;s tribe · L1 &amp; change risk</span></p>
-            <strong style="font-size:23.5px;color:var(--red-30);text-align:center;line-height:1.15">Ticket &amp; change load</strong>
+            <strong style="font-size:18px;color:var(--red-30);text-align:center;line-height:1.15">Ticket &amp; change load</strong>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--red-30);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true" style="margin-right:3px"></i>Pain</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--red-50);font-weight:500">
               <li style="padding:1px 0">&times; &quot;Where do I start?&quot; tickets</li>
               <li style="padding:1px 0">&times; &quot;Where&rsquo;s my data?&quot; tickets</li>
@@ -1925,7 +1925,7 @@
             </ul>
           </div>
           <div style="font-size:var(--fs-meta);line-height:1.45;padding-top:8px;border-top:1px dashed var(--g-90)">
-            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:13px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
+            <p style="margin:0 0 4px;font-weight:700;color:var(--green-50);text-transform:uppercase;letter-spacing:0.05em;font-size:10px"><i class="ti ti-check" aria-hidden="true" style="margin-right:3px"></i>Prototype answer</p>
             <ul style="margin:0;padding:0;list-style:none;color:var(--g-10);font-weight:500">
               <li style="padding:1px 0">&check; <strong>Pre-staged Drafts</strong> close empty-inbox tickets</li>
               <li style="padding:1px 0">&check; <strong>Live timeline</strong> closes status tickets</li>
@@ -1933,7 +1933,7 @@
               <li style="padding:1px 0">&check; <strong>Bulk-onboarding workbook</strong> for Ops</li>
               <li style="padding:1px 0">&check; Change-risk surface shrinks</li>
             </ul>
-            <p style="margin:6px 0 0;font-size:13px;color:var(--g-30);font-style:italic">ADRs 0039 / 46 / 48 · Decisions 03, 10</p>
+            <p style="margin:6px 0 0;font-size:10px;color:var(--g-30);font-style:italic">ADRs 0039 / 46 / 48 · Decisions 03, 10</p>
           </div>
         </div>
       </div>
@@ -2768,8 +2768,8 @@
 <aside class="cp-panel" id="adr-panel" aria-labelledby="adr-panel-heading" aria-modal="true" role="dialog" aria-hidden="true">
   <div class="cp-panel-head">
     <div>
-      <p style="font-size:13px;color:var(--g-50);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px" id="adr-panel-eyebrow">ADR · Foundations</p>
-      <h3 id="adr-panel-heading" style="font-size:19.5px;color:var(--g-10);font-weight:500">ADR 0000 · placeholder</h3>
+      <p style="font-size:10px;color:var(--g-50);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px" id="adr-panel-eyebrow">ADR · Foundations</p>
+      <h3 id="adr-panel-heading" style="font-size:15px;color:var(--g-10);font-weight:500">ADR 0000 · placeholder</h3>
     </div>
     <button class="close" onclick="closeAdrPanel()" aria-label="Close ADR panel"><i class="ti ti-x"></i></button>
   </div>
@@ -2790,7 +2790,7 @@
   </div>
   <div class="canvas-tip">
     <i class="ti ti-pointer" aria-hidden="true"></i>
-    <div>Production polish: 7-state machine, ARIA + semantic HTML, focus management on modals + side panel, ≥1200px right rail, &lt;768px mobile reflow, skeleton loader, reduced-motion respect. See <code style="background:var(--g-95);padding:1px 4px;border-radius:3px;font-family:var(--font-mono);font-size:13px">docs/agreement-detail-handoff.md</code> for the full spec.</div>
+    <div>Production polish: 7-state machine, ARIA + semantic HTML, focus management on modals + side panel, ≥1200px right rail, &lt;768px mobile reflow, skeleton loader, reduced-motion respect. See <code style="background:var(--g-95);padding:1px 4px;border-radius:3px;font-family:var(--font-mono);font-size:10px">docs/agreement-detail-handoff.md</code> for the full spec.</div>
     <div class="state-switcher" data-demo-only role="toolbar" aria-label="Detail page state preview">
       <span class="ss-label">Try:</span>
       <button class="active" data-state="active" onclick="setDetailState('active', this)">Active</button>
@@ -2900,10 +2900,10 @@
         <p class="section-label" id="covered-h">What's covered</p>
         <div class="party-card" style="padding:12px 14px">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <i class="ti ti-file-text" style="font-size:23.5px;color:var(--g-50)" aria-hidden="true"></i>
+            <i class="ti ti-file-text" style="font-size:18px;color:var(--g-50)" aria-hidden="true"></i>
             <div style="flex:1;min-width:0">
-              <p style="font-size:17px;font-weight:500;color:var(--g-10)">Bill of Lading <span style="font-weight:400;color:var(--g-50)">· v2.1</span></p>
-              <p style="font-size:14.5px;color:var(--g-50);margin-top:2px">Snapshot taken 14 Mar · 1 element · not in a group</p>
+              <p style="font-size:13px;font-weight:500;color:var(--g-10)">Bill of Lading <span style="font-weight:400;color:var(--g-50)">· v2.1</span></p>
+              <p style="font-size:11px;color:var(--g-50);margin-top:2px">Snapshot taken 14 Mar · 1 element · not in a group</p>
             </div>
             <!-- Compose-complexity is an attribute of the DATA ELEMENT, set by DEX admins on the Data elements registry (ADR 0025).
                  Shown here so operators know what to expect when composing under this Agreement — high-stakes → 3-step wizard;
@@ -2911,8 +2911,8 @@
             <span class="complexity-pill high-stakes" title="Data element compose_complexity = high-stakes per ADR 0025 — Compose renders as a 3-step wizard with a review step. Set by DEX admins on the Data elements registry; not editable per-Agreement.">high-stakes</span>
             <span class="version-badge active">Active</span>
           </div>
-          <p style="font-size:14.5px;color:var(--g-50);margin-top:10px;padding-top:10px;border-top:0.5px dashed var(--g-95);line-height:1.45">
-            <i class="ti ti-info-circle" style="font-size:16px;vertical-align:-2px;margin-right:3px"></i>
+          <p style="font-size:11px;color:var(--g-50);margin-top:10px;padding-top:10px;border-top:0.5px dashed var(--g-95);line-height:1.45">
+            <i class="ti ti-info-circle" style="font-size:12px;vertical-align:-2px;margin-right:3px"></i>
             <strong style="color:var(--g-30);font-weight:500">Why high-stakes?</strong> Bills of Lading are legal records; the Composer renders a 3-step wizard with explicit review (per ADR 0025). Complexity is a property of the data element — managed on the <a href="#" onclick="event.preventDefault(); goto('data-elements')" style="color:var(--theme-20);text-decoration:underline">Data elements registry</a> by DEX admins, not per-Agreement.
           </p>
         </div>
@@ -2935,8 +2935,8 @@
         <ol class="activity" aria-label="Audit log, most recent first" data-agreement-activity-log="AGR-2026-04829">
           <!-- Populated by hydrateAgreementActivityLog(). See Issue 0011 stage 1e. -->
         </ol>
-        <p style="font-size:14.5px;color:var(--g-50);margin:10px 0 0;text-align:center" id="audit-foot">
-          <button onclick="expandAudit(event)" aria-expanded="false" aria-controls="section-activity" style="background:transparent;border:none;color:var(--g-50);text-decoration:underline;cursor:pointer;font-family:inherit;font-size:14.5px">Show full audit log (24 entries)</button>
+        <p style="font-size:11px;color:var(--g-50);margin:10px 0 0;text-align:center" id="audit-foot">
+          <button onclick="expandAudit(event)" aria-expanded="false" aria-controls="section-activity" style="background:transparent;border:none;color:var(--g-50);text-decoration:underline;cursor:pointer;font-family:inherit;font-size:11px">Show full audit log (24 entries)</button>
         </p>
       </section>
 
@@ -2996,7 +2996,7 @@
   <div class="warn-frame">
     <p class="step-tag">Step 3 of 5 · /portal/tradex/agreements/new</p>
     <h3>Who's the counterparty?</h3>
-    <div class="selected-cp"><div class="cp-avatar" style="background:var(--bx-95);color:var(--bx-20)">AC</div><div class="cp-body"><div class="cp-name">Acme Construction Pte Ltd</div><div style="display:flex;gap:6px;margin-top:2px;align-items:center"><span class="dex-chip bx" style="font-size:13px;padding:2px 6px"><span class="dex-dot"></span>SGBuildex</span><span style="font-size:14.5px;color:var(--g-50)">Contractor · UEN 201111223J</span></div></div><i class="ti ti-check" style="font-size:21.5px;color:var(--green-50)"></i></div>
+    <div class="selected-cp"><div class="cp-avatar" style="background:var(--bx-95);color:var(--bx-20)">AC</div><div class="cp-body"><div class="cp-name">Acme Construction Pte Ltd</div><div style="display:flex;gap:6px;margin-top:2px;align-items:center"><span class="dex-chip bx" style="font-size:10px;padding:2px 6px"><span class="dex-dot"></span>SGBuildex</span><span style="font-size:11px;color:var(--g-50)">Contractor · UEN 201111223J</span></div></div><i class="ti ti-check" style="font-size:16px;color:var(--green-50)"></i></div>
     <!-- Issue 0007 — Acme is the canonical cross-DEX example (primaryDexId='bx'). Warning copy + primary contact line below. -->
     <div class="warn-panel"><div class="row"><i class="ti ti-alert-triangle"></i><div><p class="ttl">This Agreement crosses a DEX boundary</p><p class="desc">Acme Construction's primary DEX is <strong>SGBuildex</strong>. You're creating this Agreement from <strong>SGTradex</strong>. SGBuildex residency rules apply to outgoing data.</p><p class="desc" style="margin-top:6px"><strong style="font-weight:500">Primary contact at Acme:</strong> Boon Keng <span style="color:var(--g-50)">(boonkeng@acme-co.com)</span></p><p class="audit">Your acknowledgement of this warning will be audit-logged.</p></div></div></div>
     <div class="warn-actions"><button class="btn-cancel" onclick="toast('Cancelled · returning to counterparty picker','warn'); goto('cp-picker')">Cancel</button><button class="btn-deliberate" onclick="acknowledgeWarn()">Continue anyway</button></div>
@@ -3067,59 +3067,59 @@
     </div>
 
     <table class="list-table">
-      <thead><tr><th>Element</th><th>Latest version</th><th>Category</th><th>Compose <i class="ti ti-info-circle" style="font-size:14.5px;vertical-align:-1px;color:var(--g-50)" title="compose_complexity attribute per ADR 0025 — selects single-page form (simple) vs 3-step wizard (high-stakes) at compose time. DEX admins click to toggle."></i></th><th>Used by</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Element</th><th>Latest version</th><th>Category</th><th>Compose <i class="ti ti-info-circle" style="font-size:11px;vertical-align:-1px;color:var(--g-50)" title="compose_complexity attribute per ADR 0025 — selects single-page form (simple) vs 3-step wizard (high-stakes) at compose time. DEX admins click to toggle."></i></th><th>Used by</th><th>Status</th><th></th></tr></thead>
       <tbody>
         <tr onclick="openDataElementDetail('Bill of Lading')">
-          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:21.5px;color:var(--g-50)"></i><div><div style="font-weight:500">Bill of Lading</div><div style="font-size:14.5px;color:var(--g-50)">B/L document — sender to consignee</div></div></div></td>
-          <td><span class="version-badge active">v2.1</span> <span style="font-size:14.5px;color:var(--g-50);margin-left:4px">+ 2 deprecated</span></td>
+          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:16px;color:var(--g-50)"></i><div><div style="font-weight:500">Bill of Lading</div><div style="font-size:11px;color:var(--g-50)">B/L document — sender to consignee</div></div></div></td>
+          <td><span class="version-badge active">v2.1</span> <span style="font-size:11px;color:var(--g-50);margin-left:4px">+ 2 deprecated</span></td>
           <td>Trade documents</td>
           <td><span class="complexity-pill high-stakes" role="button" tabindex="0" onclick="event.stopPropagation(); toggleDeComplexity(this, 'Bill of Lading')" title="Click to toggle simple ↔ high-stakes (admin only) · changes future Compose sessions">high-stakes</span></td>
-          <td><span class="usage-bar"><span class="fill" style="width:78%"></span></span><span style="font-size:14.5px;color:var(--g-50)">42 orgs · 612 msgs/day</span></td>
+          <td><span class="usage-bar"><span class="fill" style="width:78%"></span></span><span style="font-size:11px;color:var(--g-50)">42 orgs · 612 msgs/day</span></td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); openDataElementDetail('Bill of Lading')" title="Impact analysis"><i class="ti ti-chart-bar"></i></button></td>
         </tr>
         <tr onclick="openDataElementDetail('Vessel arrival pack')">
-          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-stack" style="font-size:21.5px;color:var(--theme-50)"></i><div><div style="font-weight:500">Vessel arrival pack <span class="version-badge active" style="margin-left:6px">PACK</span></div><div style="font-size:14.5px;color:var(--g-50)">4 elements · ETA, particulars, crew, manifest</div></div></div></td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">Mutable group</span></td>
+          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-stack" style="font-size:16px;color:var(--theme-50)"></i><div><div style="font-weight:500">Vessel arrival pack <span class="version-badge active" style="margin-left:6px">PACK</span></div><div style="font-size:11px;color:var(--g-50)">4 elements · ETA, particulars, crew, manifest</div></div></div></td>
+          <td><span style="font-size:11px;color:var(--g-50)">Mutable group</span></td>
           <td>Trade documents</td>
-          <td><span style="font-size:13px;color:var(--g-50)" title="Group inherits complexity from its elements at compose-time">mixed</span></td>
-          <td><span class="usage-bar"><span class="fill" style="width:55%"></span></span><span style="font-size:14.5px;color:var(--g-50)">28 orgs · in 7 Agreements</span></td>
+          <td><span style="font-size:10px;color:var(--g-50)" title="Group inherits complexity from its elements at compose-time">mixed</span></td>
+          <td><span class="usage-bar"><span class="fill" style="width:55%"></span></span><span style="font-size:11px;color:var(--g-50)">28 orgs · in 7 Agreements</span></td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Edit group members (admin only)')" title="Edit"><i class="ti ti-edit"></i></button></td>
         </tr>
         <tr onclick="openDataElementDetail('Cargo manifest')">
-          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:21.5px;color:var(--g-50)"></i><div><div style="font-weight:500">Cargo manifest</div><div style="font-size:14.5px;color:var(--g-50)">Itemised shipment list</div></div></div></td>
+          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:16px;color:var(--g-50)"></i><div><div style="font-weight:500">Cargo manifest</div><div style="font-size:11px;color:var(--g-50)">Itemised shipment list</div></div></div></td>
           <td><span class="version-badge active">v3.0</span></td>
           <td>Trade documents</td>
           <td><span class="complexity-pill high-stakes" role="button" tabindex="0" onclick="event.stopPropagation(); toggleDeComplexity(this, 'Cargo manifest')" title="Click to toggle">high-stakes</span></td>
-          <td><span class="usage-bar"><span class="fill" style="width:62%"></span></span><span style="font-size:14.5px;color:var(--g-50)">31 orgs · 287 msgs/day</span></td>
+          <td><span class="usage-bar"><span class="fill" style="width:62%"></span></span><span style="font-size:11px;color:var(--g-50)">31 orgs · 287 msgs/day</span></td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); openDataElementDetail('Cargo manifest')" title="Impact analysis"><i class="ti ti-chart-bar"></i></button></td>
         </tr>
         <tr onclick="openDataElementDetail('Certificate of origin')">
-          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:21.5px;color:var(--g-50)"></i><div><div style="font-weight:500">Certificate of origin</div><div style="font-size:14.5px;color:var(--g-50)">Country-of-origin attestation</div></div></div></td>
+          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:16px;color:var(--g-50)"></i><div><div style="font-weight:500">Certificate of origin</div><div style="font-size:11px;color:var(--g-50)">Country-of-origin attestation</div></div></div></td>
           <td><span class="version-badge active">v1.4</span> <span class="version-badge draft" style="margin-left:4px">v1.5</span></td>
           <td>Trade documents</td>
           <td><span class="complexity-pill simple" role="button" tabindex="0" onclick="event.stopPropagation(); toggleDeComplexity(this, 'Certificate of origin')" title="Click to toggle">simple</span></td>
-          <td><span class="usage-bar"><span class="fill" style="width:34%"></span></span><span style="font-size:14.5px;color:var(--g-50)">17 orgs · 89 msgs/day</span></td>
+          <td><span class="usage-bar"><span class="fill" style="width:34%"></span></span><span style="font-size:11px;color:var(--g-50)">17 orgs · 89 msgs/day</span></td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Promote v1.5 → Active')" title="Promote draft"><i class="ti ti-arrow-up"></i></button></td>
         </tr>
         <tr onclick="openDataElementDetail('ETA')">
-          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:21.5px;color:var(--g-50)"></i><div><div style="font-weight:500">ETA</div><div style="font-size:14.5px;color:var(--g-50)">Estimated time of arrival</div></div></div></td>
+          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:16px;color:var(--g-50)"></i><div><div style="font-weight:500">ETA</div><div style="font-size:11px;color:var(--g-50)">Estimated time of arrival</div></div></div></td>
           <td><span class="version-badge active">v2.0</span> <span class="version-badge deprecated" style="margin-left:4px">v1.x</span></td>
           <td>Logistics &amp; tracking</td>
           <td><span class="complexity-pill simple" role="button" tabindex="0" onclick="event.stopPropagation(); toggleDeComplexity(this, 'ETA')" title="Click to toggle">simple</span></td>
-          <td><span class="usage-bar"><span class="fill" style="width:91%"></span></span><span style="font-size:14.5px;color:var(--g-50)">58 orgs · 1.2k msgs/day</span></td>
+          <td><span class="usage-bar"><span class="fill" style="width:91%"></span></span><span style="font-size:11px;color:var(--g-50)">58 orgs · 1.2k msgs/day</span></td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Migration tracking for v1→v2')" title="Migration tracking"><i class="ti ti-arrows-right-left"></i></button></td>
         </tr>
         <tr onclick="openDataElementDetail('Bunker delivery confirmation')">
-          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:21.5px;color:var(--g-50)"></i><div><div style="font-weight:500">Bunker delivery confirmation</div><div style="font-size:14.5px;color:var(--g-50)">Tripartite delivery attestation · contributor flow</div></div></div></td>
+          <td><div style="display:flex;align-items:center;gap:8px"><i class="ti ti-file-text" style="font-size:16px;color:var(--g-50)"></i><div><div style="font-weight:500">Bunker delivery confirmation</div><div style="font-size:11px;color:var(--g-50)">Tripartite delivery attestation · contributor flow</div></div></div></td>
           <td><span class="version-badge draft">v0.9</span></td>
           <td>Bunker &amp; fuel</td>
           <td><span class="complexity-pill simple" role="button" tabindex="0" onclick="event.stopPropagation(); toggleDeComplexity(this, 'Bunker delivery')" title="Click to toggle">simple</span></td>
-          <td><span style="font-size:14.5px;color:var(--g-50)">Not yet in use · in DSV pipeline</span></td>
+          <td><span style="font-size:11px;color:var(--g-50)">Not yet in use · in DSV pipeline</span></td>
           <td><span class="status-cell draft"><span class="dot"></span>Draft</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Promote to Active (admin)')" title="Promote"><i class="ti ti-arrow-up"></i></button></td>
         </tr>
@@ -3177,7 +3177,7 @@
         </div>
         <div class="pack-tile">
           <p class="t-label">Compose mode</p>
-          <p class="t-num" id="de-detail-tile-complexity" style="font-size:21.5px">high-stakes</p>
+          <p class="t-num" id="de-detail-tile-complexity" style="font-size:16px">high-stakes</p>
           <p class="t-sub" id="de-detail-tile-complexity-sub">3-step wizard at compose time (per <a class="ov-link" href="#" onclick="event.preventDefault(); openAdrPanel('0025','Compose complexity','agr')">ADR 0025</a>)</p>
         </div>
         <div class="pack-tile">
@@ -3202,7 +3202,7 @@
       <p class="section-label" style="margin-top:24px">Schema preview</p>
       <p class="pack-audit-note">Reference payload structure for the latest active version. Full JSON Schema lives in the DEX admin tooling — this preview shows the canonical field shape operators see in Composer.</p>
       <div class="pack-members-frame" style="padding:14px 18px;background:var(--surface-sub)">
-        <pre id="de-detail-schema" style="margin:0;font-family:var(--font-mono);font-size:14.5px;line-height:1.65;color:var(--g-20);white-space:pre-wrap;word-break:break-word"></pre>
+        <pre id="de-detail-schema" style="margin:0;font-family:var(--font-mono);font-size:11px;line-height:1.65;color:var(--g-20);white-space:pre-wrap;word-break:break-word"></pre>
       </div>
 
       <!-- Agreements using this element -->
@@ -3377,7 +3377,7 @@
         <div class="reg-rail-panel">
           <div class="reg-rail-panel-head">
             <span>Composer preview</span>
-            <span style="font-size: 13px; text-transform: none; letter-spacing: 0">read-only</span>
+            <span style="font-size: 10px; text-transform: none; letter-spacing: 0">read-only</span>
           </div>
           <div class="reg-rail-panel-body">
             <div class="reg-skeleton" data-reg-skeleton data-demo="register-canvas.skeleton"></div>
@@ -3386,7 +3386,7 @@
         <div class="reg-rail-panel">
           <div class="reg-rail-panel-head">
             <span>Publish bundle</span>
-            <span style="font-size: 13px; text-transform: none; letter-spacing: 0">elementSchema · uiSchema · uiRules · authoringMetadata</span>
+            <span style="font-size: 10px; text-transform: none; letter-spacing: 0">elementSchema · uiSchema · uiRules · authoringMetadata</span>
           </div>
           <div class="reg-rail-panel-body">
             <pre class="reg-json-preview" data-reg-json-preview data-demo="register-canvas.json-preview"></pre>
@@ -3419,17 +3419,17 @@
     <div class="left">
       <button class="btn-cancel"
               data-demo="register-canvas.back"
-              onclick="regDiscardAndExit()"><i class="ti ti-arrow-left" style="font-size: 16px"></i> Back to catalogue</button>
+              onclick="regDiscardAndExit()"><i class="ti ti-arrow-left" style="font-size: 12px"></i> Back to catalogue</button>
       <button class="btn-cancel"
               data-reg-prev-btn
               data-demo="register-canvas.prev"
-              hidden><i class="ti ti-arrow-left" style="font-size: 16px"></i> Previous: <span data-reg-prev-label></span></button>
+              hidden><i class="ti ti-arrow-left" style="font-size: 12px"></i> Previous: <span data-reg-prev-label></span></button>
     </div>
     <div class="right">
       <button class="btn-primary"
               data-reg-next-btn
               data-demo="register-canvas.continue"
-              hidden>Continue: <span data-reg-next-label></span> <i class="ti ti-arrow-right" style="font-size: 16px"></i></button>
+              hidden>Continue: <span data-reg-next-label></span> <i class="ti ti-arrow-right" style="font-size: 12px"></i></button>
     </div>
   </div>
 </section>
@@ -3565,7 +3565,7 @@
            data-demo="onramp.spec-sheet.dropzone"
            ondragover="event.preventDefault()"
            ondrop="event.preventDefault(); regOnSpecSheetFile(event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0])">
-        <i class="ti ti-upload" style="font-size: 37px; color: var(--g-70)"></i>
+        <i class="ti ti-upload" style="font-size: 28px; color: var(--g-70)"></i>
         <p class="reg-spec-sheet-drop-hint" id="reg-spec-sheet-drop-hint">Drop an XLSX, XLS, or CSV file — or click to choose.</p>
         <label class="btn-secondary" style="cursor: pointer">
           <i class="ti ti-file-spreadsheet"></i> Choose a file
@@ -3648,7 +3648,7 @@
              data-demo="onramp.form.dropzone"
              ondragover="event.preventDefault()"
              ondrop="event.preventDefault(); regOnFormFile(event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0])">
-          <i class="ti ti-upload" style="font-size: 47.5px; color: var(--g-70)"></i>
+          <i class="ti ti-upload" style="font-size: 36px; color: var(--g-70)"></i>
           <p class="reg-form-dropzone-title">Drop a PDF, Word document, or image here</p>
           <p class="reg-form-dropzone-hint">or</p>
           <label class="btn-primary" style="cursor: pointer">
@@ -3967,7 +3967,7 @@
 
   <div style="display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-3)">
     <div class="participant-card" onclick="goto('detail')">
-      <div class="cp-avatar" style="width:44px;height:44px;font-size:17px">Mk</div>
+      <div class="cp-avatar" style="width:44px;height:44px;font-size:13px">Mk</div>
       <div class="pc-body">
         <div class="pc-name">Maersk Logistics Pte Ltd</div>
         <div class="pc-meta">Carrier · UEN 200512345R · 6 team members · 3 active Agreements with you</div>
@@ -3984,7 +3984,7 @@
     </div>
 
     <div class="participant-card" onclick="goto('detail')">
-      <div class="cp-avatar" style="width:44px;height:44px;font-size:17px">PS</div>
+      <div class="cp-avatar" style="width:44px;height:44px;font-size:13px">PS</div>
       <div class="pc-body">
         <div class="pc-name">PSA International</div>
         <div class="pc-meta">Port operator · UEN 199702345K · 12 team members · 1 active Agreement with you</div>
@@ -4000,7 +4000,7 @@
     </div>
 
     <div class="participant-card" onclick="goto('detail')">
-      <div class="cp-avatar" style="width:44px;height:44px;font-size:17px">CL</div>
+      <div class="cp-avatar" style="width:44px;height:44px;font-size:13px">CL</div>
       <div class="pc-body">
         <div class="pc-name">CrimsonLogic Pte Ltd</div>
         <div class="pc-meta">Service provider · UEN 198812345J · 4 team members · acts on behalf of 7 orgs</div>
@@ -4016,7 +4016,7 @@
     </div>
 
     <div class="participant-card" onclick="goto('detail')">
-      <div class="cp-avatar" style="width:44px;height:44px;font-size:17px">CS</div>
+      <div class="cp-avatar" style="width:44px;height:44px;font-size:13px">CS</div>
       <div class="pc-body">
         <div class="pc-name">Cosco Shipping Lines</div>
         <div class="pc-meta">Carrier · UEN 200012345B · 8 team members · also known as COSCON · 1 active Agreement</div>
@@ -4031,7 +4031,7 @@
     </div>
 
     <div class="participant-card" onclick="goto('detail')">
-      <div class="cp-avatar" style="width:44px;height:44px;font-size:17px">PC</div>
+      <div class="cp-avatar" style="width:44px;height:44px;font-size:13px">PC</div>
       <div class="pc-body">
         <div class="pc-name">Pacific Container Lines</div>
         <div class="pc-meta">Carrier · UEN 202118822F · 3 team members · KYC review pending</div>
@@ -4046,7 +4046,7 @@
     </div>
 
     <div class="participant-card" onclick="goto('detail')">
-      <div class="cp-avatar" style="width:44px;height:44px;font-size:17px;background:var(--bx-95);color:var(--bx-20)">AC</div>
+      <div class="cp-avatar" style="width:44px;height:44px;font-size:13px;background:var(--bx-95);color:var(--bx-20)">AC</div>
       <div class="pc-body">
         <div class="pc-name">Acme Construction Pte Ltd</div>
         <div class="pc-meta">Contractor · UEN 201111223J · primary DEX is <strong style="color:var(--bx-20);font-weight:500">SGBuildex</strong> · cross-DEX participant</div>
@@ -4062,7 +4062,7 @@
   </div>
   </div><!-- /.list-frame -->
 
-  <p style="font-size:14.5px;color:var(--g-50);margin-top:18px;text-align:center" id="participants-foot">Showing <span id="participants-shown-count">6</span> of <span id="participants-total-count">42</span> participants · <a id="participants-load-more" onclick="loadMoreParticipants()" style="color:var(--g-50);text-decoration:underline;cursor:pointer">Load more</a></p>
+  <p style="font-size:11px;color:var(--g-50);margin-top:18px;text-align:center" id="participants-foot">Showing <span id="participants-shown-count">6</span> of <span id="participants-total-count">42</span> participants · <a id="participants-load-more" onclick="loadMoreParticipants()" style="color:var(--g-50);text-decoration:underline;cursor:pointer">Load more</a></p>
 </section>
 
 <!-- ============ Agreements list page ============ -->
@@ -4077,7 +4077,7 @@
         <span class="chip solid">All · 23</span><span class="chip muted">Pending · 4</span><span class="chip muted">Active · 17</span><span class="chip muted">Ended · 2</span>
       </div>
       <div class="grow"></div>
-      <button class="agr-group-toggle on" onclick="this.classList.toggle('on'); toast(this.classList.contains('on') ? 'Grouped by Agreement pack' : 'Flat list view')" title="Group Agreements by pack — collapses multi-counterparty pack members under a parent row (per ADR 0027)"><i class="ti ti-stack-2" style="font-size:17px"></i>Group by pack</button>
+      <button class="agr-group-toggle on" onclick="this.classList.toggle('on'); toast(this.classList.contains('on') ? 'Grouped by Agreement pack' : 'Flat list view')" title="Group Agreements by pack — collapses multi-counterparty pack members under a parent row (per ADR 0027)"><i class="ti ti-stack-2" style="font-size:13px"></i>Group by pack</button>
       <!-- "+ New Agreement" CTA is in the topbar (persistent shell) — single source per UI-discipline pass -->
     </div>
 
@@ -4085,16 +4085,16 @@
       <thead><tr><th>Counterparty</th><th>What's covered</th><th>Type</th><th>Status</th><th>Effective until</th><th></th></tr></thead>
       <tbody>
         <tr onclick="goto('detail')">
-          <td><div class="cp-cell"><div class="cp-avatar">Mk</div><div><div class="cp-name">Maersk Logistics</div><div style="font-size:14.5px;color:var(--g-50)">Carrier · SGTradex</div></div></div></td>
+          <td><div class="cp-cell"><div class="cp-avatar">Mk</div><div><div class="cp-name">Maersk Logistics</div><div style="font-size:11px;color:var(--g-50)">Carrier · SGTradex</div></div></div></td>
           <td>Bill of Lading <span style="color:var(--g-50)">v2.1</span></td>
           <td>Direct</td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
-          <td>30 Sep 2026 <span style="color:var(--yellow-50);font-size:14.5px">· 9 days</span></td>
+          <td>30 Sep 2026 <span style="color:var(--yellow-50);font-size:11px">· 9 days</span></td>
           <td class="row-actions"><button onclick="event.stopPropagation(); openExtend('Maersk Logistics')" title="Extend"><i class="ti ti-clock-play"></i></button><button onclick="event.stopPropagation(); openRevoke('Maersk Logistics')" title="Revoke"><i class="ti ti-x"></i></button></td>
         </tr>
         <!-- Pack parent row — Vessel arrival distribution (per ADR 0027). Collapses 4 member Agreements under one visual unit. -->
         <tr class="pack-parent" onclick="goto('pack-detail')">
-          <td><div class="cp-cell"><i class="ti ti-chevron-down pack-toggle" aria-hidden="true"></i><div class="pack-ic"><i class="ti ti-stack-2"></i></div><div><div class="cp-name">Vessel arrival distribution <span class="pack-tag">PACK</span></div><div style="font-size:14.5px;color:var(--g-50)">4 Agreements · 4 counterparties</div></div></div></td>
+          <td><div class="cp-cell"><i class="ti ti-chevron-down pack-toggle" aria-hidden="true"></i><div class="pack-ic"><i class="ti ti-stack-2"></i></div><div><div class="cp-name">Vessel arrival distribution <span class="pack-tag">PACK</span></div><div style="font-size:11px;color:var(--g-50)">4 Agreements · 4 counterparties</div></div></div></td>
           <td>Vessel arrival pack <span style="color:var(--g-50)">4 elements split</span></td>
           <td>Direct ×4</td>
           <td><span class="status-cell active"><span class="dot"></span>Active (4 of 4)</span></td>
@@ -4102,7 +4102,7 @@
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Opens Composer in pack mode · dispatches 1 Message per member')" title="Send pack now"><i class="ti ti-send"></i></button><button onclick="event.stopPropagation(); toast('Revoke pack — fans out to all 4 members')" title="Revoke pack"><i class="ti ti-x"></i></button></td>
         </tr>
         <tr class="pack-member" onclick="goto('detail')">
-          <td><div class="cp-cell pack-member-cell"><div class="cp-avatar">PS</div><div><div class="cp-name">PSA International</div><div style="font-size:14.5px;color:var(--g-50)">Port operator · SGTradex</div></div></div></td>
+          <td><div class="cp-cell pack-member-cell"><div class="cp-avatar">PS</div><div><div class="cp-name">PSA International</div><div style="font-size:11px;color:var(--g-50)">Port operator · SGTradex</div></div></div></td>
           <td>ETA <span style="color:var(--g-50)">v2.0</span></td>
           <td>Direct</td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
@@ -4110,7 +4110,7 @@
           <td class="row-actions"><button onclick="event.stopPropagation(); openExtend('PSA International')" title="Extend"><i class="ti ti-clock-play"></i></button></td>
         </tr>
         <tr class="pack-member" onclick="goto('detail')">
-          <td><div class="cp-cell pack-member-cell"><div class="cp-avatar">Mk</div><div><div class="cp-name">Maersk Logistics</div><div style="font-size:14.5px;color:var(--g-50)">Carrier · SGTradex</div></div></div></td>
+          <td><div class="cp-cell pack-member-cell"><div class="cp-avatar">Mk</div><div><div class="cp-name">Maersk Logistics</div><div style="font-size:11px;color:var(--g-50)">Carrier · SGTradex</div></div></div></td>
           <td>Cargo manifest <span style="color:var(--g-50)">v3.0</span></td>
           <td>Direct</td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
@@ -4118,7 +4118,7 @@
           <td class="row-actions"><button onclick="event.stopPropagation(); openExtend('Maersk Logistics')" title="Extend"><i class="ti ti-clock-play"></i></button></td>
         </tr>
         <tr class="pack-member" onclick="goto('detail')">
-          <td><div class="cp-cell pack-member-cell"><div class="cp-avatar">IC</div><div><div class="cp-name">ICA Singapore</div><div style="font-size:14.5px;color:var(--g-50)">Immigration · SGTradex</div></div></div></td>
+          <td><div class="cp-cell pack-member-cell"><div class="cp-avatar">IC</div><div><div class="cp-name">ICA Singapore</div><div style="font-size:11px;color:var(--g-50)">Immigration · SGTradex</div></div></div></td>
           <td>Crew list <span style="color:var(--g-50)">v1.2</span></td>
           <td>Direct</td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
@@ -4126,7 +4126,7 @@
           <td class="row-actions"><button onclick="event.stopPropagation(); openExtend('ICA Singapore')" title="Extend"><i class="ti ti-clock-play"></i></button></td>
         </tr>
         <tr class="pack-member" onclick="goto('detail')">
-          <td><div class="cp-cell pack-member-cell"><div class="cp-avatar">HL</div><div><div class="cp-name">Hin Leong Insurance</div><div style="font-size:14.5px;color:var(--g-50)">Insurance broker · SGTradex</div></div></div></td>
+          <td><div class="cp-cell pack-member-cell"><div class="cp-avatar">HL</div><div><div class="cp-name">Hin Leong Insurance</div><div style="font-size:11px;color:var(--g-50)">Insurance broker · SGTradex</div></div></div></td>
           <td>Vessel particulars <span style="color:var(--g-50)">v1.0</span></td>
           <td>Direct</td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
@@ -4134,15 +4134,15 @@
           <td class="row-actions"><button onclick="event.stopPropagation(); openExtend('Hin Leong Insurance')" title="Extend"><i class="ti ti-clock-play"></i></button></td>
         </tr>
         <tr onclick="goto('detail')">
-          <td><div class="cp-cell"><div class="cp-avatar">PS</div><div><div class="cp-name">PSA International</div><div style="font-size:14.5px;color:var(--g-50)">Port operator · SGTradex</div></div></div></td>
+          <td><div class="cp-cell"><div class="cp-avatar">PS</div><div><div class="cp-name">PSA International</div><div style="font-size:11px;color:var(--g-50)">Port operator · SGTradex</div></div></div></td>
           <td>Bunker delivery confirmation</td>
-          <td><span style="display:inline-flex;align-items:center;gap:4px">Service-Provider <i class="ti ti-info-circle" style="font-size:16px;color:var(--g-50)" title="Appointed via CrimsonLogic"></i></span></td>
+          <td><span style="display:inline-flex;align-items:center;gap:4px">Service-Provider <i class="ti ti-info-circle" style="font-size:12px;color:var(--g-50)" title="Appointed via CrimsonLogic"></i></span></td>
           <td><span class="status-cell pending"><span class="dot"></span>Pending</span></td>
           <td>Awaiting acceptance</td>
           <td class="row-actions"><button onclick="event.stopPropagation(); openWithdraw('PSA International', null)" title="Withdraw"><i class="ti ti-x"></i></button></td>
         </tr>
         <tr onclick="goto('detail')">
-          <td><div class="cp-cell"><div class="cp-avatar">CL</div><div><div class="cp-name">CrimsonLogic</div><div style="font-size:14.5px;color:var(--g-50)">Service provider · SGTradex</div></div></div></td>
+          <td><div class="cp-cell"><div class="cp-avatar">CL</div><div><div class="cp-name">CrimsonLogic</div><div style="font-size:11px;color:var(--g-50)">Service provider · SGTradex</div></div></div></td>
           <td>Cargo manifest <span style="color:var(--g-50)">v3.0</span></td>
           <td>Service-Provider</td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
@@ -4150,7 +4150,7 @@
           <td class="row-actions"><button onclick="event.stopPropagation(); openExtend('CrimsonLogic')" title="Extend"><i class="ti ti-clock-play"></i></button><button onclick="event.stopPropagation(); openRevoke('CrimsonLogic')" title="Revoke"><i class="ti ti-x"></i></button></td>
         </tr>
         <tr onclick="goto('detail')">
-          <td><div class="cp-cell"><div class="cp-avatar">PL</div><div><div class="cp-name">Pacific Lines</div><div style="font-size:14.5px;color:var(--g-50)">Carrier · SGTradex</div></div></div></td>
+          <td><div class="cp-cell"><div class="cp-avatar">PL</div><div><div class="cp-name">Pacific Lines</div><div style="font-size:11px;color:var(--g-50)">Carrier · SGTradex</div></div></div></td>
           <td>Bill of Lading <span style="color:var(--g-50)">v2.0</span></td>
           <td>Direct</td>
           <td><span class="status-cell ended"><span class="dot"></span>Ended · revoked</span></td>
@@ -4158,7 +4158,7 @@
           <td class="row-actions"><button onclick="event.stopPropagation(); toast('Opened ended-Agreement audit (read-only)')" title="View audit"><i class="ti ti-eye"></i></button></td>
         </tr>
         <tr onclick="goto('detail')">
-          <td><div class="cp-cell"><div class="cp-avatar">AB</div><div><div class="cp-name">ABC Logistics</div><div style="font-size:14.5px;color:var(--g-50)">Shipper · SGTradex</div></div></div></td>
+          <td><div class="cp-cell"><div class="cp-avatar">AB</div><div><div class="cp-name">ABC Logistics</div><div style="font-size:11px;color:var(--g-50)">Shipper · SGTradex</div></div></div></td>
           <td>Certificate of origin <span style="color:var(--g-50)">v1.4</span></td>
           <td>Direct</td>
           <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
@@ -4236,35 +4236,35 @@
           <thead><tr><th>Counterparty</th><th>Element</th><th>Agreement ID</th><th>Status</th><th>Latest Message</th><th></th></tr></thead>
           <tbody>
             <tr onclick="goto('detail')">
-              <td><div class="cp-cell"><div class="cp-avatar">PS</div><div><div class="cp-name">PSA International</div><div style="font-size:14.5px;color:var(--g-50)">Port operator</div></div></div></td>
-              <td>ETA <span style="color:var(--g-50);font-size:14.5px">v2.0</span></td>
+              <td><div class="cp-cell"><div class="cp-avatar">PS</div><div><div class="cp-name">PSA International</div><div style="font-size:11px;color:var(--g-50)">Port operator</div></div></div></td>
+              <td>ETA <span style="color:var(--g-50);font-size:11px">v2.0</span></td>
               <td><code class="agr-mono">AGR-2026-04610</code></td>
               <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
-              <td><span style="font-size:14.5px;color:var(--g-50)">31 min ago · Acknowledged</span></td>
+              <td><span style="font-size:11px;color:var(--g-50)">31 min ago · Acknowledged</span></td>
               <td class="row-actions"><button onclick="event.stopPropagation(); goto('detail')" title="Open"><i class="ti ti-arrow-right"></i></button></td>
             </tr>
             <tr onclick="goto('detail')">
-              <td><div class="cp-cell"><div class="cp-avatar">Mk</div><div><div class="cp-name">Maersk Logistics</div><div style="font-size:14.5px;color:var(--g-50)">Carrier</div></div></div></td>
-              <td>Cargo manifest <span style="color:var(--g-50);font-size:14.5px">v3.0</span></td>
+              <td><div class="cp-cell"><div class="cp-avatar">Mk</div><div><div class="cp-name">Maersk Logistics</div><div style="font-size:11px;color:var(--g-50)">Carrier</div></div></div></td>
+              <td>Cargo manifest <span style="color:var(--g-50);font-size:11px">v3.0</span></td>
               <td><code class="agr-mono">AGR-2026-04611</code></td>
               <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
-              <td><span style="font-size:14.5px;color:var(--g-50)">18 min ago · Delivered</span></td>
+              <td><span style="font-size:11px;color:var(--g-50)">18 min ago · Delivered</span></td>
               <td class="row-actions"><button onclick="event.stopPropagation(); goto('detail')" title="Open"><i class="ti ti-arrow-right"></i></button></td>
             </tr>
             <tr onclick="goto('detail')">
-              <td><div class="cp-cell"><div class="cp-avatar">IC</div><div><div class="cp-name">ICA Singapore</div><div style="font-size:14.5px;color:var(--g-50)">Immigration</div></div></div></td>
-              <td>Crew list <span style="color:var(--g-50);font-size:14.5px">v1.2</span></td>
+              <td><div class="cp-cell"><div class="cp-avatar">IC</div><div><div class="cp-name">ICA Singapore</div><div style="font-size:11px;color:var(--g-50)">Immigration</div></div></div></td>
+              <td>Crew list <span style="color:var(--g-50);font-size:11px">v1.2</span></td>
               <td><code class="agr-mono">AGR-2026-04612</code></td>
               <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
-              <td><span style="font-size:14.5px;color:var(--g-50)">2 days ago · Acknowledged</span></td>
+              <td><span style="font-size:11px;color:var(--g-50)">2 days ago · Acknowledged</span></td>
               <td class="row-actions"><button onclick="event.stopPropagation(); goto('detail')" title="Open"><i class="ti ti-arrow-right"></i></button></td>
             </tr>
             <tr onclick="goto('detail')">
-              <td><div class="cp-cell"><div class="cp-avatar">HL</div><div><div class="cp-name">Hin Leong Insurance</div><div style="font-size:14.5px;color:var(--g-50)">Insurance broker</div></div></div></td>
-              <td>Vessel particulars <span style="color:var(--g-50);font-size:14.5px">v1.0</span></td>
+              <td><div class="cp-cell"><div class="cp-avatar">HL</div><div><div class="cp-name">Hin Leong Insurance</div><div style="font-size:11px;color:var(--g-50)">Insurance broker</div></div></div></td>
+              <td>Vessel particulars <span style="color:var(--g-50);font-size:11px">v1.0</span></td>
               <td><code class="agr-mono">AGR-2026-04613</code></td>
               <td><span class="status-cell active"><span class="dot"></span>Active</span></td>
-              <td><span style="font-size:14.5px;color:var(--g-50)">2 days ago · Acknowledged</span></td>
+              <td><span style="font-size:11px;color:var(--g-50)">2 days ago · Acknowledged</span></td>
               <td class="row-actions"><button onclick="event.stopPropagation(); goto('detail')" title="Open"><i class="ti ti-arrow-right"></i></button></td>
             </tr>
           </tbody>
@@ -4359,7 +4359,7 @@
   </div>
   </div><!-- /.list-frame -->
 
-  <p style="font-size:14.5px;color:var(--g-50);margin-top:18px;line-height:1.6">Drafts auto-save as you fill out the wizard. They persist across devices but are tied to your user account — if you leave the org, your drafts are deleted.</p>
+  <p style="font-size:11px;color:var(--g-50);margin-top:18px;line-height:1.6">Drafts auto-save as you fill out the wizard. They persist across devices but are tied to your user account — if you leave the org, your drafts are deleted.</p>
 </section>
 
 <!-- ============ Settings page (tabbed) ============ -->
@@ -4417,7 +4417,7 @@
              entry back to the seeded fixtures so the multi-Pitstop capture
              flow can be re-demoed. -->
         <div class="settings-section" style="margin-top:24px;padding-top:16px;border-top:0.5px dashed var(--g-90)">
-          <h3 style="font-size:16px;color:var(--g-50);font-weight:500;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em">Demo controls</h3>
+          <h3 style="font-size:12px;color:var(--g-50);font-weight:500;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em">Demo controls</h3>
           <div class="settings-row">
             <span class="s-k"><i class="ti ti-arrow-back-up" aria-hidden="true"></i> Reset Pitstop scopes</span>
             <span class="s-v">Restore every element-scope entry to the seeded fixtures. Captured scopes from prior wizard runs or toggles on this page are cleared, so the multi-Pitstop scope-capture step fires again. Demo-only — not a production action.</span>
@@ -4580,8 +4580,8 @@
 
         <div class="settings-section">
           <h3>Active keys</h3>
-          <div class="settings-row"><span class="s-k">Cosco-prod-001</span><span class="s-v" style="font-family:var(--font-mono);font-size:14.5px">sk_live_a3f1•••••••••••e8c2 · created 10 Jan 2026 · last used 2h ago</span><span class="s-action"><a onclick="toast('Key revoked','warn')" style="color:var(--red-50)">Revoke</a></span></div>
-          <div class="settings-row"><span class="s-k">Cosco-staging</span><span class="s-v" style="font-family:var(--font-mono);font-size:14.5px">sk_test_99c5•••••••••••a17f · created 22 Aug 2025 · last used 5d ago</span><span class="s-action"><a onclick="toast('Key revoked','warn')" style="color:var(--red-50)">Revoke</a></span></div>
+          <div class="settings-row"><span class="s-k">Cosco-prod-001</span><span class="s-v" style="font-family:var(--font-mono);font-size:11px">sk_live_a3f1•••••••••••e8c2 · created 10 Jan 2026 · last used 2h ago</span><span class="s-action"><a onclick="toast('Key revoked','warn')" style="color:var(--red-50)">Revoke</a></span></div>
+          <div class="settings-row"><span class="s-k">Cosco-staging</span><span class="s-v" style="font-family:var(--font-mono);font-size:11px">sk_test_99c5•••••••••••a17f · created 22 Aug 2025 · last used 5d ago</span><span class="s-action"><a onclick="toast('Key revoked','warn')" style="color:var(--red-50)">Revoke</a></span></div>
         </div>
 
         <button class="btn-primary" onclick="toast('Generate new API key (mock)')"><i class="ti ti-plus"></i>Generate new key</button>
@@ -4593,14 +4593,14 @@
 <!-- ===== Shared popovers (positioned via JS, work across all injected shells) ===== -->
 <div class="switcher-pop" hidden id="switcher-pop" role="menu" aria-label="Workspace switcher">
   <div data-dex-switcher-rows>
-    <div class="switcher-item tx active" role="menuitem" onclick="switchDex('tx')"><span class="ws-tile">Tx</span><div><div class="label">SGTradex</div><div class="role">Admin User · 12 items waiting</div></div><i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:18.5px"></i></div>
+    <div class="switcher-item tx active" role="menuitem" onclick="switchDex('tx')"><span class="ws-tile">Tx</span><div><div class="label">SGTradex</div><div class="role">Admin User · 12 items waiting</div></div><i class="ti ti-check" style="margin-left:auto;color:var(--theme-50);font-size:14px"></i></div>
     <div class="switcher-item bx" role="menuitem" onclick="switchDex('bx')"><span class="ws-tile">Bx</span><div><div class="label">SGBuildex</div><div class="role">Operation User · 4 items waiting</div></div><span style="margin-left:auto;width:6px;height:6px;background:var(--red-50);border-radius:50%"></span></div>
     <div class="switcher-item hx" role="menuitem" onclick="switchDex('hx')"><span class="ws-tile">Hx</span><div><div class="label">SGHealthdex</div><div class="role">Super Admin · 3 items waiting</div></div></div>
   </div>
   <div class="dropdown-divider"></div>
   <div class="switcher-item all" role="menuitem" onclick="goto('inbox-all')"><span class="ws-tile"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="1" y="1" width="5" height="5" rx="1" fill="#363941"/><rect x="8" y="1" width="5" height="5" rx="1" fill="#60636b"/><rect x="1" y="8" width="5" height="5" rx="1" fill="#60636b"/><rect x="8" y="8" width="5" height="5" rx="1" fill="#363941"/></svg></span><div><div class="label">All DEXes</div><div class="role">21 items across 3 DEXes</div></div></div>
   <div class="dropdown-divider"></div>
-  <div class="switcher-item" role="menuitem" onclick="openJoin()"><i class="ti ti-plus" style="font-size:21.5px;color:var(--g-50);margin:0 3px"></i><div class="label" style="font-weight:400;color:var(--g-50)">Join another DEX</div></div>
+  <div class="switcher-item" role="menuitem" onclick="openJoin()"><i class="ti ti-plus" style="font-size:16px;color:var(--g-50);margin:0 3px"></i><div class="label" style="font-weight:400;color:var(--g-50)">Join another DEX</div></div>
 </div>
 
 <div class="dropdown-pop" hidden id="dropdown-pop" role="menu" aria-label="Create new">
@@ -4616,10 +4616,10 @@
      RIGHT: btn-primary "Continue" (icon suffix); becomes "Submit" / "Confirm" on last step
      Cancel link lives in the top wizard-bar (line 119), not the footer -->
 <div class="wizard-foot" id="wizard-foot">
-  <div class="left"><button class="btn-cancel" id="wizard-prev" onclick="wizardPrev()"><i class="ti ti-arrow-left" style="font-size:16px"></i>Back</button></div>
+  <div class="left"><button class="btn-cancel" id="wizard-prev" onclick="wizardPrev()"><i class="ti ti-arrow-left" style="font-size:12px"></i>Back</button></div>
   <div class="right">
     <span class="pending-warn" id="wizard-warn" hidden><i class="ti ti-alert-triangle"></i> <span id="wizard-warn-text"></span></span>
-    <button class="btn-primary" id="wizard-next" onclick="wizardNext()">Continue <i class="ti ti-arrow-right" style="font-size:16px"></i></button>
+    <button class="btn-primary" id="wizard-next" onclick="wizardNext()">Continue <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
   </div>
 </div>
 
@@ -4642,7 +4642,7 @@
 </div>
 
 <div class="data-flow-sim" id="data-sim">
-  <i class="ti ti-radar" style="font-size:23.5px"></i>
+  <i class="ti ti-radar" style="font-size:18px"></i>
   <div style="flex:1"><p id="data-sim-text">Maersk is receiving your first batch…</p><div class="progress" style="margin-top:6px"><div class="bar" id="data-sim-bar"></div></div></div>
 </div>
 
@@ -4669,21 +4669,21 @@
       <button class="close" onclick="closeOverlay('scope-exists-modal')"><i class="ti ti-x"></i></button>
     </div>
     <div class="overlay-body">
-      <p style="font-size:17px;color:var(--g-10);line-height:1.5">
+      <p style="font-size:13px;color:var(--g-10);line-height:1.5">
         <strong id="scope-exists-org">Your org</strong> has prior activity for
         <strong id="scope-exists-element-body">this element</strong>:
       </p>
-      <p id="scope-exists-pitstops" style="font-size:17px;color:var(--g-10);line-height:1.6;margin-top:8px">
+      <p id="scope-exists-pitstops" style="font-size:13px;color:var(--g-10);line-height:1.6;margin-top:8px">
         <!-- Filled by maybePromptScopeAlreadyExists() — combines captured-scope
              and existing-Agreement fragments as appropriate. -->
       </p>
-      <p style="font-size:16px;color:var(--g-50);line-height:1.5;margin-top:10px">
+      <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-top:10px">
         Are you editing an existing Agreement, or creating a new one with a different counterparty?
       </p>
     </div>
     <div class="overlay-foot">
       <button class="btn-cancel" onclick="scopeExistsGoToExisting()"><i class="ti ti-list" aria-hidden="true"></i>View existing Agreements</button>
-      <button class="btn-primary" onclick="scopeExistsContinueNew()">Create new Agreement <i class="ti ti-arrow-right" style="font-size:16px"></i></button>
+      <button class="btn-primary" onclick="scopeExistsContinueNew()">Create new Agreement <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
     </div>
   </div>
 </div>
@@ -4703,18 +4703,18 @@
       <button class="close" onclick="closeOverlay('pack-split-conflicts-modal')"><i class="ti ti-x"></i></button>
     </div>
     <div class="overlay-body">
-      <p style="font-size:17px;color:var(--g-10);line-height:1.5">
+      <p style="font-size:13px;color:var(--g-10);line-height:1.5">
         <strong id="pack-split-conflicts-org">Your org</strong> has prior activity for the following pack members:
       </p>
-      <ul id="pack-split-conflicts-list" style="font-size:17px;color:var(--g-10);line-height:1.6;margin-top:10px;padding-left:18px"></ul>
-      <p style="font-size:16px;color:var(--g-50);line-height:1.5;margin-top:10px">
+      <ul id="pack-split-conflicts-list" style="font-size:13px;color:var(--g-10);line-height:1.6;margin-top:10px;padding-left:18px"></ul>
+      <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-top:10px">
         Continuing will create new Agreements alongside the existing ones. You can drop conflicting rows on the previous screen.
       </p>
     </div>
     <div class="overlay-foot">
       <button class="btn-cancel" onclick="packSplitConflictsViewExisting()"><i class="ti ti-list" aria-hidden="true"></i>View existing Agreements</button>
       <button class="btn-cancel" onclick="packSplitConflictsEdit()"><i class="ti ti-arrow-left" aria-hidden="true"></i>Edit assignments</button>
-      <button class="btn-primary" onclick="packSplitConflictsContinue()">Continue anyway <i class="ti ti-arrow-right" style="font-size:16px"></i></button>
+      <button class="btn-primary" onclick="packSplitConflictsContinue()">Continue anyway <i class="ti ti-arrow-right" style="font-size:12px"></i></button>
     </div>
   </div>
 </div>
@@ -4727,8 +4727,8 @@
       <button class="close" onclick="closeOverlay('off-dex-blocked')"><i class="ti ti-x"></i></button>
     </div>
     <div class="overlay-body">
-      <p id="off-dex-message" style="font-size:17px;color:var(--g-10);line-height:1.5"></p>
-      <p id="off-dex-detail" style="font-size:14.5px;color:var(--g-50);line-height:1.5;margin-top:10px"></p>
+      <p id="off-dex-message" style="font-size:13px;color:var(--g-10);line-height:1.5"></p>
+      <p id="off-dex-detail" style="font-size:11px;color:var(--g-50);line-height:1.5;margin-top:10px"></p>
     </div>
     <div class="overlay-foot">
       <button class="btn-cancel" onclick="closeOverlay('off-dex-blocked')">Stay here</button>
@@ -4741,7 +4741,7 @@
   <div class="overlay-card">
     <div class="overlay-head"><div class="ic tx"><i class="ti ti-clock-play"></i></div><h4>Extend Agreement with <span id="extend-cp">Maersk Logistics</span></h4><button class="close" onclick="closeOverlay('extend-modal')"><i class="ti ti-x"></i></button></div>
     <div class="overlay-body">
-      <p style="font-size:16px;color:var(--g-50);line-height:1.5;margin-bottom:8px">Pick a new end date — your previous extension was 6 months.</p>
+      <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:8px">Pick a new end date — your previous extension was 6 months.</p>
       <div class="extend-row" data-demo="extend-modal.row"><button class="extend-chip" onclick="pickExtend(this,3)">+3 months</button><button class="extend-chip" onclick="pickExtend(this,6)">+6 months</button><button class="extend-chip active" data-demo="extend-modal.chip-12mo" onclick="pickExtend(this,12)">+12 months</button><button class="extend-chip" onclick="pickExtend(this,24)">+24 months</button></div>
       <div class="extend-summary"><p>New end date: <strong id="extend-newdate">30 Sep 2027</strong></p><p style="margin-top:6px">Notification cadence resets. Audit-logged.</p></div>
     </div>
@@ -4750,35 +4750,35 @@
 </div>
 
 <div class="overlay-veil" id="claim-modal" hidden>
-  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-hand-finger" aria-hidden="true"></i></div><h4>Claim this item?</h4><button class="close" onclick="closeOverlay('claim-modal')" aria-label="Close"><i class="ti ti-x" aria-hidden="true"></i></button></div><div class="overlay-body"><p style="font-size:16px;color:var(--g-30);line-height:1.5">This will remove the item from your teammates' queue. It moves from <strong style="font-weight:500">My team's</strong> into <strong style="font-weight:500">Mine</strong>, and only you will see it until you complete or release it.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('claim-modal')">Not now</button><button class="btn-primary" onclick="confirmClaim()" data-demo="inbox.claim-modal.confirm">Claim</button></div></div>
+  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-hand-finger" aria-hidden="true"></i></div><h4>Claim this item?</h4><button class="close" onclick="closeOverlay('claim-modal')" aria-label="Close"><i class="ti ti-x" aria-hidden="true"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5">This will remove the item from your teammates' queue. It moves from <strong style="font-weight:500">My team's</strong> into <strong style="font-weight:500">Mine</strong>, and only you will see it until you complete or release it.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('claim-modal')">Not now</button><button class="btn-primary" onclick="confirmClaim()" data-demo="inbox.claim-modal.confirm">Claim</button></div></div>
 </div>
 
 <div class="overlay-veil" id="approve-modal" hidden>
-  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-check"></i></div><h4>Approve incoming Agreement</h4><button class="close" onclick="closeOverlay('approve-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body" data-demo="approve-modal.body"><p style="font-size:16px;color:var(--g-30);line-height:1.5">Maersk Logistics will start receiving Bills of Lading. The Agreement transitions to <strong style="font-weight:500;color:var(--green-50)">Active</strong>.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('approve-modal')">Cancel</button><button class="btn-primary" data-demo="approve-modal.confirm" onclick="confirmApprove()">Approve</button></div></div>
+  <div class="overlay-card sm"><div class="overlay-head"><div class="ic green"><i class="ti ti-check"></i></div><h4>Approve incoming Agreement</h4><button class="close" onclick="closeOverlay('approve-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body" data-demo="approve-modal.body"><p style="font-size:12px;color:var(--g-30);line-height:1.5">Maersk Logistics will start receiving Bills of Lading. The Agreement transitions to <strong style="font-weight:500;color:var(--green-50)">Active</strong>.</p></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('approve-modal')">Cancel</button><button class="btn-primary" data-demo="approve-modal.confirm" onclick="confirmApprove()">Approve</button></div></div>
 </div>
 
 <div class="overlay-veil" id="join-modal" hidden>
-  <div class="overlay-card"><div class="overlay-head"><div class="ic tx"><i class="ti ti-plus"></i></div><h4>Join another DEX</h4><button class="close" onclick="closeOverlay('join-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:16px;color:var(--g-50);line-height:1.5;margin-bottom:14px" data-join-dex-enrolled-line>Your org is already on SGTradex, SGBuildex, and SGHealthdex.</p><div style="padding:12px 14px;background:var(--g-98);border-radius:var(--r-md);font-size:16px;color:var(--g-30);line-height:1.5"><i class="ti ti-info-circle" style="font-size:18.5px;vertical-align:-2px;margin-right:4px;color:var(--g-50)"></i>Joining a new DEX uses your existing org record — KYC fields pre-fill.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('join-modal')">Close</button></div></div>
+  <div class="overlay-card"><div class="overlay-head"><div class="ic tx"><i class="ti ti-plus"></i></div><h4>Join another DEX</h4><button class="close" onclick="closeOverlay('join-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:14px" data-join-dex-enrolled-line>Your org is already on SGTradex, SGBuildex, and SGHealthdex.</p><div style="padding:12px 14px;background:var(--g-98);border-radius:var(--r-md);font-size:12px;color:var(--g-30);line-height:1.5"><i class="ti ti-info-circle" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--g-50)"></i>Joining a new DEX uses your existing org record — KYC fields pre-fill.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('join-modal')">Close</button></div></div>
 </div>
 
 <div class="overlay-veil" id="template-modal" hidden>
-  <div class="overlay-card"><div class="overlay-head"><div class="ic tx"><i class="ti ti-template"></i></div><h4>Start from a template</h4><button class="close" onclick="closeOverlay('template-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body" style="padding:0"><div style="padding:10px 18px;border-bottom:0.5px solid var(--g-90);font-size:14.5px;color:var(--g-50)">4 templates available for your org on SGTradex</div>
+  <div class="overlay-card"><div class="overlay-head"><div class="ic tx"><i class="ti ti-template"></i></div><h4>Start from a template</h4><button class="close" onclick="closeOverlay('template-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body" style="padding:0"><div style="padding:10px 18px;border-bottom:0.5px solid var(--g-90);font-size:11px;color:var(--g-50)">4 templates available for your org on SGTradex</div>
     <div class="cp-list">
-      <button class="cp-row" onclick="useTemplate('B/L sharing with carriers')"><div class="cp-avatar"><i class="ti ti-template" style="font-size:21.5px"></i></div><div class="cp-body"><div class="cp-name">B/L sharing with carriers</div><div class="cp-meta">Direct · used 12× · v3</div></div><span class="ready-pill"><i class="ti ti-clock"></i>30 sec</span></button>
-      <button class="cp-row" onclick="useTemplate('Vessel arrival pack — bilateral')"><div class="cp-avatar"><i class="ti ti-template" style="font-size:21.5px"></i></div><div class="cp-body"><div class="cp-name">Vessel arrival pack — bilateral</div><div class="cp-meta">Direct · pack · used 7× · v2</div></div><span class="ready-pill"><i class="ti ti-clock"></i>30 sec</span></button>
-      <button class="cp-row" onclick="useTemplate('CrimsonLogic as SP — outbound')"><div class="cp-avatar"><i class="ti ti-template" style="font-size:21.5px"></i></div><div class="cp-body"><div class="cp-name">CrimsonLogic as SP — outbound</div><div class="cp-meta">Service-provider · used 4× · v1</div></div><span class="ready-pill"><i class="ti ti-clock"></i>45 sec</span></button>
-      <button class="cp-row" onclick="useTemplate('Bunker contributor flow')"><div class="cp-avatar"><i class="ti ti-template" style="font-size:21.5px"></i></div><div class="cp-body"><div class="cp-name">Bunker contributor flow</div><div class="cp-meta">Service-provider · contributor · used 3× · v1</div></div><span class="ready-pill"><i class="ti ti-clock"></i>60 sec</span></button>
+      <button class="cp-row" onclick="useTemplate('B/L sharing with carriers')"><div class="cp-avatar"><i class="ti ti-template" style="font-size:16px"></i></div><div class="cp-body"><div class="cp-name">B/L sharing with carriers</div><div class="cp-meta">Direct · used 12× · v3</div></div><span class="ready-pill"><i class="ti ti-clock"></i>30 sec</span></button>
+      <button class="cp-row" onclick="useTemplate('Vessel arrival pack — bilateral')"><div class="cp-avatar"><i class="ti ti-template" style="font-size:16px"></i></div><div class="cp-body"><div class="cp-name">Vessel arrival pack — bilateral</div><div class="cp-meta">Direct · pack · used 7× · v2</div></div><span class="ready-pill"><i class="ti ti-clock"></i>30 sec</span></button>
+      <button class="cp-row" onclick="useTemplate('CrimsonLogic as SP — outbound')"><div class="cp-avatar"><i class="ti ti-template" style="font-size:16px"></i></div><div class="cp-body"><div class="cp-name">CrimsonLogic as SP — outbound</div><div class="cp-meta">Service-provider · used 4× · v1</div></div><span class="ready-pill"><i class="ti ti-clock"></i>45 sec</span></button>
+      <button class="cp-row" onclick="useTemplate('Bunker contributor flow')"><div class="cp-avatar"><i class="ti ti-template" style="font-size:16px"></i></div><div class="cp-body"><div class="cp-name">Bunker contributor flow</div><div class="cp-meta">Service-provider · contributor · used 3× · v1</div></div><span class="ready-pill"><i class="ti ti-clock"></i>60 sec</span></button>
     </div></div></div>
 </div>
 
 <div class="overlay-veil" id="glossary-modal" hidden>
-  <div class="overlay-card lg"><div class="overlay-head"><div class="ic tx"><i class="ti ti-book"></i></div><h4>Glossary</h4><button class="close" onclick="closeOverlay('glossary-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body" style="max-height:480px;overflow-y:auto"><p style="font-size:14.5px;color:var(--g-50);margin-bottom:14px">Canonical vocabulary for the unified portal. Auto-generated from CONTEXT.md at build time.</p><div style="display:flex;flex-direction:column;gap:14px">
-    <div><p style="font-size:17px;font-weight:500;color:var(--g-10);margin-bottom:2px">Agreement</p><p style="font-size:16px;color:var(--g-50);line-height:1.5">A user-visible consent record. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> Subscription, DER, SPR, Client Relation.</p></div>
-    <div><p style="font-size:17px;font-weight:500;color:var(--g-10);margin-bottom:2px">Direct Agreement</p><p style="font-size:16px;color:var(--g-50);line-height:1.5">An Agreement between two counterparties, no intermediary. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> DER.</p></div>
-    <div><p style="font-size:17px;font-weight:500;color:var(--g-10);margin-bottom:2px">Service-Provider Agreement</p><p style="font-size:16px;color:var(--g-50);line-height:1.5">A party appoints a third party to send or receive on their behalf. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> SPR.</p></div>
-    <div><p style="font-size:17px;font-weight:500;color:var(--g-10);margin-bottom:2px">Inbox</p><p style="font-size:16px;color:var(--g-50);line-height:1.5">The home view — items needing action. Split into Mine and My team's. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> Dashboard.</p></div>
-    <div><p style="font-size:17px;font-weight:500;color:var(--g-10);margin-bottom:2px">DEX</p><p style="font-size:16px;color:var(--g-50);line-height:1.5">A regulated data-exchange domain. URL-anchored at /portal/&lt;dex&gt;.</p></div>
-    <div><p style="font-size:17px;font-weight:500;color:var(--g-10);margin-bottom:2px">Agreement Template</p><p style="font-size:16px;color:var(--g-50);line-height:1.5">Org-scoped, DEX-scoped, mutable blueprint surfaced after ≥3 similar Agreements.</p></div>
+  <div class="overlay-card lg"><div class="overlay-head"><div class="ic tx"><i class="ti ti-book"></i></div><h4>Glossary</h4><button class="close" onclick="closeOverlay('glossary-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body" style="max-height:480px;overflow-y:auto"><p style="font-size:11px;color:var(--g-50);margin-bottom:14px">Canonical vocabulary for the unified portal. Auto-generated from CONTEXT.md at build time.</p><div style="display:flex;flex-direction:column;gap:14px">
+    <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">Agreement</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">A user-visible consent record. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> Subscription, DER, SPR, Client Relation.</p></div>
+    <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">Direct Agreement</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">An Agreement between two counterparties, no intermediary. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> DER.</p></div>
+    <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">Service-Provider Agreement</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">A party appoints a third party to send or receive on their behalf. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> SPR.</p></div>
+    <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">Inbox</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">The home view — items needing action. Split into Mine and My team's. <strong style="color:var(--g-30);font-weight:500">Replaces:</strong> Dashboard.</p></div>
+    <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">DEX</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">A regulated data-exchange domain. URL-anchored at /portal/&lt;dex&gt;.</p></div>
+    <div><p style="font-size:13px;font-weight:500;color:var(--g-10);margin-bottom:2px">Agreement Template</p><p style="font-size:12px;color:var(--g-50);line-height:1.5">Org-scoped, DEX-scoped, mutable blueprint surfaced after ≥3 similar Agreements.</p></div>
   </div></div></div>
 </div>
 <div class="overlay-veil" id="withdraw-modal" hidden>
@@ -4793,7 +4793,7 @@
         <p>What happens on confirm:</p>
         <ul>
           <li><strong style="font-weight:500"><span class="withdraw-cp-mirror">Counterparty</span> is notified</strong> that the invitation was withdrawn before they could accept.</li>
-          <li>The Agreement moves to <strong style="font-weight:500">Ended</strong> with reason <code style="background:var(--g-95);padding:1px 5px;border-radius:3px;font-family:var(--font-mono);font-size:14.5px">WITHDRAWN</code>.</li>
+          <li>The Agreement moves to <strong style="font-weight:500">Ended</strong> with reason <code style="background:var(--g-95);padding:1px 5px;border-radius:3px;font-family:var(--font-mono);font-size:11px">WITHDRAWN</code>.</li>
           <li>No data flow ever started, so there is no grace window and nothing to undo.</li>
           <li>The record stays readable in the audit view; create a fresh Agreement to re-invite.</li>
         </ul>
@@ -4815,7 +4815,7 @@
     <div class="overlay-body">
       <div class="revoke-warn-banner">
         <i class="ti ti-alert-triangle"></i>
-        <p><strong>This is reversible only within the 7-day grace window.</strong> After grace, the Agreement is permanently ENDED with reason <code style="background:var(--g-95);padding:1px 5px;border-radius:3px;font-family:var(--font-mono);font-size:14.5px">REVOKED_BY_INITIATOR</code> and the data flow stops.</p>
+        <p><strong>This is reversible only within the 7-day grace window.</strong> After grace, the Agreement is permanently ENDED with reason <code style="background:var(--g-95);padding:1px 5px;border-radius:3px;font-family:var(--font-mono);font-size:11px">REVOKED_BY_INITIATOR</code> and the data flow stops.</p>
       </div>
 
       <div class="revoke-impact">
@@ -4829,12 +4829,12 @@
       </div>
 
       <div style="margin-top:14px">
-        <p style="font-size:16px;color:var(--g-30);margin-bottom:6px">Reason <span style="color:var(--g-50);font-weight:400">(optional · visible to counterparty)</span></p>
-        <textarea placeholder="e.g. Migrating to a new SP arrangement. Will reach out separately." style="width:100%;padding:8px 12px;border:0.5px solid var(--g-90);border-radius:var(--r-md);font-family:inherit;font-size:16px;color:var(--g-10);outline:none;min-height:60px;resize:vertical"></textarea>
+        <p style="font-size:12px;color:var(--g-30);margin-bottom:6px">Reason <span style="color:var(--g-50);font-weight:400">(optional · visible to counterparty)</span></p>
+        <textarea placeholder="e.g. Migrating to a new SP arrangement. Will reach out separately." style="width:100%;padding:8px 12px;border:0.5px solid var(--g-90);border-radius:var(--r-md);font-family:inherit;font-size:12px;color:var(--g-10);outline:none;min-height:60px;resize:vertical"></textarea>
       </div>
 
       <div style="margin-top:14px">
-        <p style="font-size:16px;color:var(--g-30);margin-bottom:6px">Type <strong style="color:var(--red-50);font-weight:500" id="revoke-cp-type">Maersk Logistics</strong> to confirm</p>
+        <p style="font-size:12px;color:var(--g-30);margin-bottom:6px">Type <strong style="color:var(--red-50);font-weight:500" id="revoke-cp-type">Maersk Logistics</strong> to confirm</p>
         <input type="text" class="revoke-confirm-input" id="revoke-confirm-input" placeholder="Type the counterparty name exactly" oninput="checkRevokeConfirm(this)">
       </div>
     </div>
@@ -4868,11 +4868,11 @@
   <div class="overlay-card">
     <div class="overlay-head">
       <div class="ic tx"><i class="ti ti-mail"></i></div>
-      <h4>Invite a participant <span style="font-size:14.5px;color:var(--g-50);font-weight:400;margin-left:6px">(admin only)</span></h4>
+      <h4>Invite a participant <span style="font-size:11px;color:var(--g-50);font-weight:400;margin-left:6px">(admin only)</span></h4>
       <button class="close" onclick="closeOverlay('invite-participant-modal')"><i class="ti ti-x"></i></button>
     </div>
     <div class="overlay-body">
-      <p style="font-size:16px;color:var(--g-50);line-height:1.5;margin-bottom:12px">Sends an invitation email. The org appears as <strong style="color:var(--g-30);font-weight:500">Pending KYC</strong> in this directory until they complete onboarding.</p>
+      <p style="font-size:12px;color:var(--g-50);line-height:1.5;margin-bottom:12px">Sends an invitation email. The org appears as <strong style="color:var(--g-30);font-weight:500">Pending KYC</strong> in this directory until they complete onboarding.</p>
 
       <div class="mform-row">
         <label for="invite-org-name">Organisation name <span style="color:var(--red-50)">*</span></label>
@@ -4907,7 +4907,7 @@
         <textarea id="invite-message" rows="2" placeholder="Short note included with the invitation email"></textarea>
       </div>
 
-      <div style="padding:10px 12px;background:var(--g-98);border-radius:var(--r-md);font-size:14.5px;color:var(--g-30);line-height:1.5;margin-top:6px"><i class="ti ti-info-circle" style="font-size:18.5px;vertical-align:-2px;margin-right:4px;color:var(--g-50)"></i>An invitation also creates a one-time onboarding link valid for 14 days. KYC review is run by the SGTradex operations team — typically 1–3 business days.</div>
+      <div style="padding:10px 12px;background:var(--g-98);border-radius:var(--r-md);font-size:11px;color:var(--g-30);line-height:1.5;margin-top:6px"><i class="ti ti-info-circle" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--g-50)"></i>An invitation also creates a one-time onboarding link valid for 14 days. KYC review is run by the SGTradex operations team — typically 1–3 business days.</div>
     </div>
     <div class="overlay-foot">
       <button class="btn-cancel" onclick="closeOverlay('invite-participant-modal')">Cancel</button>
@@ -4917,7 +4917,7 @@
 </div>
 
 <div class="overlay-veil" id="impersonate-modal" hidden>
-  <div class="overlay-card"><div class="overlay-head"><div class="ic warn"><i class="ti ti-eye"></i></div><h4 data-impersonation-modal-title>View as participant on SGTradex</h4><button class="close" onclick="closeOverlay('impersonate-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:16px;color:var(--g-30);line-height:1.5;margin-bottom:10px" data-impersonation-modal-body>You'll see exactly what a participant on SGTradex sees. Any action you take will be tagged in the audit log as performed under impersonation.</p><div style="padding:10px 12px;background:var(--yellow-98);border:0.5px solid var(--yellow-95);border-radius:var(--r-md);font-size:14.5px;color:var(--g-30);line-height:1.5"><i class="ti ti-shield-lock" style="font-size:18.5px;vertical-align:-2px;margin-right:4px;color:var(--yellow-50)"></i>Auto-ends after 30 minutes. Surface banner persists for the duration.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('impersonate-modal')">Cancel</button><button class="btn-primary" onclick="closeOverlay('impersonate-modal'); startImpersonation()">Start session</button></div></div>
+  <div class="overlay-card"><div class="overlay-head"><div class="ic warn"><i class="ti ti-eye"></i></div><h4 data-impersonation-modal-title>View as participant on SGTradex</h4><button class="close" onclick="closeOverlay('impersonate-modal')"><i class="ti ti-x"></i></button></div><div class="overlay-body"><p style="font-size:12px;color:var(--g-30);line-height:1.5;margin-bottom:10px" data-impersonation-modal-body>You'll see exactly what a participant on SGTradex sees. Any action you take will be tagged in the audit log as performed under impersonation.</p><div style="padding:10px 12px;background:var(--yellow-98);border:0.5px solid var(--yellow-95);border-radius:var(--r-md);font-size:11px;color:var(--g-30);line-height:1.5"><i class="ti ti-shield-lock" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:var(--yellow-50)"></i>Auto-ends after 30 minutes. Surface banner persists for the duration.</div></div><div class="overlay-foot"><button class="btn-cancel" onclick="closeOverlay('impersonate-modal')">Cancel</button><button class="btn-primary" onclick="closeOverlay('impersonate-modal'); startImpersonation()">Start session</button></div></div>
 </div>
 
 <div class="search-overlay" id="search-overlay" hidden>
@@ -4963,16 +4963,16 @@
 </div>
 
 <div class="cp-panel" id="cp-panel">
-  <div class="cp-panel-head"><i class="ti ti-eye" style="color:var(--g-50)"></i><h5>How Maersk sees this Agreement</h5><button class="close" onclick="closeCpPanel()"><i class="ti ti-x" style="font-size:23.5px;color:var(--g-50)"></i></button></div>
+  <div class="cp-panel-head"><i class="ti ti-eye" style="color:var(--g-50)"></i><h5>How Maersk sees this Agreement</h5><button class="close" onclick="closeCpPanel()"><i class="ti ti-x" style="font-size:18px;color:var(--g-50)"></i></button></div>
   <div class="cp-panel-body">
-    <div class="note"><i class="ti ti-info-circle" style="font-size:17px;vertical-align:-2px;margin-right:4px"></i>Read-only counterparty view. Both sides read from the same record — they can't drift.</div>
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span><span style="font-size:14.5px;color:var(--g-70);font-family:var(--font-mono)">AGR-2026-04829</span></div>
-    <h2 style="font-size:21.5px;font-weight:500;color:var(--g-10);margin-bottom:6px">Receiving Bills of Lading from Cosco Shipping</h2>
+    <div class="note"><i class="ti ti-info-circle" style="font-size:13px;vertical-align:-2px;margin-right:4px"></i>Read-only counterparty view. Both sides read from the same record — they can't drift.</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span class="dex-chip bx"><span class="dex-dot"></span>SGBuildex</span><span style="font-size:11px;color:var(--g-70);font-family:var(--font-mono)">AGR-2026-04829</span></div>
+    <h2 style="font-size:16px;font-weight:500;color:var(--g-10);margin-bottom:6px">Receiving Bills of Lading from Cosco Shipping</h2>
     <span class="status-pill active" style="display:inline-flex"><span class="dot"></span>Active</span>
-    <p class="mini-h">Counterparty (you)</p><p style="font-size:17px;font-weight:500;color:var(--g-10)">Cosco Shipping (SG) Pte Ltd</p><p style="font-size:14.5px;color:var(--g-50)">UEN 199001234A · sender</p>
-    <p class="mini-h">What you receive</p><p style="font-size:17px;color:var(--g-10)">Bill of Lading · v2.1</p>
-    <p class="mini-h">Effective</p><p style="font-size:17px;color:var(--g-10)">21 Mar 2026 → 30 Sep 2026</p>
-    <p class="mini-h">Your team's view</p><p style="font-size:16px;color:var(--g-50);line-height:1.6">Maersk's admins see this as an Agreement they accepted. They can revoke their acceptance at any time, subject to the 7-day grace period.</p>
+    <p class="mini-h">Counterparty (you)</p><p style="font-size:13px;font-weight:500;color:var(--g-10)">Cosco Shipping (SG) Pte Ltd</p><p style="font-size:11px;color:var(--g-50)">UEN 199001234A · sender</p>
+    <p class="mini-h">What you receive</p><p style="font-size:13px;color:var(--g-10)">Bill of Lading · v2.1</p>
+    <p class="mini-h">Effective</p><p style="font-size:13px;color:var(--g-10)">21 Mar 2026 → 30 Sep 2026</p>
+    <p class="mini-h">Your team's view</p><p style="font-size:12px;color:var(--g-50);line-height:1.6">Maersk's admins see this as an Agreement they accepted. They can revoke their acceptance at any time, subject to the 7-day grace period.</p>
   </div>
 </div>
 
@@ -4985,7 +4985,7 @@
       <button class="close" onclick="closeOverlay('bulk-retry-modal')"><i class="ti ti-x"></i></button>
     </div>
     <div class="overlay-body">
-      <p style="font-size:16px;color:var(--g-30);line-height:1.5;margin-bottom:12px">Each Message will be re-sent with the <strong style="font-weight:500">same idempotency key</strong> as the original. Counterparty pitstops dedup on this key within their retention window (typically 24h), so duplicates are unlikely.</p>
+      <p style="font-size:12px;color:var(--g-30);line-height:1.5;margin-bottom:12px">Each Message will be re-sent with the <strong style="font-weight:500">same idempotency key</strong> as the original. Counterparty pitstops dedup on this key within their retention window (typically 24h), so duplicates are unlikely.</p>
       <div class="bulk-list">
         <div class="bulk-row"><div class="bulk-cp">PSA International</div><div class="bulk-de">Bunker delivery v0.9</div><div class="bulk-age">3 min ago</div></div>
         <div class="bulk-row"><div class="bulk-cp">Jurong Terminals</div><div class="bulk-de">Berth allocation v0.8</div><div class="bulk-age">1h 32m ago</div></div>
@@ -5012,7 +5012,7 @@
       <button class="close" onclick="closeOverlay('bulk-close-modal')"><i class="ti ti-x"></i></button>
     </div>
     <div class="overlay-body">
-      <p style="font-size:16px;color:var(--g-30);line-height:1.5;margin-bottom:10px">Closing declares no further remediation is expected. These will be hidden from default views and excluded from inbox routing. <strong style="font-weight:500">Close is one-way</strong> per ADR 0021 — it cannot be undone.</p>
+      <p style="font-size:12px;color:var(--g-30);line-height:1.5;margin-bottom:10px">Closing declares no further remediation is expected. These will be hidden from default views and excluded from inbox routing. <strong style="font-weight:500">Close is one-way</strong> per ADR 0021 — it cannot be undone.</p>
       <p class="section-label" style="margin-top:8px;margin-bottom:8px">Affecting</p>
       <div class="bulk-list" style="margin-bottom:14px">
         <div class="bulk-row"><div class="bulk-cp">DHL Global Forwarding</div><div class="bulk-de">Consignment note v1.3</div><div class="bulk-age">42 min</div></div>
@@ -5025,7 +5025,7 @@
         <label class="reason-row"><input type="radio" name="bulk-close-reason" value="NOT_NEEDED"><span>Not needed after all</span></label>
         <label class="reason-row"><input type="radio" name="bulk-close-reason" value="RESOLVED_OUT_OF_BAND"><span>Resolved out-of-band <em style="color:var(--g-50);font-weight:400">(phone, manual upload, etc.)</em></span></label>
         <label class="reason-row"><input type="radio" name="bulk-close-reason" value="COUNTERPARTY_UNRESPONSIVE" checked><span>Counterparty unresponsive — accepted loss</span></label>
-        <label class="reason-row"><input type="radio" name="bulk-close-reason" value="OTHER"><span>Other<input type="text" id="bulk-close-other" placeholder="Describe..." style="margin-left:8px;padding:3px 6px;border:1px solid var(--g-90);border-radius:4px;font-size:14.5px;width:170px"></span></label>
+        <label class="reason-row"><input type="radio" name="bulk-close-reason" value="OTHER"><span>Other<input type="text" id="bulk-close-other" placeholder="Describe..." style="margin-left:8px;padding:3px 6px;border:1px solid var(--g-90);border-radius:4px;font-size:11px;width:170px"></span></label>
       </div>
     </div>
     <div class="overlay-foot">
@@ -5044,13 +5044,13 @@
       <button class="close" onclick="closeOverlay('msg-close-modal')"><i class="ti ti-x"></i></button>
     </div>
     <div class="overlay-body">
-      <p id="msg-close-copy" style="font-size:16px;color:var(--g-30);line-height:1.55;margin-bottom:14px"></p>
+      <p id="msg-close-copy" style="font-size:12px;color:var(--g-30);line-height:1.55;margin-bottom:14px"></p>
       <p class="section-label" style="margin-bottom:8px">Reason</p>
       <div class="reason-picker">
         <label class="reason-row"><input type="radio" name="msg-close-reason" value="NOT_NEEDED"><span>Not needed after all</span></label>
         <label class="reason-row"><input type="radio" name="msg-close-reason" value="RESOLVED_OUT_OF_BAND"><span>Resolved out-of-band</span></label>
         <label class="reason-row"><input type="radio" name="msg-close-reason" value="COUNTERPARTY_UNRESPONSIVE" checked><span>Counterparty unresponsive — accepted loss</span></label>
-        <label class="reason-row"><input type="radio" name="msg-close-reason" value="OTHER"><span>Other<input type="text" id="msg-close-other" placeholder="Describe..." style="margin-left:8px;padding:3px 6px;border:1px solid var(--g-90);border-radius:4px;font-size:14.5px;width:200px"></span></label>
+        <label class="reason-row"><input type="radio" name="msg-close-reason" value="OTHER"><span>Other<input type="text" id="msg-close-other" placeholder="Describe..." style="margin-left:8px;padding:3px 6px;border:1px solid var(--g-90);border-radius:4px;font-size:11px;width:200px"></span></label>
       </div>
     </div>
     <div class="overlay-foot">
@@ -5064,8 +5064,8 @@
 <aside class="cp-panel" id="trace-panel" aria-labelledby="trace-panel-heading" aria-modal="true" role="dialog" aria-hidden="true">
   <div class="cp-panel-head">
     <div>
-      <p style="font-size:13px;color:var(--g-50);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">Delivery trace · audit view</p>
-      <h3 id="trace-panel-heading" style="font-size:19.5px;color:var(--g-10);font-weight:500">View delivery trace</h3>
+      <p style="font-size:10px;color:var(--g-50);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">Delivery trace · audit view</p>
+      <h3 id="trace-panel-heading" style="font-size:15px;color:var(--g-10);font-weight:500">View delivery trace</h3>
     </div>
     <button class="close" onclick="closeTracePanel()" aria-label="Close trace panel"><i class="ti ti-x"></i></button>
   </div>
@@ -5086,9 +5086,9 @@
       <button class="close" onclick="closeOverlay('compose-picker-modal')"><i class="ti ti-x"></i></button>
     </div>
     <div class="overlay-body">
-      <p style="font-size:16px;color:var(--g-30);line-height:1.5;margin-bottom:12px">A Message is always created under an Agreement — its counterparty, data element, and schema come from the Agreement's snapshot. Pick which Agreement this Message belongs to.</p>
+      <p style="font-size:12px;color:var(--g-30);line-height:1.5;margin-bottom:12px">A Message is always created under an Agreement — its counterparty, data element, and schema come from the Agreement's snapshot. Pick which Agreement this Message belongs to.</p>
       <div class="picker-search" style="margin-bottom:12px">
-        <i class="ti ti-search" style="font-size:18.5px;color:var(--g-50)"></i>
+        <i class="ti ti-search" style="font-size:14px;color:var(--g-50)"></i>
         <input type="text" placeholder="Filter by counterparty or data element" oninput="filterComposePicker(this.value)">
       </div>
       <div class="picker-list" id="compose-picker-list">
@@ -5127,7 +5127,7 @@
         <button class="picker-row" type="button" onclick="pickAgreementForCompose('acting-as')">
           <div class="pr-avatar">CL</div>
           <div class="pr-body">
-            <p class="pr-title">CrimsonLogic <span style="font-size:13px;color:var(--g-50)">(SP for Maersk)</span> · <span class="pr-elem">Bill of Lading</span> <span class="pr-ver">v2.1</span></p>
+            <p class="pr-title">CrimsonLogic <span style="font-size:10px;color:var(--g-50)">(SP for Maersk)</span> · <span class="pr-elem">Bill of Lading</span> <span class="pr-ver">v2.1</span></p>
             <p class="pr-meta">AGR-2026-04711 · Service-Provider · Send · acting as Maersk · high-stakes</p>
           </div>
           <i class="ti ti-arrow-right pr-arrow"></i>
@@ -5157,7 +5157,7 @@
           <i class="ti ti-arrow-right pr-arrow"></i>
         </button>
       </div>
-      <p style="font-size:14.5px;color:var(--g-50);margin-top:12px;line-height:1.45"><i class="ti ti-info-circle" style="font-size:17px;vertical-align:-2px;margin-right:3px"></i>Don't see the Agreement you need? It must be <strong>Active</strong> and your org must be the <strong>data owner</strong> (or the appointed SP) for it to appear here. Pure-consumer Agreements are not compose-eligible per ADR 0024.</p>
+      <p style="font-size:11px;color:var(--g-50);margin-top:12px;line-height:1.45"><i class="ti ti-info-circle" style="font-size:13px;vertical-align:-2px;margin-right:3px"></i>Don't see the Agreement you need? It must be <strong>Active</strong> and your org must be the <strong>data owner</strong> (or the appointed SP) for it to appear here. Pure-consumer Agreements are not compose-eligible per ADR 0024.</p>
     </div>
     <div class="overlay-foot">
       <button class="btn-cancel" onclick="closeOverlay('compose-picker-modal')">Cancel</button>

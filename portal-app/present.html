@@ -9,7 +9,7 @@
   <meta charset="utf-8">
   <title>Portal Rewrite — Local Preview</title>
   <meta name="viewport" content="width=1024">
-  <link rel="stylesheet" href="styles/presenter.css">
+  <link rel="stylesheet" href="styles/presenter.css?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -55,21 +55,21 @@
           <div class="slide-col">
             <p class="slide-col-eyebrow">Five paid by customers</p>
             <ul class="slide-bigbullets">
-              <li>Operator <span class="b-tax">retention risk</span></li>
-              <li>Service Provider <span class="b-tax">audit exposure</span></li>
-              <li>DEX admin <span class="b-tax">time-to-market</span></li>
-              <li>Platform admin <span class="b-tax">activation drop-off</span></li>
-              <li>Pack dispatcher <span class="b-tax">top-account ceiling</span></li>
+              <li>Operator <span class="b-tax">burn out → customer churns</span></li>
+              <li>Service Provider <span class="b-tax">can't prove who acted in audits</span></li>
+              <li>DEX admin <span class="b-tax">new Data Element Schemas take days→weeks</span></li>
+              <li>Platform admin <span class="b-tax">new orgs stall at first login</span></li>
+              <li>Pack dispatcher <span class="b-tax">multi-counterparty sends take an afternoon</span></li>
             </ul>
           </div>
           <div class="slide-col">
             <p class="slide-col-eyebrow">Five paid by our teams</p>
             <ul class="slide-bigbullets">
-              <li>BD <span class="b-tax">pipeline velocity</span></li>
-              <li>Product <span class="b-tax">roadmap drag</span></li>
-              <li>Engineering <span class="b-tax">catalogue relay</span></li>
-              <li>UIUX <span class="b-tax">surface-area sprawl</span></li>
-              <li>Ops <span class="b-tax">ticket &amp; change load</span></li>
+              <li>BD <span class="b-tax">signed deals stall before going live</span></li>
+              <li>Product <span class="b-tax">roadmap eaten by legacy maintenance</span></li>
+              <li>Engineering <span class="b-tax">every Data Element Schema pulls engineering in</span></li>
+              <li>UIUX <span class="b-tax">two portals + sprawl to maintain</span></li>
+              <li>Ops <span class="b-tax">tickets and change requests pile up</span></li>
             </ul>
           </div>
         </div>
@@ -78,9 +78,42 @@
       </div>
     </div>
 
+    <!-- ═════ Bridge · Pivot · 10 frictions → 10 features ══════════════════
+         Sits diagonally between Slide 1 (10 frictions, at 0,-3000) and
+         Slide 2 (Five→One, at -3000,0) so the Prezi camera arcs through it
+         on the way down. Maps each Section 00 tax to the feature the
+         rewrite introduces to cancel it — converting diagnosis into design
+         before the structural-shift slides go deep. -->
+    <div class="step slide slide--pivot" data-x="-1500" data-y="-1500" data-scale="0.85" data-rotate="-2"
+         data-step-number="2" data-section-id="ov-pivot" data-notes-key="Pivot">
+      <div class="slide-bg slide-bg--graphite"></div>
+      <div class="slide-inner slide-inner--centered">
+        <p class="slide-eyebrow">From the ten frictions — to the ten features</p>
+        <h2 class="slide-headline">Every Section 00 tax has a feature that cancels it.</h2>
+        <div class="slide-cancels slide-cancels--mapped">
+          <ul class="cancels-list">
+            <li><span class="cancels-tax"><b>Operator</b> · burn out → customer churns</span><span class="cancels-arrow" aria-hidden="true">→</span><span class="cn-mini">01</span><span class="cancels-title">Inbox is home</span></li>
+            <li><span class="cancels-tax"><b>SP</b> · can't prove who acted in audits</span><span class="cancels-arrow" aria-hidden="true">→</span><span class="cn-mini">04</span><span class="cancels-title">Compose under Agreement</span></li>
+            <li><span class="cancels-tax"><b>DEX admin</b> · new Data Element Schemas take days→weeks</span><span class="cancels-arrow" aria-hidden="true">→</span><span class="cn-mini">09</span><span class="cancels-title">Admins author elements</span></li>
+            <li><span class="cancels-tax"><b>Platform admin</b> · new orgs stall at first login</span><span class="cancels-arrow" aria-hidden="true">→</span><span class="cn-mini">10</span><span class="cancels-title">Pre-staged Drafts</span></li>
+            <li><span class="cancels-tax"><b>Pack dispatcher</b> · multi-counterparty sends take an afternoon</span><span class="cancels-arrow" aria-hidden="true">→</span><span class="cn-mini">07</span><span class="cancels-title">Multi-counterparty packs</span></li>
+          </ul>
+          <ul class="cancels-list">
+            <li><span class="cancels-tax"><b>BD</b> · signed deals stall before going live</span><span class="cancels-arrow" aria-hidden="true">→</span><span class="cn-mini">10</span><span class="cancels-title">Pre-staged Drafts</span></li>
+            <li><span class="cancels-tax"><b>Product</b> · roadmap eaten by legacy maintenance</span><span class="cancels-arrow" aria-hidden="true">→</span><span class="cn-mini">02</span><span class="cancels-title">One Messages page</span></li>
+            <li><span class="cancels-tax"><b>Engineering</b> · every Data Element Schema pulls engineering in</span><span class="cancels-arrow" aria-hidden="true">→</span><span class="cn-mini">09</span><span class="cancels-title">Admins author elements</span></li>
+            <li><span class="cancels-tax"><b>UIUX</b> · two portals + sprawl to maintain</span><span class="cancels-arrow" aria-hidden="true">→</span><span class="cn-mini">06</span><span class="cancels-title">Notifications match stakes</span></li>
+            <li><span class="cancels-tax"><b>Ops</b> · tickets and change requests pile up</span><span class="cancels-arrow" aria-hidden="true">→</span><span class="cn-mini">03</span><span class="cancels-title">One status vocabulary</span></li>
+          </ul>
+        </div>
+        <p class="slide-pull">The next four slides zoom into the two structural shifts that make these ten possible.</p>
+        <div class="notes">[notes injected]</div>
+      </div>
+    </div>
+
     <!-- ═════ Slide 2 · Section 01 · Five → One ═════════════════════════════ -->
     <div class="step slide slide--mental-01" data-x="-3000" data-y="0" data-scale="0.85" data-rotate="-3"
-         data-step-number="2" data-section-id="ov-mental-01" data-notes-key="Section 01">
+         data-step-number="3" data-section-id="ov-mental-01" data-notes-key="Section 01">
       <div class="slide-bg slide-bg--midnight"></div>
       <div class="slide-inner slide-inner--centered">
         <p class="slide-eyebrow">01 · Upstream of compose</p>
@@ -109,7 +142,7 @@
 
     <!-- ═════ Slide 3 · Section 02 · Consent ≠ Action ═════════════════════ -->
     <div class="step slide slide--mental-02" data-x="-1000" data-y="0" data-scale="0.85" data-rotate="3"
-         data-step-number="3" data-section-id="ov-mental-02" data-notes-key="Section 02">
+         data-step-number="4" data-section-id="ov-mental-02" data-notes-key="Section 02">
       <div class="slide-bg slide-bg--teal"></div>
       <div class="slide-inner slide-inner--centered">
         <p class="slide-eyebrow">02 · The shift, downstream</p>
@@ -130,16 +163,17 @@
           </div>
         </div>
         <p class="slide-pull">The structural shift. Not a UI re-skin.</p>
+        <p class="slide-footnote">Once Active, the Agreement keeps flowing — <strong>Extend</strong>, <strong>Suspend</strong>, or <strong>Version</strong> without re-picking the structure each time.</p>
         <div class="notes">[notes injected]</div>
       </div>
     </div>
 
     <!-- ═════ Slide 4 · Section 03 · 7 → 5 ═════════════════════════ -->
     <div class="step slide slide--ba-03" data-x="1000" data-y="0" data-scale="0.85" data-rotate="-3"
-         data-step-number="4" data-section-id="ov-ba-03" data-notes-key="Section 03">
+         data-step-number="5" data-section-id="ov-ba-03" data-notes-key="Section 03">
       <div class="slide-bg slide-bg--ember"></div>
       <div class="slide-inner slide-inner--centered">
-        <p class="slide-eyebrow">03 · One task, two journeys</p>
+        <p class="slide-eyebrow">03 · The operator side — today vs after</p>
         <h2 class="slide-headline">Send a Cargo manifest to Maersk.</h2>
         <div class="slide-stepcount">
           <div class="stepcount-side stepcount-side--today">
@@ -161,13 +195,14 @@
           </div>
         </div>
         <p class="slide-pull">Same task. Two fewer translation steps.</p>
+        <p class="slide-footnote">Daily texture: <strong>failed-message triage</strong> (filter <em>your action / theirs / expired</em>, bulk retry) · <strong>Watch + digest</strong> so critical Agreements ping and routine failures roll into a twice-daily summary · <strong>cross-network warnings</strong> before a send crosses a DEX boundary.</p>
         <div class="notes">[notes injected]</div>
       </div>
     </div>
 
     <!-- ═════ Slide 5 · Section 04 · 9 → 5 ════════════════════════════ -->
     <div class="step slide slide--ba-04" data-x="3000" data-y="0" data-scale="0.85" data-rotate="3"
-         data-step-number="5" data-section-id="ov-ba-04" data-notes-key="Section 04">
+         data-step-number="6" data-section-id="ov-ba-04" data-notes-key="Section 04">
       <div class="slide-bg slide-bg--crimson"></div>
       <div class="slide-inner slide-inner--centered">
         <p class="slide-eyebrow">04 · Same story, for the admins</p>
@@ -188,13 +223,14 @@
           </div>
         </div>
         <p class="slide-pull">Smart Start drafts. Test-as-operator verifies. The catalogue relay is gone.</p>
+        <p class="slide-footnote"><strong>Live</strong>: drop a BCA or IMDA PDF and the system extracts fields and writes validation rules with verbatim citations. <strong>Test-as-operator</strong> runs production rules against sample data before publish. <strong>Versioning</strong> creates a new record — partners already on v1.0 stay on v1.0.</p>
         <div class="notes">[notes injected]</div>
       </div>
     </div>
 
     <!-- ═════ Slide 6 · Section 05 · Mental model ════ -->
     <div class="step slide slide--concept" data-x="-4000" data-y="2200" data-scale="0.85" data-rotate="-4"
-         data-step-number="6" data-section-id="ov-concept" data-notes-key="Section 05">
+         data-step-number="7" data-section-id="ov-concept" data-notes-key="Section 05">
       <div class="slide-bg slide-bg--indigo"></div>
       <div class="slide-inner slide-inner--centered">
         <p class="slide-eyebrow">05 · The new mental model</p>
@@ -222,22 +258,26 @@
 
     <!-- ═════ Slide 7 · Section 06 · Ten decisions ═════════════ -->
     <div class="step slide slide--decisions" data-x="-2000" data-y="2200" data-scale="0.85" data-rotate="3"
-         data-step-number="7" data-section-id="ov-decisions" data-notes-key="Section 06">
+         data-step-number="8" data-section-id="ov-decisions" data-notes-key="Section 06">
       <div class="slide-bg slide-bg--amber"></div>
       <div class="slide-inner slide-inner--centered">
         <p class="slide-eyebrow">06 · Ten decisions that shape the experience</p>
-        <h2 class="slide-headline">Each cancels a Section 00 tax.</h2>
-        <div class="slide-constellation">
-          <div class="cn cn--1" style="--cn-x:8%;  --cn-y:18%;"><span class="cn-num">01</span><span class="cn-title">Inbox is home</span></div>
-          <div class="cn cn--2" style="--cn-x:24%; --cn-y:8%;"><span class="cn-num">02</span><span class="cn-title">One Messages page</span></div>
-          <div class="cn cn--3" style="--cn-x:42%; --cn-y:22%;"><span class="cn-num">03</span><span class="cn-title">One status vocab</span></div>
-          <div class="cn cn--4" style="--cn-x:60%; --cn-y:12%;"><span class="cn-num">04</span><span class="cn-title">Compose under Agreement</span></div>
-          <div class="cn cn--5" style="--cn-x:78%; --cn-y:24%;"><span class="cn-num">05</span><span class="cn-title">Terms frozen at acceptance</span></div>
-          <div class="cn cn--6" style="--cn-x:12%; --cn-y:62%;"><span class="cn-num">06</span><span class="cn-title">Notifications match stakes</span></div>
-          <div class="cn cn--7" style="--cn-x:30%; --cn-y:80%;"><span class="cn-num">07</span><span class="cn-title">Multi-counterparty packs</span></div>
-          <div class="cn cn--8" style="--cn-x:50%; --cn-y:68%;"><span class="cn-num">08</span><span class="cn-title">Describe your own side</span></div>
-          <div class="cn cn--9" style="--cn-x:68%; --cn-y:82%;"><span class="cn-num">09</span><span class="cn-title">Admins author elements</span></div>
-          <div class="cn cn--10" style="--cn-x:86%; --cn-y:62%;"><span class="cn-num">10</span><span class="cn-title">Pre-staged Drafts</span></div>
+        <h2 class="slide-headline">What each one earns.</h2>
+        <div class="slide-cancels">
+          <ul class="cancels-list">
+            <li><span class="cn-mini">01</span><span class="cancels-title">Inbox is home</span><span class="cancels-tax cancels-tax--earned">Faster time to first task</span></li>
+            <li><span class="cn-mini">02</span><span class="cancels-title">One Messages page</span><span class="cancels-tax cancels-tax--earned">Less training, fewer mistakes</span></li>
+            <li><span class="cn-mini">03</span><span class="cancels-title">One status vocabulary</span><span class="cancels-tax cancels-tax--earned">Clearer audit · failures routed</span></li>
+            <li><span class="cn-mini">04</span><span class="cancels-title">Compose under Agreement</span><span class="cancels-tax cancels-tax--earned">Cleaner audit, fewer clicks</span></li>
+            <li><span class="cn-mini">05</span><span class="cancels-title">Terms frozen at acceptance</span><span class="cancels-tax cancels-tax--earned">Legal certainty</span></li>
+          </ul>
+          <ul class="cancels-list">
+            <li><span class="cn-mini">06</span><span class="cancels-title">Notifications match stakes</span><span class="cancels-tax cancels-tax--earned">Operators trust the inbox</span></li>
+            <li><span class="cn-mini">07</span><span class="cancels-title">Multi-counterparty packs</span><span class="cancels-tax cancels-tax--earned">Afternoon → minutes</span></li>
+            <li><span class="cn-mini">08</span><span class="cancels-title">Describe your own side</span><span class="cancels-tax cancels-tax--earned">No cross-org Pitstop coordination</span></li>
+            <li><span class="cn-mini">09</span><span class="cancels-title">Admins author elements</span><span class="cancels-tax cancels-tax--earned">Same-day publish · no engineering relay</span></li>
+            <li><span class="cn-mini">10</span><span class="cancels-title">Pre-staged Drafts</span><span class="cancels-tax cancels-tax--earned">Consequential first day</span></li>
+          </ul>
         </div>
         <div class="notes">[notes injected]</div>
       </div>
@@ -245,23 +285,26 @@
 
     <!-- ═════ Slide 8 · Section 07 · Roadmap ═════════════════════ -->
     <div class="step slide slide--roadmap" data-x="0" data-y="2200" data-scale="0.85" data-rotate="-3"
-         data-step-number="8" data-section-id="ov-roadmap" data-notes-key="Section 07">
+         data-step-number="9" data-section-id="ov-roadmap" data-notes-key="Section 07">
       <div class="slide-bg slide-bg--forest"></div>
       <div class="slide-inner slide-inner--centered">
         <p class="slide-eyebrow">07 · What launches first vs what's deferred</p>
-        <h2 class="slide-headline">Honest scoping.</h2>
+        <h2 class="slide-headline">Eleven items at launch. Six wait on platform work.</h2>
         <div class="slide-scoping">
           <div class="scoping-col scoping-col--v1">
             <p class="scoping-tag">v1 · Six months</p>
             <ul class="scoping-list">
               <li>One portal, sign-in unified</li>
-              <li>Inbox home + team-claim</li>
-              <li>One Messages page</li>
+              <li>Inbox home + team-claim + approve-in-5</li>
+              <li>One Messages page + bulk retry by owner</li>
               <li>Live timeline + retry/close</li>
-              <li>One Composer + auto-review</li>
+              <li>One Composer + Acting-as workflow</li>
+              <li>Agreement lifecycle: extend / suspend / version</li>
+              <li>Multi-counterparty Agreement packs + Send pack</li>
+              <li>Admin element authoring + Smart Start + Test-as-operator</li>
+              <li>Onboarding workbook → pre-staged Drafts</li>
               <li>Watch toggle + digest</li>
-              <li>Cross-network warnings</li>
-              <li>Settings → Pitstops page</li>
+              <li>Cross-network warnings + Pitstop scope</li>
             </ul>
           </div>
           <div class="scoping-col scoping-col--deferred">
@@ -283,7 +326,7 @@
 
     <!-- ═════ Slide 9 · Section 08 · Soft landing ═════════════════ -->
     <div class="step slide slide--migration" data-x="2000" data-y="2200" data-scale="0.85" data-rotate="4"
-         data-step-number="9" data-section-id="ov-migration" data-notes-key="Section 08">
+         data-step-number="10" data-section-id="ov-migration" data-notes-key="Section 08">
       <div class="slide-bg slide-bg--mustard"></div>
       <div class="slide-inner slide-inner--centered">
         <p class="slide-eyebrow">08 · Rollout day, for users already on the network</p>
@@ -317,7 +360,7 @@
 
     <!-- ═════ Slide 10 · Section 09 · Empty → consequential ═══════════════ -->
     <div class="step slide slide--new-orgs" data-x="4000" data-y="2200" data-scale="0.85" data-rotate="-3"
-         data-step-number="10" data-section-id="ov-new-orgs" data-notes-key="Section 09">
+         data-step-number="11" data-section-id="ov-new-orgs" data-notes-key="Section 09">
       <div class="slide-bg slide-bg--prussian"></div>
       <div class="slide-inner slide-inner--centered">
         <p class="slide-eyebrow">09 · Day one, for orgs joining the network</p>
@@ -352,7 +395,7 @@
 
     <!-- ═════ Slide 11 · Section 10 · Three asks ════ -->
     <div class="step slide slide--asks" data-x="0" data-y="5200" data-scale="0.85" data-rotate="0"
-         data-step-number="11" data-section-id="ov-asks" data-notes-key="Section 10">
+         data-step-number="12" data-section-id="ov-asks" data-notes-key="Section 10">
       <div class="slide-bg slide-bg--bordeaux"></div>
       <div class="slide-inner slide-inner--centered">
         <p class="slide-eyebrow">10 · What we need from leadership</p>
@@ -392,8 +435,21 @@
 
   <aside class="presenter-notes-overlay" hidden></aside>
 
+  <!-- Zoom + pan hint — visible only on the overview (managed by overview-zoom-active body class) -->
+  <div class="overview-zoom-hint" aria-hidden="true">
+    <span>Zoom</span>
+    <kbd>+</kbd><kbd>−</kbd>
+    <span style="opacity:.55">·</span>
+    <kbd>scroll</kbd>
+    <span style="opacity:.55">Pan</span>
+    <kbd>drag</kbd>
+    <span style="opacity:.55">·</span>
+    <kbd>0</kbd>
+    <span style="opacity:.55">reset</span>
+  </div>
+
   <script src="scripts/vendor/impress.js"></script>
-  <script src="scripts/presenter-notes.js"></script>
-  <script src="scripts/presenter.js"></script>
+  <script src="scripts/presenter-notes.js?v=2"></script>
+  <script src="scripts/presenter.js?v=2"></script>
 </body>
 </html>

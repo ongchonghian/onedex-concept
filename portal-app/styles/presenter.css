@@ -99,6 +99,11 @@ body.presenter-mode {
 .slide-bg--bordeaux {
   background: radial-gradient(ellipse at center, #4d0820 0%, #2a0511 60%, #11020a 100%);
 }
+/* Bridge slide between Slide 1 (10 frictions) and Slide 2 (Five→One).
+   Cool graphite — neutral pivot tone that hands off into Slide 2's midnight. */
+.slide-bg--graphite {
+  background: radial-gradient(ellipse at center, #2c3340 0%, #161b25 60%, #08090d 100%);
+}
 /* ═══ Typography scale ════════════════════════════════════════════════ */
 .slide-eyebrow {
   font-size: 29.5px;
@@ -159,7 +164,42 @@ body.presenter-mode {
   letter-spacing: 0.01em;
 }
 
-/* ═══ Slide 1 · TWO COLUMNS (customer / internal) ═════════════════════ */
+/* Sub-pull footnote — used to surface features that don't merit their own
+   slide but matter for management coverage (lifecycle actions, daily texture,
+   live-assist details). Quieter than .slide-pull; sits directly under it. */
+.slide-footnote {
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 18px auto 0;
+  max-width: 1400px;
+  letter-spacing: 0.005em;
+}
+.slide-footnote strong {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+}
+.slide-footnote em {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* When a slide carries both a pull AND a footnote, tighten the pull's top
+   margin so the bottom of the slide stays inside the 1080 canvas. */
+.slide-pull + .slide-footnote { margin-top: 14px; }
+.slide-inner:has(.slide-footnote) .slide-pull { margin-top: 32px; }
+.slide-inner:has(.slide-footnote) .slide-stepcount { margin: 18px auto 18px; }
+.slide-inner:has(.slide-footnote) .stepcount-side { padding: 36px 28px; }
+
+/* ═══ Slide 1 · STAKES — tightened so the 10-row table fits ═══════════
+   Pills now wrap to a 2nd line per row, so we trade some grandeur on the
+   "10." for vertical headroom. */
+.slide--stakes .slide-mega { font-size: 220px; margin-bottom: 4px; }
+.slide--stakes .slide-subhead { font-size: 30px; margin-bottom: 24px; max-width: 1100px; }
+.slide--stakes .slide-pull { margin-top: 20px; font-size: 30px; }
+.slide--stakes .slide-twocol { gap: 80px; margin-top: 8px; }
+
 .slide-twocol {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -182,24 +222,29 @@ body.presenter-mode {
   margin: 0;
 }
 .slide-bigbullets li {
-  font-size: 31.5px;
-  font-weight: 500;
-  line-height: 1.4;
-  padding: 10px 0;
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 7px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.95);
 }
 .slide-bigbullets li:last-child { border-bottom: none; }
+/* Long consequence-voice pills now wrap below the persona name; force the
+   pill onto its own line so every row has the same predictable height. */
 .b-tax {
-  display: inline-block;
-  margin-left: 12px;
+  display: block;
+  margin-top: 4px;
   padding: 3px 12px;
   background: rgba(255, 220, 180, 0.12);
   border-radius: 99px;
   color: #ffd9a8;
-  font-size: 23.5px;
+  font-size: 20px;
   font-weight: 500;
   letter-spacing: 0.01em;
+  width: fit-content;
+  max-width: 100%;
+  line-height: 1.3;
 }
 
 /* ═══ Slide 2 · Funnel ════════════════════════════════════════════════ */
@@ -438,43 +483,91 @@ body.presenter-mode {
 }
 
 /* ═══ Slide 7 · Constellation ═════════════════════════════════════════ */
-.slide-constellation {
-  position: relative;
-  width: 1500px;
-  height: 480px;
-  margin: 24px auto;
+/* Slide 7 · 5+5 grid pairing each decision with the Section 00 tax it cancels.
+   Mirrors Slide 1's two-column layout so the visual rhyme makes the
+   decision→tax mapping unmistakable. */
+.slide-cancels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  margin: 32px auto 0;
+  max-width: 1600px;
+  text-align: left;
 }
-.cn {
-  position: absolute;
-  left: var(--cn-x);
-  top: var(--cn-y);
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
+.cancels-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.cancels-list li {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
   align-items: center;
-  gap: 10px;
-  width: 200px;
-  text-align: center;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
-.cn-num {
-  width: 70px;
-  height: 70px;
+.cancels-list li:last-child { border-bottom: none; }
+.cn-mini {
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 31.5px;
+  font-size: 22px;
   font-weight: 700;
   background: radial-gradient(circle, #ffe49a 0%, #c08418 65%);
   color: #2a1c00;
-  box-shadow: 0 0 32px rgba(255, 220, 130, 0.5);
+  box-shadow: 0 0 18px rgba(255, 220, 130, 0.35);
 }
-.cn-title {
-  font-size: 21.5px;
+.cancels-title {
+  font-size: 27px;
   font-weight: 600;
-  color: rgba(255, 240, 200, 0.9);
+  color: rgba(255, 255, 255, 0.95);
   line-height: 1.3;
+}
+.cancels-tax {
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  padding: 5px 14px;
+  background: rgba(255, 220, 180, 0.12);
+  border-radius: 99px;
+  color: #ffd9a8;
+  white-space: nowrap;
+}
+/* "What each one earns" variant on Slide 7 — green tone so audience reads
+   the chip as outcome/value, not as the same friction name from Slide 1. */
+.cancels-tax--earned {
+  background: rgba(180, 255, 200, 0.12);
+  color: #b6f1c9;
+}
+/* Bridge variant — friction (left) → feature (right). Four-column row
+   inverts the reading direction so the audience sees the Section 00 tax
+   first, then the feature that cancels it. */
+.slide-cancels--mapped .cancels-list li {
+  grid-template-columns: 1fr 32px 56px 1.1fr;
+  gap: 16px;
+}
+.slide-cancels--mapped .cancels-tax {
+  text-align: right;
+  justify-self: end;
+  white-space: normal;
+  line-height: 1.25;
+  font-weight: 400;
+}
+.slide-cancels--mapped .cancels-tax b {
+  font-weight: 700;
+  color: #ffe4b8;
+  margin-right: 4px;
+}
+.cancels-arrow {
+  font-size: 28px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
 }
 
 /* ═══ Slide 8 · Scoping ═══════════════════════════════════════════════ */
@@ -487,9 +580,12 @@ body.presenter-mode {
   text-align: left;
 }
 .scoping-col {
-  padding: 40px;
+  padding: 28px 36px;
   border-radius: 14px;
 }
+/* Tighter spacing on Section 07 so the 11-item v1 column fits in 1080. */
+.slide--roadmap .slide-headline { font-size: 72px; margin-bottom: 32px; }
+.slide--roadmap .slide-pull { margin-top: 28px; font-size: 30px; }
 .scoping-col--v1 {
   background: linear-gradient(180deg, rgba(43, 138, 92, 0.3) 0%, rgba(20, 70, 45, 0.5) 100%);
   border: 1px solid rgba(108, 230, 152, 0.4);
@@ -513,11 +609,11 @@ body.presenter-mode {
   margin: 0;
 }
 .scoping-list li {
-  font-size: 26.5px;
+  font-size: 22px;
   font-weight: 500;
-  padding: 8px 0 8px 28px;
+  padding: 4px 0 4px 26px;
   position: relative;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 .scoping-col--v1 .scoping-list li::before {
   content: '✓';
@@ -728,6 +824,44 @@ body.presenter-mode {
 .presenter-step-counter { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .presenter-section { opacity: 0.55; font-size: 14.5px; letter-spacing: 0.12em; text-transform: uppercase; }
 .presenter-narrative { color: #fff; font-weight: 500; }
+
+/* Zoom + pan hint chip — surfaced only while on the overview step. */
+.overview-zoom-hint {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 100;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  display: none;
+  gap: 10px;
+  align-items: center;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: opacity 240ms;
+  pointer-events: none;
+}
+.overview-zoom-hint kbd {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+body.overview-zoom-active .overview-zoom-hint { display: inline-flex; }
+
+/* Cursor affordance: grab while panning is available on the overview;
+   grabbing while a drag is in progress. */
+body.overview-zoom-active { cursor: grab; }
+body.overview-zoom-active.overview-zoom-dragging,
+body.overview-zoom-active.overview-zoom-dragging * { cursor: grabbing !important; }
 
 /* ═══ Speaker notes overlay (single-screen fallback) ══════════════════ */
 .presenter-notes-overlay {

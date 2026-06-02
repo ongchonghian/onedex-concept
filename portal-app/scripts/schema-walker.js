@@ -190,6 +190,97 @@
     return (propSchema && propSchema.title) || key;
   }
 
+  /* ADR 0043 sub-decision 8a — per-field AJV at blur. Compile the whole-form
+     elementSchema once per render (memoised on rootEl), run the validator on
+     blur, filter errors to the field that just lost focus, and paint an
+     inline message via the regAjvTranslate translator from register-element.js.
+     This matches RJSF's form-render-time enforcement; Submit-time AJV
+     (sub-decision 8) remains the final gate. */
+  function getAjvValidatorForRoot(rootEl, elementSchema) {
+    if (typeof window.regGetAjvInstance !== 'function') return null;
+    const ajv = window.regGetAjvInstance();
+    if (!ajv) return null;
+    const hash = JSON.stringify(elementSchema);
+    if (rootEl._swAjvHash === hash && rootEl._swAjvValidator) return rootEl._swAjvValidator;
+    try {
+      rootEl._swAjvValidator = ajv.compile(elementSchema);
+      rootEl._swAjvHash = hash;
+      return rootEl._swAjvValidator;
+    } catch (_) {
+      rootEl._swAjvValidator = null;
+      rootEl._swAjvHash = null;
+      return null;
+    }
+  }
+  /* Map AJV's `instancePath` ("/foo/0/bar") to the walker's field-path style
+     ("foo[0].bar") so error filtering uses the same key as data-field-path. */
+  function ajvInstancePathToWalkerPath(instancePath) {
+    if (!instancePath) return '';
+    const segs = String(instancePath).replace(/^\//, '').split('/');
+    let out = '';
+    segs.forEach(seg => {
+      if (/^\d+$/.test(seg)) out += '[' + seg + ']';
+      else                   out += out ? '.' + seg : seg;
+    });
+    return out;
+  }
+  /* For 'required' errors AJV's instancePath points at the *parent* object;
+     the missing field's walker path is parent + key. */
+  function errorWalkerPath(err) {
+    if (!err) return '';
+    const parent = ajvInstancePathToWalkerPath(err.instancePath || '');
+    if (err.keyword === 'required' && err.params && err.params.missingProperty) {
+      const key = err.params.missingProperty;
+      return parent ? parent + '.' + key : key;
+    }
+    return parent;
+  }
+  function translateAjvError(err) {
+    if (typeof window.regAjvTranslate === 'function') {
+      try { return window.regAjvTranslate(err); } catch (_) {}
+    }
+    return (err && err.message) || 'This field is invalid.';
+  }
+  function clearFieldError(row) {
+    if (!row) return;
+    row.classList.remove('is-field-error');
+    const slot = row.querySelector(':scope > .sw-field-error');
+    if (slot) slot.remove();
+  }
+  function paintFieldError(row, message) {
+    if (!row) return;
+    clearFieldError(row);
+    row.classList.add('is-field-error');
+    const slot = document.createElement('span');
+    slot.className = 'sw-field-error';
+    slot.setAttribute('role', 'alert');
+    slot.innerHTML = '<i class="ti ti-alert-circle sw-field-error-icon" aria-hidden="true"></i>'
+                   + '<span class="sw-field-error-msg"></span>';
+    slot.querySelector('.sw-field-error-msg').textContent = message;
+    row.appendChild(slot);
+  }
+  function validateFieldAtPath(rootEl, elementSchema, fieldPath) {
+    if (!rootEl || !elementSchema || !fieldPath) return;
+    const row = rootEl.querySelector('[data-field-row="' + cssEscape(fieldPath) + '"]');
+    if (!row || row.hidden) { if (row) clearFieldError(row); return; }
+    const validator = getAjvValidatorForRoot(rootEl, elementSchema);
+    if (!validator) return;                                  // AJV CDN absent — degrade silently
+    const values = schemaWalker_readValues(rootEl, elementSchema);
+    const ok = validator(values);
+    if (ok) { clearFieldError(row); return; }
+    const errors = validator.errors || [];
+    const match = errors.find(e => errorWalkerPath(e) === fieldPath);
+    if (!match) { clearFieldError(row); return; }
+    paintFieldError(row, translateAjvError(match));
+  }
+  function attachBlurValidation(inputEl, rootEl, elementSchema, fieldPath) {
+    if (!inputEl || inputEl.disabled) return;
+    inputEl.addEventListener('blur', () => {
+      try { validateFieldAtPath(rootEl, elementSchema, fieldPath); }
+      catch (e) { /* never block typing on a validator hiccup */ console.warn('sw blur-validation error', e); }
+    });
+  }
+
   /* Build a single input element for a primitive field. */
   function buildPrimitiveInput(propSchema, fieldPath, value, hint, disabled) {
     const t = schemaPrimitiveType(propSchema);
@@ -237,8 +328,10 @@
     return el;
   }
 
-  /* Render an object schema's properties as a labelled list of fields. */
-  function renderObject(rootSchema, schema, parentPath, values, container, disabled, uiSchema, uiRules) {
+  /* Render an object schema's properties as a labelled list of fields. The
+     rootEl + elementSchema pair is threaded through so primitive inputs can
+     attach blur-time AJV validation (ADR 0043 sub-decision 8a). */
+  function renderObject(rootSchema, schema, parentPath, values, container, disabled, uiSchema, uiRules, rootEl, elementSchema) {
     const props = (schema && schema.properties) || {};
     const keys = orderedPropertyKeys(schema, parentPath, uiSchema);
     keys.forEach(key => {
@@ -274,15 +367,16 @@
       if (isObjectSchema(propSchema)) {
         const nested = document.createElement('div');
         nested.className = 'sw-nested';
-        renderObject(rootSchema, propSchema, fieldPath, value || {}, nested, disabled, uiSchema, uiRules);
+        renderObject(rootSchema, propSchema, fieldPath, value || {}, nested, disabled, uiSchema, uiRules, rootEl, elementSchema);
         row.appendChild(nested);
       } else if (isArraySchema(propSchema)) {
-        const arrayBox = renderArray(rootSchema, propSchema, fieldPath, Array.isArray(value) ? value : [], disabled, uiSchema, uiRules);
+        const arrayBox = renderArray(rootSchema, propSchema, fieldPath, Array.isArray(value) ? value : [], disabled, uiSchema, uiRules, rootEl, elementSchema);
         row.appendChild(arrayBox);
       } else {
         const hint = presentationHint(uiSchema, fieldPath);
         const inp = buildPrimitiveInput(propSchema, fieldPath, value, hint, disabled);
         row.appendChild(inp);
+        if (!disabled && rootEl && elementSchema) attachBlurValidation(inp, rootEl, elementSchema, fieldPath);
       }
       container.appendChild(row);
     });
@@ -291,7 +385,7 @@
   /* Render an array-of-objects (or array-of-primitives) field as a stack of
      item cards. Tracer scope: one-row-per-item, no add/remove buttons in
      skeleton mode; in interactive mode an "Add row" button at the bottom. */
-  function renderArray(rootSchema, schema, fieldPath, values, disabled, uiSchema, uiRules) {
+  function renderArray(rootSchema, schema, fieldPath, values, disabled, uiSchema, uiRules, rootEl, elementSchema) {
     const wrap = document.createElement('div');
     wrap.className = 'sw-array';
     wrap.setAttribute('data-field-array', fieldPath);
@@ -303,11 +397,12 @@
       card.className = 'sw-array-item';
       card.setAttribute('data-field-item', itemPath);
       if (isObjectSchema(itemsSchema)) {
-        renderObject(rootSchema, itemsSchema, itemPath, itemValue || {}, card, disabled, uiSchema, uiRules);
+        renderObject(rootSchema, itemsSchema, itemPath, itemValue || {}, card, disabled, uiSchema, uiRules, rootEl, elementSchema);
       } else {
         const hint = presentationHint(uiSchema, itemPath);
         const inp = buildPrimitiveInput(itemsSchema, itemPath, itemValue, hint, disabled);
         card.appendChild(inp);
+        if (!disabled && rootEl && elementSchema) attachBlurValidation(inp, rootEl, elementSchema, itemPath);
       }
       if (!disabled) {
         const rm = document.createElement('button');
@@ -370,6 +465,9 @@
     options = options || {};
     clearVisibilityBinding(rootEl);
     rootEl.innerHTML = '';
+    // Drop any compiled AJV validator from a prior render — schema may differ.
+    rootEl._swAjvValidator = null;
+    rootEl._swAjvHash = null;
     rootEl.classList.add('sw-root');
     if (!elementSchema || !isObjectSchema(elementSchema)) {
       rootEl.appendChild(document.createTextNode('No schema to render.'));
@@ -377,7 +475,11 @@
     }
     const uiSchema = resolveUiSchema(options.uiSchema);
     const uiRules = resolveUiRules(options.uiRules);
-    renderObject(elementSchema, elementSchema, '', options.values || {}, rootEl, !!options.disabled, uiSchema, uiRules);
+    const disabled = !!options.disabled;
+    // Stash the schema on the root so any future re-render (visibility/array
+    // edits) reuses the same compiled validator.
+    rootEl._swElementSchema = elementSchema;
+    renderObject(elementSchema, elementSchema, '', options.values || {}, rootEl, disabled, uiSchema, uiRules, rootEl, elementSchema);
     bindVisibilityRules(rootEl, elementSchema, uiRules);
     applyVisibilityRules(rootEl, elementSchema, uiRules);
   }

@@ -27,12 +27,12 @@ function buildFetch(notesMd) {
   };
 }
 
-test('present.html ships 12 steps (1 opener overview + 11 content slides)', async () => {
+test('present.html ships 13 steps (1 opener overview + 1 pivot bridge + 11 content slides)', async () => {
   const window = loadPresenter({ fetch: buildFetch() });
   await new Promise(r => setTimeout(r, 50));
 
   const steps = window.document.querySelectorAll('#impress .step');
-  assert.equal(steps.length, 12, `Expected 12 steps, got ${steps.length}`);
+  assert.equal(steps.length, 13, `Expected 13 steps, got ${steps.length}`);
   assert.equal(window.__impressLog.initCalled, true, 'impress().init() must be called');
 
   // First step is the invisible overview at scale ≥ 6 (Prezi dive-in opener).
@@ -78,9 +78,10 @@ test('Each slide has a single .notes child that gets populated from the keynotes
   const step2 = steps[2];
   assert.match(step2.querySelector('.notes').textContent, /section-01 body/);
 
-  // Step 11 (Section 10) — should have section-10 body
-  const step11 = steps[11];
-  assert.match(step11.querySelector('.notes').textContent, /section-10 body/);
+  // Step 12 (Section 10) — should have section-10 body.
+  // (Indices shifted +1 after the Pivot bridge slide was added at index 2.)
+  const stepLast = steps[12];
+  assert.match(stepLast.querySelector('.notes').textContent, /section-10 body/);
 });
 
 test('Top-bar caption updates on impress:stepenter event', async () => {
@@ -88,12 +89,13 @@ test('Top-bar caption updates on impress:stepenter event', async () => {
   await new Promise(r => setTimeout(r, 50));
 
   const steps = window.document.querySelectorAll('#impress .step');
-  const target = steps[3]; // step 3 in number-space — Section 02
+  // steps[0]=overview, [1]=Section 00, [2]=Pivot, [3]=Section 01, [4]=Section 02.
+  const target = steps[4];
   target.dispatchEvent(new window.CustomEvent('impress:stepenter', { bubbles: true }));
 
   const counter = window.document.querySelector('.presenter-step-counter');
   const sectionLbl = window.document.querySelector('.presenter-section');
-  assert.equal(counter.textContent, 'step 3 / 12');
+  assert.equal(counter.textContent, 'step 4 / 13');
   assert.equal(sectionLbl.textContent, 'ov-mental-02');
 });
 

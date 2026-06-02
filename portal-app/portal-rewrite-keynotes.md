@@ -63,6 +63,23 @@ This is the part most decks skip. Don't.
 
 ---
 
+## Pivot — From the ten frictions to the ten features (1 min)
+
+**Headline:** *Every Section 00 tax has a feature that cancels it.*
+
+### What to say
+
+This slide is the punch line in one table. You just saw ten frictions. Here are the ten features that cancel them, mapped one-to-one. Two of them (decisions 09 and 10) do double-duty — same feature, two taxes cleared — so you'll see them appear twice.
+
+This is the answer-shape. The next four slides zoom into the two structural shifts that make these ten features possible, and Section 06 then explains every feature in depth.
+
+### Anticipated objections
+
+- *"Isn't this just Section 06 with fewer words?"* — Yes by design. The detail in Section 06 is the same content laid out per-feature; this slide is the cross-reference so leadership can see coverage before the deep-dive.
+- *"Product roadmap drag → One Messages page seems thin"* — The strongest cancellation is the consolidation work overall (Sections 01, 02, 03 together). The single-feature pairing on this slide is the most visible answer; the structural shifts behind it are why it works.
+
+---
+
 ## Section 01 — Upstream of compose (2 min)
 
 **Headline:** *Two ways to set up consent.*
@@ -93,13 +110,21 @@ Every downstream activity (composing, finding in inbox, auditing, reconciling) i
 
 **Consent and action are decoupled.** This is the structural shift, not a UI re-skin.
 
+### Footnote — Agreement lifecycle stays open
+
+Because the Agreement is durable (not consumed on send), three lifecycle actions become first-class without ever re-picking the structure:
+
+- **Extend** before expiry — three clicks before renewal nudges escalate.
+- **Suspend** on incident — pause the data flow from the Agreement detail while compliance investigates.
+- **Version** the underlying element — partners already on the prior version stay on the prior version; new Agreements pick the new one.
+
 ### Why it matters for management
 
 This is the cause; the 7→5 step reduction in Section 03 is the symptom. Every product decision downstream — inbox structure, audit trail shape, notification routing — flows from this.
 
 ---
 
-## Section 03 — One task, two journeys (2 min)
+## Section 03 — The operator side, today vs after (2 min)
 
 **Headline:** *Send a Cargo manifest to Maersk.*
 
@@ -111,6 +136,14 @@ This is the cause; the 7→5 step reduction in Section 03 is the symptom. Every 
 
 - Today: 7 steps · refresh-to-verify · EForm-vs-ETR vocabulary
 - New: 5 steps · live timeline · 1 vocabulary (Agreement → Message)
+
+### Daily texture — what else gets cheaper
+
+The 7→5 number is the headline, but management should also hear what happens *between* sends:
+
+- **Failure triage**: the Messages page filters Failed by owner — *your action* (you can retry), *their action* (counterparty's responsibility), *expired* (window closed). **Bulk retry** clears all *your action* failures in one click.
+- **Watch + digest**: toggle Watch on a time-sensitive Agreement and failures/acks ping the inbox immediately. Everything else rolls into a twice-daily digest — escalations match stakes.
+- **Cross-network warnings**: before a send crosses a DEX boundary (SGTradex ↔ SGBuildex), the portal makes the crossing visible before commit.
 
 ### Why it matters for management
 
@@ -129,6 +162,14 @@ This is the visible operator outcome — what the anchor tenant feels every day.
 ### Sarah quote to read out
 
 > *"Every quarter I open three tabs — the Confluence requirements page, the BD spec sheet, the IMDA standard — and hand-translate them into a schema, from a blank page every time."*
+
+### What "Smart Start" actually does (live, not hand-wavy)
+
+The demo has two flavours of this — a canned walkthrough and a live one with a real BCA Workhead Track Record form. In the live flavour, the system reads the page, names the fields, drafts the schema, and writes validation rules — and every suggestion carries a **verbatim citation** to the source paragraph. Sarah adjudicates evidence, never from a blank page. **Test-as-operator** then runs the same validation rules against sample data live — production gates, before publish.
+
+### Versioning, without disturbing existing partners
+
+When Sarah bumps Bill of Lading from v2.1 to v2.2, the fork starts on the existing schema; publishing **creates a new record**. Partners already on v2.1 stay on v2.1 — they re-consent only if they choose to upgrade.
 
 ### Why it matters for management
 
@@ -185,7 +226,7 @@ This is the auditable mapping. Every decision points back to a pain you just hea
 
 ---
 
-## Section 07 — Honest scoping (2 min)
+## Section 07 — What ships in six months, and what waits (2 min)
 
 **Headline:** *What launches first vs what's deferred.*
 
@@ -195,13 +236,17 @@ This is the auditable mapping. Every decision points back to a pain you just hea
 
 ### v1 (6 months) — the most important items
 
-- One portal replacing today's two
-- Inbox home with team-claim
-- One Messages page (sent + received)
+- One portal replacing today's two — sign-in unified across DEXes
+- Inbox home with team-claim + approve-incoming-in-5-minutes
+- One Messages page (sent + received) — bulk retry by failure owner
 - Per-Message live timeline + retry/close
-- One Composer with auto-review on legally-significant
-- Cross-network warnings
-- Settings → Pitstops page + inline Pitstop scope capture
+- One Composer + **Acting-as Service Provider** workflow (audit triple: composed_by, acting_as_org, acting_as_pitstop)
+- **Agreement lifecycle**: extend, suspend, version — first-class operations
+- **Multi-counterparty Agreement packs + Send pack** (one gesture fans to N counterparties)
+- **Admin element authoring + Smart Start + Test-as-operator** (the catalogue relay is gone)
+- **Onboarding workbook → pre-staged Drafts** at first login (Platform Admin's KYC labour becomes the new operator's first impression)
+- Watch toggle + digest
+- Cross-network warnings + Pitstop scope (asked once, then silent)
 
 ### Deferred — name these explicitly so leadership knows what they're *not* getting at launch
 

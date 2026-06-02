@@ -159,11 +159,11 @@ A Data Element carries **three independent governance layers**, each with a dist
 
 | Layer | Authored as | Evaluator | Runtime moment | Lifecycle |
 |---|---|---|---|---|
-| **Schema** | JSON Schema (field-builder + read-only JSON preview) | AJV + RJSF (`@rjsf/validator-ajv8`) | Form-render time at Composer | Per **Element version** snapshot |
+| **Schema** | JSON Schema (field-builder + read-only JSON preview) | AJV + RJSF (`@rjsf/validator-ajv8`) | Form-render time at Composer (per-field at blur + Submit) | Per **Element version** snapshot |
 | **Validation rules** | govaluate expressions on the Rules tab | govaluate engine (`be/sharelib/mock/mock.go`) | Composer submission | Per Element version attachment |
 | **Routing rules** | `dex_orchestrator_rules` JSONB (out of portal in v1) | orchestrator | Post-submission orchestration | Per-DEX scope, cross-version |
 
-Surfaced as separate tabs in the registration flow (Schema · Compose complexity · Rules · Pack · Review). The separation reflects the existing dex-monorepo runtime systems (AJV + govaluate + orchestrator entity), not a portal-invented split — registration just gives DEX admins a single surface to author all three without engineering relay. See [ADR 0038](./docs/adr/0038-data-element-governance-three-independent-layers.md).
+Surfaced as separate tabs in the registration flow (Schema · Compose complexity · Rules · Pack · Review). The separation reflects the existing dex-monorepo runtime systems (AJV + govaluate + orchestrator entity), not a portal-invented split — registration just gives DEX admins a single surface to author all three without engineering relay. See [ADR 0038](./docs/adr/0038-data-element-governance-three-independent-layers.md). Per [ADR 0043 sub-decision 8a](./docs/adr/0043-element-persistence-schema-driven-composer-workspace-v6.md), the schema-driven Composer now matches RJSF's form-render-time enforcement: AJV runs per-field on blur (required, type, format, minLength, pattern, enum, …) with an inline error painted next to the field, and re-runs as a whole-form gate at Submit — operators get the same "fix it where you typed it" feedback the production RJSF stack provides.
 _Avoid_: validation stack (too implementation-flavoured), governance pipeline (suggests sequencing — the three layers are independent, not pipelined), schema-and-rules (loses the third layer)
 
 **Smart Start**:
