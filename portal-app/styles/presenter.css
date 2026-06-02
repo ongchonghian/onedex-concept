@@ -101,7 +101,7 @@ body.presenter-mode {
 }
 /* ═══ Typography scale ════════════════════════════════════════════════ */
 .slide-eyebrow {
-  font-size: 29.5px;
+  font-size: 22px;
   font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -110,7 +110,7 @@ body.presenter-mode {
 }
 
 .slide-headline {
-  font-size: 100.5px;
+  font-size: 76px;
   font-weight: 900;
   line-height: 1.04;
   letter-spacing: -0.025em;
@@ -120,7 +120,7 @@ body.presenter-mode {
 }
 
 .slide-mega {
-  font-size: 502.5px;
+  font-size: 380px;
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.06em;
@@ -130,7 +130,7 @@ body.presenter-mode {
 .slide-mega--white { color: #fff; text-shadow: 0 4px 60px rgba(255, 255, 255, 0.12); }
 
 .slide-subhead {
-  font-size: 42.5px;
+  font-size: 32px;
   font-weight: 500;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.78);
@@ -141,7 +141,7 @@ body.presenter-mode {
 .slide-subhead--bright { color: rgba(255, 255, 255, 0.95); }
 
 .slide-pull {
-  font-size: 39.5px;
+  font-size: 30px;
   font-weight: 500;
   line-height: 1.3;
   color: rgba(255, 255, 255, 0.85);
@@ -152,39 +152,11 @@ body.presenter-mode {
 }
 
 .slide-closer {
-  font-size: 34.5px;
+  font-size: 26px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.85);
   margin: 56px auto 0;
   letter-spacing: 0.01em;
-}
-
-/* Sub-pull footnote — used to surface features that don't merit their own
-   slide but matter for management coverage (lifecycle actions, daily texture,
-   live-assist details). Quieter than .slide-pull; sits directly under it. */
-.slide-footnote {
-  font-size: 22px;
-  font-weight: 400;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 18px auto 0;
-  max-width: 1400px;
-  letter-spacing: 0.005em;
-}
-
-/* When a slide carries both a pull AND a footnote, tighten the pull's top
-   margin so the bottom of the slide stays inside the 1080 canvas. */
-.slide-pull + .slide-footnote { margin-top: 14px; }
-.slide-inner:has(.slide-footnote) .slide-pull { margin-top: 32px; }
-.slide-inner:has(.slide-footnote) .slide-stepcount { margin: 18px auto 18px; }
-.slide-inner:has(.slide-footnote) .stepcount-side { padding: 36px 28px; }
-.slide-footnote strong {
-  color: rgba(255, 255, 255, 0.95);
-  font-weight: 600;
-}
-.slide-footnote em {
-  font-style: italic;
-  color: rgba(255, 255, 255, 0.82);
 }
 
 /* ═══ Slide 1 · TWO COLUMNS (customer / internal) ═════════════════════ */
@@ -197,7 +169,7 @@ body.presenter-mode {
   max-width: 1500px;
 }
 .slide-col-eyebrow {
-  font-size: 21.5px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -210,7 +182,7 @@ body.presenter-mode {
   margin: 0;
 }
 .slide-bigbullets li {
-  font-size: 31.5px;
+  font-size: 24px;
   font-weight: 500;
   line-height: 1.4;
   padding: 10px 0;
@@ -225,7 +197,7 @@ body.presenter-mode {
   background: rgba(255, 220, 180, 0.12);
   border-radius: 99px;
   color: #ffd9a8;
-  font-size: 23.5px;
+  font-size: 18px;
   font-weight: 500;
   letter-spacing: 0.01em;
 }
@@ -241,7 +213,7 @@ body.presenter-mode {
 }
 .funnel-side { display: flex; flex-direction: column; gap: 14px; }
 .funnel-box {
-  font-size: 37px;
+  font-size: 28px;
   font-weight: 600;
   padding: 18px 28px;
   background: rgba(255, 255, 255, 0.08);
@@ -257,7 +229,7 @@ body.presenter-mode {
   fill: none;
 }
 .funnel-target {
-  font-size: 74px;
+  font-size: 56px;
   font-weight: 900;
   letter-spacing: 0.04em;
   padding: 56px 32px;
@@ -287,7 +259,7 @@ body.presenter-mode {
 .pairblock--blue { background: linear-gradient(135deg, #1f4ea0 0%, #143778 100%); }
 .pairblock--green { background: linear-gradient(135deg, #167f4d 0%, #0c5933 100%); }
 .pairblock-eyebrow {
-  font-size: 21.5px;
+  font-size: 16px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.6);
@@ -295,20 +267,20 @@ body.presenter-mode {
   font-weight: 700;
 }
 .pairblock-title {
-  font-size: 74px;
+  font-size: 56px;
   font-weight: 900;
   margin: 0 0 18px;
   letter-spacing: -0.02em;
 }
 .pairblock-desc {
-  font-size: 29.5px;
+  font-size: 22px;
   font-weight: 500;
   line-height: 1.4;
   margin: 0;
   color: rgba(255, 255, 255, 0.88);
 }
 .pairblock-sever {
-  font-size: 127px;
+  font-size: 96px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.45);
   text-align: center;
@@ -332,7 +304,7 @@ body.presenter-mode {
 .stepcount-side--today { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); }
 .stepcount-side--new { background: linear-gradient(135deg, #e89e3a 0%, #b86214 100%); box-shadow: 0 20px 60px rgba(232, 158, 58, 0.32); }
 .stepcount-label {
-  font-size: 23.5px;
+  font-size: 18px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   font-weight: 700;
@@ -341,14 +313,14 @@ body.presenter-mode {
 }
 .stepcount-num {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 291px;
+  font-size: 220px;
   font-weight: 700;
   line-height: 1;
   margin: 0 0 14px;
   letter-spacing: -0.02em;
 }
 .stepcount-detail {
-  font-size: 26.5px;
+  font-size: 20px;
   font-weight: 500;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.85);
@@ -368,7 +340,7 @@ body.presenter-mode {
 }
 .stepcount-side--new .stepcount-dots span { background: #fff; }
 .stepcount-arrow {
-  font-size: 116px;
+  font-size: 88px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.7);
   text-align: center;
@@ -400,14 +372,14 @@ body.presenter-mode {
 }
 .versus-num {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 264.5px;
+  font-size: 200px;
   font-weight: 700;
   line-height: 1;
   margin: 0 0 14px;
   letter-spacing: -0.02em;
 }
 .versus-label {
-  font-size: 26.5px;
+  font-size: 20px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   font-weight: 700;
@@ -415,13 +387,13 @@ body.presenter-mode {
   opacity: 0.7;
 }
 .versus-extra {
-  font-size: 29.5px;
+  font-size: 22px;
   font-weight: 500;
   margin: 6px 0;
 }
 .versus-extra strong { color: #fff; font-weight: 900; }
 .versus-arrow {
-  font-size: 116px;
+  font-size: 88px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.7);
   text-align: center;
@@ -446,20 +418,20 @@ body.presenter-mode {
 .pillar--teal { background: linear-gradient(180deg, #0f7a78 0%, #054544 100%); }
 .pillar--amber { background: linear-gradient(180deg, #c08418 0%, #6e4d0e 100%); }
 .pillar-question {
-  font-size: 29.5px;
+  font-size: 22px;
   font-style: italic;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
   margin: 0 0 22px;
 }
 .pillar-name {
-  font-size: 74px;
+  font-size: 56px;
   font-weight: 900;
   letter-spacing: 0.04em;
   margin: 0 0 22px;
 }
 .pillar-items {
-  font-size: 29.5px;
+  font-size: 22px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.92);
   margin: 0;
@@ -492,14 +464,14 @@ body.presenter-mode {
   align-items: center;
   justify-content: center;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 31.5px;
+  font-size: 24px;
   font-weight: 700;
   background: radial-gradient(circle, #ffe49a 0%, #c08418 65%);
   color: #2a1c00;
   box-shadow: 0 0 32px rgba(255, 220, 130, 0.5);
 }
 .cn-title {
-  font-size: 21.5px;
+  font-size: 16px;
   font-weight: 600;
   color: rgba(255, 240, 200, 0.9);
   line-height: 1.3;
@@ -515,7 +487,7 @@ body.presenter-mode {
   text-align: left;
 }
 .scoping-col {
-  padding: 32px 36px;
+  padding: 40px;
   border-radius: 14px;
 }
 .scoping-col--v1 {
@@ -527,7 +499,7 @@ body.presenter-mode {
   border: 1px dashed rgba(255, 255, 255, 0.25);
 }
 .scoping-tag {
-  font-size: 21.5px;
+  font-size: 16px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   font-weight: 700;
@@ -541,11 +513,11 @@ body.presenter-mode {
   margin: 0;
 }
 .scoping-list li {
-  font-size: 23.5px;
+  font-size: 20px;
   font-weight: 500;
-  padding: 5px 0 5px 26px;
+  padding: 8px 0 8px 28px;
   position: relative;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 .scoping-col--v1 .scoping-list li::before {
   content: '✓';
@@ -589,13 +561,13 @@ body.presenter-mode {
 }
 .guarantee-icon svg { width: 100%; height: 100%; }
 .guarantee-title {
-  font-size: 37px;
+  font-size: 28px;
   font-weight: 700;
   margin: 0 0 14px;
   letter-spacing: -0.01em;
 }
 .guarantee-detail {
-  font-size: 26.5px;
+  font-size: 20px;
   font-weight: 500;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.85);
@@ -613,7 +585,7 @@ body.presenter-mode {
 }
 .ba-side { text-align: left; }
 .ba-label {
-  font-size: 21.5px;
+  font-size: 16px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   font-weight: 700;
@@ -637,17 +609,17 @@ body.presenter-mode {
   text-align: center;
 }
 .ba-frame-headline {
-  font-size: 37px;
+  font-size: 28px;
   font-weight: 700;
   margin: 0 0 14px;
 }
 .ba-frame-empty {
-  font-size: 23.5px;
+  font-size: 18px;
   color: #888;
   margin: 16px 0 0;
 }
 .ba-frame-aside {
-  font-size: 21.5px;
+  font-size: 16px;
   color: #b94a3c;
   margin: 28px 0 0;
   font-style: italic;
@@ -659,7 +631,7 @@ body.presenter-mode {
   margin: 16px 0 0;
 }
 .ba-frame-list li {
-  font-size: 21.5px;
+  font-size: 16px;
   font-weight: 500;
   padding: 8px 12px;
   margin-bottom: 6px;
@@ -669,7 +641,7 @@ body.presenter-mode {
   color: #1d3a2a;
 }
 .ba-arrow {
-  font-size: 116px;
+  font-size: 88px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.7);
   text-align: center;
@@ -695,7 +667,7 @@ body.presenter-mode {
   min-height: 380px;
 }
 .ask-letter {
-  font-size: 158.5px;
+  font-size: 120px;
   font-weight: 900;
   line-height: 0.9;
   letter-spacing: -0.04em;
@@ -706,14 +678,14 @@ body.presenter-mode {
   -webkit-text-fill-color: transparent;
 }
 .ask-title {
-  font-size: 31.5px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.25;
   margin: 0 0 16px;
   color: #fff;
 }
 .ask-detail {
-  font-size: 22.5px;
+  font-size: 17px;
   font-weight: 500;
   line-height: 1.45;
   margin: 0 0 20px;
@@ -722,7 +694,7 @@ body.presenter-mode {
 }
 .ask-owner {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 17px;
+  font-size: 13px;
   letter-spacing: 0.04em;
   color: rgba(255, 180, 180, 0.85);
   margin: 0;
@@ -744,7 +716,7 @@ body.presenter-mode {
   background: rgba(0, 0, 0, 0.55);
   color: rgba(255, 255, 255, 0.88);
   border-radius: 99px;
-  font-size: 17px;
+  font-size: 13px;
   font-weight: 500;
   display: flex;
   gap: 16px;
@@ -754,47 +726,8 @@ body.presenter-mode {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .presenter-step-counter { font-family: 'JetBrains Mono', ui-monospace, monospace; }
-.presenter-section { opacity: 0.55; font-size: 14.5px; letter-spacing: 0.12em; text-transform: uppercase; }
+.presenter-section { opacity: 0.55; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
 .presenter-narrative { color: #fff; font-weight: 500; }
-
-/* Zoom hint chip — surfaced only while on the overview step. Sits bottom-
-   right; auto-hides with the topbar when the mouse is idle. */
-.overview-zoom-hint {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 100;
-  padding: 8px 14px;
-  background: rgba(0, 0, 0, 0.55);
-  color: rgba(255, 255, 255, 0.88);
-  border-radius: 99px;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  display: none;
-  gap: 10px;
-  align-items: center;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: opacity 240ms;
-  pointer-events: none;
-}
-.overview-zoom-hint kbd {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-body.overview-zoom-active .overview-zoom-hint { display: inline-flex; }
-
-/* Cursor affordance: grab while panning is available on the overview;
-   grabbing while a drag is in progress. */
-body.overview-zoom-active { cursor: grab; }
-body.overview-zoom-active.overview-zoom-dragging,
-body.overview-zoom-active.overview-zoom-dragging * { cursor: grabbing !important; }
 
 /* ═══ Speaker notes overlay (single-screen fallback) ══════════════════ */
 .presenter-notes-overlay {
@@ -810,13 +743,13 @@ body.overview-zoom-active.overview-zoom-dragging * { cursor: grabbing !important
   color: #fff;
   border-radius: 14px;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
-  font-size: 19.5px;
+  font-size: 15px;
   line-height: 1.6;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .presenter-notes-overlay h3 {
   margin: 0 0 10px;
-  font-size: 17px;
+  font-size: 13px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.55);
@@ -852,7 +785,7 @@ body.overview-zoom-active.overview-zoom-dragging * { cursor: grabbing !important
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   padding: 5px 10px;
-  font-size: 16px;
+  font-size: 12px;
   cursor: pointer;
   font-family: inherit;
 }
@@ -868,7 +801,7 @@ body.impress-mouse-timeout .impress-toolbar { opacity: 0; pointer-events: none; 
   max-width: 520px;
   margin: 35vh auto;
   text-align: center;
-  font-size: 23.5px;
+  font-size: 18px;
   line-height: 1.6;
   color: #fff;
 }

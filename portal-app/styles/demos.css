@@ -28,7 +28,7 @@
   box-shadow: var(--shadow-popover);
 }
 .demos-trigger:hover { filter: brightness(1.08); }
-.demos-trigger .ti { font-size: 18.5px; }
+.demos-trigger .ti { font-size: 14px; }
 
 /* ---------- Demos panel ----------
    Mirrors .demo-tools-drawer dimensions but anchored to the
@@ -57,12 +57,12 @@ body.demos-panel-open .demos-panel { display: block; }
   margin-bottom: 10px;
 }
 .demos-panel-head strong {
-  font-size: 18.5px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--g-10);
 }
 .demos-panel-head .demos-panel-sub {
-  font-size: 14.5px;
+  font-size: 11px;
   color: var(--g-50);
   margin-top: 2px;
 }
@@ -83,12 +83,12 @@ body.demos-panel-open .demos-panel { display: block; }
   gap: 8px;
 }
 .demo-card-title {
-  font-size: 17px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--g-10);
 }
 .demo-card-desc {
-  font-size: 16px;
+  font-size: 12px;
   color: var(--g-40);
   line-height: 1.5;
 }
@@ -99,7 +99,7 @@ body.demos-panel-open .demos-panel { display: block; }
   flex-wrap: wrap;
 }
 .demo-adr-chip {
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.04em;
   background: var(--theme-95);
@@ -108,7 +108,7 @@ body.demos-panel-open .demos-panel { display: block; }
   border-radius: 999px;
 }
 .demo-duration {
-  font-size: 14.5px;
+  font-size: 11px;
   color: var(--g-50);
   margin-left: auto;
 }
@@ -121,7 +121,7 @@ body.demos-panel-open .demos-panel { display: block; }
   border-radius: 999px;
   padding: 6px 14px;
   font: inherit;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   display: inline-flex;
@@ -151,20 +151,20 @@ body.demos-panel-open .demos-panel { display: block; }
   padding: 22px;
 }
 .demo-preflight-eyebrow {
-  font-size: 14.5px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--theme-50);
   font-weight: 500;
 }
 .demo-preflight-title {
-  font-size: 26.5px;
+  font-size: 20px;
   font-weight: 500;
   color: var(--g-10);
   margin: 6px 0 8px;
 }
 .demo-preflight-desc {
-  font-size: 17px;
+  font-size: 13px;
   color: var(--g-30);
   line-height: 1.5;
   margin-bottom: 14px;
@@ -177,7 +177,7 @@ body.demos-panel-open .demos-panel { display: block; }
   margin-bottom: 14px;
 }
 .demo-preflight-notice {
-  font-size: 16px;
+  font-size: 12px;
   color: var(--g-40);
   background: var(--g-98);
   border: 1px solid var(--g-90);
@@ -246,7 +246,7 @@ body.demos-panel-open .demos-panel { display: block; }
   transform: translateY(0);
 }
 .demo-callout-label {
-  font-size: 18.5px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.01em;
   color: #fff;
@@ -254,7 +254,7 @@ body.demos-panel-open .demos-panel { display: block; }
   line-height: 1.35;
 }
 .demo-callout-rationale {
-  font-size: 18px;
+  font-size: 13.5px;
   line-height: 1.55;
   color: #d4d8e0;
 }
@@ -302,7 +302,7 @@ body.demos-panel-open .demos-panel { display: block; }
 .demo-progress-dot.is-done { background: rgba(240, 241, 244, 0.55); }
 .demo-progress-dot.is-current { background: #fff; width: 8px; height: 8px; }
 .demo-step-label {
-  font-size: 16px;
+  font-size: 12px;
   color: #c8ccd4;
   flex: 1;
   white-space: nowrap;
@@ -317,7 +317,7 @@ body.demos-panel-open .demos-panel { display: block; }
   border-radius: 999px;
   padding: 4px 10px;
   font: inherit;
-  font-size: 14.5px;
+  font-size: 11px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -328,7 +328,7 @@ body.demos-panel-open .demos-panel { display: block; }
   opacity: 0.4;
   cursor: not-allowed;
 }
-.demo-ctrl-btn .ti { font-size: 16px; }
+.demo-ctrl-btn .ti { font-size: 12px; }
 
 .demo-speed {
   background: transparent;
@@ -337,7 +337,7 @@ body.demos-panel-open .demos-panel { display: block; }
   border-radius: 999px;
   padding: 4px 8px;
   font: inherit;
-  font-size: 14.5px;
+  font-size: 11px;
   cursor: pointer;
 }
 .demo-speed option { color: #1f2229; }
@@ -362,7 +362,7 @@ body.demos-panel-open .demos-panel { display: block; }
 }
 .demo-error-card h3 {
   margin: 0 0 8px;
-  font-size: 21.5px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--red-30, #7c1f1f);
 }
@@ -371,12 +371,12 @@ body.demos-panel-open .demos-panel { display: block; }
   background: var(--g-98);
   padding: 8px 10px;
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 12px;
   margin: 8px 0;
   word-break: break-all;
 }
 .demo-error-card p {
-  font-size: 17px;
+  font-size: 13px;
   color: var(--g-30);
   line-height: 1.5;
   margin: 0 0 10px;
