@@ -190,115 +190,56 @@
     return (propSchema && propSchema.title) || key;
   }
 
-  /* ADR 0043 sub-decision 8a — per-field AJV at blur. Compile the whole-form
-     elementSchema once per render (memoised on rootEl), run the validator on
-     blur, filter errors to the field that just lost focus, and paint an
-     inline message via the regAjvTranslate translator from register-element.js.
-     This matches RJSF's form-render-time enforcement; Submit-time AJV
-     (sub-decision 8) remains the final gate. */
-  function getAjvValidatorForRoot(rootEl, elementSchema) {
-    if (typeof window.regGetAjvInstance !== 'function') return null;
-    const ajv = window.regGetAjvInstance();
-    if (!ajv) return null;
-    const hash = JSON.stringify(elementSchema);
-    if (rootEl._swAjvHash === hash && rootEl._swAjvValidator) return rootEl._swAjvValidator;
-    try {
-      rootEl._swAjvValidator = ajv.compile(elementSchema);
-      rootEl._swAjvHash = hash;
-      return rootEl._swAjvValidator;
-    } catch (_) {
-      rootEl._swAjvValidator = null;
-      rootEl._swAjvHash = null;
-      return null;
-    }
-  }
-  /* Map AJV's `instancePath` ("/foo/0/bar") to the walker's field-path style
-     ("foo[0].bar") so error filtering uses the same key as data-field-path. */
-  function ajvInstancePathToWalkerPath(instancePath) {
-    if (!instancePath) return '';
-    const segs = String(instancePath).replace(/^\//, '').split('/');
-    let out = '';
-    segs.forEach(seg => {
-      if (/^\d+$/.test(seg)) out += '[' + seg + ']';
-      else                   out += out ? '.' + seg : seg;
-    });
-    return out;
-  }
-  /* For 'required' errors AJV's instancePath points at the *parent* object;
-     the missing field's walker path is parent + key. */
-  function errorWalkerPath(err) {
-    if (!err) return '';
-    const parent = ajvInstancePathToWalkerPath(err.instancePath || '');
-    if (err.keyword === 'required' && err.params && err.params.missingProperty) {
-      const key = err.params.missingProperty;
-      return parent ? parent + '.' + key : key;
-    }
-    return parent;
-  }
-  function translateAjvError(err) {
-    if (typeof window.regAjvTranslate === 'function') {
-      try { return window.regAjvTranslate(err); } catch (_) {}
-    }
-    return (err && err.message) || 'This field is invalid.';
-  }
-  function clearFieldError(row) {
-    if (!row) return;
-    row.classList.remove('is-field-error');
-    const slot = row.querySelector(':scope > .sw-field-error');
-    if (slot) slot.remove();
-  }
-  function paintFieldError(row, message) {
-    if (!row) return;
-    clearFieldError(row);
-    row.classList.add('is-field-error');
-    const slot = document.createElement('span');
-    slot.className = 'sw-field-error';
-    slot.setAttribute('role', 'alert');
-    slot.innerHTML = '<i class="ti ti-alert-circle sw-field-error-icon" aria-hidden="true"></i>'
-                   + '<span class="sw-field-error-msg"></span>';
-    slot.querySelector('.sw-field-error-msg').textContent = message;
-    row.appendChild(slot);
-  }
-  function validateFieldAtPath(rootEl, elementSchema, fieldPath) {
-    if (!rootEl || !elementSchema || !fieldPath) return;
-    const row = rootEl.querySelector('[data-field-row="' + cssEscape(fieldPath) + '"]');
-    if (!row || row.hidden) { if (row) clearFieldError(row); return; }
-    const validator = getAjvValidatorForRoot(rootEl, elementSchema);
-    if (!validator) return;                                  // AJV CDN absent — degrade silently
-    const values = schemaWalker_readValues(rootEl, elementSchema);
-    const ok = validator(values);
-    if (ok) { clearFieldError(row); return; }
-    const errors = validator.errors || [];
-    const match = errors.find(e => errorWalkerPath(e) === fieldPath);
-    if (!match) { clearFieldError(row); return; }
-    paintFieldError(row, translateAjvError(match));
-  }
-  function attachBlurValidation(inputEl, rootEl, elementSchema, fieldPath) {
-    if (!inputEl || inputEl.disabled) return;
-    inputEl.addEventListener('blur', () => {
-      try { validateFieldAtPath(rootEl, elementSchema, fieldPath); }
-      catch (e) { /* never block typing on a validator hiccup */ console.warn('sw blur-validation error', e); }
-    });
-  }
-
   /* Build a single input element for a primitive field. */
-  function buildPrimitiveInput(propSchema, fieldPath, value, hint, disabled) {
+  function buildPrimitiveInput(propSchema, fieldPath, value, hint, disabled, uiSchema) {
     const t = schemaPrimitiveType(propSchema);
     let el;
     if (Array.isArray(propSchema && propSchema.enum)) {
-      el = document.createElement('select');
       const enumValues = propSchema.enum;
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = '— select —';
-      el.appendChild(placeholder);
-      enumValues.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = String(v);
-        opt.textContent = String(v);
-        if (value !== undefined && String(value) === String(v)) opt.selected = true;
-        el.appendChild(opt);
-      });
+      const entry = presentationEntryForPath(uiSchema, fieldPath) || {};
+      const labels = (entry && entry.labels) || {};
+      const labelFor = (v) => (labels && labels[v] != null) ? String(labels[v]) : String(v);
+      if (hint === 'radio') {
+        // Radio group — one input per enum value, all sharing a name keyed by
+        // the field path. The wrapper carries data-field-path so readValues +
+        // the L1 painter still locate this field; readValues special-cases
+        // [data-field-radio-group="…"] below.
+        el = document.createElement('div');
+        el.className = 'sw-radio-group';
+        el.setAttribute('data-field-radio-group', fieldPath);
+        const groupName = 'sw-radio-' + fieldPath.replace(/[^A-Za-z0-9_-]/g, '_');
+        enumValues.forEach((v, i) => {
+          const opt = document.createElement('label');
+          opt.className = 'sw-radio-option';
+          const input = document.createElement('input');
+          input.type = 'radio';
+          input.name = groupName;
+          input.value = String(v);
+          input.setAttribute('data-field-path', fieldPath);
+          input.setAttribute('data-field-radio-value', String(v));
+          if (value !== undefined && String(value) === String(v)) input.checked = true;
+          if (disabled) input.disabled = true;
+          const txt = document.createElement('span');
+          txt.className = 'sw-radio-label';
+          txt.textContent = labelFor(v);
+          opt.appendChild(input);
+          opt.appendChild(txt);
+          el.appendChild(opt);
+        });
+      } else {
+        el = document.createElement('select');
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = '— select —';
+        el.appendChild(placeholder);
+        enumValues.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = String(v);
+          opt.textContent = labelFor(v);
+          if (value !== undefined && String(value) === String(v)) opt.selected = true;
+          el.appendChild(opt);
+        });
+      }
     } else if (hint === 'textarea' || t === 'string' && (propSchema.maxLength || 0) > 200) {
       el = document.createElement('textarea');
       el.rows = 3;
@@ -322,22 +263,72 @@
       else if (propSchema.format === 'email') el.type = 'email';
       if (value !== undefined && value !== null) el.value = String(value);
     }
-    el.setAttribute('data-field-path', fieldPath);
-    el.className = 'sw-input';
-    if (disabled) el.disabled = true;
+    // Radio wrapper keeps its own class ('sw-radio-group') and forwards
+    // data-field-path on each <input>; setting both here would override the
+    // wrapper's class. Single-input branches get 'sw-input' + the path.
+    if (el.classList && el.classList.contains('sw-radio-group')) {
+      if (disabled) el.setAttribute('data-disabled', 'true');
+    } else {
+      el.setAttribute('data-field-path', fieldPath);
+      el.className = 'sw-input';
+      if (disabled) el.disabled = true;
+    }
     return el;
   }
 
-  /* Render an object schema's properties as a labelled list of fields. The
-     rootEl + elementSchema pair is threaded through so primitive inputs can
-     attach blur-time AJV validation (ADR 0043 sub-decision 8a). */
-  function renderObject(rootSchema, schema, parentPath, values, container, disabled, uiSchema, uiRules, rootEl, elementSchema) {
+  /* Resolve the group name a field belongs to from the uiSchema presentation
+     entry. Honours both `group` (canonical) and legacy aliases — the publish
+     artifact contract only declares group metadata in uiSchema.groups, so this
+     reads per-field membership from presentation. */
+  function fieldGroupName(uiSchema, fieldPath) {
+    const entry = presentationEntryForPath(uiSchema, fieldPath);
+    if (!entry || typeof entry !== 'object') return null;
+    const name = entry.group || (entry.section && entry.section.name) || null;
+    return name ? String(name) : null;
+  }
+  function groupMetadata(uiSchema, name) {
+    const groups = uiSchema && uiSchema.groups;
+    if (!groups || !name) return null;
+    const meta = groups[name];
+    return (meta && typeof meta === 'object') ? meta : null;
+  }
+
+  /* Render an object schema's properties as a labelled list of fields. */
+  function renderObject(rootSchema, schema, parentPath, values, container, disabled, uiSchema, uiRules) {
     const props = (schema && schema.properties) || {};
     const keys = orderedPropertyKeys(schema, parentPath, uiSchema);
+    let currentGroup = null;
     keys.forEach(key => {
       const propSchema = props[key];
       const fieldPath = parentPath ? parentPath + '.' + key : key;
       const value = values ? values[key] : undefined;
+      // Group section header — when the field's resolved group name differs
+      // from the previous one (top-level only — nested objects keep their own
+      // visual nesting and shouldn't get a second header), emit a heading
+      // row that names the group + its rationale from uiSchema.groups.
+      if (!parentPath) {
+        const groupName = fieldGroupName(uiSchema, fieldPath);
+        if (groupName !== currentGroup) {
+          currentGroup = groupName;
+          if (groupName) {
+            const meta = groupMetadata(uiSchema, groupName);
+            const header = document.createElement('div');
+            header.className = 'sw-group-header';
+            header.setAttribute('data-sw-group', groupName);
+            const h = document.createElement('h3');
+            h.className = 'sw-group-title';
+            h.textContent = groupName;
+            header.appendChild(h);
+            if (meta && meta.rationale) {
+              const sub = document.createElement('p');
+              sub.className = 'sw-group-rationale';
+              sub.textContent = meta.rationale;
+              header.appendChild(sub);
+            }
+            container.appendChild(header);
+          }
+        }
+      }
       const row = document.createElement('div');
       row.className = 'sw-field';
       row.setAttribute('data-field-row', fieldPath);
@@ -367,16 +358,15 @@
       if (isObjectSchema(propSchema)) {
         const nested = document.createElement('div');
         nested.className = 'sw-nested';
-        renderObject(rootSchema, propSchema, fieldPath, value || {}, nested, disabled, uiSchema, uiRules, rootEl, elementSchema);
+        renderObject(rootSchema, propSchema, fieldPath, value || {}, nested, disabled, uiSchema, uiRules);
         row.appendChild(nested);
       } else if (isArraySchema(propSchema)) {
-        const arrayBox = renderArray(rootSchema, propSchema, fieldPath, Array.isArray(value) ? value : [], disabled, uiSchema, uiRules, rootEl, elementSchema);
+        const arrayBox = renderArray(rootSchema, propSchema, fieldPath, Array.isArray(value) ? value : [], disabled, uiSchema, uiRules);
         row.appendChild(arrayBox);
       } else {
         const hint = presentationHint(uiSchema, fieldPath);
-        const inp = buildPrimitiveInput(propSchema, fieldPath, value, hint, disabled);
+        const inp = buildPrimitiveInput(propSchema, fieldPath, value, hint, disabled, uiSchema);
         row.appendChild(inp);
-        if (!disabled && rootEl && elementSchema) attachBlurValidation(inp, rootEl, elementSchema, fieldPath);
       }
       container.appendChild(row);
     });
@@ -385,7 +375,7 @@
   /* Render an array-of-objects (or array-of-primitives) field as a stack of
      item cards. Tracer scope: one-row-per-item, no add/remove buttons in
      skeleton mode; in interactive mode an "Add row" button at the bottom. */
-  function renderArray(rootSchema, schema, fieldPath, values, disabled, uiSchema, uiRules, rootEl, elementSchema) {
+  function renderArray(rootSchema, schema, fieldPath, values, disabled, uiSchema, uiRules) {
     const wrap = document.createElement('div');
     wrap.className = 'sw-array';
     wrap.setAttribute('data-field-array', fieldPath);
@@ -397,12 +387,11 @@
       card.className = 'sw-array-item';
       card.setAttribute('data-field-item', itemPath);
       if (isObjectSchema(itemsSchema)) {
-        renderObject(rootSchema, itemsSchema, itemPath, itemValue || {}, card, disabled, uiSchema, uiRules, rootEl, elementSchema);
+        renderObject(rootSchema, itemsSchema, itemPath, itemValue || {}, card, disabled, uiSchema, uiRules);
       } else {
         const hint = presentationHint(uiSchema, itemPath);
         const inp = buildPrimitiveInput(itemsSchema, itemPath, itemValue, hint, disabled);
         card.appendChild(inp);
-        if (!disabled && rootEl && elementSchema) attachBlurValidation(inp, rootEl, elementSchema, itemPath);
       }
       if (!disabled) {
         const rm = document.createElement('button');
@@ -465,9 +454,6 @@
     options = options || {};
     clearVisibilityBinding(rootEl);
     rootEl.innerHTML = '';
-    // Drop any compiled AJV validator from a prior render — schema may differ.
-    rootEl._swAjvValidator = null;
-    rootEl._swAjvHash = null;
     rootEl.classList.add('sw-root');
     if (!elementSchema || !isObjectSchema(elementSchema)) {
       rootEl.appendChild(document.createTextNode('No schema to render.'));
@@ -475,11 +461,7 @@
     }
     const uiSchema = resolveUiSchema(options.uiSchema);
     const uiRules = resolveUiRules(options.uiRules);
-    const disabled = !!options.disabled;
-    // Stash the schema on the root so any future re-render (visibility/array
-    // edits) reuses the same compiled validator.
-    rootEl._swElementSchema = elementSchema;
-    renderObject(elementSchema, elementSchema, '', options.values || {}, rootEl, disabled, uiSchema, uiRules, rootEl, elementSchema);
+    renderObject(elementSchema, elementSchema, '', options.values || {}, rootEl, !!options.disabled, uiSchema, uiRules);
     bindVisibilityRules(rootEl, elementSchema, uiRules);
     applyVisibilityRules(rootEl, elementSchema, uiRules);
   }
@@ -526,6 +508,13 @@
     }
     function readPrimitive(propSchema, fieldPath) {
       if (!includeHidden && isFieldHidden(rootEl, fieldPath)) return undefined;
+      // Radio group — find the checked input among the siblings sharing this
+      // field path. Falls back to undefined when none are checked.
+      const radioGroup = rootEl.querySelector('[data-field-radio-group="' + cssEscape(fieldPath) + '"]');
+      if (radioGroup) {
+        const checked = radioGroup.querySelector('input[type="radio"]:checked');
+        return checked ? checked.value : undefined;
+      }
       const inp = rootEl.querySelector('[data-field-path="' + cssEscape(fieldPath) + '"]');
       if (!inp) return undefined;
       const t = schemaPrimitiveType(propSchema);

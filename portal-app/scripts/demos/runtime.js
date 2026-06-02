@@ -507,15 +507,38 @@
           } catch (e) { /* best-effort */ }
           throw new Error(`expect: selector "${step.target}" not found in DOM`);
         }
-        // Headless mode (per ADR 0037) is presence-only — JSDOM has no
-        // layout engine, so offsetParent and checkVisibility both lie.
+        // Headless mode (per ADR 0037) is presence-only for layout-driven
+        // visibility — JSDOM has no layout engine, so offsetParent and
+        // checkVisibility both lie. But we DO check the structural hides
+        // JSDOM can answer correctly: [hidden] attributes anywhere in the
+        // ancestor chain and a closed <details> ancestor (which the browser
+        // hides via UA shadow root, invisible to offsetParent in JSDOM).
+        // This catches the class of demo bugs where a renderer toggle
+        // forgot to open a containing ribbon/accordion.
+        const structuralHider = (() => {
+          let cur = found;
+          while (cur && cur.nodeType === 1 && cur !== document.body) {
+            if (cur.hasAttribute && cur.hasAttribute('hidden')) return cur;
+            const p = cur.parentElement;
+            if (p && p.tagName === 'DETAILS' && !p.hasAttribute('open') && cur.tagName !== 'SUMMARY') return p;
+            cur = cur.parentElement;
+          }
+          return null;
+        })();
+        if (structuralHider) {
+          const hint = structuralHider.tagName === 'DETAILS'
+            ? `closed <details${structuralHider.getAttribute('data-inbox-completion-ribbon') !== null ? ' data-inbox-completion-ribbon' : ''}> ancestor`
+            : `[hidden] on ${structuralHider.tagName.toLowerCase()}${structuralHider.id ? '#' + structuralHider.id : ''}`;
+          throw new Error(`expect: selector "${step.target}" exists but is not visible (${hint})`);
+        }
         if (!runtime.headless) {
-          // Visibility check — prototype's .screen elements are always in DOM
-          // but only the .active one is visible. Using offsetParent because
-          // it returns null when the element OR any ancestor has display:none,
-          // which is what we want, without false-positives on flex containers
-          // that report 0×0 dimensions on otherwise-laid-out children.
-          // Native checkVisibility() is preferred when available (Chrome 105+).
+          // Layout-driven visibility check — prototype's .screen elements are
+          // always in DOM but only the .active one is visible. Using
+          // offsetParent because it returns null when the element OR any
+          // ancestor has display:none, without false-positives on flex
+          // containers that report 0×0 dimensions on otherwise-laid-out
+          // children. Native checkVisibility() is preferred when available
+          // (Chrome 105+).
           const isVisible = (typeof found.checkVisibility === 'function')
             ? found.checkVisibility({ checkOpacity: false })
             : (found.offsetParent !== null || getComputedStyle(found).position === 'fixed');
@@ -762,11 +785,24 @@
     runtime = null;
   }
 
-  // ---------- Escape key = stop ----------
-
+  // ---------- Global keyboard shortcuts (only while a demo is running) ------
+  //   Escape — stop the demo
+  //   Space  — toggle Pause / Resume (mirrors the control-bar pause button).
+  //            Skipped when the user is typing in an input/textarea/contenteditable
+  //            so the demo's own form interactions still get spacebar normally;
+  //            otherwise we preventDefault to suppress page scroll. */
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && runtime && !runtime.stopped) {
+    if (!runtime || runtime.stopped) return;
+    if (e.key === 'Escape') {
       stopDemoFlow();
+      return;
+    }
+    if (e.code === 'Space' || e.key === ' ') {
+      const t = e.target;
+      const tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (t && t.isContentEditable)) return;
+      e.preventDefault();
+      togglePause();
     }
   });
 

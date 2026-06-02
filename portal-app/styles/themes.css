@@ -89,18 +89,34 @@ body.dark {
   --bx-on-tint: var(--bx-90);
   --hx-on-tint: var(--hx-90);
 
-  /* Semantic ramps softened for dark backgrounds */
+  /* Semantic ramps softened for dark backgrounds.
+     Pattern: low-numbered tokens (20/30/50) are TEXT colors and must
+     lighten in dark mode. High-numbered (90/95/98) are TINTED BACKGROUNDS
+     and must darken. Every ramp follows the same shape — if you add a
+     new ramp, override both ends here. */
   --red-98:    #3a0f0a;
   --red-95:    #4d1612;
+  --red-90:    #6a1f18;
+  --red-50:    #ff6b54;   /* mid-red text on dark surfaces */
+  --red-30:    #ff8a72;   /* headline-red text on dark surfaces */
+
   --green-98:  #0a3a1f;
   --green-95:  #115538;
+  --green-90:  #1f6e44;
+  --green-50:  #4ade80;   /* completion-row text on --green-98 */
+  --green-30:  #86efac;   /* heading green on dark surfaces */
+
   --yellow-98: #3d2f08;
   --yellow-95: #5a4a12;
+  --yellow-90: #7a6a1f;
+  --yellow-50: #ffd166;   /* warning text on dark olive surfaces */
+  --yellow-30: #ffe18a;   /* heading amber on dark surfaces */
+
   --blue-98:   #0a1f3a;
   --blue-95:   #112f5a;
-  /* Text-end of green ramp also needs to lighten so completion rows
-     (background: --green-98) keep contrast against --green-50 text. */
-  --green-50:  #4ade80;
+  --blue-90:   #1c4380;
+  --blue-50:   #6ea8ff;   /* info-blue text on dark navy surfaces */
+  --blue-30:   #9bc3ff;   /* heading sky on dark surfaces */
 
   /* Inverted text — rebinds so chips with solid --g-10 fills stay readable
      (in dark mode --g-10 is near-white, so text must be dark). */
@@ -129,3 +145,22 @@ body.dark {
 
 /* Apply surface-canvas to body in dark mode */
 body.dark { background: var(--surface-canvas); color: var(--g-10); }
+
+/* Section 00 tax cards use heavy inline styling that locks the surface to
+   white (`background:#fff`) and reaches for tokens like --red-30 / --red-90
+   that didn't exist in the scale until now. Flip the surface + border in
+   dark mode so the (now-defined) lighter red text reads with real contrast,
+   and keep the yellow-tinted internal-team cards visually distinct. */
+body.dark .tax-infographic > div[style*="background:#fff"] {
+  background: var(--surface-elevated) !important;
+  border-color: var(--red-90) !important;
+}
+body.dark .tax-infographic > div[style*="border:1px solid var(--yellow-95"] {
+  background: #2a2410 !important;
+  border-color: var(--yellow-95) !important;
+}
+/* The "PROTOTYPE ANSWER" divider on each card is a dashed `--g-90` border;
+   in dark mode --g-90 is dark-on-dark, almost invisible. Lift it. */
+body.dark .tax-infographic > div [style*="border-top:1px dashed var(--g-90)"] {
+  border-top-color: rgba(255, 255, 255, 0.12) !important;
+}

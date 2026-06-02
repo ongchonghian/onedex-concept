@@ -31,8 +31,16 @@ const SCRIPT_PATHS = [
   'scripts/wizard.js',
   'scripts/app.js',
   'scripts/pitstop.js',
+  // Schema walker — required by the schema-driven Composer (compose-message demo).
+  'scripts/schema-walker.js',
   'scripts/register-element.js',
   'scripts/register-onramps.js',
+  // Form/PDF on-ramp module — defines formLlmProviderDisplayName used by the
+  // register-element-with-assist demo's PDF-upload path.
+  'scripts/register-llm-overlay-core.js',
+  'scripts/register-onramps-spec-sheet.js',
+  'scripts/register-onramps-spec-sheet-llm.js',
+  'scripts/register-onramps-form-llm.js',
   'scripts/demos/runtime.js',
   'scripts/demos/lib/seed-helpers.js',
   'scripts/demos/first-agreement.js',

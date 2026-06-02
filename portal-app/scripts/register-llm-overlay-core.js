@@ -309,6 +309,45 @@ function llmOverlay_tryPromoteToCompanion(field, proposal, context) {
   return { ok: true, promotedToCompanion: true, parent: parentName, option: triggerValue };
 }
 
+/* Normalise an enum-from-definition `labels` payload into the canonical
+ * `{ stringifiedValue: labelString }` shape regardless of the upstream
+ * extractor's emission. Handles three drift modes observed across LLMs and
+ * dialect plugins:
+ *
+ *   1. Array form: labels = ["Female", "Male"]  (parallel to values)
+ *      → keyed by stringified value at the matching index.
+ *   2. Integer-keyed object: labels = { 1: "Female", 2: "Male" }  (some LLMs
+ *      emit numeric keys when valueType is integer)
+ *      → keys coerced to strings.
+ *   3. Object with stringified keys (the canonical shape): used verbatim.
+ *
+ * Returns null when no labels are present OR when the input degenerates to
+ * an empty map after normalisation (caller skips writing enumLabels in that
+ * case, matching the prior behaviour). */
+function _llmOverlay_normaliseEnumLabels(values, labels) {
+  if (!Array.isArray(values) || !values.length) return null;
+  if (labels == null) return null;
+  const out = {};
+  if (Array.isArray(labels)) {
+    for (let i = 0; i < values.length && i < labels.length; i++) {
+      const label = labels[i];
+      if (label == null) continue;
+      const labelStr = String(label).trim();
+      if (!labelStr) continue;
+      out[String(values[i])] = labelStr;
+    }
+  } else if (typeof labels === 'object') {
+    Object.keys(labels).forEach(k => {
+      const label = labels[k];
+      if (label == null) return;
+      const labelStr = String(label).trim();
+      if (!labelStr) return;
+      out[String(k)] = labelStr;
+    });
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 /* Apply a stamped suggestion to a field. Mutates field in place; returns
  * { ok: true } or { ok: false, reason }. Caller is responsible for the
  * audit-log event around this; the apply itself is pure mutation. */
@@ -320,15 +359,20 @@ function llmOverlay_applySuggestion(field, suggestion, context) {
   switch (suggestion.kind) {
     case 'enum-from-definition': {
       if (!Array.isArray(p.values) || !p.values.length) return { ok: false, reason: 'no-values' };
+      // Normalise labels into a `{ stringified-value: label-string }` map regardless of the
+      // shape the upstream extractor emitted. LLMs occasionally emit labels as an array
+      // (positional, parallel to values) or with non-string keys (integers when valueType is
+      // integer). Both shapes degrade to an unkeyed display downstream if we don't normalise.
+      const normalisedLabels = _llmOverlay_normaliseEnumLabels(p.values, p.labels);
       if (p.isMultiSelect) {
         field.type = 'array';
         v.itemType = 'enum';
         v.itemEnumValues = p.values.slice();
-        if (p.labels) v.itemEnumLabels = Object.assign({}, p.labels);
+        if (normalisedLabels) v.itemEnumLabels = normalisedLabels;
       } else {
         field.type = 'enum';
         v.enumValues = p.values.slice();
-        if (p.labels) v.enumLabels = Object.assign({}, p.labels);
+        if (normalisedLabels) v.enumLabels = normalisedLabels;
       }
       return { ok: true };
     }

@@ -720,7 +720,52 @@ function buildWorkspaceFromFixtures() {
   if (typeof PLATFORM_INBOX !== 'undefined' && PLATFORM_INBOX) {
     Object.assign(workspace.inboxItems, platformInboxSeedToWorkspaceItems(PLATFORM_INBOX, 'sarah'));
   }
+  /* Orphan-link reconciliation. Some fixture messages reference an agreementId
+     that wasn't seeded into workspace.agreements (author miss — the agreement
+     was only declared in a scenario detail seed, not in the active scene's
+     agreements list). The link in the message-detail's Source Agreement card
+     would then either toast "Agreement not found" or fall through to whatever
+     was last selected, breaking the message→agreement identity chain.
+     Synthesize a stub agreement from the message's own counterparty + element
+     context so every message resolves to a real, navigable record. Prototype,
+     not a museum — fix the data on bootstrap rather than rendering a banner. */
+  reconcileOrphanMessageAgreementLinks(workspace);
   return workspace;
+}
+
+function reconcileOrphanMessageAgreementLinks(workspace) {
+  const orgs = workspace.orgs || (typeof ORGS !== 'undefined' ? ORGS : {});
+  Object.values(workspace.messages || {}).forEach((message) => {
+    if (!message.agreementId) return;
+    if (workspace.agreements[message.agreementId]) return;
+    const cpName = (message.counterparty && message.counterparty.name) || 'Counterparty';
+    let counterpartyOrgId = message.counterpartyOrgId || null;
+    if (!counterpartyOrgId) {
+      try { counterpartyOrgId = resolveCounterpartyOrgId(cpName, orgs); }
+      catch (e) { counterpartyOrgId = null; }
+    }
+    const operator = USERS[workspace.meta.activeUserId] || USERS.marcus || {};
+    const elementName = (message.element && message.element.name) || 'Data element';
+    const elementVersion = (message.element && message.element.version) || '';
+    workspace.agreements[message.agreementId] = {
+      agreementId: message.agreementId,
+      sourceDraftId: null,
+      dexId: message.dexId,
+      state: 'active',
+      type: 'Direct Agreement',
+      direction: 'send',
+      operatorOrgId: message.operatorOrgId || operator.primaryOrgId || null,
+      counterpartyOrgId,
+      counterpartyOrgName: cpName,
+      title: `${elementName} with ${cpName}`,
+      dataElementSummary: { name: elementName, detail: elementVersion },
+      terms: { effectiveFrom: '', durationMonths: 12, residency: 'standard' },
+      activity: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      synthesizedForOrphanMessage: true
+    };
+  });
 }
 
 window.createEmptyWorkspace = createEmptyWorkspace;

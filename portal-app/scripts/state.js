@@ -146,6 +146,9 @@ const ORGS = {
   singhealth:         { name: 'SingHealth',                short: 'SingHealth',    initials: 'SH', tier: 'participant', primaryDexId: 'hx' },
   'moh-esc':          { name: 'MOH Eye Screening Centre',  short: 'MOH-ESC',       initials: 'ME', tier: 'regulator',   primaryDexId: 'hx' },
   'polyclinic-bedok': { name: 'Polyclinic Bedok',          short: 'Polyclinic-Bedok', initials: 'PB', tier: 'participant', primaryDexId: 'hx' },
+  // Work-injury compensation insurer participating on SGHealthdex — receives
+  // GATIOD-aligned medical reports from clinics under standing Agreements.
+  'income-insurance': { name: 'Income Insurance Limited',  short: 'Income Insurance', initials: 'II', tier: 'participant', primaryDexId: 'hx' },
 
   /* ---------- Cameo counterparty orgs ----------
      Referenced by seeds in SCENE_SEEDS (inbox blurbs, agreements, messages) but

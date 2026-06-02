@@ -56,7 +56,13 @@
 
       { action: 'click', target: '.screen[data-screen="data-elements"].active [data-demo="catalogue.new-version-cta"]', dwell: 700 },
 
-      // ---- Element picker (skips on-ramp picker — fork is the only seeder for +New version) ----
+      // ---- On-ramp picker — fork is the only seeder that fully wires v2.1's
+      //      schema into the canvas (Spec-sheet refit lands by-element diff;
+      //      Smart Start re-extracts). Pick fork explicitly per ADR 0042 §2. ----
+      { action: 'expect', target: '#register-onramp-picker [data-demo="onramp.fork"]' },
+      { action: 'click',  target: '#register-onramp-picker [data-demo="onramp.fork"]', dwell: 600 },
+
+      // ---- Element picker ----
       { action: 'expect', target: '#register-element-picker [data-element-id="bill-of-lading"]' },
 
       { action: 'annotate',

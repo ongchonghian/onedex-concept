@@ -9183,7 +9183,10 @@ function regSelectOnramp(onramp) {
   regDraft.source.onramp = onramp;
   regCloseOnrampPicker();
   if (onramp === 'fork') {
-    regOpenElementPicker('new');
+    // Preserve the entry-mode set by regResetDraft. registerElement_startNewVersion
+    // primes mode='version'; passing 'new' here would silently demote the version
+    // bump into a "Copy of …" greenfield element.
+    regOpenElementPicker(regDraft.mode === 'version' ? 'version' : 'new');
   } else if (onramp === 'scratch') {
     regOpenCanvas();
   } else {

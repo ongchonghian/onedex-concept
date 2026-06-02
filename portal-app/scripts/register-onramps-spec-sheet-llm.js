@@ -125,7 +125,29 @@ Each suggestion has:
 
 # Closed kind payloads
 
-enum-from-definition: { values, labels, valueType ("integer"|"string"|"boolean"), isMultiSelect }
+enum-from-definition: {
+  values:    [<typed codes>],                     // integers or strings — NEVER labels
+  labels:    { "<stringified code>": "<label>" }, // MANDATORY whenever the prose pairs codes with descriptive text
+  valueType: "integer" | "string" | "boolean",
+  isMultiSelect: <boolean>
+}
+  • The prose pairs a CODE with a LABEL via a separator (typically " - " but also ":", ".", ")", "=", "|", or "—").
+    The CODE goes in values; the LABEL goes in labels keyed by the stringified code.
+  • Examples (study these carefully — labels are NOT optional when both halves are visible in the prose):
+      "[Selection: 1 - Onsite Project; 2 - Offsite Facility]"
+        → { values: [1, 2],
+            labels: { "1": "Onsite Project", "2": "Offsite Facility" },
+            valueType: "integer", isMultiSelect: false }
+      "[Selection: C - Citizen; PR - Permanent Resident; EP - Employment Pass]"
+        → { values: ["C", "PR", "EP"],
+            labels: { "C": "Citizen", "PR": "Permanent Resident", "EP": "Employment Pass" },
+            valueType: "string", isMultiSelect: false }
+      "[Selection: 1.1 - Site Management (Ancillary Works); 1.2 - Site Support (Ancillary Works)]"
+        → { values: ["1.1", "1.2"],
+            labels: { "1.1": "Site Management (Ancillary Works)", "1.2": "Site Support (Ancillary Works)" },
+            valueType: "string", isMultiSelect: false }
+  • The "labels" field MUST be a JSON object with stringified codes as keys. Do NOT emit an array, do NOT collapse to a list of "code – label" strings, do NOT omit labels when the prose clearly carries them.
+  • When labels are missing from the proposal, downstream reviewers see only the bare codes — which is a regression of the source intent. Emit labels whenever the prose carries them.
 length-constraint: { minLength?, maxLength? }
 range-constraint: { minimum?, maximum? }
 decimal-precision: { decimalPlaces }
@@ -717,11 +739,29 @@ function specLlmBuiltInMock(chunkInput) {
       const values = [];
       const labels = {};
       let valueType = 'integer';
+      // Code-label separator vocabulary observed across dialects:
+      //   "1 - Female"     (hyphen / en-dash / em-dash, with or without spaces)
+      //   "1 = Female"     (equals)
+      //   "1: Female"      (colon)
+      //   "1) Female"      (closing paren after code)
+      //   "1. Female"      (dot after code — only when the code is purely numeric/letter, not a "1.1" sub-code)
+      //   "1 | Female"     (pipe)
+      //   "(1) Female" / "[1] Female"   (code wrapped in parens/brackets)
+      //   "1 → Female"     (arrow)
+      //   "\"1\" Female"   (quoted code)
+      // The leading optional wrapper strips outer bracket noise.
+      // Two-step strategy to avoid swallowing dotted sub-codes like "1.1":
+      //   1. Code group is GREEDY on [\w.+-] so "1.1" and "LTVP" win as a single token.
+      //   2. Separator group is a class of non-dot separators, OR a "." followed by whitespace
+      //      (which excludes the inter-digit dot in "1.1").
+      const itemRegex = /^[\/"'(\[]?\s*([\w.+-]+)[\]")']?\s*(?:[-–—=:|→)]+|\.(?=\s))\s*(.+?)\s*[\/"']?\s*$/;
       items.forEach(item => {
-        const m = item.match(/^\/?\s*([\w.-]+)\s*[-=]\s*(.+?)\s*\/?\s*$/);
+        const m = item.match(itemRegex);
         if (m) {
           const v = m[1];
-          const label = m[2].replace(/[;,/]+$/, '').trim();
+          // Trim trailing separators / punctuation that may have leaked in via the lazy label group.
+          const label = m[2].replace(/[;,/]+$/, '').replace(/^["']|["']$/g, '').trim();
+          if (!label) return;            // Skip entries that resolved to an empty label — they aren't code-label pairs.
           if (!/^-?\d+$/.test(v)) valueType = (v === 'True' || v === 'False') ? 'boolean' : 'string';
           values.push(/^-?\d+$/.test(v) ? parseInt(v, 10) : v);
           labels[String(v)] = label;

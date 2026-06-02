@@ -22,6 +22,14 @@
   transition: background var(--motion-fast) var(--easing);
 }
 .btn-primary:hover { filter: brightness(1.06); }
+.btn-primary:disabled,
+.btn-primary[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+}
+.btn-primary:disabled:hover,
+.btn-primary[aria-disabled="true"]:hover { filter: none; }
 .btn-primary.neutral { background: var(--g-30); }
 .btn-primary i { font-size: 14px; }
 

@@ -48,19 +48,27 @@
 
   /* ---------- Semantic ramps ---------- */
   --red-20:  #570d00;
+  --red-30:  #7c1f1f;
   --red-50:  #b4371b;
+  --red-90:  #f7c3b8;
   --red-95:  #ffe9e4;
   --red-98:  #fff8f6;
 
+  --green-30: #115538;
   --green-50: #0e7241;
+  --green-90: #c6f5d4;
   --green-95: #b3ffc8;
   --green-98: #e9ffeb;
 
+  --yellow-30: #5a4805;
   --yellow-50: #7a6007;
+  --yellow-90: #ffdf91;
   --yellow-95: #ffecc3;
   --yellow-98: #fff8f1;
 
+  --blue-30: #0a3f78;
   --blue-50: #0061c1;
+  --blue-90: #c4daff;
   --blue-95: #e5ecff;
   --blue-98: #f7f8ff;
 

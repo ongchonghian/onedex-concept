@@ -1666,6 +1666,15 @@ function renderMessageDetailFromWorkspace() {
   if (typeof SCREEN_RENDERERS !== 'undefined' && typeof SCREEN_RENDERERS['message-detail'] === 'function') {
     SCREEN_RENDERERS['message-detail'](workspaceMessageToDetailSeed(message));
   }
+  // setMessageFlow's MESSAGE_FLOWS.push fixture is hardcoded to the Failed
+  // Bunker scenario — every successful push message inherits its failure
+  // banner, "Your action" badge, "validation rejected" timeline subtitles,
+  // and the Bunker activity log. For non-failed messages — and in particular
+  // for schema-driven submissions — wipe those stale fixtures and rebuild
+  // from the workspace record.
+  if (message.status !== 'failed') {
+    scrubFailureFixtureFromDetail(message);
+  }
   // ADR 0043 sub-decision 8 — if this Message was submitted via the schema-
   // driven Composer, swap the JSON payload viewer for a skeleton render of the
   // saved values using the same schema walker that authored the form.
@@ -1673,6 +1682,115 @@ function renderMessageDetailFromWorkspace() {
     renderSchemaDrivenPayloadSection(message);
   }
   return true;
+}
+
+/* Repaint message-detail's failure-coupled surfaces for non-failed messages.
+   The hardcoded MESSAGE_FLOWS.push fixture leaves a Failed-Bunker banner,
+   "validation rejected on send" timeline subtitle, a "Your action" owner
+   badge, and a Bunker activity log on every push render — when the message
+   is actually delivered (e.g. a schema-driven submission), these read as
+   contradiction. This pass hides / rewrites them from the workspace record. */
+function scrubFailureFixtureFromDetail(message) {
+  // Failure banner — purely a Failed-status surface, hide it. The .retry-
+  // banner class declares `display: flex`, which beats the [hidden] attribute
+  // (UA stylesheet specificity), so set the inline style directly.
+  const banner = document.getElementById('msg-retry-banner');
+  if (banner) { banner.hidden = true; banner.style.display = 'none'; }
+  // Retry button hides on non-failed (already handled by setMessageFlow for
+  // in-flight; force it here for delivered too).
+  const retryBtn = document.getElementById('msg-retry-btn');
+  if (retryBtn && message.status !== 'failed') { retryBtn.hidden = true; retryBtn.style.display = 'none'; }
+  // Edit & resend — failed-only surface; same inline-style override.
+  const editResendBtn = document.getElementById('msg-edit-resend-btn');
+  if (editResendBtn && message.status !== 'failed') { editResendBtn.hidden = true; editResendBtn.style.display = 'none'; }
+  // Close button is failed-only.
+  const closeBtn = document.getElementById('msg-close-btn');
+  if (closeBtn && message.status !== 'failed') { closeBtn.hidden = true; closeBtn.style.display = 'none'; }
+  // Owner badge is failed-only.
+  const ownerBadge = document.getElementById('msg-owner-badge');
+  if (ownerBadge && message.status !== 'failed') { ownerBadge.hidden = true; ownerBadge.style.display = 'none'; }
+
+  const cpName = (message.counterparty && message.counterparty.name) || 'counterparty';
+  const idem = message.idempotencyKey || '—';
+  const submittedAt = (message.payload && message.payload.submittedAt)
+    ? new Date(message.payload.submittedAt)
+    : new Date(message.createdAt || Date.now());
+  const hh = String(submittedAt.getHours()).padStart(2, '0');
+  const mm = String(submittedAt.getMinutes()).padStart(2, '0');
+  const ss = String(submittedAt.getSeconds()).padStart(2, '0');
+  const sgt = hh + ':' + mm + ':' + ss + ' SGT';
+
+  // Timeline — repaint subtitles + states for delivered / in-flight push.
+  const timeline = document.getElementById('msg-timeline');
+  if (timeline) {
+    const isDelivered    = message.status === 'delivered';
+    const isInFlight     = message.status === 'in-flight';
+    const isAcknowledged = message.status === 'acknowledged';
+    const nodes = [
+      { label: 'Queued',       state: 'done', time: sgt + ' · created by you' },
+      { label: 'Sent',         state: 'done', time: sgt + ' · payload validated, on the wire' },
+      isAcknowledged
+        ? { label: 'Delivered',    state: 'done', time: sgt + ' · counterparty pitstop received' }
+        : isDelivered
+          ? { label: 'Delivered',    state: 'done', time: sgt + ' · counterparty pitstop received', current: true }
+          : { label: 'Delivered',    state: 'future', time: 'awaiting receipt', muted: true, current: isInFlight },
+      isAcknowledged
+        ? { label: 'Acknowledged', state: 'done', time: sgt + ' · ack received' }
+        : { label: 'Acknowledged', state: 'future', time: 'awaiting acknowledgement', muted: true, end: true }
+    ];
+    timeline.style.gridTemplateColumns = 'repeat(' + nodes.length + ', 1fr)';
+    timeline.innerHTML = nodes.map((n, i) => {
+      const isLast = i === nodes.length - 1;
+      const cls = ['step', n.current ? 'curr' : '', isLast ? 'end' : ''].filter(Boolean).join(' ');
+      const ariaCurr = n.current ? ' aria-current="step"' : '';
+      const labelCls = n.muted ? 'step-label muted' : 'step-label';
+      return '<li class="' + cls + '"' + ariaCurr + '>'
+        + '<div class="step-row"><span class="dot ' + n.state + '" aria-hidden="true"></span><span class="' + labelCls + '">' + n.label + '</span></div>'
+        + '<p class="step-time">' + n.time + '</p>'
+        + '</li>';
+    }).join('');
+  }
+
+  // Metadata — rewrite from the workspace record so idempotency key,
+  // timestamps, and message id reflect this Message instead of the fixture.
+  const metaGrid = document.getElementById('msg-meta-grid');
+  if (metaGrid) {
+    const sizeKB = message.payload && message.payload.values
+      ? (JSON.stringify(message.payload.values).length / 1024).toFixed(1) + ' KB'
+      : '—';
+    const meta = {
+      'Message ID':           message.messageId || '—',
+      'Idempotency key':      idem,
+      'Size':                 sizeKB,
+      'Encryption (transit)': 'TLS 1.3 · ECDHE-RSA-AES256',
+      'Encryption (rest)':    'AES-256-GCM · key #kms_2026_q2',
+      'Created':              submittedAt.toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' }) + ' SGT'
+    };
+    metaGrid.innerHTML = Object.entries(meta).map(([k, v]) =>
+      '<span class="k">' + k + '</span><span class="v">' + v + '</span>'
+    ).join('');
+  }
+
+  // Activity — replace the fixture's Bunker rejection entries with a clean
+  // composer-submitted line drawn from the workspace record.
+  const activityList = document.getElementById('msg-activity-list');
+  if (activityList) {
+    const actorId = (message.payload && message.payload.submittedBy) || (message.activity && message.activity[0] && message.activity[0].actorUserId) || null;
+    const actorUser = (actorId && typeof USERS !== 'undefined' && USERS[actorId]) ? USERS[actorId] : null;
+    const actorName = (actorUser && actorUser.name) || actorId || 'Operator';
+    const entries = [
+      { dot: 'green', who: 'System',  text: 'Payload validated and delivered to ' + cpName + ' — status: <strong>' + (message.status || 'delivered') + '</strong>', when: sgt + ' · automated' },
+      { dot: 'tx',    who: actorName, text: 'Created the message via Composer · idempotency key <code>' + idem + '</code>', when: sgt + ' · request_id req_' + (idem.replace(/[^a-z0-9]/gi, '').slice(-8) || 'sd000000') }
+    ];
+    const dotColor = { red: 'var(--red-50)', green: 'var(--green-50)', yellow: 'var(--yellow-50)', tx: '' };
+    activityList.innerHTML = entries.map(ev => {
+      const colorStyle = (ev.dot && ev.dot !== 'tx' && dotColor[ev.dot]) ? ' style="background:' + dotColor[ev.dot] + '"' : '';
+      const cls = ev.dot === 'tx' ? 'ev-dot tx' : 'ev-dot';
+      return '<li class="ev"><span class="' + cls + '"' + colorStyle + ' aria-hidden="true"></span>'
+        + '<div class="ev-body"><p><strong>' + ev.who + '</strong> ' + ev.text + '</p>'
+        + '<p class="ev-time"><time>' + ev.when + '</time></p></div></li>';
+    }).join('');
+  }
 }
 
 /* renderSchemaDrivenPayloadSection (ADR 0043) — replace the #msg-payload-viewer
@@ -3142,9 +3260,14 @@ function renderInboxFromWorkspace(screenName) {
     if (completions.length > 0) {
       ribbonList.innerHTML = completions.map(renderInboxCompletionHTML).join('');
       ribbon.hidden = false;
+      // ADR 0008 — the echo is awareness ("work moved"), not just a counter.
+      // Auto-open so the row is actually visible; the chevron still lets the
+      // operator collapse if they want to focus on the actionable queue.
+      ribbon.open = true;
       if (ribbonCount) ribbonCount.textContent = `${completions.length} just completed`;
     } else {
       ribbon.hidden = true;
+      ribbon.open = false;
       ribbonList.innerHTML = '';
     }
   }
@@ -3832,11 +3955,18 @@ SCREEN_RENDERERS['message-detail'] = function renderMessageDetailFromSeed(seed) 
     if (reason) reason.innerHTML = status.errorLine;
   }
 
-  // Source-Agreement card
+  // Source-Agreement card — must point at THIS message's agreement, not
+  // whatever was last selected. The static markup carries no onclick;
+  // we bind it here from seed.agreement so every message routes correctly.
   if (seed.agreement) {
     const agrCard = screen.querySelector('#msg-agr-card');
     if (agrCard) {
       const elFull = el.name ? `${el.name}${el.version ? ' · ' + el.version : ''}` : '';
+      const safeAgr = String(seed.agreement).replace(/'/g, "\\'");
+      agrCard.setAttribute('onclick', `openAgreementDetail('${safeAgr}')`);
+      agrCard.setAttribute('role', 'link');
+      agrCard.setAttribute('tabindex', '0');
+      agrCard.setAttribute('aria-label', `Open source Agreement ${seed.agreement}`);
       agrCard.innerHTML =
         '<i class="ti ti-file-text" style="font-size:20.5px;color:var(--g-50)" aria-hidden="true"></i>' +
         '<div style="flex:1;min-width:0">' +
@@ -5084,6 +5214,22 @@ function switchSettingsPane(tab, paneName) {
 let detailAgreementShape = 'default';
 
 function openComposerFromDetail() {
+  // Suspension gate — an Agreement in active-suspended state cannot accept
+  // new Messages. Guard before the schema-driven fork so both paths honour
+  // the lock, and surface a toast in case anything bypasses the disabled
+  // button in the header.
+  try {
+    if (typeof getSelectedAgreementId === 'function') {
+      const id = getSelectedAgreementId();
+      const ws = id && typeof getWorkspace === 'function' ? getWorkspace() : null;
+      const agr = ws && ws.agreements ? ws.agreements[id] : null;
+      if (agr && agr.state === 'active' && agr.suspended === true) {
+        if (typeof toast === 'function') toast('Sending Messages is paused while this Agreement is suspended', 'warn');
+        return;
+      }
+    }
+  } catch (e) { /* fall through — never block the demo on a guard error */ }
+
   // ADR 0043 sub-decision 6 — fork on elementSnapshot.source. When the
   // selected Agreement was created against a workspace-persisted Element
   // version, render the Composer from elementSchema via the schema walker.
@@ -5130,6 +5276,7 @@ function setDetailState(state, btn) {
   const body = document.getElementById('detail-body');
   const pill = document.getElementById('detail-status-pill');
   const primaryBtn = document.getElementById('detail-primary-action');
+  const composeBtn = document.getElementById('detail-compose-btn');
   const nudge = document.getElementById('detail-nudge');
   const rail = document.getElementById('detail-rail');
 
@@ -5138,6 +5285,18 @@ function setDetailState(state, btn) {
   if (header) header.style.display = '';
   if (body) body.style.display = '';
   if (rail) rail.style.visibility = '';
+
+  // Reset Send Message gate — non-suspended states leave the button live.
+  // The 'suspended' branch below re-locks it. We stash the seed-provided
+  // tooltip on first override so we can restore it cleanly here.
+  if (composeBtn) {
+    composeBtn.disabled = false;
+    composeBtn.removeAttribute('aria-disabled');
+    if (composeBtn.dataset.titleBeforeSuspend != null) {
+      composeBtn.title = composeBtn.dataset.titleBeforeSuspend;
+      delete composeBtn.dataset.titleBeforeSuspend;
+    }
+  }
 
   // Clear injected banners from prior state
   ['revoked-banner','ack-banner','renewed-banner','suspended-banner'].forEach(cls => {
@@ -5223,6 +5382,16 @@ function setDetailState(state, btn) {
         body.insertBefore(b, body.firstChild);
       }
       if (primaryBtn) { primaryBtn.textContent = 'Request unsuspend'; primaryBtn.onclick = () => toast('Request sent to compliance', 'warn'); }
+      // Lock Send Message — no new Messages may be composed while the
+      // Agreement is suspended. The banner above explains why.
+      if (composeBtn) {
+        if (composeBtn.dataset.titleBeforeSuspend == null) {
+          composeBtn.dataset.titleBeforeSuspend = composeBtn.title || '';
+        }
+        composeBtn.disabled = true;
+        composeBtn.setAttribute('aria-disabled', 'true');
+        composeBtn.title = 'Sending Messages is paused while this Agreement is suspended — request unsuspend first';
+      }
       announce('Agreement is suspended pending compliance review');
       break;
 
@@ -6598,6 +6767,9 @@ function openComposer(scenario) {
   // the previous published-element references.
   composerState.elementVersionRef = null;
   composerState.agreementId = null;
+  // Drop any leftover schema-driven rules-aside so the legacy scenario
+  // composer doesn't render a stale validation surface from a prior session.
+  if (typeof composerSchemaDrivenUnmountRulesAside === 'function') composerSchemaDrivenUnmountRulesAside();
   goto('compose');
   // setComposerScenario will be invoked by the goto hook below
 }
@@ -6648,6 +6820,18 @@ function setComposerSchemaDrivenForm() {
       ' · rendering from elementSchema';
   }
 
+  // Submit button label — schema-driven path is decoupled from the legacy
+  // scenario configs (which hardcode submitLabels for PSA / Maersk / Acme).
+  // Pull the counterparty name from the agreement so the CTA reads "Send to
+  // <counterparty>" instead of whatever the previous scenario stamped.
+  const submitBtnHdr = document.getElementById('compose-submit');
+  if (submitBtnHdr) {
+    const cpName = (agr && agr.counterpartyOrgName) || 'counterparty';
+    submitBtnHdr.textContent = 'Submit · send to ' + cpName;
+    submitBtnHdr.disabled = false;        // live validate will re-lock as needed
+    submitBtnHdr.title = '';
+  }
+
   // Hide scenario-only banners for the tracer — banner-state resolver is a
   // follow-up (Q7a). Stepper is hidden in schema-driven mode (simple form).
   const banners = ['compose-pitstop-banner', 'compose-acting-banner',
@@ -6670,6 +6854,17 @@ function setComposerSchemaDrivenForm() {
       uiRules: rec.uiRules,
       disabled: false
     });
+
+    // ADR 0047 — live validation surface, parallel to the Test-as-operator
+    // panel that the registration flow exposes. Tag each sw-field row with
+    // `data-field-name` (for rule-fail accents) and emit a `data-reg-test-
+    // l1-for` slot for inline AJV errors so the same painter contract works
+    // here. Then mount the rules aside, wire input listeners, and run a
+    // first pass so Submit + the rule cards are in sync from the start.
+    composerSchemaDrivenAnnotateFields(formEl, rec.elementSchema);
+    composerSchemaDrivenMountRulesAside(rec);
+    composerSchemaDrivenBindLiveValidate(formEl, rec);
+    composerSchemaDrivenLiveValidate(formEl, rec);
   }
 
   // Review-tab summary line.
@@ -6678,6 +6873,258 @@ function setComposerSchemaDrivenForm() {
     const fieldCount = Object.keys((rec.elementSchema && rec.elementSchema.properties) || {}).length;
     reviewLine.innerHTML = '<strong>' + rec.name + '</strong> ' + rec.version +
       ' (' + fieldCount + ' fields in schema)';
+  }
+}
+
+/* ============================================================
+   ADR 0047 — schema-driven Composer's live validation surface.
+
+   Mirrors the test-as-operator panel: an aside of rule cards
+   (PASSES / FAILS / ERROR) plus inline AJV error chips next to
+   each input. One keystroke fires the same engine pass that the
+   registration flow's "Test as operator" modal runs, so the
+   operator-side Composer and the authoring-side Test surface
+   stay coherent — same engines, same messages, same gates.
+   Submit stays locked while any gate is red.
+
+   The DOM contract is the same one register-element.js paints
+   into: `.reg-test-rules` aside + per-field `data-reg-test-
+   l1-for` slots + `is-rule-fail` / `is-l1-fail` row accents.
+   ============================================================ */
+
+function composerSchemaDrivenAnnotateFields(formEl, elementSchema) {
+  if (!formEl || !elementSchema) return;
+  const props = (elementSchema.properties) || {};
+  const escapeAttr = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  formEl.querySelectorAll('.sw-field[data-field-row]').forEach(row => {
+    const path = row.getAttribute('data-field-row');
+    // Only tag top-level rows (nested rows aren't anchored by the L1 painter).
+    if (!path || path.indexOf('.') >= 0 || path.indexOf('[') >= 0) return;
+    if (!props[path]) return;
+    row.setAttribute('data-field-name', path);
+    if (!row.querySelector('[data-reg-test-l1-for="' + path + '"]')) {
+      const slot = document.createElement('span');
+      slot.className = 'reg-test-l1-errors';
+      slot.setAttribute('data-reg-test-l1-for', path);
+      row.appendChild(slot);
+    }
+  });
+}
+
+function composerSchemaDrivenMountRulesAside(rec) {
+  const formEl = document.getElementById('compose-form');
+  if (!formEl) return;
+  // The aside sits as a sibling of #compose-form inside its parent section,
+  // floated to the right so the form keeps its existing flow on the left.
+  let aside = document.getElementById('compose-rules-aside');
+  if (!aside) {
+    aside = document.createElement('aside');
+    aside.id = 'compose-rules-aside';
+    aside.className = 'reg-test-rules compose-rules-aside';
+    aside.innerHTML = ''
+      + '<h4 class="reg-test-rules-title">Validation <span class="reg-test-rules-count" data-compose-rules-count>0</span></h4>'
+      + '<p class="reg-test-rules-hint">AJV (L1) and govaluate (L2) re-run as you type. Submit unlocks only when every gate passes — same engines as Test-as-operator.</p>'
+      + '<ul class="reg-test-rules-list" data-compose-rules-list></ul>';
+    formEl.parentNode.insertBefore(aside, formEl.nextSibling);
+  }
+  const countEl = aside.querySelector('[data-compose-rules-count]');
+  if (countEl) countEl.textContent = String(((rec && rec.rules) || []).length);
+}
+
+function composerSchemaDrivenUnmountRulesAside() {
+  const aside = document.getElementById('compose-rules-aside');
+  if (aside) aside.remove();
+}
+
+function composerSchemaDrivenBindLiveValidate(formEl, rec) {
+  if (!formEl) return;
+  if (formEl._composerLiveHandler) {
+    formEl.removeEventListener('input',  formEl._composerLiveHandler);
+    formEl.removeEventListener('change', formEl._composerLiveHandler);
+  }
+  const handler = () => composerSchemaDrivenLiveValidate(formEl, rec);
+  formEl._composerLiveHandler = handler;
+  formEl.addEventListener('input',  handler);
+  formEl.addEventListener('change', handler);
+}
+
+/* Extract top-level field-name identifiers from a govaluate expression so
+   the rule card can highlight which input(s) it references — mirrors
+   regExtractRuleFields, but reads the field set from elementSchema.properties
+   instead of regDraft.fields. */
+function composerSchemaDrivenRuleFieldRefs(expression, elementSchema) {
+  if (!expression || !elementSchema) return [];
+  const props = (elementSchema && elementSchema.properties) || {};
+  const known = new Set(Object.keys(props));
+  if (!known.size) return [];
+  const stripped = String(expression)
+    .replace(/"[^"]*"/g, '""')
+    .replace(/'[^']*'/g, "''");
+  const ids = stripped.match(/\b[A-Za-z_][A-Za-z0-9_]*\b/g) || [];
+  const seen = new Set();
+  const out = [];
+  ids.forEach(id => { if (known.has(id) && !seen.has(id)) { seen.add(id); out.push(id); } });
+  return out;
+}
+
+/* Build an operator-readable message for a single AJV error. Re-uses
+   regAjvTranslate when the register-element module is loaded so message
+   wording matches the Test-as-operator surface; falls back to a minimal
+   inline translator if not. */
+function composerSchemaDrivenTranslateAjv(err, elementSchema) {
+  if (typeof window.regAjvTranslate === 'function') {
+    // Synthesize a minimal `state` that regAjvTranslate can read field
+    // labels from. The register-element translator reads (state.fields ||
+    // []).find(f => f.name === fieldName) for the nice label; we adapt
+    // elementSchema.properties[name].title into that shape.
+    const fakeFields = Object.keys((elementSchema && elementSchema.properties) || {}).map(name => ({
+      name,
+      label: (elementSchema.properties[name] && elementSchema.properties[name].title) || name
+    }));
+    try { return window.regAjvTranslate(err, { fields: fakeFields }); } catch (_) { /* fall through */ }
+  }
+  const k = err && err.keyword;
+  const p = (err && err.params) || {};
+  const fieldName = (typeof window.regAjvErrorFieldName === 'function')
+    ? window.regAjvErrorFieldName(err)
+    : (err.instancePath ? err.instancePath.replace(/^\//, '').split('/')[0] : null);
+  const propSchema = fieldName && elementSchema.properties ? elementSchema.properties[fieldName] : null;
+  const niceName = (propSchema && propSchema.title) || fieldName || 'This field';
+  switch (k) {
+    case 'required':  return niceName + ' is required.';
+    case 'type':      return niceName + ' must be a ' + (p.type || 'valid value') + '.';
+    case 'format':    return niceName + ' must look like a valid ' + (p.format || 'value') + '.';
+    case 'minimum':   return niceName + ' must be at least ' + p.limit + '.';
+    case 'maximum':   return niceName + ' must be at most ' + p.limit + '.';
+    case 'minLength': return niceName + ' must be at least ' + p.limit + ' character' + (p.limit === 1 ? '' : 's') + '.';
+    case 'enum':      return niceName + ' must be one of the listed options.';
+    default:          return (err && err.message) || (niceName + ' is invalid.');
+  }
+}
+
+function composerSchemaDrivenEscapeHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function composerSchemaDrivenLiveValidate(formEl, rec) {
+  if (!formEl || !rec || !rec.elementSchema) return;
+  if (typeof schemaWalker_readValues !== 'function') return;
+  const values = schemaWalker_readValues(formEl, rec.elementSchema);
+
+  // ----- L1 — AJV inline errors -----
+  // Clear last pass's accents + inline slots first so a now-clean field
+  // drops back to baseline. is-rule-fail (L2) is managed below.
+  formEl.querySelectorAll('[data-reg-test-l1-for]').forEach(slot => { slot.innerHTML = ''; });
+  formEl.querySelectorAll('.sw-field.is-l1-fail').forEach(el => el.classList.remove('is-l1-fail'));
+
+  let l1Errors = [];
+  let ajvAvailable = false;
+  if (typeof window.regGetAjvInstance === 'function') {
+    const ajv = window.regGetAjvInstance();
+    if (ajv) {
+      ajvAvailable = true;
+      let validate = null;
+      // Cache the compiled validator on the form element so we don't
+      // recompile on every keystroke. Key by elementSchema reference —
+      // when the Composer re-enters with a different element, the key
+      // changes and we recompile.
+      if (formEl._composerAjvCompiledFor === rec.elementSchema && formEl._composerAjvValidate) {
+        validate = formEl._composerAjvValidate;
+      } else {
+        try {
+          validate = ajv.compile(rec.elementSchema);
+          formEl._composerAjvValidate = validate;
+          formEl._composerAjvCompiledFor = rec.elementSchema;
+        } catch (e) {
+          console.warn('Composer AJV compile failed:', e);
+        }
+      }
+      if (validate && !validate(values)) {
+        l1Errors = validate.errors || [];
+      }
+    }
+  }
+
+  const props = (rec.elementSchema.properties) || {};
+  l1Errors.forEach(err => {
+    const fieldName = (typeof window.regAjvErrorFieldName === 'function')
+      ? window.regAjvErrorFieldName(err)
+      : (err.instancePath ? err.instancePath.replace(/^\//, '').split('/')[0] : null);
+    if (!fieldName || !props[fieldName]) return;
+    const slot = formEl.querySelector('[data-reg-test-l1-for="' + fieldName + '"]');
+    if (!slot) return;
+    const row = slot.closest('.sw-field');
+    if (row) row.classList.add('is-l1-fail');
+    const msg = composerSchemaDrivenTranslateAjv(err, rec.elementSchema);
+    slot.innerHTML += ''
+      + '<span class="reg-test-l1-error" role="alert">'
+      +   '<i class="ti ti-alert-circle reg-test-l1-icon" aria-hidden="true"></i> '
+      +   '<span class="reg-test-l1-msg">' + composerSchemaDrivenEscapeHtml(msg) + '</span>'
+      +   '<span class="reg-test-l1-chip" title="' + composerSchemaDrivenEscapeHtml('Schema · ' + (err.keyword || '?')) + '">'
+      +     'Schema · ' + composerSchemaDrivenEscapeHtml(err.keyword || '?')
+      +   '</span>'
+      + '</span>';
+  });
+
+  // ----- L2 — govaluate rule cards -----
+  const rules = (rec.rules) || [];
+  const list = document.querySelector('[data-compose-rules-list]');
+  if (list) {
+    formEl.querySelectorAll('.sw-field.is-rule-fail').forEach(el => el.classList.remove('is-rule-fail'));
+    let anyRuleFailing = false;
+    const failingFieldNames = new Set();
+    const items = rules.map(r => {
+      let ev = { ok: false, error: 'regEvalExpression unavailable', value: undefined };
+      if (typeof window.regEvalExpression === 'function') {
+        try { ev = window.regEvalExpression(r.expression, values); }
+        catch (e) { ev = { ok: false, error: e && e.message ? e.message : String(e), value: undefined }; }
+      }
+      const statusClass = ev.error ? 'is-errored' : (ev.ok ? 'is-passed' : 'is-failed');
+      const statusLabel = ev.error ? 'ERROR'    : (ev.ok ? 'PASSES'    : 'FAILS');
+      const fieldRefs = composerSchemaDrivenRuleFieldRefs(r.expression, rec.elementSchema);
+      if (!ev.ok || ev.error) {
+        anyRuleFailing = true;
+        fieldRefs.forEach(n => failingFieldNames.add(n));
+      }
+      return '<li class="reg-test-rule">'
+        + '<div class="reg-test-rule-head">'
+        +   '<span class="reg-test-rule-name">' + composerSchemaDrivenEscapeHtml(r.name || '(unnamed rule)') + '</span>'
+        +   '<span class="reg-rule-status ' + statusClass + '">' + statusLabel + '</span>'
+        + '</div>'
+        + '<code class="reg-test-rule-expr">' + composerSchemaDrivenEscapeHtml(r.expression || '') + '</code>'
+        + ((!ev.ok && r.on_failure)
+          ? '<div class="reg-test-rule-onfailure"><i class="ti ti-alert-triangle"></i> ' + composerSchemaDrivenEscapeHtml(r.on_failure) + '</div>'
+          : '')
+        + (ev.error
+          ? '<div class="reg-test-rule-error">Expression error: ' + composerSchemaDrivenEscapeHtml(ev.error) + '</div>'
+          : '')
+        + '</li>';
+    });
+    list.innerHTML = rules.length
+      ? items.join('')
+      : '<li class="reg-test-rule-empty">No cross-field rules defined for this element.</li>';
+    failingFieldNames.forEach(n => {
+      const row = formEl.querySelector('.sw-field[data-field-name="' + n + '"]');
+      if (row) row.classList.add('is-rule-fail');
+    });
+
+    // Submit lock — disabled while either gate is red. Per ADR 0047, the
+    // operator-facing surface stays clickable in spirit (the failure UX
+    // lives inline + in the aside), but disabling the button is the
+    // straightforward gate signal here.
+    const submitBtn = document.getElementById('compose-submit');
+    if (submitBtn) {
+      const l1Blocking = ajvAvailable && l1Errors.length > 0;
+      const block = l1Blocking || anyRuleFailing;
+      submitBtn.disabled = !!block;
+      if (l1Blocking) {
+        submitBtn.title = 'Submit — ' + l1Errors.length + ' schema error' + (l1Errors.length === 1 ? '' : 's') + ' must clear first';
+      } else if (anyRuleFailing) {
+        submitBtn.title = 'Submit — cross-field rule(s) failing';
+      } else {
+        submitBtn.title = '';
+      }
+    }
   }
 }
 
@@ -7044,6 +7491,7 @@ function composerSubmit_schemaDriven() {
     toast('Submit blocked · element schema not found in workspace');
     return;
   }
+  const agr = (composerState.agreementId && ws.agreements) ? ws.agreements[composerState.agreementId] : null;
   const formEl = document.getElementById('compose-form');
   if (!formEl || typeof schemaWalker_readValues !== 'function') {
     toast('Submit blocked · schema-walker unavailable');
@@ -7064,17 +7512,12 @@ function composerSubmit_schemaDriven() {
       catch (e) { console.warn('AJV compile failed on element schema:', e); }
       if (validate && !validate(values)) {
         const errs = validate.errors || [];
-        const summary = errs.map(e =>
-          '  · ' + (e.instancePath || '(root)') +
-          (e.params && e.params.missingProperty ? ('/' + e.params.missingProperty) : '') +
-          ' — ' + (e.message || 'invalid')
-        ).join('\n');
-        if (typeof window.alert === 'function') {
-          window.alert(errs.length + ' schema violation' + (errs.length === 1 ? '' : 's') + ':\n\n' + summary +
-            '\n\nFix the fields and resubmit. AJV gate per CONTEXT.md three-layer governance.');
-        } else {
-          toast(errs.length + ' schema violation' + (errs.length === 1 ? '' : 's') + ' · see console');
-        }
+        // Inline + aside surface already names every error per ADR 0047 —
+        // composerSchemaDrivenLiveValidate paints them on every keystroke
+        // and disables Submit while red. A native alert would duplicate
+        // what the surface is already saying.
+        composerSchemaDrivenLiveValidate(formEl, rec);
+        toast(errs.length + ' schema violation' + (errs.length === 1 ? '' : 's') + ' · see inline errors');
         console.warn('Schema-driven Submit blocked by AJV violations:', errs);
         return;
       }
@@ -7110,13 +7553,12 @@ function composerSubmit_schemaDriven() {
   }
 
   if (failedCount > 0) {
-    const summary = rulesEval.filter(r => r.result === 'fail').map(r => '  · ' + r.name + ' — ' + r.message).join('\n');
-    if (typeof window.alert === 'function') {
-      window.alert(failedCount + ' rule' + (failedCount === 1 ? '' : 's') + ' failed:\n\n' + summary +
-        '\n\nFix the values and resubmit. ADR 0043 sub-decision 8 — Submit blocks on rule failure.');
-    } else {
-      toast(failedCount + ' rule failure' + (failedCount === 1 ? '' : 's') + ' · see console');
-    }
+    // Inline + aside surface already names every failing rule per ADR 0047
+    // — composerSchemaDrivenLiveValidate paints rule cards live and disables
+    // Submit. A native alert would duplicate the failure story the aside
+    // is already telling.
+    composerSchemaDrivenLiveValidate(formEl, rec);
+    toast(failedCount + ' rule failure' + (failedCount === 1 ? '' : 's') + ' · see rules panel');
     console.warn('Schema-driven Submit blocked by rule failures:', rulesEval);
     return;
   }
@@ -7128,26 +7570,65 @@ function composerSubmit_schemaDriven() {
   }
   toast('Submission in progress · saving payload to workspace…');
   setTimeout(() => {
+    let persistedRecord = null;
     try {
       if (typeof recordSchemaDrivenMessage === 'function') {
-        const record = recordSchemaDrivenMessage(
+        persistedRecord = recordSchemaDrivenMessage(
           composerState.agreementId,
           ref,
           values,
           composerState.idempotencyKey,
           rulesEval
         );
-        if (record) {
-          console.log('Schema-driven Message persisted:', record.messageId);
+        if (persistedRecord) {
+          console.log('Schema-driven Message persisted:', persistedRecord.messageId);
         }
       }
     } catch (e) {
       console.warn('Schema-driven Message persist failed:', e);
     }
     if (typeof refreshInboxSurfaces === 'function') refreshInboxSurfaces();
+    // Anchor the just-submitted Message as the workspace selection so the
+    // success card's "View Message detail" click lands on this record
+    // instead of the prototype's default Bunker-delivery fixture.
+    if (persistedRecord && persistedRecord.messageId && typeof setSelectedMessageId === 'function') {
+      setSelectedMessageId(persistedRecord.messageId);
+    }
+    composerSchemaDrivenPaintSuccess(persistedRecord, rec, agr);
     goto('compose-success');
-    if (btn) { btn.disabled = false; btn.innerHTML = 'Submit'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = 'Submit · send to ' + ((agr && agr.counterpartyOrgName) || 'counterparty'); }
   }, 600);
+}
+
+/* Paint the compose-success card with the just-submitted Message's identity
+   so the screen reads "Submitted to <counterparty> · Your <element> is now
+   In flight · Message ID <id>" instead of the legacy hardcoded "Maersk
+   Logistics / Bill of Lading / MSG-2026-118504" markup. No-op when any
+   anchor is missing — falls back to the static HTML so the legacy scenarios'
+   success copy still reads sensibly. */
+function composerSchemaDrivenPaintSuccess(record, rec, agr) {
+  const title = document.getElementById('cs-title');
+  const sub = document.querySelector('.screen[data-screen="compose-success"] .cs-sub');
+  const details = document.querySelector('.screen[data-screen="compose-success"] .cs-details');
+  const cpName = (agr && agr.counterpartyOrgName) || 'counterparty';
+  const elementName = (rec && rec.name) || 'Message';
+  const messageId = (record && record.messageId) || '—';
+  const idemKey = composerState.idempotencyKey || '—';
+  if (title) title.textContent = 'Submitted to ' + cpName;
+  if (sub) {
+    sub.innerHTML = 'Your <strong>' + elementName + '</strong> is now <strong>In flight</strong> · Message ID <code>' + messageId + '</code>';
+  }
+  if (details) {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    details.innerHTML = ''
+      + '<li><i class="ti ti-key"></i> Idempotency key <code>' + idemKey + '</code> · counterparty pitstop will dedup if original delivered</li>'
+      + '<li><i class="ti ti-clock"></i> Submitted ' + hh + ':' + mm + ':' + ss + ' SGT · expected delivery within 2 seconds</li>'
+      + '<li><i class="ti ti-trash"></i> Draft hard-deleted on success per ADR 0024</li>'
+      + '<li><i class="ti ti-bell"></i> Watch is enabled — you\'ll get inbox + email when this acks or fails</li>';
+  }
 }
 
 function composerCancel() {
