@@ -159,6 +159,34 @@ body.presenter-mode {
   letter-spacing: 0.01em;
 }
 
+/* Sub-pull footnote — used to surface features that don't merit their own
+   slide but matter for management coverage (lifecycle actions, daily texture,
+   live-assist details). Quieter than .slide-pull; sits directly under it. */
+.slide-footnote {
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 18px auto 0;
+  max-width: 1400px;
+  letter-spacing: 0.005em;
+}
+
+/* When a slide carries both a pull AND a footnote, tighten the pull's top
+   margin so the bottom of the slide stays inside the 1080 canvas. */
+.slide-pull + .slide-footnote { margin-top: 14px; }
+.slide-inner:has(.slide-footnote) .slide-pull { margin-top: 32px; }
+.slide-inner:has(.slide-footnote) .slide-stepcount { margin: 18px auto 18px; }
+.slide-inner:has(.slide-footnote) .stepcount-side { padding: 36px 28px; }
+.slide-footnote strong {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+}
+.slide-footnote em {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.82);
+}
+
 /* ═══ Slide 1 · TWO COLUMNS (customer / internal) ═════════════════════ */
 .slide-twocol {
   display: grid;
@@ -487,7 +515,7 @@ body.presenter-mode {
   text-align: left;
 }
 .scoping-col {
-  padding: 40px;
+  padding: 32px 36px;
   border-radius: 14px;
 }
 .scoping-col--v1 {
@@ -513,11 +541,11 @@ body.presenter-mode {
   margin: 0;
 }
 .scoping-list li {
-  font-size: 26.5px;
+  font-size: 23.5px;
   font-weight: 500;
-  padding: 8px 0 8px 28px;
+  padding: 5px 0 5px 26px;
   position: relative;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 .scoping-col--v1 .scoping-list li::before {
   content: '✓';
@@ -728,6 +756,45 @@ body.presenter-mode {
 .presenter-step-counter { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .presenter-section { opacity: 0.55; font-size: 14.5px; letter-spacing: 0.12em; text-transform: uppercase; }
 .presenter-narrative { color: #fff; font-weight: 500; }
+
+/* Zoom hint chip — surfaced only while on the overview step. Sits bottom-
+   right; auto-hides with the topbar when the mouse is idle. */
+.overview-zoom-hint {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 100;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  display: none;
+  gap: 10px;
+  align-items: center;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: opacity 240ms;
+  pointer-events: none;
+}
+.overview-zoom-hint kbd {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+body.overview-zoom-active .overview-zoom-hint { display: inline-flex; }
+
+/* Cursor affordance: grab while panning is available on the overview;
+   grabbing while a drag is in progress. */
+body.overview-zoom-active { cursor: grab; }
+body.overview-zoom-active.overview-zoom-dragging,
+body.overview-zoom-active.overview-zoom-dragging * { cursor: grabbing !important; }
 
 /* ═══ Speaker notes overlay (single-screen fallback) ══════════════════ */
 .presenter-notes-overlay {
