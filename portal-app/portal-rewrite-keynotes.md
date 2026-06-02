@@ -63,6 +63,23 @@ This is the part most decks skip. Don't.
 
 ---
 
+## Pivot — From the ten frictions to the ten features (1 min)
+
+**Headline:** *Every Section 00 tax has a feature that cancels it.*
+
+### What to say
+
+This slide is the punch line in one table. You just saw ten frictions. Here are the ten features that cancel them, mapped one-to-one. Two of them (decisions 09 and 10) do double-duty — same feature, two taxes cleared — so you'll see them appear twice.
+
+This is the answer-shape. The next four slides zoom into the two structural shifts that make these ten features possible, and Section 06 then explains every feature in depth.
+
+### Anticipated objections
+
+- *"Isn't this just Section 06 with fewer words?"* — Yes by design. The detail in Section 06 is the same content laid out per-feature; this slide is the cross-reference so leadership can see coverage before the deep-dive.
+- *"Product roadmap drag → One Messages page seems thin"* — The strongest cancellation is the consolidation work overall (Sections 01, 02, 03 together). The single-feature pairing on this slide is the most visible answer; the structural shifts behind it are why it works.
+
+---
+
 ## Section 01 — Upstream of compose (2 min)
 
 **Headline:** *Two ways to set up consent.*
@@ -107,7 +124,7 @@ This is the cause; the 7→5 step reduction in Section 03 is the symptom. Every 
 
 ---
 
-## Section 03 — One task, two journeys (2 min)
+## Section 03 — The operator side, today vs after (2 min)
 
 **Headline:** *Send a Cargo manifest to Maersk.*
 
@@ -209,7 +226,7 @@ This is the auditable mapping. Every decision points back to a pain you just hea
 
 ---
 
-## Section 07 — Honest scoping (2 min)
+## Section 07 — What ships in six months, and what waits (2 min)
 
 **Headline:** *What launches first vs what's deferred.*
 
